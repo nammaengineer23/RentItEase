@@ -5,7 +5,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
   @override
   Future<List<SettingsEntity>> load() async {
     return [
-      SettingsEntity('Track progress', 'Built for RentEase workflows.'),
+      const SettingsEntity('Track progress', 'Built for RentEase workflows.'),
     ];
   }
 }

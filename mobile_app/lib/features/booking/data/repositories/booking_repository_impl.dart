@@ -5,7 +5,7 @@ class BookingRepositoryImpl implements BookingRepository {
   @override
   Future<List<BookingEntity>> load() async {
     return [
-      BookingEntity('Track progress', 'Built for RentEase workflows.'),
+      const BookingEntity('Track progress', 'Built for RentEase workflows.'),
     ];
   }
 }

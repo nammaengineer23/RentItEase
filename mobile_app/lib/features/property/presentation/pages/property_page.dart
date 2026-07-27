@@ -16,7 +16,7 @@ class PropertyPage extends ConsumerWidget {
         data: (properties) => ListView.separated(
           padding: const EdgeInsets.all(16),
           itemCount: properties.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
           itemBuilder: (context, index) => PropertyCard(entity: properties[index]),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),

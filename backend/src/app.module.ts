@@ -9,7 +9,7 @@ import { AppService } from './app.service';
 
 import { DatabaseModule } from './database/database.module';
 import { PrismaModule } from './prisma/prisma.module';
-
+import { OtpModule } from './common/otp/otp.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { PropertiesModule } from './modules/properties/properties.module';
@@ -85,6 +85,7 @@ import { UserDevicesModule } from './modules/user-devices/user-devices.module';
     DatabaseModule,
     PrismaModule,
     AuthModule,
+    OtpModule,
     UsersModule,
     PropertiesModule,
     AmenitiesModule,

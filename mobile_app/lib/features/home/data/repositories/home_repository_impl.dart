@@ -5,7 +5,7 @@ class HomeRepositoryImpl implements HomeRepository {
   @override
   Future<List<HomeEntity>> load() async {
     return [
-      HomeEntity('Track progress', 'Built for RentEase workflows.'),
+      const HomeEntity('Track progress', 'Built for RentEase workflows.'),
     ];
   }
 }

@@ -5,7 +5,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<List<ProfileEntity>> load() async {
     return [
-      ProfileEntity('Track progress', 'Built for RentEase workflows.'),
+      const ProfileEntity('Track progress', 'Built for RentEase workflows.'),
     ];
   }
 }

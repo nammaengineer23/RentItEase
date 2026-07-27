@@ -17,33 +17,28 @@ model User {
   updatedAt           DateTime             @updatedAt
   passwordHash        String
   isActive            Boolean              @default(true)
+  ownerConversations  Conversation[]       @relation("OwnerConversations")
+  tenantConversations Conversation[]       @relation("TenantConversations")
   favorites           Favorite[]
+  sentMessages        Message[]            @relation("MessageSender")
   notifications       Notification[]
+  otpCodes            OtpCode[]
+  passwordResetTokens PasswordResetToken[]
   properties          Property[]
   visits              PropertyVisit[]      @relation("TenantVisits")
   refreshTokens       RefreshToken[]
-  passwordResetTokens PasswordResetToken[]
   reviews             Review[]
   devices             UserDevice[]
-  ownerConversations  Conversation[]       @relation("OwnerConversations")
-
-  tenantConversations Conversation[] @relation("TenantConversations")
-
-  sentMessages Message[] @relation("MessageSender")
 }
 
 model UserDevice {
-  id String @id @default(cuid())
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  token String @unique
-
-  platform String?
-
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -72,16 +67,16 @@ model Property {
   updatedAt       DateTime          @updatedAt
   landmark        String?
   latitude        Decimal?          @db.Decimal(9, 6)
-  longitude       Decimal?          @db.Decimal(9, 6)
   locality        String?
+  longitude       Decimal?          @db.Decimal(9, 6)
   displayOrder    Int               @default(0)
+  conversations   Conversation[]
   favorites       Favorite[]
   owner           User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   amenities       PropertyAmenity[]
   images          PropertyImage[]
   visits          PropertyVisit[]
   reviews         Review[]
-  conversations   Conversation[]
 }
 
 model Amenity {
@@ -155,65 +150,58 @@ model PropertyVisit {
 }
 
 model Notification {
+
   id String @id @default(cuid())
 
   userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  title   String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title String
+
   message String
 
   type NotificationType @default(GENERAL)
 
   isRead Boolean @default(false)
 
+  relatedId String?
+
   createdAt DateTime @default(now())
 
   @@index([userId])
+
+  @@index([relatedId])
 }
 
 model Conversation {
-  id String @id @default(cuid())
-
+  id         String    @id @default(cuid())
   propertyId String
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-
-  ownerId String
-  owner   User   @relation("OwnerConversations", fields: [ownerId], references: [id], onDelete: Cascade)
-
-  tenantId String
-  tenant   User   @relation("TenantConversations", fields: [tenantId], references: [id], onDelete: Cascade)
-
-  messages Message[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  ownerId    String
+  tenantId   String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  owner      User      @relation("OwnerConversations", fields: [ownerId], references: [id], onDelete: Cascade)
+  property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenant     User      @relation("TenantConversations", fields: [tenantId], references: [id], onDelete: Cascade)
+  messages   Message[]
 
   @@unique([propertyId, ownerId, tenantId])
 }
 
 model Message {
-  id String @id @default(cuid())
-
+  id             String       @id @default(cuid())
   conversationId String
+  senderId       String
+  text           String
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  messageType    MessageType  @default(TEXT)
+  deletedAt      DateTime?
+  editedAt       DateTime?
+  readAt         DateTime?
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  senderId String
-  sender   User   @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
-
-  text String @db.Text
-
-  messageType MessageType @default(TEXT)
-
-  isRead Boolean @default(false)
-
-  editedAt DateTime?
-
-  readAt DateTime?
-
-  deletedAt DateTime?
-
-  createdAt DateTime @default(now())
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
 }
@@ -233,10 +221,24 @@ model PasswordResetToken {
   userId    String
   expiresAt DateTime
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model OtpCode {
+  id        String     @id @default(cuid())
+  userId    String
+  email     String
+  otpHash   String
+  purpose   OtpPurpose
+  expiresAt DateTime
+  isUsed    Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
 }
 
 enum UserRole {
@@ -285,11 +287,16 @@ enum NotificationType {
   VISIT_APPROVED
   VISIT_REJECTED
   VISIT_COMPLETED
-  VISIT_CANCELLED
   REVIEW_ADDED
   FAVORITE_ADDED
   PROPERTY_APPROVED
   PROPERTY_REJECTED
-  CHAT_MESSAGE
   GENERAL
+  CHAT_MESSAGE
+  VISIT_CANCELLED
+}
+
+enum OtpPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
 }

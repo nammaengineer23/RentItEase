@@ -2,12 +2,25 @@ import 'package:flutter/material.dart';
 import '../../app/app_colors.dart';
 
 class LoadingWidget extends StatelessWidget {
-  const LoadingWidget({super.key});
+  final String? message;
+
+  const LoadingWidget({super.key, this.message});
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(color: AppColors.primary),
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(
+            color: AppColors.primary,
+          ),
+          if (message != null) ...[
+            const SizedBox(height: 16),
+            Text(message!),
+          ],
+        ],
+      ),
     );
   }
 }

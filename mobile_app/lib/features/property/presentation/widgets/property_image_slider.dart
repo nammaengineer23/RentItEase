@@ -1,0 +1,160 @@
+import 'package:flutter/material.dart';
+
+import '../../data/models/property_model.dart';
+import 'favorite_button.dart';
+import 'featured_badge.dart';
+
+class PropertyImageSlider extends StatefulWidget {
+  final PropertyModel property;
+
+  const PropertyImageSlider({
+    super.key,
+    required this.property,
+  });
+
+  @override
+  State<PropertyImageSlider> createState() => _PropertyImageSliderState();
+}
+
+class _PropertyImageSliderState extends State<PropertyImageSlider> {
+  final PageController _pageController = PageController();
+
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final images = widget.property.imageUrls;
+
+    return SizedBox(
+      height: 220,
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(18),
+            ),
+            child: images.isEmpty
+                ? Container(
+                    color: Colors.grey.shade300,
+                    child: const Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        size: 60,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  )
+                : PageView.builder(
+                    controller: _pageController,
+                    itemCount: images.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
+                    itemBuilder: (_, index) {
+                      return Image.network(
+                        images[index],
+                        fit: BoxFit.cover,
+                        loadingBuilder:
+                            (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+
+                          return Container(
+                            color: Colors.grey.shade200,
+                            child: const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) {
+                          return Container(
+                            color: Colors.grey.shade300,
+                            child: const Center(
+                              child: Icon(
+                                Icons.broken_image,
+                                size: 50,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+          ),
+
+          Positioned(
+            top: 12,
+            right: 12,
+            child: FavoriteButton(
+              isFavorite: false,
+              onPressed: () {},
+            ),
+          ),
+
+          Positioned(
+            top: 12,
+            left: 12,
+            child: FeaturedBadge(
+              isFeatured: widget.property.isFeatured,
+            ),
+          ),
+
+          if (images.isNotEmpty)
+            Positioned(
+              bottom: 12,
+              right: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${_currentPage + 1}/${images.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
+          if (images.length > 1)
+            Positioned(
+              bottom: 12,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  images.length,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: _currentPage == index ? 18 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: _currentPage == index
+                          ? Colors.white
+                          : Colors.white54,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}

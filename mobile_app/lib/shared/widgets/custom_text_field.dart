@@ -1,40 +1,49 @@
 import 'package:flutter/material.dart';
 
 class CustomTextField extends StatelessWidget {
+  final TextEditingController controller;
+
+  /// Use either label or hintText
+  final String? label;
+  final String? hintText;
+
+  final IconData? prefixIcon;
+  final bool obscureText;
+  final TextInputType keyboardType;
+  final String? Function(String?)? validator;
+  final Widget? suffixIcon;
+  final ValueChanged<String>? onChanged;
+
   const CustomTextField({
     super.key,
-    required this.label,
+    required this.controller,
+    this.label,
     this.hintText,
-    this.obscureText = false,
     this.prefixIcon,
-    this.controller,
+    this.obscureText = false,
+    this.keyboardType = TextInputType.text,
+    this.validator,
+    this.suffixIcon,
+    this.onChanged,
   });
-
-  final String label;
-  final String? hintText;
-  final bool obscureText;
-  final IconData? prefixIcon;
-  final TextEditingController? controller;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.titleMedium,
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      validator: validator,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        prefixIcon: prefixIcon == null ? null : Icon(prefixIcon),
+        suffixIcon: suffixIcon,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          obscureText: obscureText,
-          decoration: InputDecoration(
-            hintText: hintText,
-            prefixIcon: prefixIcon == null ? null : Icon(prefixIcon),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

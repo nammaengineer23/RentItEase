@@ -34,7 +34,6 @@
 
     "types": ["node"],
 
-    "ignoreDeprecations": "6.0",
 
     "paths": {
       "@/*": ["src/*"],
@@ -46,8 +45,7 @@
   },
 
   "include": [
-    "src/**/*",
-    "prisma/**/*"
+    "src/**/*.ts"
   ],
 
   "exclude": [

@@ -5,7 +5,7 @@ class ChatRepositoryImpl implements ChatRepository {
   @override
   Future<List<ChatEntity>> load() async {
     return [
-      ChatEntity('Track progress', 'Built for RentEase workflows.'),
+      const ChatEntity('Track progress', 'Built for RentEase workflows.'),
     ];
   }
 }

@@ -11,7 +11,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { FirebaseService } from '../../firebase/firebase.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../../mail/mail.service';
-
+import { OtpService } from '../../common/otp/otp.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -26,6 +26,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly firebaseService: FirebaseService,
     private readonly mailService: MailService,
+    private readonly otpService: OtpService,
   ) {}
 
   // ==========================================
@@ -308,64 +309,56 @@ export class AuthService {
     };
   }
 
-  async forgotPassword(
-  dto: ForgotPasswordDto,
-) {
-  const user =
-    await this.prisma.user.findUnique({
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.prisma.user.findUnique({
       where: {
         email: dto.email,
       },
     });
 
-  // Always return the same response
-  if (!user) {
+    // Always return the same response
+    if (!user) {
+      return {
+        success: true,
+        message: 'If the email exists, a password reset link has been sent.',
+      };
+    }
+
+    // Delete previous reset tokens
+    await this.prisma.passwordResetToken.deleteMany({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    // Generate secure token
+    const token = crypto.randomBytes(32).toString('hex');
+
+    // Save token
+    await this.prisma.passwordResetToken.create({
+      data: {
+        token,
+        userId: user.id,
+        expiresAt: new Date(
+          Date.now() + 60 * 60 * 1000, // 1 hour
+        ),
+      },
+    });
+
+    // Send email
+    await this.mailService.sendPasswordResetEmail(
+      user.email,
+      user.fullName,
+      token,
+    );
+
     return {
       success: true,
-      message:
-        'If the email exists, a password reset link has been sent.',
+      message: 'If the email exists, a password reset link has been sent.',
     };
   }
-
-  // Delete previous reset tokens
-  await this.prisma.passwordResetToken.deleteMany({
-    where: {
-      userId: user.id,
-    },
-  });
-
-  // Generate secure token
-  const token = crypto.randomBytes(32).toString('hex');
-
-  // Save token
-  await this.prisma.passwordResetToken.create({
-    data: {
-      token,
-      userId: user.id,
-      expiresAt: new Date(
-        Date.now() + 60 * 60 * 1000, // 1 hour
-      ),
-    },
-  });
-
-  // Send email
-  await this.mailService.sendPasswordResetEmail(
-    user.email,
-    user.fullName,
-    token,
-  );
-
-  return {
-    success: true,
-    message:
-      'If the email exists, a password reset link has been sent.',
-  };
-}
-  async resetPassword(
-  dto: ResetPasswordDto,
-) {
-  const resetToken =
-    await this.prisma.passwordResetToken.findUnique({
+  async resetPassword(dto: ResetPasswordDto) {
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
       where: {
         token: dto.token,
       },
@@ -374,39 +367,32 @@ export class AuthService {
       },
     });
 
-  if (
-    !resetToken ||
-    resetToken.expiresAt < new Date()
-  ) {
-    throw new UnauthorizedException(
-      'Invalid or expired reset token.',
-    );
+    if (!resetToken || resetToken.expiresAt < new Date()) {
+      throw new UnauthorizedException('Invalid or expired reset token.');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    await this.prisma.user.update({
+      where: {
+        id: resetToken.userId,
+      },
+      data: {
+        passwordHash: hashedPassword,
+      },
+    });
+
+    await this.prisma.passwordResetToken.delete({
+      where: {
+        id: resetToken.id,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Password reset successfully.',
+    };
   }
-
-  const hashedPassword =
-    await bcrypt.hash(dto.password, 10);
-
-  await this.prisma.user.update({
-    where: {
-      id: resetToken.userId,
-    },
-    data: {
-      passwordHash: hashedPassword,
-    },
-  });
-
-  await this.prisma.passwordResetToken.delete({
-    where: {
-      id: resetToken.id,
-    },
-  });
-
-  return {
-    success: true,
-    message:
-      'Password reset successfully.',
-  };
-}
   async me(userId: string) {
     return this.prisma.user.findUnique({
       where: {

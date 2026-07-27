@@ -1,11 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../domain/entities/splash_entity.dart';
-import '../domain/repositories/splash_repository.dart';
-import '../data/repositories/splash_repository_impl.dart';
 
-final _repositoryProvider = Provider<SplashRepository>((ref) => SplashRepositoryImpl());
+import '../services/splash_service.dart';
 
-final SplashProvider = FutureProvider<List<SplashEntity>>((ref) async {
-  final repository = ref.read(_repositoryProvider);
-  return repository.load();
+/// Splash Service Provider
+final splashServiceProvider = Provider<SplashService>((ref) {
+  return SplashService();
+});
+
+/// Determines where the app should navigate after splash.
+///
+/// Returns:
+/// - SplashDestination.onboarding
+/// - SplashDestination.login
+/// - SplashDestination.home
+final splashProvider =
+    FutureProvider<SplashDestination>((ref) async {
+  final splashService = ref.read(splashServiceProvider);
+
+  return splashService.determineDestination();
 });

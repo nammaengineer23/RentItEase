@@ -5,7 +5,7 @@ class PaymentRepositoryImpl implements PaymentRepository {
   @override
   Future<List<PaymentEntity>> load() async {
     return [
-      PaymentEntity('Track progress', 'Built for RentEase workflows.'),
+      const PaymentEntity('Track progress', 'Built for RentEase workflows.'),
     ];
   }
 }

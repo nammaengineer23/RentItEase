@@ -1,23 +1,38 @@
-import '../../domain/entities/authentication_entity.dart';
-import '../../domain/repositories/authentication_repository.dart';
-import '../services/google_auth_service.dart';
+import '../models/auth_response.dart';
+import '../models/login_request.dart';
+import '../models/register_request.dart';
+import '../../services/authentication_service.dart';
 
-class AuthenticationRepositoryImpl implements AuthenticationRepository {
-  AuthenticationRepositoryImpl({GoogleAuthService? authService})
-      : _authService = authService ?? GoogleAuthService();
+class AuthenticationRepositoryImpl {
+  AuthenticationRepositoryImpl({
+    AuthenticationService? service,
+  }) : _service = service ?? AuthenticationService();
 
-  final GoogleAuthService _authService;
+  final AuthenticationService _service;
 
-  @override
-  Future<List<AuthenticationEntity>> load() async {
-    return [
-      const AuthenticationEntity('Track progress', 'Built for RentEase workflows.'),
-    ];
+  Future<AuthResponse> login(
+    LoginRequest request,
+  ) async {
+    return _service.login(request);
   }
 
-  @override
-  Future<bool> signInWithGoogle() async {
-    final user = await _authService.signInWithGoogle();
-    return user != null;
+  Future<AuthResponse> register(
+    RegisterRequest request,
+  ) async {
+    return _service.register(request);
+  }
+
+  Future<void> logout() async {
+    await _service.logout();
+  }
+
+  Future<void> refreshToken() async {
+    await _service.refreshToken();
+  }
+
+  Future<void> firebaseLogin(
+    String idToken,
+  ) async {
+    await _service.firebaseLogin(idToken);
   }
 }

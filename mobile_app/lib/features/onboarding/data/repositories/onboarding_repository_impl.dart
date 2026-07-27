@@ -5,7 +5,7 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   @override
   Future<List<OnboardingEntity>> load() async {
     return [
-      OnboardingEntity('Track progress', 'Built for RentEase workflows.'),
+      const OnboardingEntity('Track progress', 'Built for RentEase workflows.'),
     ];
   }
 }

@@ -5,7 +5,7 @@ class SplashRepositoryImpl implements SplashRepository {
   @override
   Future<List<SplashEntity>> load() async {
     return [
-      SplashEntity('Track progress', 'Built for RentEase workflows.'),
+      const SplashEntity('Track progress', 'Built for RentEase workflows.'),
     ];
   }
 }

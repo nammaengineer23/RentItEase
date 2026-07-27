@@ -1,12 +1,66 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'app.dart';
-import 'firebase_options.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-Future<void> main() async {
+import 'core/router/app_router.dart';
+
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+
+  runApp(
+    const ProviderScope(
+      child: RentEaseApp(),
+    ),
   );
-  runApp(const RentEaseApp());
+}
+
+class RentEaseApp extends StatelessWidget {
+  const RentEaseApp({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+
+      title: 'RentEase',
+
+      theme: ThemeData(
+        useMaterial3: true,
+
+        colorSchemeSeed: Colors.blue,
+
+        scaffoldBackgroundColor: Colors.white,
+
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+        ),
+
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius:
+                BorderRadius.circular(14),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius:
+                BorderRadius.circular(14),
+          ),
+        ),
+
+        elevatedButtonTheme:
+            ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            minimumSize:
+                const Size(double.infinity, 56),
+            shape: RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.circular(14),
+            ),
+          ),
+        ),
+      ),
+
+      routerConfig: AppRouter.router,
+    );
+  }
 }

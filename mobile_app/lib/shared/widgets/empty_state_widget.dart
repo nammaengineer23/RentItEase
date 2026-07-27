@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import '../../app/app_colors.dart';
 
 class EmptyStateWidget extends StatelessWidget {
-  const EmptyStateWidget({super.key, required this.title, required this.message});
-
+  final IconData icon;
   final String title;
-  final String message;
+  final String subtitle;
+
+  const EmptyStateWidget({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,11 +21,29 @@ class EmptyStateWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.inbox_outlined, size: 56, color: AppColors.primary),
-            const SizedBox(height: 12),
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+            Icon(
+              icon,
+              size: 72,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 15,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
