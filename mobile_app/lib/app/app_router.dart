@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../features/splash/presentation/pages/splash_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/authentication/presentation/pages/authentication_page.dart';
-
+import '../features/uploads/presentation/pages/upload_images_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/property/presentation/pages/property_page.dart';
 import '../features/search/presentation/pages/search_page.dart';
@@ -252,6 +252,15 @@ class AppRouter {
 
       ),
 
+       // =========================
+       // ❤️ Upload image
+       // =========================
+
+         GoRoute(
+         path: '/upload-images',
+         builder: (context, state) =>
+          const UploadImagesPage(),
+         ),
 
 
 

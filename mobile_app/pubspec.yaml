@@ -17,6 +17,13 @@ dependencies:
   go_router: ^14.2.0
   google_sign_in: ^6.1.0
   shared_preferences: ^2.5.5
+  google_maps_flutter: ^2.18.0
+  geolocator: ^14.0.3
+  geocoding: ^5.0.0
+  flutter_polyline_points: ^3.1.0
+  permission_handler: ^12.0.3
+  url_launcher: ^6.3.2
+  flutter_google_places_sdk: ^0.4.3
 
 dev_dependencies:
   flutter_test:

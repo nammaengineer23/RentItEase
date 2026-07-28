@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/property_model.dart';
 
 import '../../../favorites/providers/favorites_provider.dart';
-
+import '../../../maps/presentation/widgets/property_map.dart';
 import '../widgets/property_action_buttons.dart';
 import '../widgets/property_features.dart';
 import '../widgets/property_image_slider.dart';
@@ -701,53 +701,29 @@ class PropertyDetailsPage extends ConsumerWidget {
 
 
 
-                  Container(
+ClipRRect(
+  borderRadius: BorderRadius.circular(16),
+  child: SizedBox(
+    height: 320,
+    child: const PropertyMap(),
+  ),
+),
 
+const SizedBox(
+  height: 16,
+),
 
-                    height:
-                        180,
-
-
-                    decoration:
-                    BoxDecoration(
-
-
-                      color:
-                          Colors.grey.shade300,
-
-
-                      borderRadius:
-                          BorderRadius.circular(
-                            16,
-                          ),
-
-
-                    ),
-
-
-
-                    child:
-                    const Center(
-
-
-                      child:
-                      Icon(
-
-                        Icons.map,
-
-                        size:
-                            70,
-
-                        color:
-                            Colors.grey,
-
-                      ),
-
-
-                    ),
-
-
-                  ),
+SizedBox(
+  width: double.infinity,
+  child: ElevatedButton.icon(
+    onPressed: () {
+      // TODO:
+      // Launch Google Maps when API integration is complete.
+    },
+    icon: const Icon(Icons.navigation),
+    label: const Text('Open in Google Maps'),
+  ),
+),
 
 
 
