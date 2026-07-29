@@ -17,12 +17,10 @@ class ImagePickerCard extends StatefulWidget {
   });
 
   @override
-  State<ImagePickerCard> createState() =>
-      _ImagePickerCardState();
+  State<ImagePickerCard> createState() => _ImagePickerCardState();
 }
 
-class _ImagePickerCardState
-    extends State<ImagePickerCard> {
+class _ImagePickerCardState extends State<ImagePickerCard> {
   final ImagePicker _picker = ImagePicker();
 
   final List<File> _images = [];
@@ -35,18 +33,12 @@ class _ImagePickerCardState
 
   Future<void> _pickGallery() async {
     try {
-      final files =
-          await _picker.pickMultiImage(
-        imageQuality: 90,
-      );
+      final files = await _picker.pickMultiImage(imageQuality: 90);
 
       if (files.isEmpty) return;
 
-      if (_images.length + files.length >
-          widget.maxImages) {
-        _showMessage(
-          'Maximum ${widget.maxImages} images allowed.',
-        );
+      if (_images.length + files.length > widget.maxImages) {
+        _showMessage('Maximum ${widget.maxImages} images allowed.');
         return;
       }
 
@@ -56,10 +48,7 @@ class _ImagePickerCardState
 
       for (final file in files) {
         try {
-          final image =
-              await ImageUtils.prepareImage(
-            File(file.path),
-          );
+          final image = await ImageUtils.prepareImage(File(file.path));
 
           _images.add(image);
         } catch (e) {
@@ -81,9 +70,7 @@ class _ImagePickerCardState
 
   Future<void> _pickCamera() async {
     if (_images.length >= widget.maxImages) {
-      _showMessage(
-        'Maximum ${widget.maxImages} images allowed.',
-      );
+      _showMessage('Maximum ${widget.maxImages} images allowed.');
       return;
     }
 
@@ -99,10 +86,7 @@ class _ImagePickerCardState
     });
 
     try {
-      final image =
-          await ImageUtils.prepareImage(
-        File(file.path),
-      );
+      final image = await ImageUtils.prepareImage(File(file.path));
 
       _images.add(image);
 
@@ -133,12 +117,9 @@ class _ImagePickerCardState
   // ==========================================
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   // ==========================================
@@ -148,11 +129,9 @@ class _ImagePickerCardState
   Widget _buildGrid() {
     return GridView.builder(
       shrinkWrap: true,
-      physics:
-          const NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: _images.length,
-      gridDelegate:
-          const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
@@ -162,12 +141,8 @@ class _ImagePickerCardState
           children: [
             Positioned.fill(
               child: ClipRRect(
-                borderRadius:
-                    BorderRadius.circular(12),
-                child: Image.file(
-                  _images[index],
-                  fit: BoxFit.cover,
-                ),
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(_images[index], fit: BoxFit.cover),
               ),
             ),
             Positioned(
@@ -176,18 +151,12 @@ class _ImagePickerCardState
               child: InkWell(
                 onTap: () => _remove(index),
                 child: Container(
-                  decoration:
-                      const BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.red,
                     shape: BoxShape.circle,
                   ),
-                  padding:
-                      const EdgeInsets.all(4),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 18,
-                  ),
+                  padding: const EdgeInsets.all(4),
+                  child: const Icon(Icons.close, color: Colors.white, size: 18),
                 ),
               ),
             ),
@@ -206,27 +175,17 @@ class _ImagePickerCardState
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed:
-                _loading ? null : _pickGallery,
-            icon: const Icon(
-              Icons.photo_library,
-            ),
-            label: const Text(
-              "Gallery",
-            ),
+            onPressed: _loading ? null : _pickGallery,
+            icon: const Icon(Icons.photo_library),
+            label: const Text("Gallery"),
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: ElevatedButton.icon(
-            onPressed:
-                _loading ? null : _pickCamera,
-            icon: const Icon(
-              Icons.camera_alt,
-            ),
-            label: const Text(
-              "Camera",
-            ),
+            onPressed: _loading ? null : _pickCamera,
+            icon: const Icon(Icons.camera_alt),
+            label: const Text("Camera"),
           ),
         ),
       ],
@@ -237,35 +196,22 @@ class _ImagePickerCardState
   Widget build(BuildContext context) {
     return Card(
       elevation: 1,
-      shape:
-          RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.circular(18),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
-        padding:
-            const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(18),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             const Text(
               "Property Images",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight:
-                    FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 6),
 
             Text(
               "${_images.length}/${widget.maxImages} selected",
-              style: TextStyle(
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(color: Colors.grey[600]),
             ),
 
             const SizedBox(height: 18),
@@ -275,38 +221,22 @@ class _ImagePickerCardState
             const SizedBox(height: 20),
 
             if (_loading)
-              const Center(
-                child:
-                    CircularProgressIndicator(),
-              )
+              const Center(child: CircularProgressIndicator())
             else if (_images.isEmpty)
               Container(
                 height: 180,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.grey,
-                  ),
-                  borderRadius:
-                      BorderRadius.circular(
-                    12,
-                  ),
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Center(
                   child: Column(
-                    mainAxisAlignment:
-                        MainAxisAlignment
-                            .center,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.image,
-                        size: 50,
-                        color: Colors.grey,
-                      ),
+                      Icon(Icons.image, size: 50, color: Colors.grey),
                       SizedBox(height: 12),
-                      Text(
-                        "No Images Selected",
-                      ),
+                      Text("No Images Selected"),
                     ],
                   ),
                 ),

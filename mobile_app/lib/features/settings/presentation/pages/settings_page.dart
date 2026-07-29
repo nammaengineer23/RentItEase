@@ -10,13 +10,20 @@ class SettingsPage extends StatelessWidget {
       appBar: AppBar(title: const Text('Settings')),
       body: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(children: [
-          Text('Preferences', style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 16),
-          const Text('Customize notifications, privacy, and account security.'),
-          const Spacer(),
-          SecondaryButton(label: 'Save Preferences', onPressed: () {}),
-        ]),
+        child: Column(
+          children: [
+            Text(
+              'Preferences',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Customize notifications, privacy, and account security.',
+            ),
+            const Spacer(),
+            SecondaryButton(label: 'Save Preferences', onPressed: () {}),
+          ],
+        ),
       ),
     );
   }

@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import '../../models/location_model.dart';
 
 class SelectedLocationCard extends StatelessWidget {
-  final LocationModel? location;
-
   const SelectedLocationCard({
     super.key,
     this.location,
   });
+
+  final LocationModel? location;
 
   @override
   Widget build(BuildContext context) {
@@ -31,9 +31,7 @@ class SelectedLocationCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'No location selected.',
-                  style: TextStyle(
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(fontSize: 16),
                 ),
               ),
             ],
@@ -50,24 +48,20 @@ class SelectedLocationCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Icon(
                   Icons.location_on,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
                 const Text(
                   'Selected Location',
                   style: TextStyle(
                     fontSize: 18,
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
@@ -84,7 +78,7 @@ class SelectedLocationCard extends StatelessWidget {
             _buildRow(
               Icons.location_city,
               'Locality',
-              location!.locality,
+              location!.address,
             ),
 
             _buildRow(
@@ -116,15 +110,13 @@ class SelectedLocationCard extends StatelessWidget {
             _buildRow(
               Icons.my_location,
               'Latitude',
-              location!.latitude
-                  .toStringAsFixed(6),
+              location!.latitude.toStringAsFixed(6),
             ),
 
             _buildRow(
               Icons.explore,
               'Longitude',
-              location!.longitude
-                  .toStringAsFixed(6),
+              location!.longitude.toStringAsFixed(6),
             ),
           ],
         ),
@@ -138,11 +130,9 @@ class SelectedLocationCard extends StatelessWidget {
     String value,
   ) {
     return Padding(
-      padding:
-          const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             icon,
@@ -151,21 +141,17 @@ class SelectedLocationCard extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
                   style: const TextStyle(
-                    fontWeight:
-                        FontWeight.w600,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  value.isEmpty
-                      ? '-'
-                      : value,
+                  value.isEmpty ? '-' : value,
                 ),
               ],
             ),

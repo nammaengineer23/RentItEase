@@ -19,70 +19,48 @@ class ReviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(
-        bottom: 16,
-      ),
+      margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.circular(14),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             Row(
               children: [
-
                 CircleAvatar(
                   radius: 24,
                   backgroundImage:
-                      review.userPhoto != null &&
-                              review.userPhoto!.isNotEmpty
-                          ? NetworkImage(
-                              review.userPhoto!,
-                            )
-                          : null,
-                  child:
-                      review.userPhoto == null ||
-                              review.userPhoto!.isEmpty
-                          ? Text(
-                              review.userName.isNotEmpty
-                                  ? review.userName
-                                      .substring(0, 1)
-                                      .toUpperCase()
-                                  : '?',
-                            )
-                          : null,
+                      review.userPhoto != null && review.userPhoto!.isNotEmpty
+                      ? NetworkImage(review.userPhoto!)
+                      : null,
+                  child: review.userPhoto == null || review.userPhoto!.isEmpty
+                      ? Text(
+                          review.userName.isNotEmpty
+                              ? review.userName.substring(0, 1).toUpperCase()
+                              : '?',
+                        )
+                      : null,
                 ),
 
                 const SizedBox(width: 12),
 
                 Expanded(
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
                       Text(
                         review.userName,
-                        style:
-                            const TextStyle(
+                        style: const TextStyle(
                           fontSize: 16,
-                          fontWeight:
-                              FontWeight.bold,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
 
                       const SizedBox(height: 4),
 
-                      RatingBarWidget(
-                        rating: review.rating,
-                        size: 18,
-                      ),
+                      RatingBarWidget(rating: review.rating, size: 18),
                     ],
                   ),
                 ),
@@ -98,20 +76,9 @@ class ReviewCard extends StatelessWidget {
                     }
                   },
                   itemBuilder: (context) => const [
+                    PopupMenuItem(value: 'edit', child: Text('Edit')),
 
-                    PopupMenuItem(
-                      value: 'edit',
-                      child: Text(
-                        'Edit',
-                      ),
-                    ),
-
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Text(
-                        'Delete',
-                      ),
-                    ),
+                    PopupMenuItem(value: 'delete', child: Text('Delete')),
                   ],
                 ),
               ],
@@ -121,27 +88,16 @@ class ReviewCard extends StatelessWidget {
 
             Text(
               review.comment,
-              style: TextStyle(
-                color:
-                    Colors.grey.shade700,
-                height: 1.5,
-              ),
+              style: TextStyle(color: Colors.grey.shade700, height: 1.5),
             ),
 
             const SizedBox(height: 16),
 
             Align(
-              alignment:
-                  Alignment.centerRight,
+              alignment: Alignment.centerRight,
               child: Text(
-                _formatDate(
-                  review.createdAt,
-                ),
-                style: TextStyle(
-                  color:
-                      Colors.grey.shade600,
-                  fontSize: 12,
-                ),
+                _formatDate(review.createdAt),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
             ),
           ],
@@ -150,9 +106,7 @@ class ReviewCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(
-    DateTime date,
-  ) {
+  String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
 }

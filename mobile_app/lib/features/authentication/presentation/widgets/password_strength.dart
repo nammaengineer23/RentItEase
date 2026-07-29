@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class PasswordStrength extends StatelessWidget {
   final String password;
 
-  const PasswordStrength({
-    super.key,
-    required this.password,
-  });
+  const PasswordStrength({super.key, required this.password});
 
   @override
   Widget build(BuildContext context) {
@@ -50,10 +47,7 @@ class PasswordStrength extends StatelessWidget {
 
             Text(
               text,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: color, fontWeight: FontWeight.bold),
             ),
           ],
         ),

@@ -30,21 +30,13 @@ class PropertyStatus extends StatelessWidget {
           ),
 
         _StatusChip(
-          icon: isAvailable
-              ? Icons.check_circle
-              : Icons.cancel,
-          label: isAvailable
-              ? 'Available Now'
-              : 'Occupied',
+          icon: isAvailable ? Icons.check_circle : Icons.cancel,
+          label: isAvailable ? 'Available Now' : 'Occupied',
           backgroundColor: isAvailable
               ? Colors.blue.shade50
               : Colors.red.shade50,
-          iconColor: isAvailable
-              ? Colors.blue
-              : Colors.red,
-          textColor: isAvailable
-              ? Colors.blue.shade700
-              : Colors.red.shade700,
+          iconColor: isAvailable ? Colors.blue : Colors.red,
+          textColor: isAvailable ? Colors.blue.shade700 : Colors.red.shade700,
         ),
 
         _StatusChip(
@@ -85,10 +77,7 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(30),
@@ -96,11 +85,7 @@ class _StatusChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 16,
-            color: iconColor,
-          ),
+          Icon(icon, size: 16, color: iconColor),
           const SizedBox(width: 6),
           Text(
             label,

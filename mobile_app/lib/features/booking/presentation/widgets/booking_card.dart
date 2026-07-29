@@ -29,27 +29,19 @@ class BookingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 10,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(18),
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               Row(
                 children: [
-
                   Expanded(
                     child: Text(
                       propertyTitle,
@@ -60,9 +52,7 @@ class BookingCard extends StatelessWidget {
                     ),
                   ),
 
-                  BookingStatusChip(
-                    status: status,
-                  ),
+                  BookingStatusChip(status: status),
                 ],
               ),
 
@@ -70,14 +60,9 @@ class BookingCard extends StatelessWidget {
 
               Row(
                 children: [
-                  const Icon(
-                    Icons.location_on_outlined,
-                    size: 18,
-                  ),
+                  const Icon(Icons.location_on_outlined, size: 18),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(location),
-                  ),
+                  Expanded(child: Text(location)),
                 ],
               ),
 
@@ -85,10 +70,7 @@ class BookingCard extends StatelessWidget {
 
               Row(
                 children: [
-                  const Icon(
-                    Icons.calendar_today,
-                    size: 18,
-                  ),
+                  const Icon(Icons.calendar_today, size: 18),
                   const SizedBox(width: 8),
                   Text(formattedDate),
                 ],
@@ -98,10 +80,7 @@ class BookingCard extends StatelessWidget {
 
               Row(
                 children: [
-                  const Icon(
-                    Icons.access_time,
-                    size: 18,
-                  ),
+                  const Icon(Icons.access_time, size: 18),
                   const SizedBox(width: 8),
                   Text(visitTime),
                 ],
@@ -111,14 +90,9 @@ class BookingCard extends StatelessWidget {
 
               Row(
                 children: [
-                  const Icon(
-                    Icons.person_outline,
-                    size: 18,
-                  ),
+                  const Icon(Icons.person_outline, size: 18),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(ownerName),
-                  ),
+                  Expanded(child: Text(ownerName)),
                 ],
               ),
 
@@ -128,12 +102,8 @@ class BookingCard extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
                   onPressed: onTap,
-                  icon: const Icon(
-                    Icons.arrow_forward,
-                  ),
-                  label: const Text(
-                    'View Details',
-                  ),
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('View Details'),
                 ),
               ),
             ],

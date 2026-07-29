@@ -16,42 +16,25 @@ class RatingBarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fill =
-        filledColor ?? Colors.amber;
+    final fill = filledColor ?? Colors.amber;
 
-    final empty =
-        emptyColor ?? Colors.grey.shade300;
+    final empty = emptyColor ?? Colors.grey.shade300;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: List.generate(
-        5,
-        (index) {
-          final star = index + 1;
+      children: List.generate(5, (index) {
+        final star = index + 1;
 
-          if (rating >= star) {
-            return Icon(
-              Icons.star,
-              color: fill,
-              size: size,
-            );
-          }
+        if (rating >= star) {
+          return Icon(Icons.star, color: fill, size: size);
+        }
 
-          if (rating >= star - 0.5) {
-            return Icon(
-              Icons.star_half,
-              color: fill,
-              size: size,
-            );
-          }
+        if (rating >= star - 0.5) {
+          return Icon(Icons.star_half, color: fill, size: size);
+        }
 
-          return Icon(
-            Icons.star_border,
-            color: empty,
-            size: size,
-          );
-        },
-      ),
+        return Icon(Icons.star_border, color: empty, size: size);
+      }),
     );
   }
 }

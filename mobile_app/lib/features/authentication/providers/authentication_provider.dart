@@ -1,22 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../data/models/auth_response.dart';
 import '../data/models/login_request.dart';
 import '../data/models/register_request.dart';
 import '../data/repositories/authentication_repository_impl.dart';
 
-final authenticationProvider =
-    ChangeNotifierProvider<AuthenticationProvider>((ref) {
+final authenticationProvider = ChangeNotifierProvider<AuthenticationProvider>((
+  ref,
+) {
   return AuthenticationProvider();
 });
 
 class AuthenticationProvider extends ChangeNotifier {
-  AuthenticationProvider({
-    AuthenticationRepositoryImpl? repository,
-  }) : _repository =
-            repository ?? AuthenticationRepositoryImpl();
+  AuthenticationProvider({AuthenticationRepositoryImpl? repository})
+    : _repository = repository ?? AuthenticationRepositoryImpl();
 
   final AuthenticationRepositoryImpl _repository;
 
@@ -49,27 +46,19 @@ class AuthenticationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> login({required String email, required String password}) async {
     _setLoading(true);
 
     try {
       _errorMessage = null;
 
       final response = await _repository.login(
-        LoginRequest(
-          email: email,
-          password: password,
-        ),
+        LoginRequest(email: email, password: password),
       );
 
       _authResponse = response;
 
-      if (_rememberMe) {
-        await _saveSession(response);
-      }
+      await _saveSession(response);
 
       _setLoading(false);
       return true;
@@ -103,9 +92,7 @@ class AuthenticationProvider extends ChangeNotifier {
 
       _authResponse = response;
 
-      if (_rememberMe) {
-        await _saveSession(response);
-      }
+      await _saveSession(response);
 
       _setLoading(false);
       return true;
@@ -118,41 +105,23 @@ class AuthenticationProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    await _repository.logout();
     _authResponse = null;
-
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.remove('accessToken');
-    await prefs.remove('refreshToken');
 
     notifyListeners();
   }
 
   Future<void> loadSavedSession() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final accessToken = prefs.getString('accessToken');
-    final refreshToken = prefs.getString('refreshToken');
-
-    if (accessToken != null && refreshToken != null) {
-      // Token validation/refresh will be added later.
+    try {
+      _authResponse = await _repository.restoreSession();
+    } catch (_) {
+      _authResponse = null;
     }
+    notifyListeners();
   }
 
-  Future<void> _saveSession(
-    AuthResponse response,
-  ) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.setString(
-      'accessToken',
-      response.accessToken,
-    );
-
-    await prefs.setString(
-      'refreshToken',
-      response.refreshToken,
-    );
+  Future<void> _saveSession(AuthResponse response) async {
+    await _repository.saveSession(response);
   }
 
   void clearError() {

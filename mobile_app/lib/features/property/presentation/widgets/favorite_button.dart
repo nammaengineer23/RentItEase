@@ -36,12 +36,7 @@ class _FavoriteButtonState extends State<FavoriteButton>
     _scaleAnimation = Tween<double>(
       begin: 1,
       end: 1.25,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
 
   @override

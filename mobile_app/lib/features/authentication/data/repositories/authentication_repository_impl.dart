@@ -10,15 +10,11 @@ class AuthenticationRepositoryImpl {
 
   final AuthenticationService _service;
 
-  Future<AuthResponse> login(
-    LoginRequest request,
-  ) async {
+  Future<AuthResponse> login(LoginRequest request) async {
     return _service.login(request);
   }
 
-  Future<AuthResponse> register(
-    RegisterRequest request,
-  ) async {
+  Future<AuthResponse> register(RegisterRequest request) async {
     return _service.register(request);
   }
 
@@ -30,9 +26,15 @@ class AuthenticationRepositoryImpl {
     await _service.refreshToken();
   }
 
-  Future<void> firebaseLogin(
-    String idToken,
-  ) async {
+  Future<void> firebaseLogin(String idToken) async {
     await _service.firebaseLogin(idToken);
+  }
+
+  Future<AuthResponse?> restoreSession() async {
+    return _service.restoreSession();
+  }
+
+  Future<void> saveSession(AuthResponse response) async {
+    await _service.saveSession(response);
   }
 }

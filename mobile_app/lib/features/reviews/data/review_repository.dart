@@ -10,12 +10,8 @@ class ReviewRepository {
   // Get Reviews
   // ==========================================
 
-  Future<List<ReviewModel>> getReviews(
-    String propertyId,
-  ) async {
-    return await api.getReviews(
-      propertyId,
-    );
+  Future<List<ReviewModel>> getReviews(String propertyId) async {
+    return await api.getReviews(propertyId);
   }
 
   // ==========================================
@@ -54,11 +50,7 @@ class ReviewRepository {
   // Delete Review
   // ==========================================
 
-  Future<void> deleteReview(
-    String reviewId,
-  ) async {
-    await api.deleteReview(
-      reviewId,
-    );
+  Future<void> deleteReview(String reviewId) async {
+    await api.deleteReview(reviewId);
   }
 }

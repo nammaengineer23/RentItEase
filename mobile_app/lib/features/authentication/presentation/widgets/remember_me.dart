@@ -6,10 +6,7 @@ import '../../providers/authentication_provider.dart';
 class RememberMe extends ConsumerWidget {
   final VoidCallback onForgotPassword;
 
-  const RememberMe({
-    super.key,
-    required this.onForgotPassword,
-  });
+  const RememberMe({super.key, required this.onForgotPassword});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,19 +20,14 @@ class RememberMe extends ConsumerWidget {
             value: provider.rememberMe,
             activeColor: Theme.of(context).colorScheme.primary,
             onChanged: (value) {
-              ref
-                  .read(authenticationProvider)
-                  .setRememberMe(value ?? false);
+              ref.read(authenticationProvider).setRememberMe(value ?? false);
             },
           ),
         ),
 
         const Text(
           'Remember Me',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
         ),
 
         const Spacer(),

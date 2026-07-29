@@ -1,28 +1,17 @@
 class PropertyVisitModel {
-
-
   final String id;
-
 
   final String propertyId;
 
-
   final String tenantId;
-
 
   final DateTime visitDate;
 
-
   final String status;
-
 
   final String? notes;
 
-
-
-
   PropertyVisitModel({
-
     required this.id,
 
     required this.propertyId,
@@ -34,96 +23,37 @@ class PropertyVisitModel {
     required this.status,
 
     this.notes,
-
   });
 
-
-
-
-
-
-  factory PropertyVisitModel.fromJson(
-      Map<String, dynamic> json,
-      ) {
-
-
+  factory PropertyVisitModel.fromJson(Map<String, dynamic> json) {
     return PropertyVisitModel(
+      id: json['id'] ?? '',
 
+      propertyId: json['propertyId'] ?? '',
 
-      id:
-          json['id'] ?? '',
+      tenantId: json['tenantId'] ?? '',
 
+      visitDate: DateTime.parse(json['visitDate']),
 
+      status: json['status'] ?? 'PENDING',
 
-      propertyId:
-          json['propertyId'] ?? '',
-
-
-
-      tenantId:
-          json['tenantId'] ?? '',
-
-
-
-      visitDate:
-          DateTime.parse(
-            json['visitDate'],
-          ),
-
-
-
-      status:
-          json['status'] ?? 'PENDING',
-
-
-
-      notes:
-          json['notes'],
-
-
+      notes: json['notes'],
     );
-
-
   }
-
-
-
-
 
   Map<String, dynamic> toJson() {
-
-
     return {
+      'id': id,
 
+      'propertyId': propertyId,
 
-      'id':
-          id,
+      'tenantId': tenantId,
 
+      'visitDate': visitDate.toIso8601String(),
 
-      'propertyId':
-          propertyId,
+      'status': status,
 
-
-      'tenantId':
-          tenantId,
-
-
-      'visitDate':
-          visitDate.toIso8601String(),
-
-
-      'status':
-          status,
-
-
-      'notes':
-          notes,
-
-
+      'notes': notes,
     };
-
-
   }
-
-
 }

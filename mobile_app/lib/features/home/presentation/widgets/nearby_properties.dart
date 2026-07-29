@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../../../property/data/models/property_model.dart';
+import '../../../property/domain/entities/property_entity.dart';
 import '../../../property/presentation/widgets/property_card.dart';
 
 class NearbyProperties extends StatelessWidget {
-  final List<PropertyModel> properties;
-  final ValueChanged<PropertyModel>? onTap;
+  const NearbyProperties({super.key, required this.properties, this.onTap});
 
-  const NearbyProperties({
-    super.key,
-    required this.properties,
-    this.onTap,
-  });
+  final List<PropertyEntity> properties;
+  final ValueChanged<PropertyEntity>? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -26,10 +22,7 @@ class NearbyProperties extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'Nearby Properties',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
         ),
 
@@ -51,21 +44,13 @@ class NearbyProperties extends StatelessWidget {
 
               onBookVisit: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Book visit for ${property.title}',
-                    ),
-                  ),
+                  SnackBar(content: Text('Book visit for ${property.title}')),
                 );
               },
 
               onContactOwner: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Contact ${property.ownerName}',
-                    ),
-                  ),
+                  SnackBar(content: Text('Contact ${property.ownerName}')),
                 );
               },
             );

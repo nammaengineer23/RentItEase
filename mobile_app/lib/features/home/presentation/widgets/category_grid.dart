@@ -44,8 +44,7 @@ class CategoryGrid extends StatelessWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: categories.length,
-        gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
           crossAxisSpacing: 14,
           mainAxisSpacing: 14,
@@ -63,22 +62,15 @@ class CategoryGrid extends StatelessWidget {
               decoration: BoxDecoration(
                 color: category.color.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: category.color.withOpacity(0.25),
-                ),
+                border: Border.all(color: category.color.withOpacity(0.25)),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircleAvatar(
                     radius: 26,
-                    backgroundColor:
-                        category.color.withOpacity(0.15),
-                    child: Icon(
-                      category.icon,
-                      color: category.color,
-                      size: 28,
-                    ),
+                    backgroundColor: category.color.withOpacity(0.15),
+                    child: Icon(category.icon, color: category.color, size: 28),
                   ),
                   const SizedBox(height: 12),
                   Text(

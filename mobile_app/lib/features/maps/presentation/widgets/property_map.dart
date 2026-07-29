@@ -10,14 +10,11 @@ class PropertyMap extends ConsumerStatefulWidget {
   const PropertyMap({super.key});
 
   @override
-  ConsumerState<PropertyMap> createState() =>
-      _PropertyMapState();
+  ConsumerState<PropertyMap> createState() => _PropertyMapState();
 }
 
-class _PropertyMapState
-    extends ConsumerState<PropertyMap> {
-  final TextEditingController _searchController =
-      TextEditingController();
+class _PropertyMapState extends ConsumerState<PropertyMap> {
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void dispose() {
@@ -31,31 +28,21 @@ class _PropertyMapState
 
     return Column(
       children: [
-
         Padding(
           padding: const EdgeInsets.all(16),
           child: MapSearchBar(
             controller: _searchController,
             onChanged: (value) {
-              ref
-                  .read(mapsProvider)
-                  .updateSearch(value);
+              ref.read(mapsProvider).updateSearch(value);
             },
             onClear: () {
               _searchController.clear();
 
-              ref
-                  .read(mapsProvider)
-                  .updateSearch('');
+              ref.read(mapsProvider).updateSearch('');
             },
             onVoiceTap: () {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Voice search coming soon.',
-                  ),
-                ),
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Voice search coming soon.')),
               );
             },
           ),
@@ -64,23 +51,17 @@ class _PropertyMapState
         Expanded(
           child: Stack(
             children: [
-
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.grey.shade300,
-                  borderRadius:
-                      BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(18),
                 ),
                 child: const Center(
                   child: Text(
                     'Google Map\n(API Key Required)',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight:
-                          FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -88,10 +69,7 @@ class _PropertyMapState
               Positioned(
                 top: 120,
                 left: 90,
-                child: PropertyMarker(
-                  price: '\$220',
-                  onTap: () {},
-                ),
+                child: PropertyMarker(price: '\$220', onTap: () {}),
               ),
 
               Positioned(
@@ -104,11 +82,7 @@ class _PropertyMapState
                 ),
               ),
 
-              Positioned(
-                bottom: 16,
-                right: 16,
-                child: CurrentLocationButton(),
-              ),
+              Positioned(bottom: 16, right: 16, child: CurrentLocationButton()),
             ],
           ),
         ),

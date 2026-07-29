@@ -12,10 +12,7 @@ class MyBookingsPage extends ConsumerWidget {
     final bookings = ref.watch(bookingProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Bookings'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('My Bookings'), centerTitle: true),
       body: bookings.isEmpty
           ? const Center(
               child: Column(
@@ -29,10 +26,7 @@ class MyBookingsPage extends ConsumerWidget {
                   SizedBox(height: 16),
                   Text(
                     'No Bookings Yet',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 8),
                   Text(
@@ -43,10 +37,7 @@ class MyBookingsPage extends ConsumerWidget {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.only(
-                top: 12,
-                bottom: 20,
-              ),
+              padding: const EdgeInsets.only(top: 12, bottom: 20),
               itemCount: bookings.length,
               itemBuilder: (context, index) {
                 final booking = bookings[index];
@@ -60,11 +51,7 @@ class MyBookingsPage extends ConsumerWidget {
                   status: booking.status,
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          booking.propertyTitle,
-                        ),
-                      ),
+                      SnackBar(content: Text(booking.propertyTitle)),
                     );
 
                     // TODO

@@ -17,14 +17,11 @@ class LocationPicker extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<LocationPicker> createState() =>
-      _LocationPickerState();
+  ConsumerState<LocationPicker> createState() => _LocationPickerState();
 }
 
-class _LocationPickerState
-    extends ConsumerState<LocationPicker> {
-  final TextEditingController _searchController =
-      TextEditingController();
+class _LocationPickerState extends ConsumerState<LocationPicker> {
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void dispose() {
@@ -37,23 +34,17 @@ class _LocationPickerState
     final provider = ref.watch(mapsProvider);
 
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
         MapSearchBar(
           controller: _searchController,
           onChanged: (value) {
-            ref
-                .read(mapsProvider)
-                .updateSearch(value);
+            ref.read(mapsProvider).updateSearch(value);
           },
           onClear: () {
             _searchController.clear();
 
-            ref
-                .read(mapsProvider)
-                .updateSearch('');
+            ref.read(mapsProvider).updateSearch('');
           },
           onVoiceTap: () {},
         ),
@@ -65,42 +56,27 @@ class _LocationPickerState
           width: double.infinity,
           decoration: BoxDecoration(
             color: Colors.grey.shade300,
-            borderRadius:
-                BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Stack(
             children: [
-
               const Center(
                 child: Text(
                   'Location Picker\n(Google Maps Coming Soon)',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight:
-                        FontWeight.bold,
-                    fontSize: 18,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
               ),
 
               Center(
                 child: GestureDetector(
                   onTap: () {
-                    widget.onLatitudeChanged?.call(
-                      provider.latitude,
-                    );
+                    widget.onLatitudeChanged?.call(provider.latitude);
 
-                    widget.onLongitudeChanged?.call(
-                      provider.longitude,
-                    );
+                    widget.onLongitudeChanged?.call(provider.longitude);
 
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Location selected',
-                        ),
-                      ),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Location selected')),
                     );
                   },
                   child: const PropertyMarker(
@@ -113,8 +89,7 @@ class _LocationPickerState
               const Positioned(
                 right: 16,
                 bottom: 16,
-                child:
-                    CurrentLocationButton(),
+                child: CurrentLocationButton(),
               ),
             ],
           ),
@@ -126,13 +101,8 @@ class _LocationPickerState
           elevation: 0,
           color: Colors.grey.shade100,
           child: ListTile(
-            leading: const Icon(
-              Icons.location_on,
-              color: Colors.red,
-            ),
-            title: const Text(
-              'Selected Coordinates',
-            ),
+            leading: const Icon(Icons.location_on, color: Colors.red),
+            title: const Text('Selected Coordinates'),
             subtitle: Text(
               '${provider.latitude.toStringAsFixed(6)}, '
               '${provider.longitude.toStringAsFixed(6)}',
@@ -144,27 +114,16 @@ class _LocationPickerState
 
         ElevatedButton.icon(
           onPressed: () {
-            widget.onLatitudeChanged?.call(
-              provider.latitude,
-            );
+            widget.onLatitudeChanged?.call(provider.latitude);
 
-            widget.onLongitudeChanged?.call(
-              provider.longitude,
-            );
+            widget.onLongitudeChanged?.call(provider.longitude);
 
-            ScaffoldMessenger.of(context)
-                .showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Property location saved',
-                ),
-              ),
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Property location saved')),
             );
           },
           icon: const Icon(Icons.check),
-          label: const Text(
-            'Use This Location',
-          ),
+          label: const Text('Use This Location'),
         ),
       ],
     );

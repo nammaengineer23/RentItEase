@@ -12,36 +12,23 @@ class UploadRepository {
   // Upload Single Image
   // ==========================================
 
-  Future<UploadedImageModel> uploadImage(
-    File image,
-  ) async {
-    return await api.uploadImage(
-      image,
-    );
+  Future<UploadedImageModel> uploadImage(File image) async {
+    return await api.uploadImage(image);
   }
 
   // ==========================================
   // Upload Multiple Images
   // ==========================================
 
-  Future<List<UploadedImageModel>>
-      uploadImages(
-    List<File> images,
-  ) async {
-    return await api.uploadImages(
-      images,
-    );
+  Future<List<UploadedImageModel>> uploadImages(List<File> images) async {
+    return await api.uploadImages(images);
   }
 
   // ==========================================
   // Delete Uploaded Image
   // ==========================================
 
-  Future<void> deleteImage(
-    String imageId,
-  ) async {
-    await api.deleteImage(
-      imageId,
-    );
+  Future<void> deleteImage(String imageId) async {
+    await api.deleteImage(imageId);
   }
 }

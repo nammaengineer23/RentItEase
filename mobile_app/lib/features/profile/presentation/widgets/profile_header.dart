@@ -1,119 +1,100 @@
 import 'package:flutter/material.dart';
 
-import '../../providers/profile_provider.dart';
+import '../../domain/entities/profile_entity.dart';
 
 class ProfileHeader extends StatelessWidget {
-  final UserProfile user;
-  final VoidCallback? onEditPhoto;
+  const ProfileHeader({super.key, required this.profile, this.onEdit});
 
-  const ProfileHeader({
-    super.key,
-    required this.user,
-    this.onEditPhoto,
-  });
+  final ProfileEntity profile;
+
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+
+      padding: const EdgeInsets.all(20),
+
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary,
+        color: Theme.of(context).colorScheme.primaryContainer,
+
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
+          bottomLeft: Radius.circular(30),
+
+          bottomRight: Radius.circular(30),
         ),
       ),
+
       child: Column(
         children: [
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 55,
-                backgroundColor: Colors.white,
-                backgroundImage: user.photoUrl != null
-                    ? NetworkImage(user.photoUrl!)
-                    : null,
-                child: user.photoUrl == null
-                    ? Text(
-                        user.fullName.substring(0, 1).toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      )
-                    : null,
-              ),
+          CircleAvatar(
+            radius: 50,
 
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: InkWell(
-                  onTap: onEditPhoto,
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
+            backgroundColor: Colors.white,
+
+            backgroundImage: profile.profileImage != null
+                ? NetworkImage(profile.profileImage!)
+                : null,
+
+            child: profile.profileImage == null
+                ? Text(
+                    profile.fullName.substring(0, 1).toUpperCase(),
+
+                    style: const TextStyle(
+                      fontSize: 38,
+
+                      fontWeight: FontWeight.bold,
                     ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 18),
-
-          Text(
-            user.fullName,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          Text(
-            user.email,
-            style: const TextStyle(
-              color: Colors.white70,
-            ),
-          ),
-
-          const SizedBox(height: 4),
-
-          Text(
-            user.phone,
-            style: const TextStyle(
-              color: Colors.white70,
-            ),
+                  )
+                : null,
           ),
 
           const SizedBox(height: 16),
 
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Text(
-              user.isOwner ? "Owner Account" : "Tenant Account",
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+          Text(
+            profile.fullName,
+
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(profile.email, style: TextStyle(color: Colors.grey.shade700)),
+
+          const SizedBox(height: 12),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+
+            children: [
+              Chip(
+                avatar: const Icon(Icons.person, size: 18),
+
+                label: Text(profile.role),
               ),
-            ),
+
+              if (profile.isVerified)
+                const Padding(
+                  padding: EdgeInsets.only(left: 8),
+
+                  child: Chip(
+                    avatar: Icon(Icons.verified, color: Colors.blue, size: 18),
+
+                    label: Text('Verified'),
+                  ),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          OutlinedButton.icon(
+            onPressed: onEdit,
+
+            icon: const Icon(Icons.edit),
+
+            label: const Text('Edit Profile'),
           ),
         ],
       ),

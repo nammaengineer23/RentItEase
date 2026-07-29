@@ -19,9 +19,9 @@ class TimeSlotSelector extends StatelessWidget {
       children: [
         Text(
           'Available Time Slots',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
 
         const SizedBox(height: 14),
@@ -36,13 +36,10 @@ class TimeSlotSelector extends StatelessWidget {
               label: Text(slot),
               selected: isSelected,
               onSelected: (_) => onSlotSelected(slot),
-              selectedColor:
-                  Theme.of(context).colorScheme.primary,
+              selectedColor: Theme.of(context).colorScheme.primary,
               backgroundColor: Colors.grey.shade100,
               labelStyle: TextStyle(
-                color: isSelected
-                    ? Colors.white
-                    : Colors.black87,
+                color: isSelected ? Colors.white : Colors.black87,
                 fontWeight: FontWeight.w600,
               ),
               shape: RoundedRectangleBorder(

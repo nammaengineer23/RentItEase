@@ -10,13 +10,20 @@ class PaymentPage extends StatelessWidget {
       appBar: AppBar(title: const Text('Payments')),
       body: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(children: [
-          Text('Secure Payments', style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 16),
-          const Text('Manage rent payments and deposit transactions in one secure flow.'),
-          const Spacer(),
-          PrimaryButton(label: 'Pay Now', onPressed: () {}),
-        ]),
+        child: Column(
+          children: [
+            Text(
+              'Secure Payments',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Manage rent payments and deposit transactions in one secure flow.',
+            ),
+            const Spacer(),
+            PrimaryButton(label: 'Pay Now', onPressed: () {}),
+          ],
+        ),
       ),
     );
   }

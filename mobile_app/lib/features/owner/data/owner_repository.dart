@@ -4,218 +4,60 @@ import '../models/analytics_model.dart';
 
 import 'owner_api.dart';
 
-
-
 class OwnerRepository {
-
-
   final OwnerApi api;
 
-
-
-  OwnerRepository(
-
-    this.api,
-
-  );
-
-
-
-
+  OwnerRepository(this.api);
 
   // ==========================
   // PROPERTY METHODS
   // ==========================
 
-
-
-  Future<List<OwnerPropertyModel>>
-      getMyProperties() async {
-
-
+  Future<List<OwnerPropertyModel>> getMyProperties() async {
     return await api.getMyProperties();
-
-
   }
 
-
-
-
-
-
-  Future<OwnerPropertyModel>
-      createProperty(
-
-    Map<String, dynamic> data,
-
-  ) async {
-
-
-    return await api.createProperty(
-
-      data,
-
-    );
-
-
+  Future<OwnerPropertyModel> createProperty(Map<String, dynamic> data) async {
+    return await api.createProperty(data);
   }
 
-
-
-
-
-
-  Future<OwnerPropertyModel>
-      updateProperty(
-
+  Future<OwnerPropertyModel> updateProperty(
     String id,
 
     Map<String, dynamic> data,
-
   ) async {
-
-
-    return await api.updateProperty(
-
-      id,
-
-      data,
-
-    );
-
-
+    return await api.updateProperty(id, data);
   }
 
-
-
-
-
-
-  Future<void>
-      deleteProperty(
-
-    String id,
-
-  ) async {
-
-
-    await api.deleteProperty(
-
-      id,
-
-    );
-
-
+  Future<void> deleteProperty(String id) async {
+    await api.deleteProperty(id);
   }
-
-
-
-
-
-
 
   // ==========================
   // VISIT METHODS
   // ==========================
 
-
-
-  Future<List<VisitRequestModel>>
-      getOwnerVisits() async {
-
-
+  Future<List<VisitRequestModel>> getOwnerVisits() async {
     return await api.getOwnerVisits();
-
-
   }
 
-
-
-
-
-
-  Future<void>
-      approveVisit(
-
-    String id,
-
-  ) async {
-
-
-    await api.approveVisit(
-
-      id,
-
-    );
-
-
+  Future<void> approveVisit(String id) async {
+    await api.approveVisit(id);
   }
 
-
-
-
-
-
-  Future<void>
-      rejectVisit(
-
-    String id,
-
-  ) async {
-
-
-    await api.rejectVisit(
-
-      id,
-
-    );
-
-
+  Future<void> rejectVisit(String id) async {
+    await api.rejectVisit(id);
   }
 
-
-
-
-
-
-  Future<void>
-      completeVisit(
-
-    String id,
-
-  ) async {
-
-
-    await api.completeVisit(
-
-      id,
-
-    );
-
-
+  Future<void> completeVisit(String id) async {
+    await api.completeVisit(id);
   }
-
-
-
-
-
-
 
   // ==========================
   // ANALYTICS METHODS
   // ==========================
 
-
-
-  Future<AnalyticsModel>
-      getAnalytics() async {
-
-
+  Future<AnalyticsModel> getAnalytics() async {
     return await api.getAnalytics();
-
-
   }
-
-
-
 }

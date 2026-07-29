@@ -15,23 +15,15 @@ class UploadedImageModel {
     required this.uploadedAt,
   });
 
-  factory UploadedImageModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory UploadedImageModel.fromJson(Map<String, dynamic> json) {
     return UploadedImageModel(
       id: json['id'] ?? '',
-      imageUrl: json['imageUrl'] ??
-          json['url'] ??
-          '',
+      imageUrl: json['imageUrl'] ?? json['url'] ?? '',
       fileName: json['fileName'] ?? '',
-      contentType:
-          json['contentType'] ?? '',
+      contentType: json['contentType'] ?? '',
       size: json['size'] ?? 0,
-      uploadedAt: DateTime.tryParse(
-            json['uploadedAt'] ??
-                json['createdAt'] ??
-                '',
-          ) ??
+      uploadedAt:
+          DateTime.tryParse(json['uploadedAt'] ?? json['createdAt'] ?? '') ??
           DateTime.now(),
     );
   }
@@ -43,8 +35,7 @@ class UploadedImageModel {
       'fileName': fileName,
       'contentType': contentType,
       'size': size,
-      'uploadedAt':
-          uploadedAt.toIso8601String(),
+      'uploadedAt': uploadedAt.toIso8601String(),
     };
   }
 
@@ -58,17 +49,11 @@ class UploadedImageModel {
   }) {
     return UploadedImageModel(
       id: id ?? this.id,
-      imageUrl:
-          imageUrl ?? this.imageUrl,
-      fileName:
-          fileName ?? this.fileName,
-      contentType:
-          contentType ??
-              this.contentType,
+      imageUrl: imageUrl ?? this.imageUrl,
+      fileName: fileName ?? this.fileName,
+      contentType: contentType ?? this.contentType,
       size: size ?? this.size,
-      uploadedAt:
-          uploadedAt ??
-              this.uploadedAt,
+      uploadedAt: uploadedAt ?? this.uploadedAt,
     );
   }
 }

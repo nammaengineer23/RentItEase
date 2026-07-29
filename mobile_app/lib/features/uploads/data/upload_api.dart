@@ -13,46 +13,31 @@ class UploadApi {
   // Upload Single Image
   // ==========================================
 
-  Future<UploadedImageModel> uploadImage(
-    File image,
-  ) async {
-    final fileName =
-        image.path.split('/').last;
+  Future<UploadedImageModel> uploadImage(File image) async {
+    final fileName = image.path.split('/').last;
 
     final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(
-        image.path,
-        filename: fileName,
-      ),
+      'file': await MultipartFile.fromFile(image.path, filename: fileName),
     });
 
     final response = await dio.post(
       '/uploads/image',
       data: formData,
-      options: Options(
-        contentType: 'multipart/form-data',
-      ),
+      options: Options(contentType: 'multipart/form-data'),
     );
 
-    return UploadedImageModel.fromJson(
-      response.data,
-    );
+    return UploadedImageModel.fromJson(response.data);
   }
 
   // ==========================================
   // Upload Multiple Images
   // ==========================================
 
-  Future<List<UploadedImageModel>>
-      uploadImages(
-    List<File> images,
-  ) async {
-    final List<UploadedImageModel>
-        uploaded = [];
+  Future<List<UploadedImageModel>> uploadImages(List<File> images) async {
+    final List<UploadedImageModel> uploaded = [];
 
     for (final image in images) {
-      final result =
-          await uploadImage(image);
+      final result = await uploadImage(image);
 
       uploaded.add(result);
     }
@@ -64,11 +49,7 @@ class UploadApi {
   // Delete Uploaded Image
   // ==========================================
 
-  Future<void> deleteImage(
-    String imageId,
-  ) async {
-    await dio.delete(
-      '/uploads/image/$imageId',
-    );
+  Future<void> deleteImage(String imageId) async {
+    await dio.delete('/uploads/image/$imageId');
   }
 }

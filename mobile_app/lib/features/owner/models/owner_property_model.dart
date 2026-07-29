@@ -12,9 +12,7 @@ class OwnerPropertyModel {
   final bool isAvailable;
   final DateTime createdAt;
 
-
   OwnerPropertyModel({
-
     required this.id,
 
     required this.title,
@@ -38,81 +36,40 @@ class OwnerPropertyModel {
     required this.isAvailable,
 
     required this.createdAt,
-
   });
 
-
-
-  factory OwnerPropertyModel.fromJson(
-      Map<String, dynamic> json,
-  ) {
-
+  factory OwnerPropertyModel.fromJson(Map<String, dynamic> json) {
     return OwnerPropertyModel(
-
       id: json['id'] ?? '',
-
 
       title: json['title'] ?? '',
 
+      description: json['description'] ?? '',
 
-      description:
-          json['description'] ?? '',
+      propertyType: json['propertyType'] ?? '',
 
+      bhk: json['bhk'] ?? '',
 
-      propertyType:
-          json['propertyType'] ?? '',
+      rent: (json['rent'] ?? 0).toDouble(),
 
+      deposit: (json['deposit'] ?? 0).toDouble(),
 
-      bhk:
-          json['bhk'] ?? '',
+      location: json['location'] ?? '',
 
+      address: json['address'] ?? '',
 
-      rent:
-          (json['rent'] ?? 0)
-              .toDouble(),
+      images: json['images'] != null ? List<String>.from(json['images']) : [],
 
+      isAvailable: json['isAvailable'] ?? true,
 
-      deposit:
-          (json['deposit'] ?? 0)
-              .toDouble(),
-
-
-      location:
-          json['location'] ?? '',
-
-
-      address:
-          json['address'] ?? '',
-
-
-      images:
-          json['images'] != null
-              ? List<String>.from(
-                  json['images'],
-                )
-              : [],
-
-
-      isAvailable:
-          json['isAvailable'] ?? true,
-
-
-      createdAt:
-          json['createdAt'] != null
-              ? DateTime.parse(
-                  json['createdAt'],
-                )
-              : DateTime.now(),
-
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
     );
   }
 
-
-
   Map<String, dynamic> toJson() {
-
     return {
-
       'id': id,
 
       'title': title,
@@ -135,9 +92,7 @@ class OwnerPropertyModel {
 
       'isAvailable': isAvailable,
 
-      'createdAt':
-          createdAt.toIso8601String(),
-
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 }

@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../../data/models/property_model.dart';
+import '../../domain/entities/property_entity.dart';
+
 import 'favorite_button.dart';
 import 'featured_badge.dart';
 
 class PropertyImageSlider extends StatefulWidget {
-  final PropertyModel property;
+  const PropertyImageSlider({super.key, required this.property});
 
-  const PropertyImageSlider({
-    super.key,
-    required this.property,
-  });
+  final PropertyEntity property;
 
   @override
   State<PropertyImageSlider> createState() => _PropertyImageSliderState();
@@ -36,9 +34,7 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
       child: Stack(
         children: [
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(18),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
             child: images.isEmpty
                 ? Container(
                     color: Colors.grey.shade300,
@@ -58,13 +54,14 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
                         _currentPage = index;
                       });
                     },
-                    itemBuilder: (_, index) {
+                    itemBuilder: (context, index) {
                       return Image.network(
                         images[index],
                         fit: BoxFit.cover,
-                        loadingBuilder:
-                            (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) {
+                            return child;
+                          }
 
                           return Container(
                             color: Colors.grey.shade200,
@@ -73,14 +70,11 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
                             ),
                           );
                         },
-                        errorBuilder: (_, __, ___) {
+                        errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: Colors.grey.shade300,
                             child: const Center(
-                              child: Icon(
-                                Icons.broken_image,
-                                size: 50,
-                              ),
+                              child: Icon(Icons.broken_image, size: 50),
                             ),
                           );
                         },
@@ -94,16 +88,17 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
             right: 12,
             child: FavoriteButton(
               isFavorite: false,
-              onPressed: () {},
+              onPressed: () {
+                // TODO:
+                // Connect Favorites API
+              },
             ),
           ),
 
           Positioned(
             top: 12,
             left: 12,
-            child: FeaturedBadge(
-              isFeatured: widget.property.isFeatured,
-            ),
+            child: FeaturedBadge(isFeatured: widget.property.isFeatured),
           ),
 
           if (images.isNotEmpty)

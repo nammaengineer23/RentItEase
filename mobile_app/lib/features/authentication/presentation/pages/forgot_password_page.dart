@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/widgets/custom_button.dart';
-import '../../../../core/widgets/custom_text_field.dart';
+import '../../../../shared/widgets/custom_button.dart';
+import '../../../../shared/widgets/custom_text_field.dart';
 import '../widgets/auth_header.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
-  const ForgotPasswordPage({
-    super.key,
-  });
+  const ForgotPasswordPage({super.key});
 
   @override
-  State<ForgotPasswordPage> createState() =>
-      _ForgotPasswordPageState();
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-class _ForgotPasswordPageState
-    extends State<ForgotPasswordPage> {
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _formKey = GlobalKey<FormState>();
 
   final _emailController = TextEditingController();
@@ -32,11 +28,7 @@ class _ForgotPasswordPageState
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Password reset link sent successfully.',
-        ),
-      ),
+      const SnackBar(content: Text('Password reset link sent successfully.')),
     );
 
     Navigator.pop(context);
@@ -45,9 +37,7 @@ class _ForgotPasswordPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Forgot Password'),
-      ),
+      appBar: AppBar(title: const Text('Forgot Password')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -69,11 +59,9 @@ class _ForgotPasswordPageState
                   controller: _emailController,
                   hintText: 'Email Address',
                   prefixIcon: Icons.email_outlined,
-                  keyboardType:
-                      TextInputType.emailAddress,
+                  keyboardType: TextInputType.emailAddress,
                   validator: (value) {
-                    if (value == null ||
-                        value.trim().isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return 'Please enter your email';
                     }
 
@@ -94,9 +82,7 @@ class _ForgotPasswordPageState
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  child: const Text(
-                    'Back to Login',
-                  ),
+                  child: const Text('Back to Login'),
                 ),
               ],
             ),

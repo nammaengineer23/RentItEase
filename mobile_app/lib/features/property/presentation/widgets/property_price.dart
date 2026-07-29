@@ -25,29 +25,19 @@ class PropertyPrice extends StatelessWidget {
         const SizedBox(width: 6),
         const Text(
           '/ month',
-          style: TextStyle(
-            color: Colors.grey,
-            fontSize: 15,
-          ),
+          style: TextStyle(color: Colors.grey, fontSize: 15),
         ),
         const Spacer(),
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 5,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: isAvailable
-                ? Colors.green.shade50
-                : Colors.red.shade50,
+            color: isAvailable ? Colors.green.shade50 : Colors.red.shade50,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             isAvailable ? 'Available' : 'Occupied',
             style: TextStyle(
-              color: isAvailable
-                  ? Colors.green.shade700
-                  : Colors.red.shade700,
+              color: isAvailable ? Colors.green.shade700 : Colors.red.shade700,
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),

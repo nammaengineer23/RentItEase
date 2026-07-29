@@ -4,9 +4,7 @@ class AnalyticsModel {
   final int totalFavorites;
   final int totalVisits;
 
-
   AnalyticsModel({
-
     required this.totalProperties,
 
     required this.totalViews,
@@ -14,56 +12,29 @@ class AnalyticsModel {
     required this.totalFavorites,
 
     required this.totalVisits,
-
   });
 
-
-
-  factory AnalyticsModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
-
+  factory AnalyticsModel.fromJson(Map<String, dynamic> json) {
     return AnalyticsModel(
+      totalProperties: json['totalProperties'] ?? 0,
 
-      totalProperties:
-          json['totalProperties'] ?? 0,
+      totalViews: json['totalViews'] ?? 0,
 
+      totalFavorites: json['totalFavorites'] ?? 0,
 
-      totalViews:
-          json['totalViews'] ?? 0,
-
-
-      totalFavorites:
-          json['totalFavorites'] ?? 0,
-
-
-      totalVisits:
-          json['totalVisits'] ?? 0,
-
+      totalVisits: json['totalVisits'] ?? 0,
     );
   }
 
-
-
   Map<String, dynamic> toJson() {
-
     return {
+      'totalProperties': totalProperties,
 
-      'totalProperties':
-          totalProperties,
+      'totalViews': totalViews,
 
+      'totalFavorites': totalFavorites,
 
-      'totalViews':
-          totalViews,
-
-
-      'totalFavorites':
-          totalFavorites,
-
-
-      'totalVisits':
-          totalVisits,
-
+      'totalVisits': totalVisits,
     };
   }
 }

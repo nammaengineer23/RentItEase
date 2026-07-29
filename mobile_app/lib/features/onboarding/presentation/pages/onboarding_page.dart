@@ -23,25 +23,18 @@ class OnboardingPage extends ConsumerWidget {
             // Skip Button
             //------------------------------------------
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Align(
                 alignment: Alignment.centerRight,
                 child: provider.isLastPage
                     ? const SizedBox.shrink()
                     : TextButton(
                         onPressed: () {
-                          ref
-                              .read(onboardingProvider)
-                              .skip();
+                          ref.read(onboardingProvider).skip();
                         },
                         child: const Text(
                           'Skip',
-                          style: TextStyle(
-                            fontSize: 16,
-                          ),
+                          style: TextStyle(fontSize: 16),
                         ),
                       ),
               ),
@@ -54,13 +47,9 @@ class OnboardingPage extends ConsumerWidget {
               child: PageView.builder(
                 controller: provider.pageController,
                 itemCount: onboardingItems.length,
-                onPageChanged: ref
-                    .read(onboardingProvider)
-                    .onPageChanged,
+                onPageChanged: ref.read(onboardingProvider).onPageChanged,
                 itemBuilder: (context, index) {
-                  return OnboardingItem(
-                    item: onboardingItems[index],
-                  );
+                  return OnboardingItem(item: onboardingItems[index]);
                 },
               ),
             ),
@@ -69,9 +58,7 @@ class OnboardingPage extends ConsumerWidget {
             // Indicator
             //------------------------------------------
             Padding(
-              padding: const EdgeInsets.only(
-                bottom: 25,
-              ),
+              padding: const EdgeInsets.only(bottom: 25),
               child: PageIndicator(
                 currentPage: provider.currentPage,
                 itemCount: onboardingItems.length,
@@ -82,47 +69,32 @@ class OnboardingPage extends ConsumerWidget {
             // Buttons
             //------------------------------------------
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                24,
-                0,
-                24,
-                35,
-              ),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 35),
               child: SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
                   onPressed: () async {
                     if (provider.isLastPage) {
-                      await ref
-                          .read(onboardingProvider)
-                          .completeOnboarding();
+                      await ref.read(onboardingProvider).completeOnboarding();
 
                       if (context.mounted) {
                         context.go('/login');
                       }
                     } else {
-                      ref
-                          .read(onboardingProvider)
-                          .nextPage();
+                      ref.read(onboardingProvider).nextPage();
                     }
                   },
                   style: ElevatedButton.styleFrom(
                     elevation: 0,
-                    backgroundColor:
-                        Theme.of(context)
-                            .colorScheme
-                            .primary,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   child: Text(
-                    provider.isLastPage
-                        ? 'Get Started'
-                        : 'Next',
+                    provider.isLastPage ? 'Get Started' : 'Next',
                     style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,

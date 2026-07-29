@@ -1,6 +1,4 @@
 class NotificationModel {
-
-
   final String id;
 
   final String title;
@@ -15,11 +13,7 @@ class NotificationModel {
 
   final String? relatedId;
 
-
-
-
   NotificationModel({
-
     required this.id,
 
     required this.title,
@@ -33,120 +27,41 @@ class NotificationModel {
     required this.createdAt,
 
     this.relatedId,
-
   });
 
-
-
-
-
-
-
-  factory NotificationModel.fromJson(
-
-    Map<String, dynamic> json,
-
-  ) {
-
-
+  factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
+      id: json['id'] ?? '',
 
+      title: json['title'] ?? '',
 
-      id:
-          json['id'] ?? '',
+      message: json['message'] ?? '',
 
+      type: json['type'] ?? 'GENERAL',
 
+      isRead: json['isRead'] ?? false,
 
-      title:
-          json['title'] ?? '',
+      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
 
-
-
-      message:
-          json['message'] ?? '',
-
-
-
-      type:
-          json['type'] ?? 'GENERAL',
-
-
-
-      isRead:
-          json['isRead'] ?? false,
-
-
-
-      createdAt:
-
-          DateTime.tryParse(
-
-            json['createdAt'] ?? '',
-
-          )
-
-          ??
-
-          DateTime.now(),
-
-
-
-
-      relatedId:
-
-          json['relatedId'],
-
-
-
+      relatedId: json['relatedId'],
     );
-
-
   }
-
-
-
-
-
-
 
   Map<String, dynamic> toJson() {
-
-
     return {
+      'id': id,
 
+      'title': title,
 
-      'id':
-          id,
+      'message': message,
 
+      'type': type,
 
-      'title':
-          title,
+      'isRead': isRead,
 
+      'createdAt': createdAt.toIso8601String(),
 
-      'message':
-          message,
-
-
-      'type':
-          type,
-
-
-      'isRead':
-          isRead,
-
-
-      'createdAt':
-          createdAt.toIso8601String(),
-
-
-      'relatedId':
-          relatedId,
-
-
+      'relatedId': relatedId,
     };
-
-
   }
-
-
 }

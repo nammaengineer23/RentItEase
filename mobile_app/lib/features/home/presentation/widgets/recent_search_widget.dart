@@ -19,19 +19,13 @@ class RecentSearchWidget extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Recent Searches',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 14),
@@ -41,10 +35,7 @@ class RecentSearchWidget extends StatelessWidget {
             runSpacing: 10,
             children: recentSearches.map((search) {
               return InputChip(
-                avatar: const Icon(
-                  Icons.history,
-                  size: 18,
-                ),
+                avatar: const Icon(Icons.history, size: 18),
                 label: Text(search),
                 onPressed: () {
                   onSearchSelected?.call(search);
@@ -52,10 +43,7 @@ class RecentSearchWidget extends StatelessWidget {
                 onDeleted: () {
                   onDeleteSearch?.call(search);
                 },
-                deleteIcon: const Icon(
-                  Icons.close,
-                  size: 18,
-                ),
+                deleteIcon: const Icon(Icons.close, size: 18),
                 backgroundColor: Colors.grey.shade100,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),

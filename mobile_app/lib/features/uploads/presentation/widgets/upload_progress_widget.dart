@@ -19,9 +19,7 @@ class UploadProgressWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!isUploading &&
-        error == null &&
-        progress == 0) {
+    if (!isUploading && error == null && progress == 0) {
       return const SizedBox.shrink();
     }
 
@@ -30,43 +28,29 @@ class UploadProgressWidget extends StatelessWidget {
         color: Colors.red.shade50,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(14),
-          side: BorderSide(
-            color: Colors.red.shade200,
-          ),
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: Colors.red.shade200),
         ),
         child: Padding(
-          padding:
-              const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-
-              Icon(
-                Icons.error_outline,
-                color: Colors.red.shade700,
-              ),
+              Icon(Icons.error_outline, color: Colors.red.shade700),
 
               const SizedBox(width: 12),
 
               Expanded(
                 child: Text(
                   error!,
-                  style: TextStyle(
-                    color: Colors.red.shade700,
-                  ),
+                  style: TextStyle(color: Colors.red.shade700),
                 ),
               ),
 
               if (onRetry != null)
                 TextButton.icon(
                   onPressed: onRetry,
-                  icon: const Icon(
-                    Icons.refresh,
-                  ),
-                  label: const Text(
-                    'Retry',
-                  ),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
                 ),
             ],
           ),
@@ -74,35 +58,23 @@ class UploadProgressWidget extends StatelessWidget {
       );
     }
 
-    if (!isUploading &&
-        progress >= 1) {
+    if (!isUploading && progress >= 1) {
       return Card(
         color: Colors.green.shade50,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(14),
-          side: BorderSide(
-            color: Colors.green.shade300,
-          ),
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: Colors.green.shade300),
         ),
         child: const Padding(
           padding: EdgeInsets.all(16),
           child: Row(
             children: [
-
-              Icon(
-                Icons.check_circle,
-                color: Colors.green,
-              ),
+              Icon(Icons.check_circle, color: Colors.green),
 
               SizedBox(width: 12),
 
-              Expanded(
-                child: Text(
-                  'Images uploaded successfully.',
-                ),
-              ),
+              Expanded(child: Text('Images uploaded successfully.')),
             ],
           ),
         ),
@@ -111,28 +83,18 @@ class UploadProgressWidget extends StatelessWidget {
 
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.circular(14),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
-        padding:
-            const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             Row(
               children: [
-
                 const SizedBox(
                   width: 22,
                   height: 22,
-                  child:
-                      CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                  ),
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
                 ),
 
                 const SizedBox(width: 12),
@@ -140,19 +102,13 @@ class UploadProgressWidget extends StatelessWidget {
                 const Expanded(
                   child: Text(
                     'Uploading Images...',
-                    style: TextStyle(
-                      fontWeight:
-                          FontWeight.bold,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
 
                 Text(
                   '${(progress * 100).toStringAsFixed(0)}%',
-                  style: const TextStyle(
-                    fontWeight:
-                        FontWeight.bold,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -160,13 +116,8 @@ class UploadProgressWidget extends StatelessWidget {
             const SizedBox(height: 16),
 
             ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(12),
-              child:
-                  LinearProgressIndicator(
-                value: progress,
-                minHeight: 8,
-              ),
+              borderRadius: BorderRadius.circular(12),
+              child: LinearProgressIndicator(value: progress, minHeight: 8),
             ),
 
             const SizedBox(height: 10),
@@ -175,10 +126,7 @@ class UploadProgressWidget extends StatelessWidget {
               progress >= 1
                   ? 'Finalizing upload...'
                   : 'Please wait while your images are uploaded.',
-              style: TextStyle(
-                color: Colors.grey.shade700,
-                fontSize: 13,
-              ),
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
             ),
           ],
         ),

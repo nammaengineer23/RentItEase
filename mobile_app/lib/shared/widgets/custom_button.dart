@@ -28,8 +28,7 @@ class CustomButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor:
               backgroundColor ?? Theme.of(context).colorScheme.primary,
-          foregroundColor:
-              foregroundColor ?? Colors.white,
+          foregroundColor: foregroundColor ?? Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -41,18 +40,14 @@ class CustomButton extends StatelessWidget {
                 width: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (icon != null) ...[
-                    Icon(icon),
-                    const SizedBox(width: 8),
-                  ],
+                  if (icon != null) ...[Icon(icon), const SizedBox(width: 8)],
                   Text(
                     text,
                     style: const TextStyle(

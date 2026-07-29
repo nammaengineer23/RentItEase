@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/onboarding_service.dart';
 
-final onboardingProvider =
-    ChangeNotifierProvider<OnboardingProvider>((ref) {
+final onboardingProvider = ChangeNotifierProvider<OnboardingProvider>((ref) {
   return OnboardingProvider();
 });
 

@@ -24,8 +24,7 @@ class _BookingPageState extends State<BookingPage> {
     '05:00 PM',
   ];
 
-  final TextEditingController _notesController =
-      TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
 
   @override
   void dispose() {
@@ -36,18 +35,14 @@ class _BookingPageState extends State<BookingPage> {
   void _bookVisit() {
     if (_selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a time slot'),
-        ),
+        const SnackBar(content: Text('Please select a time slot')),
       );
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Visit booked successfully'),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Visit booked successfully')));
 
     // TODO:
     // Call backend
@@ -58,22 +53,15 @@ class _BookingPageState extends State<BookingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Book Property Visit'),
-      ),
+      appBar: AppBar(title: const Text('Book Property Visit')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             const Text(
               'Choose Visit Date',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 14),
@@ -103,10 +91,7 @@ class _BookingPageState extends State<BookingPage> {
 
             const Text(
               'Notes (Optional)',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 12),
@@ -115,11 +100,9 @@ class _BookingPageState extends State<BookingPage> {
               controller: _notesController,
               maxLines: 4,
               decoration: InputDecoration(
-                hintText:
-                    'Any special instructions...',
+                hintText: 'Any special instructions...',
                 border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
             ),
@@ -131,9 +114,7 @@ class _BookingPageState extends State<BookingPage> {
               child: FilledButton.icon(
                 onPressed: _bookVisit,
                 icon: const Icon(Icons.calendar_month),
-                label: const Text(
-                  'Book Visit',
-                ),
+                label: const Text('Book Visit'),
               ),
             ),
           ],

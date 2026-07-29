@@ -24,34 +24,23 @@ class MapSearchBar extends StatelessWidget {
         onChanged: onChanged,
         decoration: InputDecoration(
           hintText: 'Search location...',
-          prefixIcon: const Icon(
-            Icons.search,
-          ),
+          prefixIcon: const Icon(Icons.search),
 
           suffixIcon: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-
               if (controller.text.isNotEmpty)
-                IconButton(
-                  icon: const Icon(
-                    Icons.close,
-                  ),
-                  onPressed: onClear,
-                ),
+                IconButton(icon: const Icon(Icons.close), onPressed: onClear),
 
               IconButton(
-                icon: const Icon(
-                  Icons.mic_none,
-                ),
+                icon: const Icon(Icons.mic_none),
                 onPressed: onVoiceTap,
               ),
             ],
           ),
 
           border: OutlineInputBorder(
-            borderRadius:
-                BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
 
@@ -59,8 +48,7 @@ class MapSearchBar extends StatelessWidget {
 
           fillColor: Colors.white,
 
-          contentPadding:
-              const EdgeInsets.symmetric(
+          contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 14,
           ),

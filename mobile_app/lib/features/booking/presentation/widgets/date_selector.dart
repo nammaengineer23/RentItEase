@@ -15,9 +15,7 @@ class DateSelector extends StatelessWidget {
       context: context,
       initialDate: selectedDate,
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(
-        const Duration(days: 90),
-      ),
+      lastDate: DateTime.now().add(const Duration(days: 90)),
     );
 
     if (pickedDate != null) {
@@ -33,31 +31,22 @@ class DateSelector extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(
-            color: Colors.grey.shade300,
-          ),
+          border: Border.all(color: Colors.grey.shade300),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           children: [
-            const Icon(
-              Icons.calendar_month_rounded,
-              color: Colors.blue,
-            ),
+            const Icon(Icons.calendar_month_rounded, color: Colors.blue),
 
             const SizedBox(width: 12),
 
             Expanded(
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Visit Date',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
 
                   const SizedBox(height: 4),
@@ -73,10 +62,7 @@ class DateSelector extends StatelessWidget {
               ),
             ),
 
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-            ),
+            const Icon(Icons.arrow_forward_ios, size: 16),
           ],
         ),
       ),

@@ -20,9 +20,7 @@ class RegisterRequest {
     };
   }
 
-  factory RegisterRequest.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory RegisterRequest.fromJson(Map<String, dynamic> json) {
     return RegisterRequest(
       fullName: json['fullName'] as String,
       email: json['email'] as String,

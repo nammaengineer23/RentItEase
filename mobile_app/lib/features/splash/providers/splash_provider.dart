@@ -13,8 +13,7 @@ final splashServiceProvider = Provider<SplashService>((ref) {
 /// - SplashDestination.onboarding
 /// - SplashDestination.login
 /// - SplashDestination.home
-final splashProvider =
-    FutureProvider<SplashDestination>((ref) async {
+final splashProvider = FutureProvider<SplashDestination>((ref) async {
   final splashService = ref.read(splashServiceProvider);
 
   return splashService.determineDestination();

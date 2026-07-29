@@ -1,6 +1,4 @@
 class OwnerAnalyticsModel {
-
-
   final int totalViews;
 
   final int totalFavorites;
@@ -9,10 +7,7 @@ class OwnerAnalyticsModel {
 
   final int totalProperties;
 
-
-
   OwnerAnalyticsModel({
-
     required this.totalViews,
 
     required this.totalFavorites,
@@ -20,70 +15,29 @@ class OwnerAnalyticsModel {
     required this.totalVisits,
 
     required this.totalProperties,
-
   });
 
-
-
-
-  factory OwnerAnalyticsModel.fromJson(
-      Map<String, dynamic> json,
-      ) {
-
-
+  factory OwnerAnalyticsModel.fromJson(Map<String, dynamic> json) {
     return OwnerAnalyticsModel(
+      totalViews: json['totalViews'] ?? 0,
 
-      totalViews:
-          json['totalViews'] ?? 0,
+      totalFavorites: json['totalFavorites'] ?? 0,
 
+      totalVisits: json['totalVisits'] ?? 0,
 
-      totalFavorites:
-          json['totalFavorites'] ?? 0,
-
-
-      totalVisits:
-          json['totalVisits'] ?? 0,
-
-
-      totalProperties:
-          json['totalProperties'] ?? 0,
-
-
+      totalProperties: json['totalProperties'] ?? 0,
     );
-
-
   }
-
-
-
-
 
   Map<String, dynamic> toJson() {
-
-
     return {
+      'totalViews': totalViews,
 
+      'totalFavorites': totalFavorites,
 
-      'totalViews':
-          totalViews,
+      'totalVisits': totalVisits,
 
-
-      'totalFavorites':
-          totalFavorites,
-
-
-      'totalVisits':
-          totalVisits,
-
-
-      'totalProperties':
-          totalProperties,
-
-
+      'totalProperties': totalProperties,
     };
-
-
   }
-
-
 }

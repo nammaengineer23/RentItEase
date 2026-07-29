@@ -377,7 +377,7 @@ class _MyPropertiesPageState
                     Text(
 
 
-                       '₹${property.rent}/month'
+                       '₹${property.rent}/month',
 
 
                       style:

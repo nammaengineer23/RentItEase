@@ -17,9 +17,7 @@ final dioProvider = Provider<Dio>((ref) {
   return Dio(
     BaseOptions(
       baseUrl: 'http://localhost:3000/api/v1',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: {'Content-Type': 'application/json'},
     ),
   );
 });
@@ -28,13 +26,10 @@ final dioProvider = Provider<Dio>((ref) {
 // Repository Provider
 // ======================================================
 
-final uploadRepositoryProvider =
-    Provider<UploadRepository>((ref) {
+final uploadRepositoryProvider = Provider<UploadRepository>((ref) {
   final dio = ref.watch(dioProvider);
 
-  return UploadRepository(
-    UploadApi(dio),
-  );
+  return UploadRepository(UploadApi(dio));
 });
 
 // ======================================================
@@ -46,8 +41,7 @@ class UploadState {
 
   final double progress;
 
-  final List<UploadedImageModel>
-      uploadedImages;
+  final List<UploadedImageModel> uploadedImages;
 
   final String? error;
 
@@ -65,12 +59,9 @@ class UploadState {
     String? error,
   }) {
     return UploadState(
-      isUploading:
-          isUploading ?? this.isUploading,
+      isUploading: isUploading ?? this.isUploading,
       progress: progress ?? this.progress,
-      uploadedImages:
-          uploadedImages ??
-              this.uploadedImages,
+      uploadedImages: uploadedImages ?? this.uploadedImages,
       error: error,
     );
   }
@@ -80,46 +71,28 @@ class UploadState {
 // Upload Notifier
 // ======================================================
 
-class UploadNotifier
-    extends StateNotifier<UploadState> {
+class UploadNotifier extends StateNotifier<UploadState> {
   final UploadRepository repository;
 
-  UploadNotifier(
-    this.repository,
-  ) : super(const UploadState());
+  UploadNotifier(this.repository) : super(const UploadState());
 
   // ===========================================
   // Upload Single Image
   // ===========================================
 
-  Future<void> uploadImage(
-    File image,
-  ) async {
-    state = state.copyWith(
-      isUploading: true,
-      progress: 0,
-      error: null,
-    );
+  Future<void> uploadImage(File image) async {
+    state = state.copyWith(isUploading: true, progress: 0, error: null);
 
     try {
-      final uploaded =
-          await repository.uploadImage(
-        image,
-      );
+      final uploaded = await repository.uploadImage(image);
 
       state = state.copyWith(
         isUploading: false,
         progress: 1,
-        uploadedImages: [
-          ...state.uploadedImages,
-          uploaded,
-        ],
+        uploadedImages: [...state.uploadedImages, uploaded],
       );
     } catch (e) {
-      state = state.copyWith(
-        isUploading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isUploading: false, error: e.toString());
     }
   }
 
@@ -127,47 +100,26 @@ class UploadNotifier
   // Upload Multiple Images
   // ===========================================
 
-  Future<void> uploadImages(
-    List<File> images,
-  ) async {
-    state = state.copyWith(
-      isUploading: true,
-      progress: 0,
-      error: null,
-    );
+  Future<void> uploadImages(List<File> images) async {
+    state = state.copyWith(isUploading: true, progress: 0, error: null);
 
     try {
-      final List<UploadedImageModel>
-          uploaded = [];
+      final List<UploadedImageModel> uploaded = [];
 
-      for (int i = 0;
-          i < images.length;
-          i++) {
-        final image =
-            await repository.uploadImage(
-          images[i],
-        );
+      for (int i = 0; i < images.length; i++) {
+        final image = await repository.uploadImage(images[i]);
 
         uploaded.add(image);
 
-        state = state.copyWith(
-          progress:
-              (i + 1) / images.length,
-        );
+        state = state.copyWith(progress: (i + 1) / images.length);
       }
 
       state = state.copyWith(
         isUploading: false,
-        uploadedImages: [
-          ...state.uploadedImages,
-          ...uploaded,
-        ],
+        uploadedImages: [...state.uploadedImages, ...uploaded],
       );
     } catch (e) {
-      state = state.copyWith(
-        isUploading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isUploading: false, error: e.toString());
     }
   }
 
@@ -175,20 +127,13 @@ class UploadNotifier
   // Remove Uploaded Image
   // ===========================================
 
-  Future<void> deleteImage(
-    UploadedImageModel image,
-  ) async {
-    await repository.deleteImage(
-      image.id,
-    );
+  Future<void> deleteImage(UploadedImageModel image) async {
+    await repository.deleteImage(image.id);
 
     state = state.copyWith(
-      uploadedImages:
-          state.uploadedImages
-              .where(
-                (e) => e.id != image.id,
-              )
-              .toList(),
+      uploadedImages: state.uploadedImages
+          .where((e) => e.id != image.id)
+          .toList(),
     );
   }
 
@@ -197,11 +142,7 @@ class UploadNotifier
   // ===========================================
 
   void clearUploads() {
-    state = state.copyWith(
-      uploadedImages: [],
-      progress: 0,
-      error: null,
-    );
+    state = state.copyWith(uploadedImages: [], progress: 0, error: null);
   }
 }
 
@@ -209,12 +150,10 @@ class UploadNotifier
 // Provider
 // ======================================================
 
-final uploadProvider =
-    StateNotifierProvider<
-        UploadNotifier,
-        UploadState>((ref) {
-  final repository =
-      ref.watch(uploadRepositoryProvider);
+final uploadProvider = StateNotifierProvider<UploadNotifier, UploadState>((
+  ref,
+) {
+  final repository = ref.watch(uploadRepositoryProvider);
 
   return UploadNotifier(repository);
 });

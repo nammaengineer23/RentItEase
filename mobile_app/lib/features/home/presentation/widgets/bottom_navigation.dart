@@ -16,8 +16,7 @@ class HomeBottomNavigation extends StatelessWidget {
       selectedIndex: currentIndex,
       onDestinationSelected: onTap,
       height: 72,
-      labelBehavior:
-          NavigationDestinationLabelBehavior.alwaysShow,
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       destinations: const [
         NavigationDestination(
           icon: Icon(Icons.home_outlined),

@@ -4,17 +4,13 @@ import 'login_page.dart';
 import 'register_page.dart';
 
 class AuthenticationPage extends StatefulWidget {
-  const AuthenticationPage({
-    super.key,
-  });
+  const AuthenticationPage({super.key});
 
   @override
-  State<AuthenticationPage> createState() =>
-      _AuthenticationPageState();
+  State<AuthenticationPage> createState() => _AuthenticationPageState();
 }
 
-class _AuthenticationPageState
-    extends State<AuthenticationPage> {
+class _AuthenticationPageState extends State<AuthenticationPage> {
   bool _showLogin = true;
 
   void _openLogin() {
@@ -32,27 +28,13 @@ class _AuthenticationPageState
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: const Duration(
-        milliseconds: 300,
-      ),
-      transitionBuilder: (
-        child,
-        animation,
-      ) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
+      duration: const Duration(milliseconds: 300),
+      transitionBuilder: (child, animation) {
+        return FadeTransition(opacity: animation, child: child);
       },
       child: _showLogin
-          ? LoginPage(
-              key: const ValueKey('login'),
-              onRegister: _openRegister,
-            )
-          : RegisterPage(
-              key: const ValueKey('register'),
-              onLogin: _openLogin,
-            ),
+          ? LoginPage(key: const ValueKey('login'), onRegister: _openRegister)
+          : RegisterPage(key: const ValueKey('register'), onLogin: _openLogin),
     );
   }
 }

@@ -6,9 +6,7 @@ class VisitRequestModel {
   final String status;
   final String? notes;
 
-
   VisitRequestModel({
-
     required this.id,
 
     required this.propertyId,
@@ -20,71 +18,39 @@ class VisitRequestModel {
     required this.status,
 
     this.notes,
-
   });
 
-
-
-  factory VisitRequestModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
-
+  factory VisitRequestModel.fromJson(Map<String, dynamic> json) {
     return VisitRequestModel(
+      id: json['id'] ?? '',
 
-      id:
-          json['id'] ?? '',
+      propertyId: json['propertyId'] ?? '',
 
+      tenantId: json['tenantId'] ?? '',
 
-      propertyId:
-          json['propertyId'] ?? '',
+      visitDate: json['visitDate'] != null
+          ? DateTime.parse(json['visitDate'])
+          : DateTime.now(),
 
+      status: json['status'] ?? 'PENDING',
 
-      tenantId:
-          json['tenantId'] ?? '',
-
-
-      visitDate:
-
-          json['visitDate'] != null
-
-              ? DateTime.parse(
-                  json['visitDate'],
-                )
-
-              : DateTime.now(),
-
-
-
-      status:
-          json['status'] ?? 'PENDING',
-
-
-
-      notes:
-          json['notes'],
-
+      notes: json['notes'],
     );
   }
 
-
-
   Map<String, dynamic> toJson() {
-
     return {
-
       'id': id,
 
       'propertyId': propertyId,
 
       'tenantId': tenantId,
 
-      'visitDate':
-          visitDate.toIso8601String(),
+      'visitDate': visitDate.toIso8601String(),
 
       'status': status,
 
       'notes': notes,
-
     };
   }
 }

@@ -1,56 +1,59 @@
 import 'package:flutter/material.dart';
 
 class LogoutDialog extends StatelessWidget {
-  final VoidCallback onLogout;
+  const LogoutDialog({super.key, required this.onConfirm});
 
-  const LogoutDialog({
-    super.key,
-    required this.onLogout,
-  });
+  final VoidCallback onConfirm;
+
+  static Future<void> show(
+    BuildContext context, {
+    required VoidCallback onConfirm,
+  }) async {
+    await showDialog(
+      context: context,
+
+      builder: (_) {
+        return LogoutDialog(onConfirm: onConfirm);
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
 
-      title: Row(
-        children: const [
-          Icon(
-            Icons.logout,
-            color: Colors.red,
-          ),
+      title: const Row(
+        children: [
+          Icon(Icons.logout, color: Colors.red),
+
           SizedBox(width: 10),
-          Text("Logout"),
+
+          Text('Logout'),
         ],
       ),
 
-      content: const Text(
-        "Are you sure you want to logout from your account?",
-      ),
+      content: const Text('Are you sure you want to logout from RentEase?'),
 
       actions: [
         TextButton(
           onPressed: () {
             Navigator.pop(context);
           },
-          child: const Text(
-            "Cancel",
-          ),
+
+          child: const Text('Cancel'),
         ),
 
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.red,
-          ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+
           onPressed: () {
             Navigator.pop(context);
-            onLogout();
+
+            onConfirm();
           },
-          child: const Text(
-            "Logout",
-          ),
+
+          child: const Text('Logout', style: TextStyle(color: Colors.white)),
         ),
       ],
     );

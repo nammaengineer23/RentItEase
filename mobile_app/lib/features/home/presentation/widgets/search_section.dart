@@ -5,20 +5,12 @@ class SearchSection extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final TextEditingController? controller;
 
-  const SearchSection({
-    super.key,
-    this.onTap,
-    this.onChanged,
-    this.controller,
-  });
+  const SearchSection({super.key, this.onTap, this.onChanged, this.controller});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 12,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -36,18 +28,14 @@ class SearchSection extends StatelessWidget {
         onChanged: onChanged,
         decoration: InputDecoration(
           hintText: 'Search locality, city or property...',
-          hintStyle: TextStyle(
-            color: Colors.grey.shade600,
-          ),
+          hintStyle: TextStyle(color: Colors.grey.shade600),
           prefixIcon: const Icon(Icons.search),
           suffixIcon: IconButton(
             onPressed: () {},
             icon: const Icon(Icons.tune),
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 16,
-          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
         ),
       ),
     );

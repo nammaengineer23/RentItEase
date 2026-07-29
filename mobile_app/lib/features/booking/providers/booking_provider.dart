@@ -51,9 +51,7 @@ class BookingNotifier extends StateNotifier<List<BookingModel>> {
         id: '1',
         propertyTitle: '2 BHK Apartment',
         location: 'Whitefield, Bangalore',
-        visitDate: DateTime.now().add(
-          const Duration(days: 2),
-        ),
+        visitDate: DateTime.now().add(const Duration(days: 2)),
         visitTime: '10:30 AM',
         ownerName: 'Rahul Sharma',
         status: BookingStatus.pending,
@@ -62,9 +60,7 @@ class BookingNotifier extends StateNotifier<List<BookingModel>> {
         id: '2',
         propertyTitle: '1 BHK Studio',
         location: 'Marathahalli, Bangalore',
-        visitDate: DateTime.now().add(
-          const Duration(days: 4),
-        ),
+        visitDate: DateTime.now().add(const Duration(days: 4)),
         visitTime: '02:00 PM',
         ownerName: 'Priya Verma',
         status: BookingStatus.approved,
@@ -80,45 +76,27 @@ class BookingNotifier extends StateNotifier<List<BookingModel>> {
     state = state.where((b) => b.id != id).toList();
   }
 
-  void updateBookingStatus(
-    String id,
-    BookingStatus status,
-  ) {
+  void updateBookingStatus(String id, BookingStatus status) {
     state = [
       for (final booking in state)
-        if (booking.id == id)
-          booking.copyWith(status: status)
-        else
-          booking,
+        if (booking.id == id) booking.copyWith(status: status) else booking,
     ];
   }
 
   List<BookingModel> pendingBookings() {
-    return state
-        .where(
-          (b) => b.status == BookingStatus.pending,
-        )
-        .toList();
+    return state.where((b) => b.status == BookingStatus.pending).toList();
   }
 
   List<BookingModel> approvedBookings() {
-    return state
-        .where(
-          (b) => b.status == BookingStatus.approved,
-        )
-        .toList();
+    return state.where((b) => b.status == BookingStatus.approved).toList();
   }
 
   List<BookingModel> completedBookings() {
-    return state
-        .where(
-          (b) => b.status == BookingStatus.completed,
-        )
-        .toList();
+    return state.where((b) => b.status == BookingStatus.completed).toList();
   }
 }
 
 final bookingProvider =
     StateNotifierProvider<BookingNotifier, List<BookingModel>>(
-  (ref) => BookingNotifier(),
-);
+      (ref) => BookingNotifier(),
+    );

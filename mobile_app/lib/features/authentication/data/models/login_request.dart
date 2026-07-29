@@ -2,16 +2,10 @@ class LoginRequest {
   final String email;
   final String password;
 
-  const LoginRequest({
-    required this.email,
-    required this.password,
-  });
+  const LoginRequest({required this.email, required this.password});
 
   Map<String, dynamic> toJson() {
-    return {
-      'email': email,
-      'password': password,
-    };
+    return {'login': email, 'password': password};
   }
 
   factory LoginRequest.fromJson(Map<String, dynamic> json) {
@@ -21,10 +15,7 @@ class LoginRequest {
     );
   }
 
-  LoginRequest copyWith({
-    String? email,
-    String? password,
-  }) {
+  LoginRequest copyWith({String? email, String? password}) {
     return LoginRequest(
       email: email ?? this.email,
       password: password ?? this.password,

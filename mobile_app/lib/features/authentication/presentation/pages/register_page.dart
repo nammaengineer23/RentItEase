@@ -10,10 +10,7 @@ import '../widgets/password_strength.dart';
 class RegisterPage extends ConsumerStatefulWidget {
   final VoidCallback onLogin;
 
-  const RegisterPage({
-    super.key,
-    required this.onLogin,
-  });
+  const RegisterPage({super.key, required this.onLogin});
 
   @override
   ConsumerState<RegisterPage> createState() => _RegisterPageState();
@@ -53,20 +50,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registration Successful'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Registration Successful')));
 
       widget.onLogin();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            provider.errorMessage ?? 'Registration Failed',
-          ),
-        ),
+        SnackBar(content: Text(provider.errorMessage ?? 'Registration Failed')),
       );
     }
   }
@@ -164,9 +155,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
                 const SizedBox(height: 16),
 
-                PasswordStrength(
-                  password: _passwordController.text,
-                ),
+                PasswordStrength(password: _passwordController.text),
 
                 const SizedBox(height: 30),
 
@@ -181,14 +170,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      'Already have an account?',
-                    ),
+                    const Text('Already have an account?'),
                     TextButton(
                       onPressed: widget.onLogin,
-                      child: const Text(
-                        'Login',
-                      ),
+                      child: const Text('Login'),
                     ),
                   ],
                 ),

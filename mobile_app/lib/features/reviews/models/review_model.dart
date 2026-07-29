@@ -19,9 +19,7 @@ class ReviewModel {
     required this.createdAt,
   });
 
-  factory ReviewModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory ReviewModel.fromJson(Map<String, dynamic> json) {
     return ReviewModel(
       id: json['id'] ?? '',
       propertyId: json['propertyId'] ?? '',
@@ -30,10 +28,7 @@ class ReviewModel {
       userPhoto: json['userPhoto'],
       rating: (json['rating'] ?? 0).toDouble(),
       comment: json['comment'] ?? '',
-      createdAt: DateTime.tryParse(
-            json['createdAt'] ?? '',
-          ) ??
-          DateTime.now(),
+      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
     );
   }
 

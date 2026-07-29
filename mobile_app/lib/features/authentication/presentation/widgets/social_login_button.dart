@@ -18,9 +18,7 @@ class SocialLoginButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
-          side: BorderSide(
-            color: Colors.grey.shade300,
-          ),
+          side: BorderSide(color: Colors.grey.shade300),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -30,9 +28,7 @@ class SocialLoginButton extends StatelessWidget {
             ? const SizedBox(
                 height: 22,
                 width: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2.5),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,

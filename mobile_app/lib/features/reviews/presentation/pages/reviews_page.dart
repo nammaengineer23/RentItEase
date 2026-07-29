@@ -9,26 +9,19 @@ import '../widgets/review_card.dart';
 class ReviewsPage extends ConsumerStatefulWidget {
   final String propertyId;
 
-  const ReviewsPage({
-    super.key,
-    required this.propertyId,
-  });
+  const ReviewsPage({super.key, required this.propertyId});
 
   @override
-  ConsumerState<ReviewsPage> createState() =>
-      _ReviewsPageState();
+  ConsumerState<ReviewsPage> createState() => _ReviewsPageState();
 }
 
-class _ReviewsPageState
-    extends ConsumerState<ReviewsPage> {
+class _ReviewsPageState extends ConsumerState<ReviewsPage> {
   @override
   void initState() {
     super.initState();
 
     Future.microtask(() {
-      ref
-          .read(reviewProvider.notifier)
-          .loadReviews(widget.propertyId);
+      ref.read(reviewProvider.notifier).loadReviews(widget.propertyId);
     });
   }
 
@@ -40,35 +33,21 @@ class _ReviewsPageState
 
     final averageRating = reviews.isEmpty
         ? 0.0
-        : reviews
-                .map((e) => e.rating)
-                .reduce((a, b) => a + b) /
-            reviews.length;
+        : reviews.map((e) => e.rating).reduce((a, b) => a + b) / reviews.length;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Reviews',
-        ),
-      ),
+      appBar: AppBar(title: const Text('Reviews')),
 
-      floatingActionButton:
-          FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           showDialog(
             context: context,
             builder: (_) => AddReviewDialog(
-              onSubmit: (
-                rating,
-                comment,
-              ) async {
+              onSubmit: (rating, comment) async {
                 await ref
-                    .read(
-                      reviewProvider.notifier,
-                    )
+                    .read(reviewProvider.notifier)
                     .addReview(
-                      propertyId:
-                          widget.propertyId,
+                      propertyId: widget.propertyId,
                       rating: rating,
                       comment: comment,
                     );
@@ -77,188 +56,111 @@ class _ReviewsPageState
           );
         },
         icon: const Icon(Icons.rate_review),
-        label: const Text(
-          'Write Review',
-        ),
+        label: const Text('Write Review'),
       ),
 
       body: state.isLoading
-          ? const Center(
-              child:
-                  CircularProgressIndicator(),
-            )
+          ? const Center(child: CircularProgressIndicator())
           : reviews.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No reviews yet.',
-                  ),
-                )
-              : Column(
-                  children: [
-
-                    Container(
-                      width: double.infinity,
-                      padding:
-                          const EdgeInsets.all(20),
-                      color:
-                          Colors.grey.shade100,
-                      child: Column(
-                        children: [
-
-                          Text(
-                            averageRating
-                                .toStringAsFixed(1),
-                            style:
-                                const TextStyle(
-                              fontSize: 42,
-                              fontWeight:
-                                  FontWeight.bold,
-                            ),
-                          ),
-
-                          const SizedBox(
-                            height: 8,
-                          ),
-
-                          RatingBarWidget(
-                            rating:
-                                averageRating,
-                            size: 28,
-                          ),
-
-                          const SizedBox(
-                            height: 8,
-                          ),
-
-                          Text(
-                            '${reviews.length} Reviews',
-                            style:
-                                const TextStyle(
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    Expanded(
-                      child: ListView.builder(
-                        padding:
-                            const EdgeInsets.all(
-                          16,
+          ? const Center(child: Text('No reviews yet.'))
+          : Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  color: Colors.grey.shade100,
+                  child: Column(
+                    children: [
+                      Text(
+                        averageRating.toStringAsFixed(1),
+                        style: const TextStyle(
+                          fontSize: 42,
+                          fontWeight: FontWeight.bold,
                         ),
-                        itemCount:
-                            reviews.length,
-                        itemBuilder:
-                            (context, index) {
-                          final review =
-                              reviews[index];
+                      ),
 
-                          return ReviewCard(
-                            review: review,
+                      const SizedBox(height: 8),
 
-                            onEdit: () {
-                              showDialog(
-                                context:
-                                    context,
-                                builder: (_) =>
-                                    AddReviewDialog(
-                                  initialRating:
-                                      review.rating,
-                                  initialComment:
-                                      review.comment,
-                                  onSubmit: (
-                                    rating,
-                                    comment,
-                                  ) async {
-                                    await ref
-                                        .read(
-                                          reviewProvider
-                                              .notifier,
-                                        )
-                                        .updateReview(
-                                          reviewId:
-                                              review.id,
-                                          propertyId:
-                                              widget.propertyId,
-                                          rating:
-                                              rating,
-                                          comment:
-                                              comment,
-                                        );
-                                  },
-                                ),
-                              );
-                            },
+                      RatingBarWidget(rating: averageRating, size: 28),
 
-                            onDelete: () async {
-                              final confirm =
-                                  await showDialog<bool>(
-                                context:
-                                    context,
-                                builder:
-                                    (context) =>
-                                        AlertDialog(
-                                  title:
-                                      const Text(
-                                    'Delete Review',
-                                  ),
-                                  content:
-                                      const Text(
-                                    'Are you sure you want to delete this review?',
-                                  ),
-                                  actions: [
+                      const SizedBox(height: 8),
 
-                                    TextButton(
-                                      onPressed:
-                                          () =>
-                                              Navigator.pop(
-                                        context,
-                                        false,
-                                      ),
-                                      child:
-                                          const Text(
-                                        'Cancel',
-                                      ),
-                                    ),
+                      Text(
+                        '${reviews.length} Reviews',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
 
-                                    ElevatedButton(
-                                      onPressed:
-                                          () =>
-                                              Navigator.pop(
-                                        context,
-                                        true,
-                                      ),
-                                      child:
-                                          const Text(
-                                        'Delete',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: reviews.length,
+                    itemBuilder: (context, index) {
+                      final review = reviews[index];
 
-                              if (confirm ==
-                                  true) {
+                      return ReviewCard(
+                        review: review,
+
+                        onEdit: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => AddReviewDialog(
+                              initialRating: review.rating,
+                              initialComment: review.comment,
+                              onSubmit: (rating, comment) async {
                                 await ref
-                                    .read(
-                                      reviewProvider
-                                          .notifier,
-                                    )
-                                    .deleteReview(
-                                      reviewId:
-                                          review.id,
-                                      propertyId:
-                                          widget.propertyId,
+                                    .read(reviewProvider.notifier)
+                                    .updateReview(
+                                      reviewId: review.id,
+                                      propertyId: widget.propertyId,
+                                      rating: rating,
+                                      comment: comment,
                                     );
-                              }
-                            },
+                              },
+                            ),
                           );
                         },
-                      ),
-                    ),
-                  ],
+
+                        onDelete: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Review'),
+                              content: const Text(
+                                'Are you sure you want to delete this review?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text('Cancel'),
+                                ),
+
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirm == true) {
+                            await ref
+                                .read(reviewProvider.notifier)
+                                .deleteReview(
+                                  reviewId: review.id,
+                                  propertyId: widget.propertyId,
+                                );
+                          }
+                        },
+                      );
+                    },
+                  ),
                 ),
+              ],
+            ),
     );
   }
 }

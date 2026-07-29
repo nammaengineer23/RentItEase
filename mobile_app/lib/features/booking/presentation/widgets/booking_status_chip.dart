@@ -1,20 +1,11 @@
 import 'package:flutter/material.dart';
 
-enum BookingStatus {
-  pending,
-  approved,
-  rejected,
-  completed,
-  cancelled,
-}
+enum BookingStatus { pending, approved, rejected, completed, cancelled }
 
 class BookingStatusChip extends StatelessWidget {
   final BookingStatus status;
 
-  const BookingStatusChip({
-    super.key,
-    required this.status,
-  });
+  const BookingStatusChip({super.key, required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -61,10 +52,7 @@ class BookingStatusChip extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(24),
@@ -72,11 +60,7 @@ class BookingStatusChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 16,
-            color: textColor,
-          ),
+          Icon(icon, size: 16, color: textColor),
           const SizedBox(width: 6),
           Text(
             label,

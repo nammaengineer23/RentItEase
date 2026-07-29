@@ -4,280 +4,108 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/owner_property_model.dart';
 import '../../providers/owner_provider.dart';
 
-
 class EditPropertyPage extends ConsumerStatefulWidget {
-
   final OwnerPropertyModel property;
 
-
-  const EditPropertyPage({
-
-    super.key,
-
-    required this.property,
-
-  });
-
+  const EditPropertyPage({super.key, required this.property});
 
   @override
-  ConsumerState<EditPropertyPage> createState() =>
-      _EditPropertyPageState();
-
+  ConsumerState<EditPropertyPage> createState() => _EditPropertyPageState();
 }
 
+class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
+  final titleController = TextEditingController();
 
+  final descriptionController = TextEditingController();
 
-class _EditPropertyPageState
-    extends ConsumerState<EditPropertyPage> {
+  final rentController = TextEditingController();
 
+  final depositController = TextEditingController();
 
-  final titleController =
-      TextEditingController();
+  final locationController = TextEditingController();
 
-
-  final descriptionController =
-      TextEditingController();
-
-
-  final rentController =
-      TextEditingController();
-
-
-  final depositController =
-      TextEditingController();
-
-
-  final locationController =
-      TextEditingController();
-
-
-  final addressController =
-      TextEditingController();
-
-
+  final addressController = TextEditingController();
 
   String propertyType = 'Apartment';
 
-
   String bhk = '1 BHK';
-
-
 
   @override
   void initState() {
-
     super.initState();
 
+    final property = widget.property;
 
-    final property =
-        widget.property;
+    titleController.text = property.title;
 
+    descriptionController.text = property.description;
 
-    titleController.text =
-        property.title;
+    rentController.text = property.rent.toString();
 
+    depositController.text = property.deposit.toString();
 
-    descriptionController.text =
-        property.description;
+    locationController.text = property.location;
 
+    addressController.text = property.address;
 
-    rentController.text =
-        property.rent.toString();
+    propertyType = property.propertyType;
 
-
-    depositController.text =
-        property.deposit.toString();
-
-
-    locationController.text =
-        property.location;
-
-
-    addressController.text =
-        property.address;
-
-
-    propertyType =
-        property.propertyType;
-
-
-    bhk =
-        property.bhk;
-
+    bhk = property.bhk;
   }
-
-
-
-
 
   Future<void> updateProperty() async {
-
-
     final data = {
+      "title": titleController.text,
 
+      "description": descriptionController.text,
 
-      "title":
-          titleController.text,
+      "propertyType": propertyType,
 
+      "bhk": bhk,
 
-      "description":
-          descriptionController.text,
+      "rent": double.tryParse(rentController.text) ?? 0,
 
+      "deposit": double.tryParse(depositController.text) ?? 0,
 
-      "propertyType":
-          propertyType,
+      "location": locationController.text,
 
-
-      "bhk":
-          bhk,
-
-
-      "rent":
-          double.tryParse(
-            rentController.text,
-          ) ??
-          0,
-
-
-      "deposit":
-          double.tryParse(
-            depositController.text,
-          ) ??
-          0,
-
-
-      "location":
-          locationController.text,
-
-
-      "address":
-          addressController.text,
-
-
+      "address": addressController.text,
     };
 
-
-
     try {
-
-
       await ref
           .read(ownerProvider.notifier)
-          .updateProperty(
-
-            widget.property.id,
-
-            data,
-
-          );
-
-
+          .updateProperty(widget.property.id, data);
 
       if (mounted) {
-
-
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
-
-          const SnackBar(
-
-            content:
-                Text(
-              'Property Updated Successfully',
-            ),
-
-          ),
-
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Property Updated Successfully')),
         );
-
 
         Navigator.pop(context);
-
-
       }
-
-
     } catch (e) {
-
-
       if (mounted) {
-
-
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
-
-          SnackBar(
-
-            content:
-                Text(
-              e.toString(),
-            ),
-
-          ),
-
-        );
-
-
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
-
     }
-
   }
-
-
-
-
-
-
 
   @override
   Widget build(BuildContext context) {
-
-
     return Scaffold(
-
-
-      appBar: AppBar(
-
-        title:
-            const Text(
-          'Edit Property',
-        ),
-
-      ),
-
-
+      appBar: AppBar(title: const Text('Edit Property')),
 
       body: SingleChildScrollView(
-
-
-        padding:
-            const EdgeInsets.all(16),
-
-
+        padding: const EdgeInsets.all(16),
 
         child: Column(
-
-
           children: [
-
-
-
-            _field(
-
-              titleController,
-
-              'Property Title',
-
-              Icons.home,
-
-            ),
-
-
-
+            _field(titleController, 'Property Title', Icons.home),
 
             _field(
-
               descriptionController,
 
               'Description',
@@ -285,409 +113,135 @@ class _EditPropertyPageState
               Icons.description,
 
               maxLines: 3,
-
             ),
-
-
-
-
 
             DropdownButtonFormField<String>(
+              value: propertyType,
 
+              decoration: const InputDecoration(
+                labelText: 'Property Type',
 
-              value:
-                  propertyType,
-
-
-
-              decoration:
-                  const InputDecoration(
-
-                labelText:
-                    'Property Type',
-
-                border:
-                    OutlineInputBorder(),
-
+                border: OutlineInputBorder(),
               ),
 
-
-
               items: const [
+                DropdownMenuItem(value: 'Apartment', child: Text('Apartment')),
 
+                DropdownMenuItem(value: 'Villa', child: Text('Villa')),
 
-                DropdownMenuItem(
-
-                  value:
-                      'Apartment',
-
-                  child:
-                      Text(
-                    'Apartment',
-                  ),
-
-                ),
-
-
-
-                DropdownMenuItem(
-
-                  value:
-                      'Villa',
-
-                  child:
-                      Text(
-                    'Villa',
-                  ),
-
-                ),
-
-
-
-                DropdownMenuItem(
-
-                  value:
-                      'House',
-
-                  child:
-                      Text(
-                    'House',
-                  ),
-
-                ),
-
-
+                DropdownMenuItem(value: 'House', child: Text('House')),
               ],
 
-
-
               onChanged: (value) {
-
-
                 setState(() {
-
-
-                  propertyType =
-                      value ?? 'Apartment';
-
-
+                  propertyType = value ?? 'Apartment';
                 });
-
-
               },
-
             ),
 
-
-
-
-
-            const SizedBox(
-              height: 15,
-            ),
-
-
-
-
+            const SizedBox(height: 15),
 
             DropdownButtonFormField<String>(
+              value: bhk,
 
+              decoration: const InputDecoration(
+                labelText: 'BHK',
 
-              value:
-                  bhk,
-
-
-
-              decoration:
-                  const InputDecoration(
-
-                labelText:
-                    'BHK',
-
-                border:
-                    OutlineInputBorder(),
-
+                border: OutlineInputBorder(),
               ),
 
-
-
               items: const [
+                DropdownMenuItem(value: '1 BHK', child: Text('1 BHK')),
 
+                DropdownMenuItem(value: '2 BHK', child: Text('2 BHK')),
 
-
-                DropdownMenuItem(
-
-                  value:
-                      '1 BHK',
-
-                  child:
-                      Text(
-                    '1 BHK',
-                  ),
-
-                ),
-
-
-
-                DropdownMenuItem(
-
-                  value:
-                      '2 BHK',
-
-                  child:
-                      Text(
-                    '2 BHK',
-                  ),
-
-                ),
-
-
-
-                DropdownMenuItem(
-
-                  value:
-                      '3 BHK',
-
-                  child:
-                      Text(
-                    '3 BHK',
-                  ),
-
-                ),
-
-
+                DropdownMenuItem(value: '3 BHK', child: Text('3 BHK')),
               ],
 
-
-
               onChanged: (value) {
-
-
                 setState(() {
-
-
-                  bhk =
-                      value ?? '1 BHK';
-
-
+                  bhk = value ?? '1 BHK';
                 });
-
-
               },
-
             ),
 
-
-
-
-
-            const SizedBox(
-              height: 15,
-            ),
-
-
-
-
+            const SizedBox(height: 15),
 
             _field(
-
               rentController,
 
               'Monthly Rent',
 
               Icons.currency_rupee,
 
-              keyboard:
-                  TextInputType.number,
-
+              keyboard: TextInputType.number,
             ),
 
-
-
-
             _field(
-
               depositController,
 
               'Deposit',
 
               Icons.money,
 
-              keyboard:
-                  TextInputType.number,
-
+              keyboard: TextInputType.number,
             ),
 
+            _field(locationController, 'Location', Icons.location_on),
 
+            _field(addressController, 'Address', Icons.map, maxLines: 2),
 
-
-            _field(
-
-              locationController,
-
-              'Location',
-
-              Icons.location_on,
-
-            ),
-
-
-
-
-            _field(
-
-              addressController,
-
-              'Address',
-
-              Icons.map,
-
-              maxLines: 2,
-
-            ),
-
-
-
-
-
-            const SizedBox(
-              height: 20,
-            ),
-
-
-
-
+            const SizedBox(height: 20),
 
             SizedBox(
+              width: double.infinity,
 
+              child: ElevatedButton(
+                onPressed: updateProperty,
 
-              width:
-                  double.infinity,
-
-
-
-              child:
-                  ElevatedButton(
-
-
-                onPressed:
-                    updateProperty,
-
-
-
-                child:
-                    const Text(
-                  'Save Changes',
-                ),
-
-
+                child: const Text('Save Changes'),
               ),
-
             ),
-
-
           ],
-
         ),
-
       ),
-
     );
-
   }
 
-
-
-
-
-
-
   Widget _field(
-
-
     TextEditingController controller,
-
 
     String label,
 
-
     IconData icon, {
-
 
     int maxLines = 1,
 
-
     TextInputType? keyboard,
-
-
   }) {
-
-
-
     return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
 
+      child: TextField(
+        controller: controller,
 
-      padding:
-          const EdgeInsets.only(
-            bottom: 15,
-          ),
+        maxLines: maxLines,
 
+        keyboardType: keyboard,
 
+        decoration: InputDecoration(
+          labelText: label,
 
-      child:
-          TextField(
+          prefixIcon: Icon(icon),
 
-
-        controller:
-            controller,
-
-
-
-        maxLines:
-            maxLines,
-
-
-
-        keyboardType:
-            keyboard,
-
-
-
-        decoration:
-            InputDecoration(
-
-
-          labelText:
-              label,
-
-
-
-          prefixIcon:
-              Icon(icon),
-
-
-
-          border:
-              const OutlineInputBorder(),
-
-
+          border: const OutlineInputBorder(),
         ),
-
-
       ),
-
-
     );
-
-
   }
-
-
 
   @override
   void dispose() {
-
-
     titleController.dispose();
 
     descriptionController.dispose();
@@ -700,9 +254,6 @@ class _EditPropertyPageState
 
     addressController.dispose();
 
-
     super.dispose();
-
   }
-
 }

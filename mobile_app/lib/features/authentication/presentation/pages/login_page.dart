@@ -11,10 +11,7 @@ import '../widgets/social_login_button.dart';
 class LoginPage extends ConsumerStatefulWidget {
   final VoidCallback onRegister;
 
-  const LoginPage({
-    super.key,
-    required this.onRegister,
-  });
+  const LoginPage({super.key, required this.onRegister});
 
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();
@@ -48,18 +45,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login Successful'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Login Successful')));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            provider.errorMessage ?? 'Login Failed',
-          ),
-        ),
+        SnackBar(content: Text(provider.errorMessage ?? 'Login Failed')),
       );
     }
   }
@@ -80,8 +71,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                 const AuthHeader(
                   title: 'Welcome Back',
-                  subtitle:
-                      'Login to continue your rental journey.',
+                  subtitle: 'Login to continue your rental journey.',
                 ),
 
                 const SizedBox(height: 40),
@@ -130,9 +120,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                 const SizedBox(height: 8),
 
-                RememberMe(
-                  onForgotPassword: () {},
-                ),
+                RememberMe(onForgotPassword: () {}),
 
                 const SizedBox(height: 24),
 
@@ -144,23 +132,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                 const SizedBox(height: 24),
 
-                SocialLoginButton(
-                  onPressed: () {},
-                ),
+                SocialLoginButton(onPressed: () {}),
 
                 const SizedBox(height: 30),
 
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      "Don't have an account?",
-                    ),
+                    const Text("Don't have an account?"),
                     TextButton(
                       onPressed: widget.onRegister,
-                      child: const Text(
-                        'Sign Up',
-                      ),
+                      child: const Text('Sign Up'),
                     ),
                   ],
                 ),

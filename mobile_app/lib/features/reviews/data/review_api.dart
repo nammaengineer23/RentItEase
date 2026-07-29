@@ -11,20 +11,12 @@ class ReviewApi {
   // Get Reviews for Property
   // ==========================================
 
-  Future<List<ReviewModel>> getReviews(
-    String propertyId,
-  ) async {
-    final response = await dio.get(
-      '/reviews/property/$propertyId',
-    );
+  Future<List<ReviewModel>> getReviews(String propertyId) async {
+    final response = await dio.get('/reviews/property/$propertyId');
 
     final data = response.data as List;
 
-    return data
-        .map(
-          (e) => ReviewModel.fromJson(e),
-        )
-        .toList();
+    return data.map((e) => ReviewModel.fromJson(e)).toList();
   }
 
   // ==========================================
@@ -38,16 +30,10 @@ class ReviewApi {
   }) async {
     final response = await dio.post(
       '/reviews',
-      data: {
-        'propertyId': propertyId,
-        'rating': rating,
-        'comment': comment,
-      },
+      data: {'propertyId': propertyId, 'rating': rating, 'comment': comment},
     );
 
-    return ReviewModel.fromJson(
-      response.data,
-    );
+    return ReviewModel.fromJson(response.data);
   }
 
   // ==========================================
@@ -61,26 +47,17 @@ class ReviewApi {
   }) async {
     final response = await dio.patch(
       '/reviews/$reviewId',
-      data: {
-        'rating': rating,
-        'comment': comment,
-      },
+      data: {'rating': rating, 'comment': comment},
     );
 
-    return ReviewModel.fromJson(
-      response.data,
-    );
+    return ReviewModel.fromJson(response.data);
   }
 
   // ==========================================
   // Delete Review
   // ==========================================
 
-  Future<void> deleteReview(
-    String reviewId,
-  ) async {
-    await dio.delete(
-      '/reviews/$reviewId',
-    );
+  Future<void> deleteReview(String reviewId) async {
+    await dio.delete('/reviews/$reviewId');
   }
 }

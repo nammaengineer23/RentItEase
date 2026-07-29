@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class AnimatedLogo extends StatelessWidget {
   final Animation<double> animation;
 
-  const AnimatedLogo({
-    super.key,
-    required this.animation,
-  });
+  const AnimatedLogo({super.key, required this.animation});
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +29,7 @@ class AnimatedLogo extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(32),
-              child: Image.asset(
-                'assets/images/logo.png',
-                fit: BoxFit.cover,
-              ),
+              child: Image.asset('assets/images/logo.png', fit: BoxFit.cover),
             ),
           ),
         ),

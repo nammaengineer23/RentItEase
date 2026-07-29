@@ -31,9 +31,7 @@ class ImageUtils {
   // Validate File Size
   // =============================================
 
-  static Future<bool> isValidSize(
-    File file,
-  ) async {
+  static Future<bool> isValidSize(File file) async {
     final size = await file.length();
 
     return size <= maxFileSize;
@@ -43,17 +41,13 @@ class ImageUtils {
   // Compress Image
   // =============================================
 
-  static Future<File> compressImage(
-    File file,
-  ) async {
-    final tempDir =
-        await getTemporaryDirectory();
+  static Future<File> compressImage(File file) async {
+    final tempDir = await getTemporaryDirectory();
 
     final targetPath =
         '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-    final compressed =
-        await FlutterImageCompress.compressAndGetFile(
+    final compressed = await FlutterImageCompress.compressAndGetFile(
       file.absolute.path,
       targetPath,
       quality: 80,
@@ -72,38 +66,25 @@ class ImageUtils {
   // Validate + Compress
   // =============================================
 
-  static Future<File> prepareImage(
-    File file,
-  ) async {
+  static Future<File> prepareImage(File file) async {
     if (!isValidImage(file)) {
-      throw Exception(
-        'Only JPG, PNG and WEBP images are allowed.',
-      );
+      throw Exception('Only JPG, PNG and WEBP images are allowed.');
     }
 
     if (!await isValidSize(file)) {
-      throw Exception(
-        'Image size should be less than 5 MB.',
-      );
+      throw Exception('Image size should be less than 5 MB.');
     }
 
-    final compressed =
-        await compressImage(file);
+    final compressed = await compressImage(file);
 
     if (kDebugMode) {
-      final original =
-          await file.length();
+      final original = await file.length();
 
-      final reduced =
-          await compressed.length();
+      final reduced = await compressed.length();
 
-      debugPrint(
-        'Original: ${(original / 1024).toStringAsFixed(1)} KB',
-      );
+      debugPrint('Original: ${(original / 1024).toStringAsFixed(1)} KB');
 
-      debugPrint(
-        'Compressed: ${(reduced / 1024).toStringAsFixed(1)} KB',
-      );
+      debugPrint('Compressed: ${(reduced / 1024).toStringAsFixed(1)} KB');
     }
 
     return compressed;
@@ -113,15 +94,11 @@ class ImageUtils {
   // Validate Multiple Images
   // =============================================
 
-  static Future<List<File>> prepareImages(
-    List<File> files,
-  ) async {
+  static Future<List<File>> prepareImages(List<File> files) async {
     final List<File> output = [];
 
     for (final file in files) {
-      output.add(
-        await prepareImage(file),
-      );
+      output.add(await prepareImage(file));
     }
 
     return output;
@@ -131,9 +108,7 @@ class ImageUtils {
   // Human Readable Size
   // =============================================
 
-  static String readableSize(
-    int bytes,
-  ) {
+  static String readableSize(int bytes) {
     if (bytes < 1024) {
       return '$bytes B';
     }

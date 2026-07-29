@@ -22,13 +22,13 @@ class UserModel {
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] as String,
-      fullName: json['fullName'] as String,
+      fullName: json['fullName'] as String? ?? '',
       email: json['email'] as String,
       phone: json['phone'] as String?,
       photoUrl: json['photoUrl'] as String?,
-      role: json['role'] as String,
-      isVerified: json['isVerified'] as bool,
-      isActive: json['isActive'] as bool,
+      role: json['role'] as String? ?? 'TENANT',
+      isVerified: json['isVerified'] as bool? ?? false,
+      isActive: json['isActive'] as bool? ?? true,
     );
   }
 
@@ -61,9 +61,7 @@ class AuthResponse {
     return AuthResponse(
       accessToken: json['accessToken'] as String,
       refreshToken: json['refreshToken'] as String,
-      user: UserModel.fromJson(
-        json['user'] as Map<String, dynamic>,
-      ),
+      user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
     );
   }
 

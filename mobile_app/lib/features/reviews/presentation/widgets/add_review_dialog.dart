@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class AddReviewDialog extends StatefulWidget {
   final double initialRating;
   final String initialComment;
-  final Function(
-    double rating,
-    String comment,
-  ) onSubmit;
+  final Function(double rating, String comment) onSubmit;
 
   const AddReviewDialog({
     super.key,
@@ -16,16 +13,13 @@ class AddReviewDialog extends StatefulWidget {
   });
 
   @override
-  State<AddReviewDialog> createState() =>
-      _AddReviewDialogState();
+  State<AddReviewDialog> createState() => _AddReviewDialogState();
 }
 
-class _AddReviewDialogState
-    extends State<AddReviewDialog> {
+class _AddReviewDialogState extends State<AddReviewDialog> {
   late double _rating;
 
-  late TextEditingController
-      _commentController;
+  late TextEditingController _commentController;
 
   @override
   void initState() {
@@ -33,10 +27,7 @@ class _AddReviewDialogState
 
     _rating = widget.initialRating;
 
-    _commentController =
-        TextEditingController(
-      text: widget.initialComment,
-    );
+    _commentController = TextEditingController(text: widget.initialComment);
   }
 
   @override
@@ -49,112 +40,73 @@ class _AddReviewDialogState
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(
-        widget.initialComment.isEmpty
-            ? 'Write Review'
-            : 'Edit Review',
+        widget.initialComment.isEmpty ? 'Write Review' : 'Edit Review',
       ),
       content: SingleChildScrollView(
         child: Column(
-          mainAxisSize:
-              MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,
           children: [
-
             const Text(
               'Rate this property',
-              style: TextStyle(
-                fontWeight:
-                    FontWeight.bold,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 16),
 
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.center,
-              children: List.generate(
-                5,
-                (index) {
-                  return IconButton(
-                    icon: Icon(
-                      index < _rating
-                          ? Icons.star
-                          : Icons.star_border,
-                      color:
-                          Colors.amber,
-                      size: 34,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _rating =
-                            index + 1.0;
-                      });
-                    },
-                  );
-                },
-              ),
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (index) {
+                return IconButton(
+                  icon: Icon(
+                    index < _rating ? Icons.star : Icons.star_border,
+                    color: Colors.amber,
+                    size: 34,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _rating = index + 1.0;
+                    });
+                  },
+                );
+              }),
             ),
 
             const SizedBox(height: 20),
 
             TextField(
-              controller:
-                  _commentController,
+              controller: _commentController,
               maxLines: 4,
-              decoration:
-                  const InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Review',
-                hintText:
-                    'Share your experience...',
-                border:
-                    OutlineInputBorder(),
+                hintText: 'Share your experience...',
+                border: OutlineInputBorder(),
               ),
             ),
           ],
         ),
       ),
       actions: [
-
         TextButton(
           onPressed: () {
             Navigator.pop(context);
           },
-          child: const Text(
-            'Cancel',
-          ),
+          child: const Text('Cancel'),
         ),
 
         ElevatedButton(
           onPressed: () {
-            if (_commentController.text
-                .trim()
-                .isEmpty) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Please enter a review.',
-                  ),
-                ),
+            if (_commentController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Please enter a review.')),
               );
               return;
             }
 
-            widget.onSubmit(
-              _rating,
-              _commentController.text
-                  .trim(),
-            );
+            widget.onSubmit(_rating, _commentController.text.trim());
 
             Navigator.pop(context);
           },
-          child: Text(
-            widget.initialComment
-                    .isEmpty
-                ? 'Submit'
-                : 'Update',
-          ),
+          child: Text(widget.initialComment.isEmpty ? 'Submit' : 'Update'),
         ),
       ],
     );

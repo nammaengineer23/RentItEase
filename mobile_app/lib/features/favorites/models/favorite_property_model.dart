@@ -1,6 +1,4 @@
 class FavoritePropertyModel {
-
-
   final String id;
 
   final String propertyId;
@@ -23,10 +21,7 @@ class FavoritePropertyModel {
 
   final String? imageUrl;
 
-
-
   FavoritePropertyModel({
-
     required this.id,
 
     required this.propertyId,
@@ -48,147 +43,59 @@ class FavoritePropertyModel {
     required this.address,
 
     this.imageUrl,
-
   });
 
-
-
-
-
-  factory FavoritePropertyModel.fromJson(
-
-    Map<String, dynamic> json,
-
-  ) {
-
-
-    final property =
-        json['property'] ?? json;
-
-
+  factory FavoritePropertyModel.fromJson(Map<String, dynamic> json) {
+    final property = json['property'] ?? json;
 
     return FavoritePropertyModel(
+      id: json['id'] ?? '',
 
+      propertyId: property['id'] ?? '',
 
-      id:
-          json['id'] ?? '',
+      title: property['title'] ?? '',
 
+      description: property['description'] ?? '',
 
+      propertyType: property['propertyType'] ?? '',
 
-      propertyId:
-          property['id'] ?? '',
+      bhk: property['bhk'] ?? '',
 
+      rent: (property['rent'] ?? 0).toDouble(),
 
+      deposit: (property['deposit'] ?? 0).toDouble(),
 
-      title:
-          property['title'] ?? '',
+      location: property['location'] ?? '',
 
+      address: property['address'] ?? '',
 
-
-      description:
-          property['description'] ?? '',
-
-
-
-      propertyType:
-          property['propertyType'] ?? '',
-
-
-
-      bhk:
-          property['bhk'] ?? '',
-
-
-
-      rent:
-          (property['rent'] ?? 0)
-              .toDouble(),
-
-
-
-      deposit:
-          (property['deposit'] ?? 0)
-              .toDouble(),
-
-
-
-      location:
-          property['location'] ?? '',
-
-
-
-      address:
-          property['address'] ?? '',
-
-
-
-      imageUrl:
-          property['imageUrl'],
-
+      imageUrl: property['imageUrl'],
     );
-
   }
 
-
-
-
-
-
-  Map<String,dynamic> toJson(){
-
-
+  Map<String, dynamic> toJson() {
     return {
+      'id': id,
 
+      'propertyId': propertyId,
 
-      'id':
-          id,
+      'title': title,
 
+      'description': description,
 
-      'propertyId':
-          propertyId,
+      'propertyType': propertyType,
 
+      'bhk': bhk,
 
-      'title':
-          title,
+      'rent': rent,
 
+      'deposit': deposit,
 
-      'description':
-          description,
+      'location': location,
 
+      'address': address,
 
-      'propertyType':
-          propertyType,
-
-
-      'bhk':
-          bhk,
-
-
-      'rent':
-          rent,
-
-
-      'deposit':
-          deposit,
-
-
-      'location':
-          location,
-
-
-      'address':
-          address,
-
-
-      'imageUrl':
-          imageUrl,
-
-
+      'imageUrl': imageUrl,
     };
-
-
   }
-
-
-
 }

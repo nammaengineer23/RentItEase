@@ -7,117 +7,170 @@ class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
 
   @override
-  ConsumerState<EditProfilePage> createState() =>
-      _EditProfilePageState();
+  ConsumerState<EditProfilePage> createState() => _EditProfilePageState();
 }
 
-class _EditProfilePageState
-    extends ConsumerState<EditProfilePage> {
-  late final TextEditingController _nameController;
-  late final TextEditingController _emailController;
-  late final TextEditingController _phoneController;
+class _EditProfilePageState extends ConsumerState<EditProfilePage> {
+  final _formKey = GlobalKey<FormState>();
+
+  late TextEditingController nameController;
+
+  late TextEditingController phoneController;
+
+  bool isSaving = false;
 
   @override
   void initState() {
     super.initState();
 
-    final user = ref.read(profileProvider);
+    final profile = ref.read(profileProvider).value;
 
-    _nameController =
-        TextEditingController(text: user.fullName);
+    nameController = TextEditingController(text: profile?.fullName ?? '');
 
-    _emailController =
-        TextEditingController(text: user.email);
+    phoneController = TextEditingController(text: profile?.phone ?? '');
+  }
 
-    _phoneController =
-        TextEditingController(text: user.phone);
+  String? validateRequired(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Required';
+    }
+
+    return null;
+  }
+
+  Future<void> saveProfile() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      isSaving = true;
+    });
+
+    try {
+      await ref
+          .read(profileProvider.notifier)
+          .updateProfile(
+            fullName: nameController.text.trim(),
+
+            phone: phoneController.text.trim(),
+          );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully')),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSaving = false;
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
+    nameController.dispose();
+
+    phoneController.dispose();
+
     super.dispose();
-  }
-
-  void _saveProfile() {
-    ref.read(profileProvider.notifier).updateProfile(
-          fullName: _nameController.text.trim(),
-          email: _emailController.text.trim(),
-          phone: _phoneController.text.trim(),
-        );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Profile updated successfully',
-        ),
-      ),
-    );
-
-    Navigator.pop(context);
-
-    // TODO
-    // Call backend API
-    // PATCH /users/profile
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Profile'),
-      ),
+      appBar: AppBar(title: const Text('Edit Profile')),
+
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Full Name',
-                prefixIcon: Icon(Icons.person),
+        padding: const EdgeInsets.all(16),
+
+        child: Form(
+          key: _formKey,
+
+          child: Column(
+            children: [
+              CircleAvatar(
+                radius: 50,
+
+                child: const Icon(Icons.person, size: 50),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 30),
 
-            TextField(
-              controller: _emailController,
-              keyboardType:
-                  TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(Icons.email),
-              ),
-            ),
+              TextFormField(
+                controller: nameController,
 
-            const SizedBox(height: 20),
+                validator: validateRequired,
 
-            TextField(
-              controller: _phoneController,
-              keyboardType:
-                  TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Phone Number',
-                prefixIcon: Icon(Icons.phone),
-              ),
-            ),
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
 
-            const SizedBox(height: 40),
+                  border: OutlineInputBorder(),
 
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _saveProfile,
-                icon: const Icon(Icons.save),
-                label: const Text(
-                  'Save Changes',
+                  prefixIcon: Icon(Icons.person),
                 ),
               ),
-            ),
-          ],
+
+              const SizedBox(height: 20),
+
+              TextFormField(
+                controller: phoneController,
+
+                validator: validateRequired,
+
+                keyboardType: TextInputType.phone,
+
+                decoration: const InputDecoration(
+                  labelText: 'Phone Number',
+
+                  border: OutlineInputBorder(),
+
+                  prefixIcon: Icon(Icons.phone),
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              SizedBox(
+                width: double.infinity,
+
+                height: 50,
+
+                child: ElevatedButton(
+                  onPressed: isSaving ? null : saveProfile,
+
+                  child: isSaving
+                      ? const SizedBox(
+                          height: 22,
+
+                          width: 22,
+
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Save Changes'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

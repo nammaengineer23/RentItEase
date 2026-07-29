@@ -15,9 +15,7 @@ final dioProvider = Provider<Dio>((ref) {
   return Dio(
     BaseOptions(
       baseUrl: 'http://localhost:3000/api/v1',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: {'Content-Type': 'application/json'},
     ),
   );
 });
@@ -26,13 +24,10 @@ final dioProvider = Provider<Dio>((ref) {
 // Repository Provider
 // =============================================
 
-final reviewRepositoryProvider =
-    Provider<ReviewRepository>((ref) {
+final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
   final dio = ref.watch(dioProvider);
 
-  return ReviewRepository(
-    ReviewApi(dio),
-  );
+  return ReviewRepository(ReviewApi(dio));
 });
 
 // =============================================
@@ -67,41 +62,24 @@ class ReviewState {
 // Review Notifier
 // =============================================
 
-class ReviewNotifier
-    extends StateNotifier<ReviewState> {
+class ReviewNotifier extends StateNotifier<ReviewState> {
   final ReviewRepository repository;
 
-  ReviewNotifier(
-    this.repository,
-  ) : super(const ReviewState());
+  ReviewNotifier(this.repository) : super(const ReviewState());
 
   // ===========================================
   // Load Reviews
   // ===========================================
 
-  Future<void> loadReviews(
-    String propertyId,
-  ) async {
-    state = state.copyWith(
-      isLoading: true,
-      error: null,
-    );
+  Future<void> loadReviews(String propertyId) async {
+    state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final reviews =
-          await repository.getReviews(
-        propertyId,
-      );
+      final reviews = await repository.getReviews(propertyId);
 
-      state = state.copyWith(
-        isLoading: false,
-        reviews: reviews,
-      );
+      state = state.copyWith(isLoading: false, reviews: reviews);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -150,9 +128,7 @@ class ReviewNotifier
     required String reviewId,
     required String propertyId,
   }) async {
-    await repository.deleteReview(
-      reviewId,
-    );
+    await repository.deleteReview(reviewId);
 
     await loadReviews(propertyId);
   }
@@ -162,11 +138,10 @@ class ReviewNotifier
 // Provider
 // =============================================
 
-final reviewProvider = StateNotifierProvider<
-    ReviewNotifier,
-    ReviewState>((ref) {
-  final repository =
-      ref.watch(reviewRepositoryProvider);
+final reviewProvider = StateNotifierProvider<ReviewNotifier, ReviewState>((
+  ref,
+) {
+  final repository = ref.watch(reviewRepositoryProvider);
 
   return ReviewNotifier(repository);
 });

@@ -6,3 +6,9 @@ class AppException implements Exception {
   @override
   String toString() => message;
 }
+
+class ApiException extends AppException {
+  const ApiException(super.message, {this.statusCode});
+
+  final int? statusCode;
+}

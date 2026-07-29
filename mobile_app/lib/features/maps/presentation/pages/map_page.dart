@@ -8,13 +8,8 @@ class MapPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Property Map'),
-        centerTitle: true,
-      ),
-      body: const SafeArea(
-        child: PropertyMap(),
-      ),
+      appBar: AppBar(title: const Text('Property Map'), centerTitle: true),
+      body: const SafeArea(child: PropertyMap()),
     );
   }
 }
