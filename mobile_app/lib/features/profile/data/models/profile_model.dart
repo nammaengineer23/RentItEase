@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import '../../domain/entities/profile_entity.dart';
 
 class ProfileModel extends ProfileEntity {
@@ -16,21 +18,13 @@ class ProfileModel extends ProfileEntity {
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
     return ProfileModel(
       id: json['id'] ?? '',
-
       fullName: json['fullName'] ?? json['name'] ?? '',
-
       email: json['email'] ?? '',
-
       phone: json['phone'] ?? '',
-
       profileImage: json['profileImage'] ?? json['photoUrl'],
-
       role: json['role'] ?? 'USER',
-
       isVerified: json['isVerified'] ?? false,
-
       isActive: json['isActive'] ?? true,
-
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
@@ -39,23 +33,15 @@ class ProfileModel extends ProfileEntity {
 
   Map<String, dynamic> toJson() {
     return {
-      "id": id,
-
-      "fullName": fullName,
-
-      "email": email,
-
-      "phone": phone,
-
-      "profileImage": profileImage,
-
-      "role": role,
-
-      "isVerified": isVerified,
-
-      "isActive": isActive,
-
-      "createdAt": createdAt.toIso8601String(),
+      'id': id,
+      'fullName': fullName,
+      'email': email,
+      'phone': phone,
+      'profileImage': profileImage,
+      'role': role,
+      'isVerified': isVerified,
+      'isActive': isActive,
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 
@@ -73,6 +59,7 @@ class ProfileModel extends ProfileEntity {
     );
   }
 
+  @nonVirtual
   ProfileModel copyWith({
     String? id,
     String? fullName,

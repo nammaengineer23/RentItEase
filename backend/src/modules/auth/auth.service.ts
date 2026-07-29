@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
@@ -16,6 +17,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -403,10 +405,50 @@ export class AuthService {
         fullName: true,
         email: true,
         phone: true,
+        photoUrl: true,
         role: true,
-        createdAt: true,
       },
     });
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User not found.');
+    }
+
+    if (dto.phone != null) {
+      const phoneOwner = await this.prisma.user.findUnique({
+        where: { phone: dto.phone },
+        select: { id: true },
+      });
+      if (phoneOwner != null && phoneOwner.id != userId) {
+        throw new ConflictException('Phone number already exists.');
+      }
+    }
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.fullName != null && { fullName: dto.fullName.trim() }),
+        ...(dto.phone != null && { phone: dto.phone }),
+        ...(dto.photoUrl != null && { photoUrl: dto.photoUrl }),
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        photoUrl: true,
+        role: true,
+      },
+    });
+
+    return user;
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {

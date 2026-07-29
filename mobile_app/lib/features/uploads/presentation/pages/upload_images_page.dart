@@ -20,7 +20,9 @@ class _UploadImagesPageState extends ConsumerState<UploadImagesPage> {
   Future<void> _uploadImages() async {
     if (_selectedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one image.')),
+        const SnackBar(
+          content: Text('Please select at least one image.'),
+        ),
       );
       return;
     }
@@ -33,7 +35,9 @@ class _UploadImagesPageState extends ConsumerState<UploadImagesPage> {
 
     if (state.error == null && state.uploadedImages.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Images uploaded successfully.')),
+        const SnackBar(
+          content: Text('Images uploaded successfully.'),
+        ),
       );
 
       Navigator.pop(context, state.uploadedImages);
@@ -45,7 +49,9 @@ class _UploadImagesPageState extends ConsumerState<UploadImagesPage> {
     final uploadState = ref.watch(uploadProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Upload Property Images')),
+      appBar: AppBar(
+        title: const Text('Upload Property Images'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -85,7 +91,9 @@ class _UploadImagesPageState extends ConsumerState<UploadImagesPage> {
                       )
                     : const Icon(Icons.cloud_upload),
                 label: Text(
-                  uploadState.isUploading ? 'Uploading...' : 'Upload Images',
+                  uploadState.isUploading
+                      ? 'Uploading...'
+                      : 'Upload Images',
                 ),
               ),
             ),
@@ -98,7 +106,10 @@ class _UploadImagesPageState extends ConsumerState<UploadImagesPage> {
                 children: [
                   const Text(
                     'Uploaded Images',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
 
                   const SizedBox(height: 16),
@@ -109,23 +120,26 @@ class _UploadImagesPageState extends ConsumerState<UploadImagesPage> {
                     itemCount: uploadState.uploadedImages.length,
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
                     itemBuilder: (context, index) {
                       final image = uploadState.uploadedImages[index];
 
                       return ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.network(
-                          image.url,
+                          image.imageUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
                               color: Colors.grey.shade300,
                               child: const Center(
-                                child: Icon(Icons.broken_image, size: 40),
+                                child: Icon(
+                                  Icons.broken_image,
+                                  size: 40,
+                                ),
                               ),
                             );
                           },

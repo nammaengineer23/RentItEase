@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Request,
   UseGuards,
@@ -18,6 +19,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -104,6 +106,19 @@ resetPassword(
 })
 getCurrentUser(@Request() req: any) {
   return this.authService.me(req.user.id);
+}
+
+@Patch('me')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+@ApiOperation({
+  summary: 'Update the authenticated user profile',
+})
+updateCurrentUser(
+  @Request() req: any,
+  @Body() dto: UpdateProfileDto,
+) {
+  return this.authService.updateProfile(req.user.id, dto);
 }
 
 @Post('logout')
