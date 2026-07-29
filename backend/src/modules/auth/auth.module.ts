@@ -8,6 +8,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { MailModule } from '../../mail/mail.module';
+import { OtpModule } from '../../common/otp/otp.module';
 
 
 @Module({
@@ -15,6 +16,7 @@ import { MailModule } from '../../mail/mail.module';
     ConfigModule,
     FirebaseModule,
     MailModule,
+    OtpModule,
     PassportModule.register({
       defaultStrategy: 'jwt',
     }),
