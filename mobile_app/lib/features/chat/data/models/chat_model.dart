@@ -63,6 +63,7 @@ class ChatModel extends ChatEntity {
     };
   }
 
+  @override
   ChatModel copyWith({
     String? id,
     String? propertyId,

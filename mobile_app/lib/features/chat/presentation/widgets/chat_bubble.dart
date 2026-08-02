@@ -54,7 +54,7 @@ class ChatBubble extends StatelessWidget {
                     message.imageUrl!,
                     width: 220,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    errorBuilder: (_, _, _) => Container(
                       width: 220,
                       height: 180,
                       color: Colors.grey.shade300,

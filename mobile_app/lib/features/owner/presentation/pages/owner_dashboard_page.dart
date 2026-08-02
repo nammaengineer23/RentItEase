@@ -46,15 +46,15 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
 
                 children: [
-                  Card(
+                  const Card(
                     elevation: 3,
 
                     child: ListTile(
-                      leading: const CircleAvatar(child: Icon(Icons.person)),
+                      leading: CircleAvatar(child: Icon(Icons.person)),
 
-                      title: const Text('Welcome Owner 👋'),
+                      title: Text('Welcome Owner 👋'),
 
-                      subtitle: const Text('Manage your properties easily'),
+                      subtitle: Text('Manage your properties easily'),
                     ),
                   ),
 

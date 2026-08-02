@@ -24,8 +24,6 @@ class _PropertyMapState extends ConsumerState<PropertyMap> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = ref.watch(mapsProvider);
-
     return Column(
       children: [
         Padding(
@@ -82,7 +80,11 @@ class _PropertyMapState extends ConsumerState<PropertyMap> {
                 ),
               ),
 
-              Positioned(bottom: 16, right: 16, child: CurrentLocationButton()),
+              const Positioned(
+                bottom: 16,
+                right: 16,
+                child: CurrentLocationButton(),
+              ),
             ],
           ),
         ),

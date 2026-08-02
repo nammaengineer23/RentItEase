@@ -10,7 +10,7 @@ class LocationService {
   //==================================================
 
   Future<bool> requestPermission() async {
-    final bool serviceEnabled =
+    final serviceEnabled =
         await Geolocator.isLocationServiceEnabled();
 
     if (!serviceEnabled) {
@@ -37,13 +37,14 @@ class LocationService {
   //==================================================
 
   Future<LocationModel?> getCurrentLocation() async {
-    final bool allowed = await requestPermission();
+    final allowed = await requestPermission();
 
     if (!allowed) {
       return null;
     }
 
-    final Position position = await Geolocator.getCurrentPosition(
+    final Position position =
+        await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
       ),
@@ -83,7 +84,7 @@ class LocationService {
 
     final geo.Placemark place = placemarks.first;
 
-    final List<String> addressParts = [
+    final addressParts = <String>[
       if ((place.street ?? '').isNotEmpty) place.street!,
       if ((place.subLocality ?? '').isNotEmpty) place.subLocality!,
       if ((place.locality ?? '').isNotEmpty) place.locality!,
@@ -104,7 +105,9 @@ class LocationService {
   // Search Address
   //==================================================
 
-  Future<LocationModel?> searchAddress(String address) async {
+  Future<LocationModel?> searchAddress(
+    String address,
+  ) async {
     final List<geo.Location> locations =
         await geo.locationFromAddress(address);
 
@@ -121,7 +124,7 @@ class LocationService {
   }
 
   //==================================================
-  // Calculate Distance (KM)
+  // Distance
   //==================================================
 
   double calculateDistance({
@@ -130,7 +133,7 @@ class LocationService {
     required double endLat,
     required double endLng,
   }) {
-    final double distance = Geolocator.distanceBetween(
+    final distance = Geolocator.distanceBetween(
       startLat,
       startLng,
       endLat,
@@ -141,14 +144,14 @@ class LocationService {
   }
 
   //==================================================
-  // Open Google Navigation
+  // Google Navigation
   //==================================================
 
   Future<void> openNavigation({
     required double latitude,
     required double longitude,
   }) async {
-    final Uri uri = Uri.parse(
+    final uri = Uri.parse(
       'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude',
     );
 
@@ -156,7 +159,7 @@ class LocationService {
       uri,
       mode: LaunchMode.externalApplication,
     )) {
-      throw Exception('Could not launch Google Navigation.');
+      throw Exception('Could not launch Google Navigation');
     }
   }
 
@@ -168,7 +171,7 @@ class LocationService {
     required double latitude,
     required double longitude,
   }) async {
-    final Uri uri = Uri.parse(
+    final uri = Uri.parse(
       'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
     );
 
@@ -176,7 +179,7 @@ class LocationService {
       uri,
       mode: LaunchMode.externalApplication,
     )) {
-      throw Exception('Could not launch Google Maps.');
+      throw Exception('Could not launch Google Maps');
     }
   }
 }

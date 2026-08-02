@@ -61,7 +61,7 @@ class VisitCard extends StatelessWidget {
             child: Image.network(
               visit.propertyImage,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorBuilder: (_, _, _) => Container(
                 color: Colors.grey.shade300,
                 child: const Center(child: Icon(Icons.home, size: 60)),
               ),

@@ -5,7 +5,7 @@ class CategoryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final categories = [
+    final categories = const [
       _CategoryData(
         title: 'Apartment',
         icon: Icons.apartment_rounded,
@@ -60,16 +60,16 @@ class CategoryGrid extends StatelessWidget {
             },
             child: Container(
               decoration: BoxDecoration(
-                color: category.color.withOpacity(0.08),
+                color: category.color.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: category.color.withOpacity(0.25)),
+                border: Border.all(color: category.color.withValues(alpha: 0.25)),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircleAvatar(
                     radius: 26,
-                    backgroundColor: category.color.withOpacity(0.15),
+                    backgroundColor: category.color.withValues(alpha: 0.15),
                     child: Icon(category.icon, color: category.color, size: 28),
                   ),
                   const SizedBox(height: 12),

@@ -104,10 +104,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
           child: Column(
             children: [
-              CircleAvatar(
+              const CircleAvatar(
                 radius: 50,
 
-                child: const Icon(Icons.person, size: 50),
+                child: Icon(Icons.person, size: 50),
               ),
 
               const SizedBox(height: 30),

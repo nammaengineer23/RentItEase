@@ -7,7 +7,7 @@ final _repositoryProvider = Provider<HomeRepository>(
   (ref) => HomeRepositoryImpl(),
 );
 
-final HomeProvider = FutureProvider<List<HomeEntity>>((ref) async {
+final homeProvider = FutureProvider<List<HomeEntity>>((ref) async {
   final repository = ref.read(_repositoryProvider);
   return repository.load();
 });

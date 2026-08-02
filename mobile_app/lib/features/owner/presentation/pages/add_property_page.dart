@@ -363,7 +363,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
               const SizedBox(height: 16),
 
               DropdownButtonFormField<String>(
-                value: propertyType,
+                initialValue: propertyType,
 
                 decoration: const InputDecoration(
                   labelText: 'Property Type',
@@ -394,7 +394,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
               const SizedBox(height: 16),
 
               DropdownButtonFormField<String>(
-                value: bhk,
+                initialValue: bhk,
 
                 decoration: const InputDecoration(
                   labelText: 'BHK',
@@ -426,7 +426,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<int>(
-                      value: bathrooms,
+                      initialValue: bathrooms,
 
                       decoration: const InputDecoration(
                         labelText: 'Bathrooms',
@@ -454,7 +454,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
                   Expanded(
                     child: DropdownButtonFormField<int>(
-                      value: balconies,
+                      initialValue: balconies,
 
                       decoration: const InputDecoration(
                         labelText: 'Balconies',
@@ -503,7 +503,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
               const SizedBox(height: 16),
 
               DropdownButtonFormField<String>(
-                value: furnishing,
+                initialValue: furnishing,
 
                 decoration: const InputDecoration(
                   labelText: 'Furnishing',
@@ -538,7 +538,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
               const SizedBox(height: 16),
 
               DropdownButtonFormField<String>(
-                value: parking,
+                initialValue: parking,
 
                 decoration: const InputDecoration(
                   labelText: 'Parking',

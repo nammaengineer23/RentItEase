@@ -116,7 +116,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
             ),
 
             DropdownButtonFormField<String>(
-              value: propertyType,
+              initialValue: propertyType,
 
               decoration: const InputDecoration(
                 labelText: 'Property Type',
@@ -142,7 +142,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
             const SizedBox(height: 15),
 
             DropdownButtonFormField<String>(
-              value: bhk,
+              initialValue: bhk,
 
               decoration: const InputDecoration(
                 labelText: 'BHK',

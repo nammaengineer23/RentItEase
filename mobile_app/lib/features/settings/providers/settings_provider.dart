@@ -7,7 +7,7 @@ final _repositoryProvider = Provider<SettingsRepository>(
   (ref) => SettingsRepositoryImpl(),
 );
 
-final SettingsProvider = FutureProvider<List<SettingsEntity>>((ref) async {
+final settingsProvider = FutureProvider<List<SettingsEntity>>((ref) async {
   final repository = ref.read(_repositoryProvider);
   return repository.load();
 });

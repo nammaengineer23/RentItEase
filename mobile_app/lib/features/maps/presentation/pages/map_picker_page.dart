@@ -92,7 +92,7 @@ class _MapPickerPageState extends ConsumerState<MapPickerPage> {
 
             mapToolbarEnabled: false,
 
-            markers: {if (selectedMarker != null) selectedMarker!},
+            markers: {?selectedMarker},
 
             onMapCreated: (controller) {
               _mapController = controller;

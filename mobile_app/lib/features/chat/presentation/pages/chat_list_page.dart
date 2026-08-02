@@ -100,7 +100,7 @@ class _ChatListPageState extends State<ChatListPage> {
                     },
                     child: ListView.separated(
                       itemCount: filtered.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final chat = filtered[index];
 

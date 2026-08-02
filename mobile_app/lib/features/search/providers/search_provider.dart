@@ -7,7 +7,7 @@ final _repositoryProvider = Provider<SearchRepository>(
   (ref) => SearchRepositoryImpl(),
 );
 
-final SearchProvider = FutureProvider<List<SearchEntity>>((ref) async {
+final searchProvider = FutureProvider<List<SearchEntity>>((ref) async {
   final repository = ref.read(_repositoryProvider);
   return repository.load();
 });

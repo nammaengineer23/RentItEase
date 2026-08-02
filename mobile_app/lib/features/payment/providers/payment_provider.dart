@@ -7,7 +7,7 @@ final _repositoryProvider = Provider<PaymentRepository>(
   (ref) => PaymentRepositoryImpl(),
 );
 
-final PaymentProvider = FutureProvider<List<PaymentEntity>>((ref) async {
+final paymentProvider = FutureProvider<List<PaymentEntity>>((ref) async {
   final repository = ref.read(_repositoryProvider);
   return repository.load();
 });

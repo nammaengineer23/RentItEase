@@ -17,7 +17,7 @@ void main() {
     testWidgets('Authentication page renders successfully',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: AuthenticationPage(),
         ),
       );

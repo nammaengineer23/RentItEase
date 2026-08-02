@@ -118,7 +118,7 @@ class PropertyDetailsPage extends ConsumerWidget {
 
                   Text(
                     property.description,
-                    style: TextStyle(color: Colors.grey, height: 1.6),
+                    style: const TextStyle(color: Colors.grey, height: 1.6),
                   ),
 
                   const SizedBox(height: 30),
