@@ -14,7 +14,7 @@ import '../models/review_model.dart';
 final dioProvider = Provider<Dio>((ref) {
   return Dio(
     BaseOptions(
-      baseUrl: 'http://localhost:3000/api/v1',
+      baseUrl: 'http://10.102.95.119:3000/api/v1',
       headers: {'Content-Type': 'application/json'},
     ),
   );
