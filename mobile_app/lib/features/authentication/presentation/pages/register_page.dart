@@ -7,16 +7,18 @@ import '../../providers/authentication_provider.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/password_strength.dart';
 
-class RegisterPage extends ConsumerStatefulWidget {
+class RegisterPage extends ConsumerStatefulWidget
+{
   final VoidCallback onLogin;
 
-  const RegisterPage({super.key, required this.onLogin});
+const RegisterPage({super.key, required this.onLogin});
 
   @override
   ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends ConsumerState<RegisterPage> {
+class _RegisterPageState extends ConsumerState<RegisterPage>
+{
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
@@ -25,7 +27,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _passwordController = TextEditingController();
 
   @override
-  void dispose() {
+  void dispose() 
+{
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
@@ -33,8 +36,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     super.dispose();
   }
 
-  Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) {
+  Future<void> _register() async
+{
+if (!_formKey.currentState!.validate()) 
+{
       return;
     }
 
@@ -42,20 +47,22 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
     final success = await provider.register(
       fullName: _nameController.text.trim(),
-      email: _emailController.text.trim(),
-      phone: _phoneController.text.trim(),
-      password: _passwordController.text,
+email: _emailController.text.trim(),
+phone: _phoneController.text.trim(),
+password: _passwordController.text,
     );
 
-    if (!mounted) return;
+if (!mounted) return;
 
-    if (success) {
+if (success) 
+{
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Registration Successful')));
 
       widget.onLogin();
-    } else {
+    } else 
+{
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(provider.errorMessage ?? 'Registration Failed')),
       );
@@ -63,117 +70,127 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) 
+{
     final provider = ref.watch(authenticationProvider);
 
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Form(
+child: Form(
             key: _formKey,
-            child: Column(
+child: Column(
               children: [
                 const SizedBox(height: 20),
 
-                const AuthHeader(
+const AuthHeader(
                   title: 'Create Account',
-                  subtitle:
-                      'Join RentEase and start finding your perfect rental home.',
+subtitle:
+                      'Join RentItEase and start finding your perfect rental home.',
                 ),
 
-                const SizedBox(height: 35),
+const SizedBox(height: 35),
 
-                CustomTextField(
+CustomTextField(
                   controller: _nameController,
-                  hintText: 'Full Name',
-                  prefixIcon: Icons.person_outline,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
+hintText: 'Full Name',
+prefixIcon: Icons.person_outline,
+validator: (value)
+{
+if (value == null || value.isEmpty) 
+{
                       return 'Enter your full name';
                     }
                     return null;
                   },
                 ),
 
-                const SizedBox(height: 16),
+const SizedBox(height: 16),
 
-                CustomTextField(
+CustomTextField(
                   controller: _emailController,
-                  hintText: 'Email Address',
-                  prefixIcon: Icons.email_outlined,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
+hintText: 'Email Address',
+prefixIcon: Icons.email_outlined,
+keyboardType: TextInputType.emailAddress,
+validator: (value)
+{
+if (value == null || value.isEmpty) 
+{
                       return 'Enter your email';
                     }
                     return null;
                   },
                 ),
 
-                const SizedBox(height: 16),
+const SizedBox(height: 16),
 
-                CustomTextField(
+CustomTextField(
                   controller: _phoneController,
-                  hintText: 'Mobile Number',
-                  prefixIcon: Icons.phone_outlined,
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
+hintText: 'Mobile Number',
+prefixIcon: Icons.phone_outlined,
+keyboardType: TextInputType.phone,
+validator: (value)
+{
+if (value == null || value.isEmpty) 
+{
                       return 'Enter mobile number';
                     }
                     return null;
                   },
                 ),
 
-                const SizedBox(height: 16),
+const SizedBox(height: 16),
 
-                CustomTextField(
+CustomTextField(
                   controller: _passwordController,
-                  hintText: 'Password',
-                  prefixIcon: Icons.lock_outline,
-                  obscureText: provider.obscurePassword,
-                  suffixIcon: IconButton(
+hintText: 'Password',
+prefixIcon: Icons.lock_outline,
+obscureText: provider.obscurePassword,
+suffixIcon: IconButton(
                     icon: Icon(
                       provider.obscurePassword
-                          ? Icons.visibility
-                          : Icons.visibility_off,
+? Icons.visibility
+: Icons.visibility_off,
                     ),
-                    onPressed: () {
+onPressed: ()
+{
                       ref
-                          .read(authenticationProvider)
-                          .togglePasswordVisibility();
+.read(authenticationProvider)
+.togglePasswordVisibility();
                     },
                   ),
-                  validator: (value) {
-                    if (value == null || value.length < 8) {
+validator: (value)
+{
+if (value == null || value.length < 8) 
+{
                       return 'Minimum 8 characters required';
                     }
                     return null;
                   },
                 ),
 
-                const SizedBox(height: 16),
+const SizedBox(height: 16),
 
-                PasswordStrength(password: _passwordController.text),
+PasswordStrength(password: _passwordController.text),
 
-                const SizedBox(height: 30),
+const SizedBox(height: 30),
 
-                CustomButton(
+CustomButton(
                   text: 'Create Account',
-                  isLoading: provider.isLoading,
-                  onPressed: _register,
+isLoading: provider.isLoading,
+onPressed: _register,
                 ),
 
-                const SizedBox(height: 20),
+const SizedBox(height: 20),
 
-                Row(
+Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+children: [
                     const Text('Already have an account?'),
-                    TextButton(
+TextButton(
                       onPressed: widget.onLogin,
-                      child: const Text('Login'),
+child: const Text('Login'),
                     ),
                   ],
                 ),

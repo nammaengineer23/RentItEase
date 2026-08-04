@@ -14,12 +14,16 @@ import 'package:flutter/foundation.dart'
 ///   options: DefaultFirebaseOptions.currentPlatform,
 /// );
 /// ```
-class DefaultFirebaseOptions {
-  static FirebaseOptions get currentPlatform {
-    if (kIsWeb) {
+class DefaultFirebaseOptions
+{
+static FirebaseOptions get currentPlatform 
+{
+if (kIsWeb) 
+{
       return web;
     }
-    switch (defaultTargetPlatform) {
+    switch (defaultTargetPlatform)
+{
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
@@ -46,29 +50,29 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
+static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyDaz2OcIFE9Yp1ktdkuAdjxoyeKEzGj5o0',
-    appId: '1:388317975025:web:ce58332801bad5726f7450',
-    messagingSenderId: '388317975025',
-    projectId: 'rentease-c762e',
-    authDomain: 'rentease-c762e.firebaseapp.com',
-    storageBucket: 'rentease-c762e.firebasestorage.app',
-    measurementId: 'G-7CDK25JWER',
+appId: '1:388317975025:web:ce58332801bad5726f7450',
+messagingSenderId: '388317975025',
+projectId: 'RentItEase-c762e',
+authDomain: 'RentItEase-c762e.firebaseapp.com',
+storageBucket: 'RentItEase-c762e.firebasestorage.app',
+measurementId: 'G-7CDK25JWER',
   );
 
-  static const FirebaseOptions android = FirebaseOptions(
+static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAgRSTrO0DQ0AdkPV0u83wK1kRrQqNkgco',
-    appId: '1:388317975025:android:cf64d9a322e699c56f7450',
-    messagingSenderId: '388317975025',
-    projectId: 'rentease-c762e',
-    storageBucket: 'rentease-c762e.firebasestorage.app',
+appId: '1:388317975025:android:cf64d9a322e699c56f7450',
+messagingSenderId: '388317975025',
+projectId: 'RentItEase-c762e',
+storageBucket: 'RentItEase-c762e.firebasestorage.app',
   );
-  static const FirebaseOptions ios = FirebaseOptions(
+static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAxXEhBvJHbiYmsC36dUDHW94hM4FYFsx4',
-    appId: '1:388317975025:ios:b3bf006fa7f0b59f6f7450',
-    messagingSenderId: '388317975025',
-    projectId: 'rentease-c762e',
-    storageBucket: 'rentease-c762e.firebasestorage.app',
-    iosBundleId: 'com.rentease.app.mobileApp',
+appId: '1:388317975025:ios:b3bf006fa7f0b59f6f7450',
+messagingSenderId: '388317975025',
+projectId: 'RentItEase-c762e',
+storageBucket: 'RentItEase-c762e.firebasestorage.app',
+iosBundleId: 'com.RentItEase.app.mobileApp',
   );
 }

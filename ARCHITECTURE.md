@@ -1,8 +1,8 @@
-# RentEase Architecture
+# RentItEase Architecture
 
 ## Overview
 
-RentEase is organized as a monorepo with separate application layers for mobile, backend, admin, and shared infrastructure.
+RentItEase is organized as a monorepo with separate application layers for mobile, backend, admin, and shared infrastructure.
 
 ## High-level Structure
 

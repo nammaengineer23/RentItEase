@@ -1,6 +1,6 @@
-# RentEase
+# RentItEase
 
-RentEase is a multi-platform property rental platform with a Flutter mobile app, backend services, an admin panel, and supporting infrastructure.
+RentItEase is a multi-platform property rental platform with a Flutter mobile app, backend services, an admin panel, and supporting infrastructure.
 
 ## Project structure
 

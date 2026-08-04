@@ -2,7 +2,7 @@
 
 ## Overview
 
-The RentEase API exposes endpoints for properties, users, visits, chat, payments, and admin operations.
+The RentItEase API exposes endpoints for properties, users, visits, chat, payments, and admin operations.
 
 ## Conventions
 

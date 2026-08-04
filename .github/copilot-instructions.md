@@ -1,4 +1,4 @@
-# Copilot Instructions for RentEase
+# Copilot Instructions for RentItEase
 
 - Keep changes aligned with the project architecture and modular boundaries.
 - Favor clear, maintainable code and documented APIs.

@@ -3,49 +3,52 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/router/app_router.dart';
 
-void main() {
+void main()
+{
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(const ProviderScope(child: RentEaseApp()));
+  runApp(const ProviderScope(child: RentItEaseApp()));
 }
 
-class RentEaseApp extends StatelessWidget {
-  const RentEaseApp({super.key});
+class RentItEaseApp extends StatelessWidget
+{
+const RentItEaseApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) 
+{
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
 
-      title: 'RentEase',
+title: 'RentItEase',
 
-      theme: ThemeData(
+theme: ThemeData(
         useMaterial3: true,
 
-        colorSchemeSeed: Colors.blue,
+colorSchemeSeed: Colors.blue,
 
-        scaffoldBackgroundColor: Colors.white,
+scaffoldBackgroundColor: Colors.white,
 
-        appBarTheme: const AppBarTheme(centerTitle: true),
+appBarTheme: const AppBarTheme(centerTitle: true),
 
-        inputDecorationTheme: InputDecorationTheme(
+inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-          focusedBorder: OutlineInputBorder(
+focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
           ),
         ),
 
-        elevatedButtonTheme: ElevatedButtonThemeData(
+elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             minimumSize: const Size(double.infinity, 56),
-            shape: RoundedRectangleBorder(
+shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
           ),
         ),
       ),
 
-      routerConfig: AppRouter.router,
+routerConfig: AppRouter.router,
     );
   }
 }

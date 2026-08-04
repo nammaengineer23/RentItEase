@@ -1,15 +1,15 @@
 {
   "project_info": {
     "project_number": "388317975025",
-    "project_id": "rentease-c762e",
-    "storage_bucket": "rentease-c762e.firebasestorage.app"
+    "project_id": "RentItEase-c762e",
+    "storage_bucket": "RentItEase-c762e.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
         "mobilesdk_app_id": "1:388317975025:android:cf64d9a322e699c56f7450",
         "android_client_info": {
-          "package_name": "com.rentease.app.mobile_app"
+          "package_name": "com.RentItEase.app.mobile_app"
         }
       },
       "oauth_client": [],

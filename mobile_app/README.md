@@ -1,6 +1,6 @@
-# RentEase Mobile
+# RentItEase Mobile
 
-RentEase is a production-ready Flutter application for discovering, booking, and managing rental properties.
+RentItEase is a production-ready Flutter application for discovering, booking, and managing rental properties.
 
 ## Architecture
 

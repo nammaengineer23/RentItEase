@@ -3,149 +3,158 @@ import 'package:go_router/go_router.dart';
 
 import '../widgets/profile_menu_tile.dart';
 
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+class SettingsPage extends StatelessWidget
+{
+const SettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) 
+{
     return Scaffold(
       appBar: AppBar(title: const Text('Settings'), centerTitle: true),
 
-      body: SingleChildScrollView(
+body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 10),
 
-        child: Column(
+child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
 
-          children: [
+children: [
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
 
-              child: Text(
+child: Text(
                 'Account',
 
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
 
-            ProfileMenuTile(
+ProfileMenuTile(
               icon: Icons.lock_outline,
 
-              title: 'Change Password',
+title: 'Change Password',
 
-              subtitle: 'Update your account password',
+subtitle: 'Update your account password',
 
-              onTap: () {
+onTap: ()
+{
                 // TODO:
                 // Add change password page
               },
             ),
 
-            ProfileMenuTile(
+ProfileMenuTile(
               icon: Icons.person_outline,
 
-              title: 'Edit Profile',
+title: 'Edit Profile',
 
-              subtitle: 'Update your personal details',
+subtitle: 'Update your personal details',
 
-              onTap: () {
+onTap: ()
+{
                 context.push('/profile/edit');
               },
             ),
 
-            const Padding(
+const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
 
-              child: Text(
+child: Text(
                 'Preferences',
 
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
 
-            ProfileMenuTile(
+ProfileMenuTile(
               icon: Icons.notifications,
 
-              title: 'Notifications',
+title: 'Notifications',
 
-              subtitle: 'Manage push notification settings',
+subtitle: 'Manage push notification settings',
 
-              onTap: () {
+onTap: ()
+{
                 // TODO:
                 // Notification settings
               },
             ),
 
-            ProfileMenuTile(
+ProfileMenuTile(
               icon: Icons.dark_mode,
 
-              title: 'Theme',
+title: 'Theme',
 
-              subtitle: 'Light / Dark mode',
+subtitle: 'Light / Dark mode',
 
-              onTap: () {
+onTap: ()
+{
                 // TODO:
                 // Theme provider
               },
             ),
 
-            ProfileMenuTile(
+ProfileMenuTile(
               icon: Icons.language,
 
-              title: 'Language',
+title: 'Language',
 
-              subtitle: 'Change app language',
+subtitle: 'Change app language',
 
-              onTap: () {
+onTap: ()
+{
                 // TODO:
                 // Language selection
               },
             ),
 
-            const Padding(
+const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
 
-              child: Text(
+child: Text(
                 'Support',
 
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
 
-            ProfileMenuTile(
+ProfileMenuTile(
               icon: Icons.help_outline,
 
-              title: 'Help & Support',
+title: 'Help & Support',
 
-              subtitle: 'Contact RentEase support',
+subtitle: 'Contact RentItEase support',
 
-              onTap: () {
+onTap: ()
+{
                 // TODO:
                 // Open support page
               },
             ),
 
-            ProfileMenuTile(
+ProfileMenuTile(
               icon: Icons.info_outline,
 
-              title: 'About RentEase',
+title: 'About RentItEase',
 
-              subtitle: 'App version and information',
+subtitle: 'App version and information',
 
-              onTap: () {
+onTap: ()
+{
                 showAboutDialog(
                   context: context,
 
-                  applicationName: 'RentEase',
+applicationName: 'RentItEase',
 
-                  applicationVersion: '1.0.0',
+applicationVersion: '1.0.0',
 
-                  applicationLegalese: 'Rental application platform',
+applicationLegalese: 'Rental application platform',
                 );
               },
             ),
 
-            const SizedBox(height: 30),
+const SizedBox(height: 30),
           ],
         ),
       ),

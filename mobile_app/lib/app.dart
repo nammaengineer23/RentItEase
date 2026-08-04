@@ -3,17 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/app_router.dart';
 import 'app/app_theme.dart';
 
-class RentEaseApp extends StatelessWidget {
-  const RentEaseApp({super.key});
+class RentItEaseApp extends StatelessWidget
+{
+const RentItEaseApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) 
+{
     return ProviderScope(
       child: MaterialApp.router(
-        title: 'RentEase',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        routerConfig: AppRouter.router,
+        title: 'RentItEase',
+debugShowCheckedModeBanner: false,
+theme: AppTheme.light,
+routerConfig: AppRouter.router,
       ),
     );
   }

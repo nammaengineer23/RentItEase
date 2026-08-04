@@ -1,4 +1,4 @@
-# RentEase - Project Specification
+# RentItEase - Project Specification
 
 **Version:** 1.0.0
 
@@ -12,7 +12,7 @@
 
 # Vision
 
-RentEase is a modern property marketplace that allows users to:
+RentItEase is a modern property marketplace that allows users to:
 
 - Rent Properties
 - Buy Properties
@@ -203,7 +203,7 @@ Dependencies always point inward.
 
 # Folder Structure
 
-RentEase/
+RentItEase/
 
     mobile_app/
 
@@ -578,9 +578,9 @@ Versioned APIs
 Response Format
 
 {
-    "success": true,
-    "message": "",
-    "data": {}
+"success": true,
+"message": "",
+"data": {}
 }
 
 ---
@@ -593,11 +593,11 @@ main
 
 develop
 
-feature/*
+feature/\*
 
-release/*
+release/\*
 
-hotfix/*
+hotfix/\*
 
 ---
 

@@ -1,1 +1,23 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"rentease-c762e","appId":"1:388317975025:android:cf64d9a322e699c56f7450","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"rentease-c762e","configurations":{"android":"1:388317975025:android:cf64d9a322e699c56f7450","ios":"1:388317975025:ios:b3bf006fa7f0b59f6f7450","web":"1:388317975025:web:ce58332801bad5726f7450"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "RentItEase-c762e",
+          "appId": "1:388317975025:android:cf64d9a322e699c56f7450",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "RentItEase-c762e",
+          "configurations": {
+            "android": "1:388317975025:android:cf64d9a322e699c56f7450",
+            "ios": "1:388317975025:ios:b3bf006fa7f0b59f6f7450",
+            "web": "1:388317975025:web:ce58332801bad5726f7450"
+          }
+        }
+      }
+    }
+  }
+}

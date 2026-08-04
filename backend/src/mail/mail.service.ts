@@ -26,11 +26,11 @@ export class MailService {
     await this.transporter.sendMail({
       from: this.configService.get<string>('MAIL_FROM'),
       to: email,
-      subject: 'Welcome to RentEase 🎉',
+      subject: 'Welcome to RentItEase 🎉',
       html: `
         <h2>Welcome ${fullName},</h2>
 
-        <p>Thank you for joining <b>RentEase</b>.</p>
+        <p>Thank you for joining <b>RentItEase</b>.</p>
 
         <p>Your account has been created successfully.</p>
 
@@ -38,7 +38,7 @@ export class MailService {
 
         <p>Happy House Hunting!</p>
 
-        <b>RentEase Team</b>
+        <b>RentItEase Team</b>
       `,
     });
   }
@@ -55,7 +55,7 @@ export class MailService {
     await this.transporter.sendMail({
       from: this.configService.get<string>('MAIL_FROM'),
       to: email,
-      subject: 'Reset Your RentEase Password',
+      subject: 'Reset Your RentItEase Password',
       html: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
 
@@ -64,7 +64,7 @@ export class MailService {
           <p>Hello <strong>${fullName}</strong>,</p>
 
           <p>
-            We received a request to reset your RentEase password.
+            We received a request to reset your RentItEase password.
           </p>
 
           <p>
@@ -109,7 +109,7 @@ export class MailService {
 
           <br>
 
-          <strong>RentEase Team</strong>
+          <strong>RentItEase Team</strong>
 
         </div>
       `,
@@ -141,9 +141,9 @@ export class MailService {
 
         <br>
 
-        <p>Thank you for choosing RentEase.</p>
+        <p>Thank you for choosing RentItEase.</p>
 
-        <b>RentEase Team</b>
+        <b>RentItEase Team</b>
       `,
     });
   }
@@ -175,7 +175,7 @@ export class MailService {
 
         <p>Please arrive on time.</p>
 
-        <b>RentEase Team</b>
+        <b>RentItEase Team</b>
       `,
     });
   }
@@ -204,7 +204,7 @@ export class MailService {
 
         <p>You can schedule another visit anytime.</p>
 
-        <b>RentEase Team</b>
+        <b>RentItEase Team</b>
       `,
     });
   }
@@ -233,7 +233,7 @@ export class MailService {
 
         <p>Please book another convenient slot.</p>
 
-        <b>RentEase Team</b>
+        <b>RentItEase Team</b>
       `,
     });
   }
@@ -262,7 +262,7 @@ export class MailService {
 
         <p>Please don't forget to leave a review.</p>
 
-        <b>RentEase Team</b>
+        <b>RentItEase Team</b>
       `,
     });
   }
@@ -271,15 +271,15 @@ export class MailService {
   // Send Password Reset Mail
   // ==========================================
   async sendPasswordResetEmail(
-  email: string,
-  fullName: string,
-  resetLink: string,
-) {
-  await this.transporter.sendMail({
-    from: this.configService.get<string>('MAIL_FROM'),
-    to: email,
-    subject: 'Reset your RentEase password',
-    html: `
+    email: string,
+    fullName: string,
+    resetLink: string,
+  ) {
+    await this.transporter.sendMail({
+      from: this.configService.get<string>('MAIL_FROM'),
+      to: email,
+      subject: 'Reset your RentItEase password',
+      html: `
       <h2>Hello ${fullName},</h2>
 
       <p>We received a request to reset your password.</p>
@@ -296,8 +296,8 @@ export class MailService {
 
       <br/>
 
-      <b>RentEase Team</b>
+      <b>RentItEase Team</b>
     `,
-  });
-}
+    });
+  }
 }

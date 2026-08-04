@@ -154,11 +154,11 @@ export class AuthService {
     if (!user) {
       user = await this.prisma.user.create({
         data: {
-          fullName: decoded.name ?? 'RentEase User',
+          fullName: decoded.name ?? 'RentItEase User',
           phone,
           email:
             decoded.email ??
-            `${phone.replace('+', '')}@firebase.rentease.local`,
+            `${phone.replace('+', '')}@firebase.RentItEase.local`,
           passwordHash: '',
         },
       });

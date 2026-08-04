@@ -312,7 +312,7 @@ mobile_app/
         main/
           kotlin/
             com/
-              rentease/
+              RentItEase/
                 app/
                   mobile_app/
                     MainActivity.kt
@@ -899,7 +899,7 @@ export class UpdateProfileDto {
   phone?: string;
 
   @ApiPropertyOptional({
-    example: 'https://res.cloudinary.com/rentease/image/upload/profile.jpg',
+    example: 'https://res.cloudinary.com/RentItEase/image/upload/profile.jpg',
     nullable: true,
   })
   @IsOptional()
@@ -1116,7 +1116,7 @@ jobs:
 </file>
 
 <file path=".github/copilot-instructions.md">
-# Copilot Instructions for RentEase
+# Copilot Instructions for RentItEase
 
 - Keep changes aligned with the project architecture and modular boundaries.
 - Favor clear, maintainable code and documented APIs.
@@ -2639,7 +2639,7 @@ export class HealthService {
   getHealth() {
     return {
       status: 'ok',
-      service: 'RentEase Backend',
+      service: 'RentItEase Backend',
       version: '1.0.0',
       environment:
         process.env.NODE_ENV || 'development',
@@ -3774,7 +3774,7 @@ This directory contains Docker-related assets for local development and deployme
 
 ## Overview
 
-The RentEase API exposes endpoints for properties, users, visits, chat, payments, and admin operations.
+The RentItEase API exposes endpoints for properties, users, visits, chat, payments, and admin operations.
 
 ## Conventions
 
@@ -3806,7 +3806,7 @@ The RentEase API exposes endpoints for properties, users, visits, chat, payments
 
 ## Overview
 
-RentEase uses PostgreSQL as the primary relational database and Redis for caching and supporting services.
+RentItEase uses PostgreSQL as the primary relational database and Redis for caching and supporting services.
 
 ## Core Entities
 
@@ -3867,8 +3867,8 @@ Use Docker Compose to run the application stack locally.
 </manifest>
 </file>
 
-<file path="mobile_app/android/app/src/main/kotlin/com/rentease/app/mobile_app/MainActivity.kt">
-package com.rentease.app.mobile_app
+<file path="mobile_app/android/app/src/main/kotlin/com/RentItEase/app/mobile_app/MainActivity.kt">
+package com.RentItEase.app.mobile_app
 
 import io.flutter.embedding.android.FlutterActivity
 
@@ -3968,7 +3968,7 @@ plugins {
 }
 
 android {
-    namespace = "com.rentease.app.mobile_app"
+    namespace = "com.RentItEase.app.mobile_app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -3979,7 +3979,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.rentease.app.mobile_app"
+        applicationId = "com.RentItEase.app.mobile_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -4012,15 +4012,15 @@ flutter {
 {
   "project_info": {
     "project_number": "388317975025",
-    "project_id": "rentease-c762e",
-    "storage_bucket": "rentease-c762e.firebasestorage.app"
+    "project_id": "RentItEase-c762e",
+    "storage_bucket": "RentItEase-c762e.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
         "mobilesdk_app_id": "1:388317975025:android:cf64d9a322e699c56f7450",
         "android_client_info": {
-          "package_name": "com.rentease.app.mobile_app"
+          "package_name": "com.RentItEase.app.mobile_app"
         }
       },
       "oauth_client": [],
@@ -5040,7 +5040,7 @@ class SceneDelegate: FlutterSceneDelegate {
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.rentease.app.mobileApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RentItEase.app.mobileApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -5056,7 +5056,7 @@ class SceneDelegate: FlutterSceneDelegate {
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.rentease.app.mobileApp.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RentItEase.app.mobileApp.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -5073,7 +5073,7 @@ class SceneDelegate: FlutterSceneDelegate {
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.rentease.app.mobileApp.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RentItEase.app.mobileApp.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
@@ -5088,7 +5088,7 @@ class SceneDelegate: FlutterSceneDelegate {
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.rentease.app.mobileApp.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RentItEase.app.mobileApp.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
@@ -5219,7 +5219,7 @@ class SceneDelegate: FlutterSceneDelegate {
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.rentease.app.mobileApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RentItEase.app.mobileApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -5241,7 +5241,7 @@ class SceneDelegate: FlutterSceneDelegate {
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.rentease.app.mobileApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RentItEase.app.mobileApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -8017,14 +8017,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/app_router.dart';
 import 'app/app_theme.dart';
 
-class RentEaseApp extends StatelessWidget {
-  const RentEaseApp({super.key});
+class RentItEaseApp extends StatelessWidget {
+  const RentItEaseApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
       child: MaterialApp.router(
-        title: 'RentEase',
+        title: 'RentItEase',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         routerConfig: AppRouter.router,
@@ -8087,9 +8087,9 @@ class DefaultFirebaseOptions {
     apiKey: 'AIzaSyDaz2OcIFE9Yp1ktdkuAdjxoyeKEzGj5o0',
     appId: '1:388317975025:web:ce58332801bad5726f7450',
     messagingSenderId: '388317975025',
-    projectId: 'rentease-c762e',
-    authDomain: 'rentease-c762e.firebaseapp.com',
-    storageBucket: 'rentease-c762e.firebasestorage.app',
+    projectId: 'RentItEase-c762e',
+    authDomain: 'RentItEase-c762e.firebaseapp.com',
+    storageBucket: 'RentItEase-c762e.firebasestorage.app',
     measurementId: 'G-7CDK25JWER',
   );
 
@@ -8097,16 +8097,16 @@ class DefaultFirebaseOptions {
     apiKey: 'AIzaSyAgRSTrO0DQ0AdkPV0u83wK1kRrQqNkgco',
     appId: '1:388317975025:android:cf64d9a322e699c56f7450',
     messagingSenderId: '388317975025',
-    projectId: 'rentease-c762e',
-    storageBucket: 'rentease-c762e.firebasestorage.app',
+    projectId: 'RentItEase-c762e',
+    storageBucket: 'RentItEase-c762e.firebasestorage.app',
   );
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAxXEhBvJHbiYmsC36dUDHW94hM4FYFsx4',
     appId: '1:388317975025:ios:b3bf006fa7f0b59f6f7450',
     messagingSenderId: '388317975025',
-    projectId: 'rentease-c762e',
-    storageBucket: 'rentease-c762e.firebasestorage.app',
-    iosBundleId: 'com.rentease.app.mobileApp',
+    projectId: 'RentItEase-c762e',
+    storageBucket: 'RentItEase-c762e.firebasestorage.app',
+    iosBundleId: 'com.RentItEase.app.mobileApp',
   );
 }
 </file>
@@ -8120,10 +8120,10 @@ import 'package:mobile_app/features/authentication/presentation/pages/authentica
 import 'package:mobile_app/features/search/data/repositories/search_repository_impl.dart';
 
 void main() {
-  group('RentEase Widget Tests', () {
-    testWidgets('RentEase app renders successfully',
+  group('RentItEase Widget Tests', () {
+    testWidgets('RentItEase app renders successfully',
         (WidgetTester tester) async {
-      await tester.pumpWidget(const RentEaseApp());
+      await tester.pumpWidget(const RentItEaseApp());
 
       expect(find.byType(MaterialApp), findsOneWidget);
     });
@@ -8335,13 +8335,13 @@ linter:
 </file>
 
 <file path="mobile_app/firebase.json">
-{"flutter":{"platforms":{"android":{"default":{"projectId":"rentease-c762e","appId":"1:388317975025:android:cf64d9a322e699c56f7450","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"rentease-c762e","configurations":{"android":"1:388317975025:android:cf64d9a322e699c56f7450","ios":"1:388317975025:ios:b3bf006fa7f0b59f6f7450","web":"1:388317975025:web:ce58332801bad5726f7450"}}}}}}
+{"flutter":{"platforms":{"android":{"default":{"projectId":"RentItEase-c762e","appId":"1:388317975025:android:cf64d9a322e699c56f7450","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"RentItEase-c762e","configurations":{"android":"1:388317975025:android:cf64d9a322e699c56f7450","ios":"1:388317975025:ios:b3bf006fa7f0b59f6f7450","web":"1:388317975025:web:ce58332801bad5726f7450"}}}}}}
 </file>
 
 <file path="mobile_app/README.md">
-# RentEase Mobile
+# RentItEase Mobile
 
-RentEase is a production-ready Flutter application for discovering, booking, and managing rental properties.
+RentItEase is a production-ready Flutter application for discovering, booking, and managing rental properties.
 
 ## Architecture
 
@@ -8420,11 +8420,11 @@ coverage/
 </file>
 
 <file path="ARCHITECTURE.md">
-# RentEase Architecture
+# RentItEase Architecture
 
 ## Overview
 
-RentEase is organized as a monorepo with separate application layers for mobile, backend, admin, and shared infrastructure.
+RentItEase is organized as a monorepo with separate application layers for mobile, backend, admin, and shared infrastructure.
 
 ## High-level Structure
 
@@ -8474,7 +8474,7 @@ RentEase is organized as a monorepo with separate application layers for mobile,
 
 ## Our Pledge
 
-We are committed to providing a welcoming and inclusive environment for everyone contributing to RentEase.
+We are committed to providing a welcoming and inclusive environment for everyone contributing to RentItEase.
 
 ## Expected Behavior
 
@@ -8495,9 +8495,9 @@ Project maintainers may remove, edit, or reject comments, commits, issues, and p
 </file>
 
 <file path="CONTRIBUTING.md">
-# Contributing to RentEase
+# Contributing to RentItEase
 
-Thanks for helping improve RentEase.
+Thanks for helping improve RentItEase.
 
 ## Development Workflow
 
@@ -8530,7 +8530,7 @@ Thanks for helping improve RentEase.
 <file path="LICENSE">
 MIT License
 
-Copyright (c) 2026 RentEase contributors
+Copyright (c) 2026 RentItEase contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -8552,7 +8552,7 @@ SOFTWARE.
 </file>
 
 <file path="melos.yaml">
-name: rentease
+name: RentItEase
 
 packages:
   - mobile_app
@@ -8561,7 +8561,7 @@ packages:
 </file>
 
 <file path="PROJECT_SPEC.md">
-# RentEase - Project Specification
+# RentItEase - Project Specification
 
 **Version:** 1.0.0
 
@@ -8575,7 +8575,7 @@ packages:
 
 # Vision
 
-RentEase is a modern property marketplace that allows users to:
+RentItEase is a modern property marketplace that allows users to:
 
 - Rent Properties
 - Buy Properties
@@ -8766,7 +8766,7 @@ Dependencies always point inward.
 
 # Folder Structure
 
-RentEase/
+RentItEase/
 
     mobile_app/
 
@@ -9359,9 +9359,9 @@ Smart Home Integration
 </file>
 
 <file path="README.md">
-# RentEase
+# RentItEase
 
-RentEase is a multi-platform property rental platform with a Flutter mobile app, backend services, an admin panel, and supporting infrastructure.
+RentItEase is a multi-platform property rental platform with a Flutter mobile app, backend services, an admin panel, and supporting infrastructure.
 
 ## Project structure
 
@@ -9574,11 +9574,11 @@ export class MailService {
     await this.transporter.sendMail({
       from: this.configService.get<string>('MAIL_FROM'),
       to: email,
-      subject: 'Welcome to RentEase 🎉',
+      subject: 'Welcome to RentItEase 🎉',
       html: `
         <h2>Welcome ${fullName},</h2>
 
-        <p>Thank you for joining <b>RentEase</b>.</p>
+        <p>Thank you for joining <b>RentItEase</b>.</p>
 
         <p>Your account has been created successfully.</p>
 
@@ -9586,7 +9586,7 @@ export class MailService {
 
         <p>Happy House Hunting!</p>
 
-        <b>RentEase Team</b>
+        <b>RentItEase Team</b>
       `,
     });
   }
@@ -9603,7 +9603,7 @@ export class MailService {
     await this.transporter.sendMail({
       from: this.configService.get<string>('MAIL_FROM'),
       to: email,
-      subject: 'Reset Your RentEase Password',
+      subject: 'Reset Your RentItEase Password',
       html: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
 
@@ -9612,7 +9612,7 @@ export class MailService {
           <p>Hello <strong>${fullName}</strong>,</p>
 
           <p>
-            We received a request to reset your RentEase password.
+            We received a request to reset your RentItEase password.
           </p>
 
           <p>
@@ -9657,7 +9657,7 @@ export class MailService {
 
           <br>
 
-          <strong>RentEase Team</strong>
+          <strong>RentItEase Team</strong>
 
         </div>
       `,
@@ -9689,9 +9689,9 @@ export class MailService {
 
         <br>
 
-        <p>Thank you for choosing RentEase.</p>
+        <p>Thank you for choosing RentItEase.</p>
 
-        <b>RentEase Team</b>
+        <b>RentItEase Team</b>
       `,
     });
   }
@@ -9723,7 +9723,7 @@ export class MailService {
 
         <p>Please arrive on time.</p>
 
-        <b>RentEase Team</b>
+        <b>RentItEase Team</b>
       `,
     });
   }
@@ -9752,7 +9752,7 @@ export class MailService {
 
         <p>You can schedule another visit anytime.</p>
 
-        <b>RentEase Team</b>
+        <b>RentItEase Team</b>
       `,
     });
   }
@@ -9781,7 +9781,7 @@ export class MailService {
 
         <p>Please book another convenient slot.</p>
 
-        <b>RentEase Team</b>
+        <b>RentItEase Team</b>
       `,
     });
   }
@@ -9810,7 +9810,7 @@ export class MailService {
 
         <p>Please don't forget to leave a review.</p>
 
-        <b>RentEase Team</b>
+        <b>RentItEase Team</b>
       `,
     });
   }
@@ -9826,7 +9826,7 @@ export class MailService {
   await this.transporter.sendMail({
     from: this.configService.get<string>('MAIL_FROM'),
     to: email,
-    subject: 'Reset your RentEase password',
+    subject: 'Reset your RentItEase password',
     html: `
       <h2>Hello ${fullName},</h2>
 
@@ -9844,7 +9844,7 @@ export class MailService {
 
       <br/>
 
-      <b>RentEase Team</b>
+      <b>RentItEase Team</b>
     `,
   });
 }
@@ -12086,7 +12086,7 @@ class ApiException extends AppException {
 
 <file path="mobile_app/lib/config/environment.dart">
 class Environment {
-  static const String appName = 'RentEase';
+  static const String appName = 'RentItEase';
 
   /// Override with `--dart-define=API_BASE_URL=https://your-host/api/v1`.
   /// The Android emulator reaches a backend on the development machine through
@@ -13128,7 +13128,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 const AuthHeader(
                   title: 'Create Account',
                   subtitle:
-                      'Join RentEase and start finding your perfect rental home.',
+                      'Join RentItEase and start finding your perfect rental home.',
                 ),
 
                 const SizedBox(height: 35),
@@ -13581,7 +13581,7 @@ class BookingRepositoryImpl implements BookingRepository {
   @override
   Future<List<BookingEntity>> load() async {
     return [
-      const BookingEntity('Track progress', 'Built for RentEase workflows.'),
+      const BookingEntity('Track progress', 'Built for RentItEase workflows.'),
     ];
   }
 }
@@ -15636,7 +15636,7 @@ class HomeRepositoryImpl implements HomeRepository {
   @override
   Future<List<HomeEntity>> load() async {
     return [
-      const HomeEntity('Track progress', 'Built for RentEase workflows.'),
+      const HomeEntity('Track progress', 'Built for RentItEase workflows.'),
     ];
   }
 }
@@ -17544,7 +17544,7 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   @override
   Future<List<OnboardingEntity>> load() async {
     return [
-      const OnboardingEntity('Track progress', 'Built for RentEase workflows.'),
+      const OnboardingEntity('Track progress', 'Built for RentItEase workflows.'),
     ];
   }
 }
@@ -20926,7 +20926,7 @@ class PaymentRepositoryImpl implements PaymentRepository {
   @override
   Future<List<PaymentEntity>> load() async {
     return [
-      const PaymentEntity('Track progress', 'Built for RentEase workflows.'),
+      const PaymentEntity('Track progress', 'Built for RentItEase workflows.'),
     ];
   }
 }
@@ -21450,7 +21450,7 @@ class SettingsPage extends StatelessWidget {
 
               title: 'Help & Support',
 
-              subtitle: 'Contact RentEase support',
+              subtitle: 'Contact RentItEase support',
 
               onTap: () {
                 // TODO:
@@ -21461,7 +21461,7 @@ class SettingsPage extends StatelessWidget {
             ProfileMenuTile(
               icon: Icons.info_outline,
 
-              title: 'About RentEase',
+              title: 'About RentItEase',
 
               subtitle: 'App version and information',
 
@@ -21469,7 +21469,7 @@ class SettingsPage extends StatelessWidget {
                 showAboutDialog(
                   context: context,
 
-                  applicationName: 'RentEase',
+                  applicationName: 'RentItEase',
 
                   applicationVersion: '1.0.0',
 
@@ -21523,7 +21523,7 @@ class LogoutDialog extends StatelessWidget {
         ],
       ),
 
-      content: const Text('Are you sure you want to logout from RentEase?'),
+      content: const Text('Are you sure you want to logout from RentItEase?'),
 
       actions: [
         TextButton(
@@ -23998,7 +23998,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
   @override
   Future<List<SettingsEntity>> load() async {
     return [
-      const SettingsEntity('Track progress', 'Built for RentEase workflows.'),
+      const SettingsEntity('Track progress', 'Built for RentItEase workflows.'),
     ];
   }
 }
@@ -24061,7 +24061,7 @@ class SplashRepositoryImpl implements SplashRepository {
   @override
   Future<List<SplashEntity>> load() async {
     return [
-      const SplashEntity('Track progress', 'Built for RentEase workflows.'),
+      const SplashEntity('Track progress', 'Built for RentItEase workflows.'),
     ];
   }
 }
@@ -25513,7 +25513,7 @@ async testNotification(
 ) {
   return this.pushNotificationsService.sendToUser(
     user.id,
-    'RentEase',
+    'RentItEase',
     '🎉 Push notifications are working!',
     {
       screen: 'home',
@@ -27108,7 +27108,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'RentEase',
+              'RentItEase',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
             ),
             Text('Find your perfect home', style: TextStyle(fontSize: 13)),
@@ -27502,9 +27502,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
     return ProfileModel(
       id: 'user_001',
 
-      fullName: 'RentEase User',
+      fullName: 'RentItEase User',
 
-      email: 'user@rentease.com',
+      email: 'user@RentItEase.com',
 
       phone: '+91 9876543210',
 
@@ -27537,7 +27537,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
 
       fullName: fullName,
 
-      email: 'user@rentease.com',
+      email: 'user@RentItEase.com',
 
       phone: phone,
 
@@ -28705,7 +28705,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
             const SizedBox(height: 30),
 
             Text(
-              'RentEase',
+              'RentItEase',
               style: Theme.of(
                 context,
               ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -28922,18 +28922,18 @@ import 'core/router/app_router.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(const ProviderScope(child: RentEaseApp()));
+  runApp(const ProviderScope(child: RentItEaseApp()));
 }
 
-class RentEaseApp extends StatelessWidget {
-  const RentEaseApp({super.key});
+class RentItEaseApp extends StatelessWidget {
+  const RentItEaseApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
 
-      title: 'RentEase',
+      title: 'RentItEase',
 
       theme: ThemeData(
         useMaterial3: true,
@@ -31405,7 +31405,7 @@ app.enableCors({
   );
 
   const config = new DocumentBuilder()
-    .setTitle('RentEase API')
+    .setTitle('RentItEase API')
     .setDescription(
       'Production-ready Rental Property Management System',
     )
@@ -31428,7 +31428,7 @@ app.enableCors({
 await app.listen(
   process.env.PORT || 3000,
 );
-  console.log('🚀 RentEase Backend Running');
+  console.log('🚀 RentItEase Backend Running');
   console.log(
     '🌐 API: http://localhost:3000/api/v1',
   );
@@ -31588,7 +31588,7 @@ class AppRouter {
 
 <file path="mobile_app/pubspec.yaml">
 name: mobile_app
-description: Production-ready RentEase mobile application.
+description: Production-ready RentItEase mobile application.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -34838,9 +34838,9 @@ private toRadians(value: number): number {
 
 <file path="backend/package.json">
 {
-  "name": "rentease-backend",
+  "name": "RentItEase-backend",
   "version": "1.0.0",
-  "description": "RentEase Backend API built with NestJS, Prisma and PostgreSQL",
+  "description": "RentItEase Backend API built with NestJS, Prisma and PostgreSQL",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
@@ -35082,11 +35082,11 @@ export class AuthService {
     if (!user) {
       user = await this.prisma.user.create({
         data: {
-          fullName: decoded.name ?? 'RentEase User',
+          fullName: decoded.name ?? 'RentItEase User',
           phone,
           email:
             decoded.email ??
-            `${phone.replace('+', '')}@firebase.rentease.local`,
+            `${phone.replace('+', '')}@firebase.RentItEase.local`,
           passwordHash: '',
         },
       });

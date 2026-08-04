@@ -1,6 +1,6 @@
 name: mobile_app
-description: Production-ready RentEase mobile application.
-publish_to: 'none'
+description: Production-ready RentItEase mobile application.
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
@@ -35,7 +35,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
+
   assets:
     - assets/images/
     - assets/animations/

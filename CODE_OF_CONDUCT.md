@@ -2,7 +2,7 @@
 
 ## Our Pledge
 
-We are committed to providing a welcoming and inclusive environment for everyone contributing to RentEase.
+We are committed to providing a welcoming and inclusive environment for everyone contributing to RentItEase.
 
 ## Expected Behavior
 

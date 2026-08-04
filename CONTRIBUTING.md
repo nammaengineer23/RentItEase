@@ -1,6 +1,6 @@
-# Contributing to RentEase
+# Contributing to RentItEase
 
-Thanks for helping improve RentEase.
+Thanks for helping improve RentItEase.
 
 ## Development Workflow
 

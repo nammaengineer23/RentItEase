@@ -28,7 +28,7 @@ export class UpdateProfileDto {
   phone?: string;
 
   @ApiPropertyOptional({
-    example: 'https://res.cloudinary.com/rentease/image/upload/profile.jpg',
+    example: 'https://res.cloudinary.com/RentItEase/image/upload/profile.jpg',
     nullable: true,
   })
   @IsOptional()

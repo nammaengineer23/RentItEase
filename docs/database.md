@@ -2,7 +2,7 @@
 
 ## Overview
 
-RentEase uses PostgreSQL as the primary relational database and Redis for caching and supporting services.
+RentItEase uses PostgreSQL as the primary relational database and Redis for caching and supporting services.
 
 ## Core Entities
 
