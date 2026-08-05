@@ -1,4 +1,4 @@
-package com.RentItEase.app.mobile_app
+package com.rentitease.app
 
 import io.flutter.embedding.android.FlutterActivity
 

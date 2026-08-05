@@ -8,9 +8,11 @@ class PropertyRepositoryImpl implements PropertyRepository {
   PropertyRepositoryImpl({
     PropertyRemoteDataSource? remoteDataSource,
   }) : _remoteDataSource =
-           remoteDataSource ?? PropertyRemoteDataSource();
+            remoteDataSource ?? PropertyRemoteDataSource();
 
   final PropertyRemoteDataSource _remoteDataSource;
+
+  final List<PropertyEntity> _favorites = [];
 
   //==========================================================
   // Get All Properties
@@ -22,14 +24,15 @@ class PropertyRepositoryImpl implements PropertyRepository {
 
     return response
         .map(
-          (json) =>
-              PropertyModel.fromJson(json as Map<String, dynamic>).toEntity(),
+          (json) => PropertyModel.fromJson(
+            Map<String, dynamic>.from(json),
+          ).toEntity(),
         )
         .toList();
   }
 
   //==========================================================
-  // Get Property By ID
+  // Property Details
   //==========================================================
 
   @override
@@ -40,7 +43,7 @@ class PropertyRepositoryImpl implements PropertyRepository {
   }
 
   //==========================================================
-  // Owner Properties
+  // My Properties
   //==========================================================
 
   @override
@@ -49,8 +52,9 @@ class PropertyRepositoryImpl implements PropertyRepository {
 
     return response
         .map(
-          (json) =>
-              PropertyModel.fromJson(json as Map<String, dynamic>).toEntity(),
+          (json) => PropertyModel.fromJson(
+            Map<String, dynamic>.from(json),
+          ).toEntity(),
         )
         .toList();
   }
@@ -112,14 +116,15 @@ class PropertyRepositoryImpl implements PropertyRepository {
 
     return response
         .map(
-          (json) =>
-              PropertyModel.fromJson(json as Map<String, dynamic>).toEntity(),
+          (json) => PropertyModel.fromJson(
+            Map<String, dynamic>.from(json),
+          ).toEntity(),
         )
         .toList();
   }
 
   //==========================================================
-  // Search Properties
+  // Search
   //==========================================================
 
   @override
@@ -134,49 +139,48 @@ class PropertyRepositoryImpl implements PropertyRepository {
     final properties = await getProperties();
 
     return properties.where((property) {
-      bool matches = true;
-
-      if (keyword != null && keyword.isNotEmpty) {
-        final search = keyword.toLowerCase();
-
-        matches = matches &&
-            (property.title.toLowerCase().contains(search) ||
-                property.description.toLowerCase().contains(search));
+      if (keyword != null &&
+          keyword.isNotEmpty &&
+          !(property.title.toLowerCase().contains(keyword.toLowerCase()) ||
+              property.description.toLowerCase().contains(
+                keyword.toLowerCase(),
+              ))) {
+        return false;
       }
 
-      if (city != null && city.isNotEmpty) {
-        matches =
-            matches && property.city.toLowerCase() == city.toLowerCase();
+      if (city != null &&
+          city.isNotEmpty &&
+          property.city.toLowerCase() != city.toLowerCase()) {
+        return false;
       }
 
-      if (locality != null && locality.isNotEmpty) {
-        matches = matches &&
-            property.locality.toLowerCase().contains(
-                  locality.toLowerCase(),
-                );
+      if (locality != null &&
+          locality.isNotEmpty &&
+          !property.locality.toLowerCase().contains(
+                locality.toLowerCase(),
+              )) {
+        return false;
       }
 
-      if (minRent != null) {
-        matches = matches && property.rent >= minRent;
+      if (minRent != null && property.rent < minRent) {
+        return false;
       }
 
-      if (maxRent != null) {
-        matches = matches && property.rent <= maxRent;
+      if (maxRent != null && property.rent > maxRent) {
+        return false;
       }
 
-      if (bedrooms != null) {
-        matches = matches && property.bedrooms == bedrooms;
+      if (bedrooms != null && property.bedrooms != bedrooms) {
+        return false;
       }
 
-      return matches;
+      return true;
     }).toList();
   }
 
   //==========================================================
-  // Favorites (Temporary Implementation)
+  // Favorites
   //==========================================================
-
-  final List<PropertyEntity> _favorites = [];
 
   @override
   Future<List<PropertyEntity>> getFavoriteProperties() async {
@@ -185,15 +189,26 @@ class PropertyRepositoryImpl implements PropertyRepository {
 
   @override
   Future<void> addToFavorites(String propertyId) async {
+    if (_favorites.any((e) => e.id == propertyId)) {
+      return;
+    }
+
     final property = await getProperty(propertyId);
 
-    if (_favorites.every((e) => e.id != property.id)) {
-      _favorites.add(property);
-    }
+    _favorites.add(property);
   }
 
   @override
   Future<void> removeFromFavorites(String propertyId) async {
-    _favorites.removeWhere((e) => e.id == propertyId);
+    _favorites.removeWhere(
+      (element) => element.id == propertyId,
+    );
+  }
+
+  @override
+  Future<bool> isFavorite(String propertyId) async {
+    return _favorites.any(
+      (element) => element.id == propertyId,
+    );
   }
 }

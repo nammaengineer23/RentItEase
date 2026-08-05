@@ -8,15 +8,15 @@ final propertyRepositoryProvider = Provider<PropertyRepositoryImpl>(
 );
 
 class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
-  PropertyNotifier(this._repository) : super(const AsyncValue.loading()) {
+  PropertyNotifier(this._repository) : super(const AsyncLoading()) {
     loadProperties();
   }
 
   final PropertyRepositoryImpl _repository;
 
-  //=========================================
+  //==========================================================
   // Load All Properties
-  //=========================================
+  //==========================================================
 
   Future<void> loadProperties() async {
     try {
@@ -25,71 +25,125 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
       final properties = await _repository.getProperties();
 
       state = AsyncData(properties);
-    } catch (e, stack) {
-      state = AsyncError(e, stack);
+    } catch (error, stackTrace) {
+      state = AsyncError(error, stackTrace);
     }
   }
 
-  //=========================================
+  //==========================================================
   // Refresh
-  //=========================================
+  //==========================================================
 
   Future<void> refresh() async {
     await loadProperties();
   }
 
-  //=========================================
-  // Featured Properties
-  //=========================================
+  //==========================================================
+  // Property Details
+  //==========================================================
+
+  Future<PropertyEntity> getProperty(String id) {
+    return _repository.getProperty(id);
+  }
+
+  //==========================================================
+  // Featured
+  //==========================================================
 
   List<PropertyEntity> featuredProperties() {
     return state.maybeWhen(
-      data: (properties) => properties.where((e) => e.isFeatured).toList(),
+      data: (properties) =>
+          properties.where((e) => e.isFeatured).toList(),
       orElse: () => [],
     );
   }
 
-  //=========================================
-  // Available Properties
-  //=========================================
+  //==========================================================
+  // Available
+  //==========================================================
 
   List<PropertyEntity> availableProperties() {
     return state.maybeWhen(
-      data: (properties) => properties.where((e) => e.isAvailable).toList(),
+      data: (properties) =>
+          properties.where((e) => e.isAvailable).toList(),
       orElse: () => [],
     );
   }
 
-  //=========================================
+  //==========================================================
   // Search
-  //=========================================
+  //==========================================================
 
-  List<PropertyEntity> search(String query) {
-    final q = query.toLowerCase();
-
-    return state.maybeWhen(
-      data: (properties) => properties.where((property) {
-        return property.title.toLowerCase().contains(q) ||
-            property.city.toLowerCase().contains(q) ||
-            property.locality.toLowerCase().contains(q);
-      }).toList(),
-      orElse: () => [],
+  Future<List<PropertyEntity>> searchProperties({
+    String? keyword,
+    String? city,
+    String? locality,
+    double? minRent,
+    double? maxRent,
+    int? bedrooms,
+  }) {
+    return _repository.searchProperties(
+      keyword: keyword,
+      city: city,
+      locality: locality,
+      minRent: minRent,
+      maxRent: maxRent,
+      bedrooms: bedrooms,
     );
   }
 
-  //=========================================
-  // Add Property
-  //=========================================
+  //==========================================================
+  // Owner Properties
+  //==========================================================
 
-  Future<void> addProperty(Map<String, dynamic> data) async {
+  Future<List<PropertyEntity>> getMyProperties() {
+    return _repository.getMyProperties();
+  }
+
+  //==========================================================
+  // Nearby
+  //==========================================================
+
+  Future<List<PropertyEntity>> getNearbyProperties({
+    required double latitude,
+    required double longitude,
+    double radius = 5,
+  }) {
+    return _repository.getNearbyProperties(
+      latitude: latitude,
+      longitude: longitude,
+      radius: radius,
+    );
+  }
+
+  //==========================================================
+  // Create
+  //==========================================================
+
+  Future<void> addProperty(
+    Map<String, dynamic> data,
+  ) async {
     await _repository.createProperty(data);
 
     await loadProperties();
   }
 
-  //=========================================
-  // Delete Property
-  //=========================================
+  //==========================================================
+  // Update
+  //==========================================================
+
+  Future<void> updateProperty(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    await _repository.updateProperty(id, data);
+
+    await loadProperties();
+  }
+
+  //==========================================================
+  // Delete
+  //==========================================================
 
   Future<void> deleteProperty(String id) async {
     await _repository.deleteProperty(id);
@@ -97,18 +151,35 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
     await loadProperties();
   }
 
-  //=========================================
-  // Update Property
-  //=========================================
+  //==========================================================
+  // Favorites
+  //==========================================================
 
-  Future<void> updateProperty(String id, Map<String, dynamic> data) async {
-    await _repository.updateProperty(id, data);
+  Future<List<PropertyEntity>> getFavoriteProperties() {
+    return _repository.getFavoriteProperties();
+  }
 
-    await loadProperties();
+  Future<void> addToFavorites(String propertyId) async {
+    await _repository.addToFavorites(propertyId);
+
+    state.whenData((_) {});
+  }
+
+  Future<void> removeFromFavorites(String propertyId) async {
+    await _repository.removeFromFavorites(propertyId);
+
+    state.whenData((_) {});
+  }
+
+  Future<bool> isFavorite(String propertyId) {
+    return _repository.isFavorite(propertyId);
   }
 }
 
-final propertyProvider =
-    StateNotifierProvider<PropertyNotifier, AsyncValue<List<PropertyEntity>>>(
-      (ref) => PropertyNotifier(ref.read(propertyRepositoryProvider)),
-    );
+final propertyProvider = StateNotifierProvider<
+    PropertyNotifier,
+    AsyncValue<List<PropertyEntity>>>(
+  (ref) => PropertyNotifier(
+    ref.read(propertyRepositoryProvider),
+  ),
+);

@@ -92,7 +92,7 @@ class OnboardingPage extends ConsumerWidget {
                           .completeOnboarding();
 
                       if (context.mounted) {
-                        context.go('/login');
+                        context.go('/auth');
                       }
                     } else {
                       ref.read(onboardingProvider).nextPage();

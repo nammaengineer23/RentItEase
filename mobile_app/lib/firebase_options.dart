@@ -50,29 +50,29 @@ if (kIsWeb)
     }
   }
 
-static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDaz2OcIFE9Yp1ktdkuAdjxoyeKEzGj5o0',
-appId: '1:388317975025:web:ce58332801bad5726f7450',
-messagingSenderId: '388317975025',
-projectId: 'RentItEase-c762e',
-authDomain: 'RentItEase-c762e.firebaseapp.com',
-storageBucket: 'RentItEase-c762e.firebasestorage.app',
-measurementId: 'G-7CDK25JWER',
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyB86O34pIA5mjp1_qPR7PTQVWpCRRpxffQ',
+    appId: '1:276976121047:web:0407eed33ae718e2152c92',
+    messagingSenderId: '276976121047',
+    projectId: 'rentitease-65e49',
+    authDomain: 'rentitease-65e49.firebaseapp.com',
+    storageBucket: 'rentitease-65e49.firebasestorage.app',
+    measurementId: 'G-QSDWLB9JX8',
   );
 
-static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAgRSTrO0DQ0AdkPV0u83wK1kRrQqNkgco',
-appId: '1:388317975025:android:cf64d9a322e699c56f7450',
-messagingSenderId: '388317975025',
-projectId: 'RentItEase-c762e',
-storageBucket: 'RentItEase-c762e.firebasestorage.app',
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyD0GI1ew-EyBzea-wLwvQUiCPsJXW6Ls8k',
+    appId: '1:276976121047:android:72bf8e94f2676aea152c92',
+    messagingSenderId: '276976121047',
+    projectId: 'rentitease-65e49',
+    storageBucket: 'rentitease-65e49.firebasestorage.app',
   );
-static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAxXEhBvJHbiYmsC36dUDHW94hM4FYFsx4',
-appId: '1:388317975025:ios:b3bf006fa7f0b59f6f7450',
-messagingSenderId: '388317975025',
-projectId: 'RentItEase-c762e',
-storageBucket: 'RentItEase-c762e.firebasestorage.app',
-iosBundleId: 'com.RentItEase.app.mobileApp',
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyC_CspcD-yGp_auavvMaq9GtrZSBg1EKsE',
+    appId: '1:276976121047:ios:9fd3a5bc0af061f6152c92',
+    messagingSenderId: '276976121047',
+    projectId: 'rentitease-65e49',
+    storageBucket: 'rentitease-65e49.firebasestorage.app',
+    iosBundleId: 'com.RentItEase.app.mobileApp',
   );
 }

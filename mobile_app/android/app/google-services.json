@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "388317975025",
-    "project_id": "RentItEase-c762e",
-    "storage_bucket": "RentItEase-c762e.firebasestorage.app"
+    "project_number": "276976121047",
+    "project_id": "rentitease-65e49",
+    "storage_bucket": "rentitease-65e49.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:388317975025:android:cf64d9a322e699c56f7450",
+        "mobilesdk_app_id": "1:276976121047:android:72bf8e94f2676aea152c92",
         "android_client_info": {
-          "package_name": "com.RentItEase.app.mobile_app"
+          "package_name": "com.rentitease.app"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAgRSTrO0DQ0AdkPV0u83wK1kRrQqNkgco"
+          "current_key": "AIzaSyD0GI1ew-EyBzea-wLwvQUiCPsJXW6Ls8k"
         }
       ],
       "services": {

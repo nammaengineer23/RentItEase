@@ -31,165 +31,96 @@ class PropertyModel {
   });
 
   final String id;
-
   final String title;
-
   final String description;
-
   final double rent;
-
   final String city;
-
   final String locality;
-
   final String address;
-
   final int bedrooms;
-
   final int bathrooms;
-
   final int balconies;
-
   final double area;
-
   final String propertyType;
-
   final String furnishing;
-
   final int floor;
-
   final int totalFloors;
-
   final int parking;
-
   final bool isAvailable;
-
   final bool isFeatured;
-
   final bool isVerified;
-
   final double rating;
-
   final int views;
-
   final List<String> imageUrls;
-
   final String ownerId;
-
   final String ownerName;
-
   final String ownerPhone;
-
   final DateTime createdAt;
 
   factory PropertyModel.fromJson(Map<String, dynamic> json) {
     return PropertyModel(
       id: json['id']?.toString() ?? '',
-
-      title: json['title'] ?? '',
-
-      description: json['description'] ?? '',
-
-      rent: (json['rent'] as num?)?.toDouble() ?? 0,
-
-      city: json['city'] ?? '',
-
-      locality: json['locality'] ?? '',
-
-      address: json['address'] ?? '',
-
-      bedrooms: json['bedrooms'] ?? 0,
-
-      bathrooms: json['bathrooms'] ?? 0,
-
-      balconies: json['balconies'] ?? 0,
-
-      area: (json['area'] as num?)?.toDouble() ?? 0,
-
-      propertyType: json['propertyType'] ?? '',
-
-      furnishing: json['furnishing'] ?? '',
-
-      floor: json['floor'] ?? 0,
-
-      totalFloors: json['totalFloors'] ?? 0,
-
-      parking: json['parking'] ?? 0,
-
-      isAvailable: json['isAvailable'] ?? true,
-
-      isFeatured: json['isFeatured'] ?? false,
-
-      isVerified: json['isVerified'] ?? false,
-
-      rating: (json['rating'] as num?)?.toDouble() ?? 0,
-
-      views: json['views'] ?? 0,
-
-      imageUrls: List<String>.from(json['imageUrls'] ?? const []),
-
-      ownerId: json['ownerId'] ?? '',
-
-      ownerName: json['ownerName'] ?? '',
-
-      ownerPhone: json['ownerPhone'] ?? '',
-
-      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      rent: (json['rent'] as num?)?.toDouble() ?? 0.0,
+      city: json['city']?.toString() ?? '',
+      locality: json['locality']?.toString() ?? '',
+      address: json['address']?.toString() ?? '',
+      bedrooms: (json['bedrooms'] as num?)?.toInt() ?? 0,
+      bathrooms: (json['bathrooms'] as num?)?.toInt() ?? 0,
+      balconies: (json['balconies'] as num?)?.toInt() ?? 0,
+      area: (json['area'] as num?)?.toDouble() ?? 0.0,
+      propertyType: json['propertyType']?.toString() ?? '',
+      furnishing: json['furnishing']?.toString() ?? '',
+      floor: (json['floor'] as num?)?.toInt() ?? 0,
+      totalFloors: (json['totalFloors'] as num?)?.toInt() ?? 0,
+      parking: (json['parking'] as num?)?.toInt() ?? 0,
+      isAvailable: json['isAvailable'] == true,
+      isFeatured: json['isFeatured'] == true,
+      isVerified: json['isVerified'] == true,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      views: (json['views'] as num?)?.toInt() ?? 0,
+      imageUrls: (json['imageUrls'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      ownerId: json['ownerId']?.toString() ?? '',
+      ownerName: json['ownerName']?.toString() ?? '',
+      ownerPhone: json['ownerPhone']?.toString() ?? '',
+      createdAt: DateTime.tryParse(
+            json['createdAt']?.toString() ?? '',
+          ) ??
+          DateTime.now(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-
       'title': title,
-
       'description': description,
-
       'rent': rent,
-
       'city': city,
-
       'locality': locality,
-
       'address': address,
-
       'bedrooms': bedrooms,
-
       'bathrooms': bathrooms,
-
       'balconies': balconies,
-
       'area': area,
-
       'propertyType': propertyType,
-
       'furnishing': furnishing,
-
       'floor': floor,
-
       'totalFloors': totalFloors,
-
       'parking': parking,
-
       'isAvailable': isAvailable,
-
       'isFeatured': isFeatured,
-
       'isVerified': isVerified,
-
       'rating': rating,
-
       'views': views,
-
       'imageUrls': imageUrls,
-
       'ownerId': ownerId,
-
       'ownerName': ownerName,
-
       'ownerPhone': ownerPhone,
-
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -224,118 +155,8 @@ class PropertyModel {
   }) {
     return PropertyModel(
       id: id ?? this.id,
-
       title: title ?? this.title,
-
       description: description ?? this.description,
-
       rent: rent ?? this.rent,
-
       city: city ?? this.city,
-
-      locality: locality ?? this.locality,
-
-      address: address ?? this.address,
-
-      bedrooms: bedrooms ?? this.bedrooms,
-
-      bathrooms: bathrooms ?? this.bathrooms,
-
-      balconies: balconies ?? this.balconies,
-
-      area: area ?? this.area,
-
-      propertyType: propertyType ?? this.propertyType,
-
-      furnishing: furnishing ?? this.furnishing,
-
-      floor: floor ?? this.floor,
-
-      totalFloors: totalFloors ?? this.totalFloors,
-
-      parking: parking ?? this.parking,
-
-      isAvailable: isAvailable ?? this.isAvailable,
-
-      isFeatured: isFeatured ?? this.isFeatured,
-
-      isVerified: isVerified ?? this.isVerified,
-
-      rating: rating ?? this.rating,
-
-      views: views ?? this.views,
-
-      imageUrls: imageUrls ?? this.imageUrls,
-
-      ownerId: ownerId ?? this.ownerId,
-
-      ownerName: ownerName ?? this.ownerName,
-
-      ownerPhone: ownerPhone ?? this.ownerPhone,
-
-      createdAt: createdAt ?? this.createdAt,
-    );
-  }
-
-  PropertyEntity toEntity() {
-    return PropertyEntity(
-      id: id,
-      title: title,
-      description: description,
-      rent: rent,
-      city: city,
-      locality: locality,
-      address: address,
-      bedrooms: bedrooms,
-      bathrooms: bathrooms,
-      balconies: balconies,
-      area: area,
-      propertyType: propertyType,
-      furnishing: furnishing,
-      floor: floor,
-      totalFloors: totalFloors,
-      parking: parking,
-      isAvailable: isAvailable,
-      isFeatured: isFeatured,
-      isVerified: isVerified,
-      rating: rating,
-      views: views,
-      imageUrls: imageUrls,
-      ownerId: ownerId,
-      ownerName: ownerName,
-      ownerPhone: ownerPhone,
-      createdAt: createdAt,
-    );
-  }
-
-  factory PropertyModel.fromEntity(PropertyEntity entity) {
-    return PropertyModel(
-      id: entity.id,
-      title: entity.title,
-      description: entity.description,
-      rent: entity.rent,
-      city: entity.city,
-      locality: entity.locality,
-      address: entity.address,
-      bedrooms: entity.bedrooms,
-      bathrooms: entity.bathrooms,
-      balconies: entity.balconies,
-      area: entity.area,
-      propertyType: entity.propertyType,
-      furnishing: entity.furnishing,
-      floor: entity.floor,
-      totalFloors: entity.totalFloors,
-      parking: entity.parking,
-      isAvailable: entity.isAvailable,
-      isFeatured: entity.isFeatured,
-      isVerified: entity.isVerified,
-      rating: entity.rating,
-      views: entity.views,
-      imageUrls: entity.imageUrls,
-      ownerId: entity.ownerId,
-      ownerName: entity.ownerName,
-      ownerPhone: entity.ownerPhone,
-      createdAt: entity.createdAt,
-    );
-  }
-}
+      locality: locality ?? this.local
