@@ -30,9 +30,7 @@ class PropertyDetailsPage extends ConsumerStatefulWidget {
 class _PropertyDetailsPageState
     extends ConsumerState<PropertyDetailsPage> {
   PropertyEntity? property;
-
   bool isLoading = true;
-
   String? error;
 
   @override
@@ -44,7 +42,6 @@ class _PropertyDetailsPageState
   Future<void> _loadProperty() async {
     try {
       final repository = ref.read(propertyRepositoryProvider);
-
       final result = await repository.getProperty(widget.propertyId);
 
       if (!mounted) return;
@@ -111,17 +108,17 @@ class _PropertyDetailsPageState
                     color: Colors.red,
                   ),
                   onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+
                     await ref
                         .read(favoritesProvider.notifier)
                         .addFavorite(property.id);
 
                     if (!mounted) return;
 
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       const SnackBar(
-                        content: Text(
-                          'Added to Favorites ❤️',
-                        ),
+                        content: Text('Added to Favorites ❤️'),
                       ),
                     );
                   },
@@ -135,7 +132,6 @@ class _PropertyDetailsPageState
               ),
             ),
           ),
-
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(18),
@@ -146,9 +142,7 @@ class _PropertyDetailsPageState
                     rent: property.rent,
                     isAvailable: property.isAvailable,
                   ),
-
                   const SizedBox(height: 14),
-
                   Text(
                     property.title,
                     style: const TextStyle(
@@ -156,16 +150,12 @@ class _PropertyDetailsPageState
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 10),
-
                   PropertyLocation(
                     locality: property.locality,
                     city: property.city,
                   ),
-
                   const SizedBox(height: 20),
-
                   PropertyFeatures(
                     bedrooms: property.bedrooms,
                     bathrooms: property.bathrooms,
@@ -173,18 +163,14 @@ class _PropertyDetailsPageState
                     area: property.area,
                     parking: property.parking,
                   ),
-
                   const SizedBox(height: 20),
-
                   PropertyStatus(
                     isVerified: property.isVerified,
                     isAvailable: property.isAvailable,
                     rating: property.rating,
                     views: property.views,
                   ),
-
                   const SizedBox(height: 28),
-
                   const Text(
                     'Description',
                     style: TextStyle(
@@ -192,9 +178,7 @@ class _PropertyDetailsPageState
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 10),
-
                   Text(
                     property.description,
                     style: const TextStyle(
@@ -202,9 +186,7 @@ class _PropertyDetailsPageState
                       height: 1.6,
                     ),
                   ),
-
                   const SizedBox(height: 30),
-
                   const Text(
                     'Owner Details',
                     style: TextStyle(
@@ -212,9 +194,7 @@ class _PropertyDetailsPageState
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 14),
-
                   Card(
                     elevation: 0,
                     color: Colors.grey.shade100,
@@ -233,9 +213,7 @@ class _PropertyDetailsPageState
                       subtitle: Text(property.ownerPhone),
                     ),
                   ),
-
                   const SizedBox(height: 30),
-
                   const Text(
                     'Location',
                     style: TextStyle(
@@ -243,9 +221,7 @@ class _PropertyDetailsPageState
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 15),
-
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: const SizedBox(
@@ -253,7 +229,6 @@ class _PropertyDetailsPageState
                       child: PropertyMap(),
                     ),
                   ),
-
                   const SizedBox(height: 100),
                 ],
               ),

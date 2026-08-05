@@ -80,7 +80,7 @@ class PropertyModel {
       isVerified: json['isVerified'] == true,
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       views: (json['views'] as num?)?.toInt() ?? 0,
-      imageUrls: (json['imageUrls'] as List?)
+      imageUrls: (json['imageUrls'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
@@ -159,4 +159,89 @@ class PropertyModel {
       description: description ?? this.description,
       rent: rent ?? this.rent,
       city: city ?? this.city,
-      locality: locality ?? this.local
+      locality: locality ?? this.locality,
+      address: address ?? this.address,
+      bedrooms: bedrooms ?? this.bedrooms,
+      bathrooms: bathrooms ?? this.bathrooms,
+      balconies: balconies ?? this.balconies,
+      area: area ?? this.area,
+      propertyType: propertyType ?? this.propertyType,
+      furnishing: furnishing ?? this.furnishing,
+      floor: floor ?? this.floor,
+      totalFloors: totalFloors ?? this.totalFloors,
+      parking: parking ?? this.parking,
+      isAvailable: isAvailable ?? this.isAvailable,
+      isFeatured: isFeatured ?? this.isFeatured,
+      isVerified: isVerified ?? this.isVerified,
+      rating: rating ?? this.rating,
+      views: views ?? this.views,
+      imageUrls: imageUrls ?? this.imageUrls,
+      ownerId: ownerId ?? this.ownerId,
+      ownerName: ownerName ?? this.ownerName,
+      ownerPhone: ownerPhone ?? this.ownerPhone,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  PropertyEntity toEntity() {
+    return PropertyEntity(
+      id: id,
+      title: title,
+      description: description,
+      rent: rent,
+      city: city,
+      locality: locality,
+      address: address,
+      bedrooms: bedrooms,
+      bathrooms: bathrooms,
+      balconies: balconies,
+      area: area,
+      propertyType: propertyType,
+      furnishing: furnishing,
+      floor: floor,
+      totalFloors: totalFloors,
+      parking: parking,
+      isAvailable: isAvailable,
+      isFeatured: isFeatured,
+      isVerified: isVerified,
+      rating: rating,
+      views: views,
+      imageUrls: imageUrls,
+      ownerId: ownerId,
+      ownerName: ownerName,
+      ownerPhone: ownerPhone,
+      createdAt: createdAt,
+    );
+  }
+
+  factory PropertyModel.fromEntity(PropertyEntity entity) {
+    return PropertyModel(
+      id: entity.id,
+      title: entity.title,
+      description: entity.description,
+      rent: entity.rent,
+      city: entity.city,
+      locality: entity.locality,
+      address: entity.address,
+      bedrooms: entity.bedrooms,
+      bathrooms: entity.bathrooms,
+      balconies: entity.balconies,
+      area: entity.area,
+      propertyType: entity.propertyType,
+      furnishing: entity.furnishing,
+      floor: entity.floor,
+      totalFloors: entity.totalFloors,
+      parking: entity.parking,
+      isAvailable: entity.isAvailable,
+      isFeatured: entity.isFeatured,
+      isVerified: entity.isVerified,
+      rating: entity.rating,
+      views: entity.views,
+      imageUrls: entity.imageUrls,
+      ownerId: entity.ownerId,
+      ownerName: entity.ownerName,
+      ownerPhone: entity.ownerPhone,
+      createdAt: entity.createdAt,
+    );
+  }
+}

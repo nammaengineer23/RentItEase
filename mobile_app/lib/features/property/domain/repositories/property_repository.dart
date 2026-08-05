@@ -74,4 +74,6 @@ abstract class PropertyRepository {
   Future<void> addToFavorites(String propertyId);
 
   Future<void> removeFromFavorites(String propertyId);
+
+  Future<bool> isFavorite(String propertyId);
 }

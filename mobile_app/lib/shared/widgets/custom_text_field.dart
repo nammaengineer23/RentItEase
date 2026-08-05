@@ -10,9 +10,11 @@ class CustomTextField extends StatelessWidget {
   final IconData? prefixIcon;
   final bool obscureText;
   final TextInputType keyboardType;
+  final TextInputAction? textInputAction;
   final String? Function(String?)? validator;
   final Widget? suffixIcon;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onFieldSubmitted;
 
   const CustomTextField({
     super.key,
@@ -22,9 +24,11 @@ class CustomTextField extends StatelessWidget {
     this.prefixIcon,
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
+    this.textInputAction,
     this.validator,
     this.suffixIcon,
     this.onChanged,
+    this.onFieldSubmitted,
   });
 
   @override
@@ -33,14 +37,18 @@ class CustomTextField extends StatelessWidget {
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      textInputAction: textInputAction,
       validator: validator,
       onChanged: onChanged,
+      onFieldSubmitted: onFieldSubmitted,
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,
         prefixIcon: prefixIcon == null ? null : Icon(prefixIcon),
         suffixIcon: suffixIcon,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }
