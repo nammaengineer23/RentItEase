@@ -6,7 +6,7 @@ import '../../providers/property_provider.dart';
 
 import '../../../favorites/providers/favorites_provider.dart';
 import '../../../maps/presentation/widgets/property_map.dart';
-
+import '../../../property_visits/presentation/pages/book_visit_page.dart';
 import '../widgets/property_action_buttons.dart';
 import '../widgets/property_features.dart';
 import '../widgets/property_image_slider.dart';
@@ -241,9 +241,15 @@ class _PropertyDetailsPageState
           padding: const EdgeInsets.all(16),
           child: PropertyActionButtons(
             onBookVisit: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Visit Booking coming next'),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BookVisitPage(
+                    propertyId: property.id,
+                    propertyTitle: property.title,
+                    propertyImage: property.imageUrls.isNotEmpty ? property.imageUrls.first: '',  
+                    ownerName: property.ownerName,
+                  ),
                 ),
               );
             },

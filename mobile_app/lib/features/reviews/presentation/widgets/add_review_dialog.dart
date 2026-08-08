@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 
 class AddReviewDialog extends StatefulWidget {
-  final double initialRating;
-  final String initialComment;
-  final Function(double rating, String comment) onSubmit;
-
   const AddReviewDialog({
     super.key,
     this.initialRating = 5,
@@ -12,22 +8,29 @@ class AddReviewDialog extends StatefulWidget {
     required this.onSubmit,
   });
 
+  final int initialRating;
+  final String initialComment;
+  final void Function(int rating, String? comment) onSubmit;
+
   @override
-  State<AddReviewDialog> createState() => _AddReviewDialogState();
+  State<AddReviewDialog> createState() =>
+      _AddReviewDialogState();
 }
 
-class _AddReviewDialogState extends State<AddReviewDialog> {
-  late double _rating;
-
+class _AddReviewDialogState
+    extends State<AddReviewDialog> {
+  late int _rating;
   late TextEditingController _commentController;
 
   @override
   void initState() {
     super.initState();
 
-    _rating = widget.initialRating;
+    _rating = widget.initialRating.clamp(1, 5);
 
-    _commentController = TextEditingController(text: widget.initialComment);
+    _commentController = TextEditingController(
+      text: widget.initialComment,
+    );
   }
 
   @override
@@ -38,9 +41,11 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.initialComment.isNotEmpty;
+
     return AlertDialog(
       title: Text(
-        widget.initialComment.isEmpty ? 'Write Review' : 'Edit Review',
+        isEditing ? 'Edit Review' : 'Write Review',
       ),
       content: SingleChildScrollView(
         child: Column(
@@ -48,34 +53,60 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
           children: [
             const Text(
               'Rate this property',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
             ),
 
             const SizedBox(height: 16),
 
+            // ==================================================
+            // Rating
+            // ==================================================
+
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(5, (index) {
+                final star = index + 1;
+
                 return IconButton(
+                  tooltip: '$star star',
                   icon: Icon(
-                    index < _rating ? Icons.star : Icons.star_border,
+                    star <= _rating
+                        ? Icons.star
+                        : Icons.star_border,
                     color: Colors.amber,
                     size: 34,
                   ),
                   onPressed: () {
                     setState(() {
-                      _rating = index + 1.0;
+                      _rating = star;
                     });
                   },
                 );
               }),
             ),
 
+            const SizedBox(height: 8),
+
+            Text(
+              '$_rating / 5',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+
             const SizedBox(height: 20),
+
+            // ==================================================
+            // Comment
+            // ==================================================
 
             TextField(
               controller: _commentController,
               maxLines: 4,
+              maxLength: 1000,
+              textInputAction: TextInputAction.newline,
               decoration: const InputDecoration(
                 labelText: 'Review',
                 hintText: 'Share your experience...',
@@ -88,25 +119,26 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
       actions: [
         TextButton(
           onPressed: () {
-            Navigator.pop(context);
+            Navigator.of(context).pop();
           },
           child: const Text('Cancel'),
         ),
 
         ElevatedButton(
           onPressed: () {
-            if (_commentController.text.trim().isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please enter a review.')),
-              );
-              return;
-            }
+            final comment =
+                _commentController.text.trim();
 
-            widget.onSubmit(_rating, _commentController.text.trim());
+            widget.onSubmit(
+              _rating,
+              comment.isEmpty ? null : comment,
+            );
 
-            Navigator.pop(context);
+            Navigator.of(context).pop();
           },
-          child: Text(widget.initialComment.isEmpty ? 'Submit' : 'Update'),
+          child: Text(
+            isEditing ? 'Update' : 'Submit',
+          ),
         ),
       ],
     );

@@ -5,89 +5,105 @@ import '../../models/notification_model.dart';
 import '../../providers/notifications_provider.dart';
 
 class NotificationTile extends ConsumerWidget {
-  final NotificationModel notification;
+  const NotificationTile({
+    super.key,
+    required this.notification,
+  });
 
-  const NotificationTile({super.key, required this.notification});
+  final NotificationModel notification;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
-      elevation: notification.isRead ? 1 : 3,
+    return Dismissible(
+      key: ValueKey(notification.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        color: Colors.red,
+        child: const Icon(
+          Icons.delete,
+          color: Colors.white,
+        ),
+      ),
+      onDismissed: (_) async {
+        await ref
+            .read(notificationsProvider.notifier)
+            .deleteNotification(notification.id);
 
-      margin: const EdgeInsets.only(bottom: 12),
+        if (!context.mounted) return;
 
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: notification.isRead
-              ? Colors.grey.shade300
-              : Theme.of(context).colorScheme.primary,
-
-          child: Icon(
-            _getIcon(notification.type),
-
-            color: notification.isRead ? Colors.grey : Colors.white,
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notification deleted'),
           ),
-        ),
-
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                notification.title,
-
+        );
+      },
+      child: Card(
+        elevation: notification.isRead ? 1 : 3,
+        margin: const EdgeInsets.only(bottom: 12),
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: notification.isRead
+                ? Colors.grey.shade300
+                : Theme.of(context).colorScheme.primary,
+            child: Icon(
+              _icon(notification.type),
+              color:
+                  notification.isRead ? Colors.grey : Colors.white,
+            ),
+          ),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  notification.title,
+                  style: TextStyle(
+                    fontWeight: notification.isRead
+                        ? FontWeight.w500
+                        : FontWeight.bold,
+                  ),
+                ),
+              ),
+              if (!notification.isRead)
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+            ],
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 6),
+              Text(notification.message),
+              const SizedBox(height: 6),
+              Text(
+                _format(notification.createdAt),
                 style: TextStyle(
-                  fontWeight: notification.isRead
-                      ? FontWeight.normal
-                      : FontWeight.bold,
+                  color: Colors.grey.shade600,
+                  fontSize: 12,
                 ),
               ),
-            ),
-
-            if (!notification.isRead)
-              Container(
-                width: 10,
-
-                height: 10,
-
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-
-                  shape: BoxShape.circle,
-                ),
-              ),
-          ],
+            ],
+          ),
+          onTap: () async {
+            if (!notification.isRead) {
+              await ref
+                  .read(notificationsProvider.notifier)
+                  .markAsRead(notification.id);
+            }
+          },
         ),
-
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-
-          children: [
-            const SizedBox(height: 5),
-
-            Text(notification.message),
-
-            const SizedBox(height: 5),
-
-            Text(
-              _formatDate(notification.createdAt),
-
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-
-        onTap: () async {
-          if (!notification.isRead) {
-            await ref
-                .read(notificationsProvider.notifier)
-                .markAsRead(notification.id);
-          }
-        },
       ),
     );
   }
 
-  IconData _getIcon(String type) {
+  IconData _icon(String type) {
     switch (type) {
       case 'VISIT_APPROVED':
         return Icons.check_circle;
@@ -95,18 +111,36 @@ class NotificationTile extends ConsumerWidget {
       case 'VISIT_REJECTED':
         return Icons.cancel;
 
-      case 'CHAT':
-        return Icons.chat;
+      case 'VISIT_BOOKED':
+        return Icons.event_available;
 
       case 'PROPERTY':
-        return Icons.home;
+        return Icons.home_work;
+
+      case 'CHAT':
+        return Icons.chat_bubble;
+
+      case 'PAYMENT':
+        return Icons.payment;
 
       default:
         return Icons.notifications;
     }
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+  String _format(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year;
+
+    final hour = date.hour > 12
+        ? date.hour - 12
+        : (date.hour == 0 ? 12 : date.hour);
+
+    final minute = date.minute.toString().padLeft(2, '0');
+
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+
+    return '$day/$month/$year • $hour:$minute $period';
   }
 }

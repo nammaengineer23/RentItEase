@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 
 class RatingBarWidget extends StatelessWidget {
-  final double rating;
-  final double size;
-  final Color? filledColor;
-  final Color? emptyColor;
-
   const RatingBarWidget({
     super.key,
     required this.rating,
@@ -14,10 +9,14 @@ class RatingBarWidget extends StatelessWidget {
     this.emptyColor,
   });
 
+  final int rating;
+  final double size;
+  final Color? filledColor;
+  final Color? emptyColor;
+
   @override
   Widget build(BuildContext context) {
     final fill = filledColor ?? Colors.amber;
-
     final empty = emptyColor ?? Colors.grey.shade300;
 
     return Row(
@@ -25,15 +24,13 @@ class RatingBarWidget extends StatelessWidget {
       children: List.generate(5, (index) {
         final star = index + 1;
 
-        if (rating >= star) {
-          return Icon(Icons.star, color: fill, size: size);
-        }
-
-        if (rating >= star - 0.5) {
-          return Icon(Icons.star_half, color: fill, size: size);
-        }
-
-        return Icon(Icons.star_border, color: empty, size: size);
+        return Icon(
+          star <= rating
+              ? Icons.star
+              : Icons.star_border,
+          color: star <= rating ? fill : empty,
+          size: size,
+        );
       }),
     );
   }

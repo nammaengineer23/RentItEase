@@ -1,25 +1,40 @@
 import '../models/notification_model.dart';
-
 import 'notifications_api.dart';
 
 class NotificationsRepository {
-  final NotificationsApi api;
+  NotificationsRepository(this._api);
 
-  NotificationsRepository(this.api);
+  final NotificationsApi _api;
 
-  // ==================================
-  // GET NOTIFICATIONS
-  // ==================================
+  //=========================================
+  // Get Notifications
+  //=========================================
 
   Future<List<NotificationModel>> getNotifications() async {
-    return await api.getNotifications();
+    return _api.getNotifications();
   }
 
-  // ==================================
-  // MARK AS READ
-  // ==================================
+  //=========================================
+  // Mark Notification as Read
+  //=========================================
 
   Future<void> markAsRead(String id) async {
-    await api.markAsRead(id);
+    await _api.markAsRead(id);
+  }
+
+  //=========================================
+  // Mark All Notifications as Read
+  //=========================================
+
+  Future<void> markAllAsRead() async {
+    await _api.markAllAsRead();
+  }
+
+  //=========================================
+  // Delete Notification
+  //=========================================
+
+  Future<void> deleteNotification(String id) async {
+    await _api.deleteNotification(id);
   }
 }

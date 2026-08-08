@@ -5,98 +5,154 @@ import '../../models/favorite_property_model.dart';
 import '../../providers/favorites_provider.dart';
 
 class FavoritePropertyCard extends ConsumerWidget {
-  final FavoritePropertyModel property;
+  const FavoritePropertyCard({
+    super.key,
+    required this.property,
+    this.onTap,
+    this.onRemove,
+  });
 
-  const FavoritePropertyCard({super.key, required this.property});
+  final FavoritePropertyModel property;
+  final VoidCallback? onTap;
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       elevation: 3,
-
+      clipBehavior: Clip.antiAlias,
       margin: const EdgeInsets.only(bottom: 16),
-
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: InkWell(
+        onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-
           children: [
-            Container(
-              height: 160,
-
+            SizedBox(
+              height: 180,
               width: double.infinity,
+              child: property.imageUrl != null &&
+                      property.imageUrl!.isNotEmpty
+                  ? Image.network(
+                      property.imageUrl!,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (
+                        context,
+                        child,
+                        loadingProgress,
+                      ) {
+                        if (loadingProgress == null) {
+                          return child;
+                        }
 
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-
-                color: Colors.grey.shade300,
-              ),
-
-              child: property.imageUrl != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-
-                      child: Image.network(
-                        property.imageUrl!,
-
-                        fit: BoxFit.cover,
-
-                        width: double.infinity,
-                      ),
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      },
+                      errorBuilder: (_, _, _) {
+                        return Container(
+                          color: Colors.grey.shade300,
+                          child: const Icon(
+                            Icons.home,
+                            size: 70,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
                     )
-                  : const Icon(Icons.home, size: 60),
+                  : Container(
+                      color: Colors.grey.shade300,
+                      child: const Icon(
+                        Icons.home,
+                        size: 70,
+                        color: Colors.grey,
+                      ),
+                    ),
             ),
 
-            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          property.title,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.favorite,
+                          color: Colors.red,
+                        ),
+                        onPressed: () async {
+                          if (onRemove != null) {
+                            onRemove!();
+                          } else {
+                            await ref
+                                .read(favoritesProvider.notifier)
+                                .removeFavorite(property.propertyId);
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            if (!context.mounted) return;
 
-              children: [
-                Expanded(
-                  child: Text(
-                    property.title,
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Removed from favorites',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
 
+                  const SizedBox(height: 10),
+
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 18,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          property.location,
+                          style: const TextStyle(
+                            color: Colors.black87,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Text(
+                    '₹${property.rent.toStringAsFixed(0)} / month',
                     style: const TextStyle(
                       fontSize: 18,
-
+                      color: Colors.blue,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-
-                IconButton(
-                  onPressed: () async {
-                    await ref
-                        .read(favoritesProvider.notifier)
-                        .removeFavorite(property.propertyId);
-                  },
-
-                  icon: const Icon(Icons.favorite, color: Colors.red),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            Row(
-              children: [
-                const Icon(Icons.location_on, size: 18),
-
-                const SizedBox(width: 5),
-
-                Expanded(child: Text(property.location)),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(
-              '₹${property.rent}/month',
-
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ],
+              ),
             ),
           ],
         ),

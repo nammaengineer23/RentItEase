@@ -1,34 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../models/owner_property_model.dart';
-import '../../providers/owner_provider.dart';
+import '../../data/models/owner_property_model.dart';
 
-class EditPropertyPage extends ConsumerStatefulWidget {
-  final OwnerPropertyModel property;
-
+class EditPropertyPage extends StatefulWidget {
   const EditPropertyPage({super.key, required this.property});
 
+  final OwnerPropertyModel property;
+
   @override
-  ConsumerState<EditPropertyPage> createState() => _EditPropertyPageState();
+  State<EditPropertyPage> createState() => _EditPropertyPageState();
 }
 
-class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
-  final titleController = TextEditingController();
+class _EditPropertyPageState extends State<EditPropertyPage> {
+  final _formKey = GlobalKey<FormState>();
 
-  final descriptionController = TextEditingController();
+  late final TextEditingController titleController;
+  late final TextEditingController descriptionController;
+  late final TextEditingController rentController;
+  late final TextEditingController addressController;
+  late final TextEditingController cityController;
+  late final TextEditingController localityController;
 
-  final rentController = TextEditingController();
+  late String propertyType;
 
-  final depositController = TextEditingController();
-
-  final locationController = TextEditingController();
-
-  final addressController = TextEditingController();
-
-  String propertyType = 'Apartment';
-
-  String bhk = '1 BHK';
+  bool loading = false;
 
   @override
   void initState() {
@@ -36,224 +31,168 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
 
     final property = widget.property;
 
-    titleController.text = property.title;
-
-    descriptionController.text = property.description;
-
-    rentController.text = property.rent.toString();
-
-    depositController.text = property.deposit.toString();
-
-    locationController.text = property.location;
-
-    addressController.text = property.address;
+    titleController = TextEditingController(text: property.title);
+    descriptionController = TextEditingController(text: property.description);
+    rentController = TextEditingController(
+      text: property.rent.toStringAsFixed(0),
+    );
+    addressController = TextEditingController(text: property.address);
+    cityController = TextEditingController(text: property.city);
+    localityController = TextEditingController(text: property.locality);
 
     propertyType = property.propertyType;
-
-    bhk = property.bhk;
   }
 
-  Future<void> updateProperty() async {
-    final data = {
-      "title": titleController.text,
+  @override
+  void dispose() {
+    titleController.dispose();
+    descriptionController.dispose();
+    rentController.dispose();
+    addressController.dispose();
+    cityController.dispose();
+    localityController.dispose();
+    super.dispose();
+  }
 
-      "description": descriptionController.text,
+  Future<void> _updateProperty() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      "propertyType": propertyType,
+    setState(() => loading = true);
 
-      "bhk": bhk,
+    // TODO:
+    // OwnerProvider.updateProperty(...)
+    // Backend integration later.
 
-      "rent": double.tryParse(rentController.text) ?? 0,
+    await Future.delayed(const Duration(seconds: 1));
 
-      "deposit": double.tryParse(depositController.text) ?? 0,
+    if (!mounted) return;
 
-      "location": locationController.text,
+    setState(() => loading = false);
 
-      "address": addressController.text,
-    };
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Property updated successfully')),
+    );
 
-    try {
-      await ref
-          .read(ownerProvider.notifier)
-          .updateProperty(widget.property.id, data);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Property Updated Successfully')),
-        );
-
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
-      }
-    }
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Property')),
-
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-
-        child: Column(
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
           children: [
-            _field(titleController, 'Property Title', Icons.home),
-
-            _field(
-              descriptionController,
-
-              'Description',
-
-              Icons.description,
-
-              maxLines: 3,
+            TextFormField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: 'Property Title',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) =>
+                  value == null || value.isEmpty ? 'Required' : null,
             ),
+
+            const SizedBox(height: 16),
+
+            TextFormField(
+              controller: descriptionController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                border: OutlineInputBorder(),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            TextFormField(
+              controller: rentController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Monthly Rent',
+                border: OutlineInputBorder(),
+              ),
+            ),
+
+            const SizedBox(height: 16),
 
             DropdownButtonFormField<String>(
               initialValue: propertyType,
-
               decoration: const InputDecoration(
                 labelText: 'Property Type',
-
                 border: OutlineInputBorder(),
               ),
-
               items: const [
                 DropdownMenuItem(value: 'Apartment', child: Text('Apartment')),
-
                 DropdownMenuItem(value: 'Villa', child: Text('Villa')),
-
-                DropdownMenuItem(value: 'House', child: Text('House')),
+                DropdownMenuItem(
+                  value: 'Independent House',
+                  child: Text('Independent House'),
+                ),
+                DropdownMenuItem(value: 'PG', child: Text('PG')),
               ],
-
               onChanged: (value) {
-                setState(() {
-                  propertyType = value ?? 'Apartment';
-                });
+                if (value != null) {
+                  setState(() => propertyType = value);
+                }
               },
             ),
 
-            const SizedBox(height: 15),
+            const SizedBox(height: 16),
 
-            DropdownButtonFormField<String>(
-              initialValue: bhk,
-
+            TextFormField(
+              controller: addressController,
               decoration: const InputDecoration(
-                labelText: 'BHK',
-
+                labelText: 'Address',
                 border: OutlineInputBorder(),
               ),
-
-              items: const [
-                DropdownMenuItem(value: '1 BHK', child: Text('1 BHK')),
-
-                DropdownMenuItem(value: '2 BHK', child: Text('2 BHK')),
-
-                DropdownMenuItem(value: '3 BHK', child: Text('3 BHK')),
-              ],
-
-              onChanged: (value) {
-                setState(() {
-                  bhk = value ?? '1 BHK';
-                });
-              },
             ),
 
-            const SizedBox(height: 15),
+            const SizedBox(height: 16),
 
-            _field(
-              rentController,
-
-              'Monthly Rent',
-
-              Icons.currency_rupee,
-
-              keyboard: TextInputType.number,
+            TextFormField(
+              controller: localityController,
+              decoration: const InputDecoration(
+                labelText: 'Locality',
+                border: OutlineInputBorder(),
+              ),
             ),
 
-            _field(
-              depositController,
+            const SizedBox(height: 16),
 
-              'Deposit',
-
-              Icons.money,
-
-              keyboard: TextInputType.number,
+            TextFormField(
+              controller: cityController,
+              decoration: const InputDecoration(
+                labelText: 'City',
+                border: OutlineInputBorder(),
+              ),
             ),
 
-            _field(locationController, 'Location', Icons.location_on),
-
-            _field(addressController, 'Address', Icons.map, maxLines: 2),
-
-            const SizedBox(height: 20),
+            const SizedBox(height: 32),
 
             SizedBox(
-              width: double.infinity,
-
-              child: ElevatedButton(
-                onPressed: updateProperty,
-
-                child: const Text('Save Changes'),
+              height: 52,
+              child: FilledButton.icon(
+                onPressed: loading ? null : _updateProperty,
+                icon: loading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.save),
+                label: Text(loading ? 'Updating...' : 'Update Property'),
               ),
             ),
           ],
         ),
       ),
     );
-  }
-
-  Widget _field(
-    TextEditingController controller,
-
-    String label,
-
-    IconData icon, {
-
-    int maxLines = 1,
-
-    TextInputType? keyboard,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
-
-      child: TextField(
-        controller: controller,
-
-        maxLines: maxLines,
-
-        keyboardType: keyboard,
-
-        decoration: InputDecoration(
-          labelText: label,
-
-          prefixIcon: Icon(icon),
-
-          border: const OutlineInputBorder(),
-        ),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    titleController.dispose();
-
-    descriptionController.dispose();
-
-    rentController.dispose();
-
-    depositController.dispose();
-
-    locationController.dispose();
-
-    addressController.dispose();
-
-    super.dispose();
   }
 }

@@ -1,68 +1,20 @@
 import '../../domain/entities/property_visit.dart';
 import '../../domain/repositories/property_visit_repository.dart';
-import '../models/property_visit_model.dart';
+import '../api/property_visit_api.dart';
 
 class PropertyVisitRepositoryImpl implements PropertyVisitRepository {
-  final List<PropertyVisitModel> _dummyVisits = [
-    PropertyVisitModel(
-      id: '1',
+  PropertyVisitRepositoryImpl(this._api);
 
-      propertyId: 'property_001',
-
-      propertyTitle: '2 BHK Apartment',
-
-      propertyImage: 'https://picsum.photos/300/200',
-
-      ownerId: 'owner_1',
-
-      ownerName: 'Rahul Sharma',
-
-      tenantId: 'tenant_1',
-
-      tenantName: 'Shrikant',
-
-      visitDate: DateTime.now().add(const Duration(days: 2)),
-
-      status: 'PENDING',
-
-      notes: 'Please call before visit.',
-    ),
-
-    PropertyVisitModel(
-      id: '2',
-
-      propertyId: 'property_002',
-
-      propertyTitle: '3 BHK Villa',
-
-      propertyImage: 'https://picsum.photos/301/200',
-
-      ownerId: 'owner_2',
-
-      ownerName: 'Anita',
-
-      tenantId: 'tenant_1',
-
-      tenantName: 'Shrikant',
-
-      visitDate: DateTime.now().add(const Duration(days: 5)),
-
-      status: 'APPROVED',
-    ),
-  ];
+  final PropertyVisitApi _api;
 
   @override
-  Future<List<PropertyVisit>> getMyVisits() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    return _dummyVisits;
+  Future<List<PropertyVisit>> getMyVisits() {
+    return _api.getMyVisits();
   }
 
   @override
-  Future<List<PropertyVisit>> getOwnerVisits() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    return _dummyVisits;
+  Future<List<PropertyVisit>> getOwnerVisits() {
+    return _api.getOwnerVisits();
   }
 
   @override
@@ -71,26 +23,30 @@ class PropertyVisitRepositoryImpl implements PropertyVisitRepository {
     required DateTime visitDate,
     String? notes,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    await _api.bookVisit(
+      propertyId: propertyId,
+      visitDate: visitDate,
+      notes: notes,
+    );
   }
 
   @override
-  Future<void> cancelVisit(String visitId) async {
-    await Future.delayed(const Duration(milliseconds: 400));
+  Future<void> cancelVisit(String visitId) {
+    return _api.cancelVisit(visitId);
   }
 
   @override
-  Future<void> approveVisit(String visitId) async {
-    await Future.delayed(const Duration(milliseconds: 400));
+  Future<void> approveVisit(String visitId) {
+    return _api.approveVisit(visitId);
   }
 
   @override
-  Future<void> rejectVisit(String visitId) async {
-    await Future.delayed(const Duration(milliseconds: 400));
+  Future<void> rejectVisit(String visitId) {
+    return _api.rejectVisit(visitId);
   }
 
   @override
-  Future<void> completeVisit(String visitId) async {
-    await Future.delayed(const Duration(milliseconds: 400));
+  Future<void> completeVisit(String visitId) {
+    return _api.completeVisit(visitId);
   }
 }

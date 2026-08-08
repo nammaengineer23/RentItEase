@@ -1,52 +1,53 @@
-import '../models/owner_property_model.dart';
-import '../models/property_visit_model.dart';
-
-import 'owner_analytics_model.dart';
+import '../data/models/analytics_model.dart';
+import '../domain/entities/activity_entity.dart';
+import '../domain/entities/dashboard_summary_entity.dart';
+import '../domain/entities/owner_property_entity.dart';
+import '../domain/entities/visit_request_entity.dart';
 
 class OwnerState {
-  final List<OwnerPropertyModel> properties;
-
-  final List<PropertyVisitModel> visits;
-
-  final OwnerAnalyticsModel? analytics;
-
-  final bool isLoading;
-
-  final String? error;
-
   const OwnerState({
-    this.properties = const [],
-
-    this.visits = const [],
-
+    this.loading = false,
+    this.summary,
     this.analytics,
-
-    this.isLoading = false,
-
+    this.activities = const [],
+    this.properties = const [],
+    this.visitRequests = const [],
     this.error,
   });
 
+  final bool loading;
+
+  final DashboardSummaryEntity? summary;
+
+  final AnalyticsModel? analytics;
+
+  final List<ActivityEntity> activities;
+
+  final List<OwnerPropertyEntity> properties;
+
+  final List<VisitRequestEntity> visitRequests;
+
+  final String? error;
+
+  bool get isLoading => loading;
+
   OwnerState copyWith({
-    List<OwnerPropertyModel>? properties,
-
-    List<PropertyVisitModel>? visits,
-
-    OwnerAnalyticsModel? analytics,
-
-    bool? isLoading,
-
+    bool? loading,
+    DashboardSummaryEntity? summary,
+    AnalyticsModel? analytics,
+    List<ActivityEntity>? activities,
+    List<OwnerPropertyEntity>? properties,
+    List<VisitRequestEntity>? visitRequests,
     String? error,
   }) {
     return OwnerState(
-      properties: properties ?? this.properties,
-
-      visits: visits ?? this.visits,
-
+      loading: loading ?? this.loading,
+      summary: summary ?? this.summary,
       analytics: analytics ?? this.analytics,
-
-      isLoading: isLoading ?? this.isLoading,
-
-      error: error ?? this.error,
+      activities: activities ?? this.activities,
+      properties: properties ?? this.properties,
+      visitRequests: visitRequests ?? this.visitRequests,
+      error: error,
     );
   }
 }

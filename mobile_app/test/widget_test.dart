@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mobile_app/app.dart';
 import 'package:mobile_app/features/authentication/presentation/pages/authentication_page.dart';
-import 'package:mobile_app/features/search/data/repositories/search_repository_impl.dart';
 
 void main()
 {
@@ -29,14 +28,5 @@ void main()
       expect(find.byType(AuthenticationPage), findsOneWidget);
     });
 
-    test('Search repository returns sample data', () async
-{
-      final repository = SearchRepositoryImpl();
-
-      final results = await repository.load();
-
-      expect(results, isNotEmpty);
-      expect(results.length, greaterThanOrEqualTo(1));
-    });
   });
 }

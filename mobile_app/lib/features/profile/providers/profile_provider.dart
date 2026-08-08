@@ -1,99 +1,124 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/repositories/profile_repository_impl.dart';
+import '../../../core/network/dio_provider.dart';
+
+import '../data/profile_api.dart';
+import '../data/profile_repository.dart';
+
 import '../domain/entities/profile_entity.dart';
 import '../domain/repositories/profile_repository.dart';
 
+//======================================================
 // Repository Provider
+//======================================================
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
-  return ProfileRepositoryImpl();
+  final dio = ref.watch(dioProvider);
+
+  return ProfileRepositoryImpl(
+    ProfileApi(dio),
+  );
 });
 
-// Profile State Provider
+//======================================================
+// Profile Provider
+//======================================================
 
 final profileProvider =
     StateNotifierProvider<ProfileNotifier, AsyncValue<ProfileEntity?>>((ref) {
-      return ProfileNotifier(ref.read(profileRepositoryProvider));
-    });
+  return ProfileNotifier(
+    ref.read(profileRepositoryProvider),
+  );
+});
 
+//======================================================
 // Profile Notifier
+//======================================================
 
 class ProfileNotifier extends StateNotifier<AsyncValue<ProfileEntity?>> {
-  final ProfileRepository repository;
-
-  ProfileNotifier(this.repository) : super(const AsyncValue.loading()) {
+  ProfileNotifier(this._repository) : super(const AsyncLoading()) {
     loadProfile();
   }
 
-  // ==============================
+  final ProfileRepository _repository;
+
+  //======================================================
   // Load Profile
-  // ==============================
+  //======================================================
 
   Future<void> loadProfile() async {
     try {
-      state = const AsyncValue.loading();
+      state = const AsyncLoading();
 
-      final profile = await repository.getProfile();
+      final profile = await _repository.getProfile();
 
-      state = AsyncValue.data(profile);
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      state = AsyncData(profile);
+    } catch (e, stackTrace) {
+      state = AsyncError(e, stackTrace);
     }
   }
 
-  // ==============================
+  //======================================================
   // Update Profile
-  // ==============================
+  //======================================================
 
   Future<void> updateProfile({
     required String fullName,
-
     required String phone,
   }) async {
     try {
-      final updated = await repository.updateProfile(
+      final updated = await _repository.updateProfile(
         fullName: fullName,
         phone: phone,
       );
 
-      state = AsyncValue.data(updated);
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      state = AsyncData(updated);
+    } catch (e, stackTrace) {
+      state = AsyncError(e, stackTrace);
     }
   }
 
-  // ==============================
+  //======================================================
   // Upload Profile Image
-  // ==============================
+  //======================================================
 
   Future<void> uploadImage(String imagePath) async {
     final current = state.value;
 
-    if (current == null) {
-      return;
-    }
+    if (current == null) return;
 
     try {
-      final imageUrl = await repository.uploadProfileImage(imagePath);
+      final imageUrl = await _repository.uploadProfileImage(imagePath);
 
-      state = AsyncValue.data(current.copyWith(profileImage: imageUrl));
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      state = AsyncData(
+        current.copyWith(
+          profileImage: imageUrl,
+        ),
+      );
+    } catch (e, stackTrace) {
+      state = AsyncError(e, stackTrace);
     }
   }
 
-  // ==============================
+  //======================================================
+  // Refresh
+  //======================================================
+
+  Future<void> refresh() async {
+    await loadProfile();
+  }
+
+  //======================================================
   // Logout
-  // ==============================
+  //======================================================
 
   Future<void> logout() async {
     try {
-      await repository.logout();
+      await _repository.logout();
 
-      state = const AsyncValue.data(null);
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      state = const AsyncData(null);
+    } catch (e, stackTrace) {
+      state = AsyncError(e, stackTrace);
     }
   }
 }

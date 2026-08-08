@@ -1,117 +1,153 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/dio_provider.dart';
 import '../data/favorites_api.dart';
 import '../data/favorites_repository.dart';
-import '../../../core/network/dio_provider.dart';
 import '../models/favorite_property_model.dart';
 
-// ==================================
+// ======================================================
 // Repository Provider
-// ==================================
+// ======================================================
 
 final favoritesRepositoryProvider = Provider<FavoritesRepository>((ref) {
   final dio = ref.watch(dioProvider);
 
-  return FavoritesRepository(FavoritesApi(dio));
+  return FavoritesRepository(
+    FavoritesApi(dio),
+  );
 });
 
-// ==================================
-// Favorites State
-// ==================================
+// ======================================================
+// State
+// ======================================================
 
 class FavoritesState {
-  final bool isLoading;
-
-  final List<FavoritePropertyModel> favorites;
-
-  final String? error;
-
-  FavoritesState({
+  const FavoritesState({
     this.isLoading = false,
-
     this.favorites = const [],
-
     this.error,
   });
 
+  final bool isLoading;
+  final List<FavoritePropertyModel> favorites;
+  final String? error;
+
   FavoritesState copyWith({
     bool? isLoading,
-
     List<FavoritePropertyModel>? favorites,
-
     String? error,
   }) {
     return FavoritesState(
       isLoading: isLoading ?? this.isLoading,
-
       favorites: favorites ?? this.favorites,
-
-      error: error ?? this.error,
+      error: error,
     );
   }
 }
 
-// ==================================
-// Favorites Notifier
-// ==================================
+// ======================================================
+// Notifier
+// ======================================================
 
 class FavoritesNotifier extends StateNotifier<FavoritesState> {
-  final FavoritesRepository repository;
+  FavoritesNotifier(this._repository) : super(const FavoritesState());
 
-  FavoritesNotifier(this.repository) : super(FavoritesState());
+  final FavoritesRepository _repository;
 
-  // ================================
-  // LOAD FAVORITES
-  // ================================
+  // ======================================================
+  // Load Favorites
+  // ======================================================
 
   Future<void> loadFavorites() async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+    );
 
     try {
-      final data = await repository.getFavorites();
+      final favorites = await _repository.getFavorites();
 
-      state = state.copyWith(isLoading: false, favorites: data);
+      state = state.copyWith(
+        isLoading: false,
+        favorites: favorites,
+        error: null,
+      );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
     }
   }
 
-  // ================================
-  // ADD FAVORITE
-  // ================================
+  // ======================================================
+  // Add Favorite
+  // ======================================================
 
   Future<void> addFavorite(String propertyId) async {
     try {
-      await repository.addFavorite(propertyId);
+      await _repository.addFavorite(propertyId);
 
       await loadFavorites();
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(
+        error: e.toString(),
+      );
     }
   }
 
-  // ================================
-  // REMOVE FAVORITE
-  // ================================
+  // ======================================================
+  // Remove Favorite
+  // ======================================================
 
   Future<void> removeFavorite(String propertyId) async {
     try {
-      await repository.removeFavorite(propertyId);
+      await _repository.removeFavorite(propertyId);
 
       await loadFavorites();
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(
+        error: e.toString(),
+      );
     }
+  }
+
+  // ======================================================
+  // Check Favorite
+  // ======================================================
+
+  bool isFavorite(String propertyId) {
+    return state.favorites.any(
+      (favorite) => favorite.id == propertyId,
+    );
+  }
+
+  // ======================================================
+  // Refresh
+  // ======================================================
+
+  Future<void> refresh() async {
+    await loadFavorites();
+  }
+
+  // ======================================================
+  // Clear Error
+  // ======================================================
+
+  void clearError() {
+    state = state.copyWith(error: null);
   }
 }
 
-// ==================================
+// ======================================================
 // Provider
-// ==================================
+// ======================================================
 
 final favoritesProvider =
-    StateNotifierProvider<FavoritesNotifier, FavoritesState>((ref) {
-      final repository = ref.watch(favoritesRepositoryProvider);
+    StateNotifierProvider<FavoritesNotifier, FavoritesState>(
+  (ref) {
+    final repository = ref.watch(favoritesRepositoryProvider);
 
-      return FavoritesNotifier(repository);
-    });
+    return FavoritesNotifier(repository);
+  },
+);

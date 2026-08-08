@@ -3,29 +3,83 @@ import 'package:dio/dio.dart';
 import '../models/notification_model.dart';
 
 class NotificationsApi {
-  final Dio dio;
+  NotificationsApi(this._dio);
 
-  NotificationsApi(this.dio);
+  final Dio _dio;
 
-  // ==================================
-  // GET ALL NOTIFICATIONS
-  // ==================================
+  //=========================================
+  // Get All Notifications
+  // GET /notifications
+  //=========================================
 
   Future<List<NotificationModel>> getNotifications() async {
-    final response = await dio.get('/notifications');
+    try {
+      final response = await _dio.get('/notifications');
 
-    final data = response.data;
+      final data = response.data;
 
-    return (data as List)
-        .map((item) => NotificationModel.fromJson(item))
-        .toList();
+      final list = data is List ? data : data['data'] ?? [];
+
+      return List<NotificationModel>.from(
+        list.map(
+          (e) => NotificationModel.fromJson(
+            Map<String, dynamic>.from(e),
+          ),
+        ),
+      );
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data.toString() ??
+            'Failed to load notifications.',
+      );
+    }
   }
 
-  // ==================================
-  // MARK NOTIFICATION AS READ
-  // ==================================
+  //=========================================
+  // Mark Notification Read
+  // PATCH /notifications/:id/read
+  //=========================================
 
   Future<void> markAsRead(String id) async {
-    await dio.patch('/notifications/$id/read');
+    try {
+      await _dio.patch('/notifications/$id/read');
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data.toString() ??
+            'Failed to mark notification as read.',
+      );
+    }
+  }
+
+  //=========================================
+  // Mark All Notifications Read
+  // PATCH /notifications/read-all
+  //=========================================
+
+  Future<void> markAllAsRead() async {
+    try {
+      await _dio.patch('/notifications/read-all');
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data.toString() ??
+            'Failed to mark all notifications as read.',
+      );
+    }
+  }
+
+  //=========================================
+  // Delete Notification
+  // DELETE /notifications/:id
+  //=========================================
+
+  Future<void> deleteNotification(String id) async {
+    try {
+      await _dio.delete('/notifications/$id');
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data.toString() ??
+            'Failed to delete notification.',
+      );
+    }
   }
 }

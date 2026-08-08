@@ -1,28 +1,16 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import '../../../core/network/dio_provider.dart';
 import '../data/review_api.dart';
 import '../data/review_repository.dart';
 import '../models/review_model.dart';
 
-// =============================================
-// TODO:
-// Replace this with your existing dioProvider.
-// Remove this provider if you already have one.
-// =============================================
-
-final dioProvider = Provider<Dio>((ref) {
-  return Dio(
-    BaseOptions(
-      baseUrl: 'http://10.102.95.119:3000/api/v1',
-      headers: {'Content-Type': 'application/json'},
-    ),
-  );
-});
-
-// =============================================
+// ==========================================================
 // Repository Provider
-// =============================================
+// ==========================================================
+//
+// Use the existing application-wide dioProvider.
+// Do NOT create another Dio instance here.
+//
 
 final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
   final dio = ref.watch(dioProvider);
@@ -30,46 +18,51 @@ final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
   return ReviewRepository(ReviewApi(dio));
 });
 
-// =============================================
+// ==========================================================
 // Review State
-// =============================================
+// ==========================================================
 
 class ReviewState {
-  final bool isLoading;
-  final List<ReviewModel> reviews;
-  final String? error;
-
   const ReviewState({
     this.isLoading = false,
     this.reviews = const [],
+    this.stats,
     this.error,
   });
+
+  final bool isLoading;
+  final List<ReviewModel> reviews;
+  final ReviewStats? stats;
+  final String? error;
 
   ReviewState copyWith({
     bool? isLoading,
     List<ReviewModel>? reviews,
+    ReviewStats? stats,
     String? error,
+    bool clearStats = false,
   }) {
     return ReviewState(
       isLoading: isLoading ?? this.isLoading,
       reviews: reviews ?? this.reviews,
+      stats: clearStats ? null : stats ?? this.stats,
       error: error,
     );
   }
 }
 
-// =============================================
+// ==========================================================
 // Review Notifier
-// =============================================
+// ==========================================================
 
 class ReviewNotifier extends StateNotifier<ReviewState> {
-  final ReviewRepository repository;
-
   ReviewNotifier(this.repository) : super(const ReviewState());
 
-  // ===========================================
+  final ReviewRepository repository;
+
+  // ========================================================
   // Load Reviews
-  // ===========================================
+  // ========================================================
 
   Future<void> loadReviews(String propertyId) async {
     state = state.copyWith(isLoading: true, error: null);
@@ -77,66 +70,133 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
     try {
       final reviews = await repository.getReviews(propertyId);
 
-      state = state.copyWith(isLoading: false, reviews: reviews);
+      state = state.copyWith(isLoading: false, reviews: reviews, error: null);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  // ===========================================
+  // ========================================================
+  // Load Review Statistics
+  // ========================================================
+
+  Future<void> loadStats(String propertyId) async {
+    try {
+      final stats = await repository.getStats(propertyId);
+
+      state = state.copyWith(stats: stats, error: null);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  // ========================================================
+  // Load Reviews + Statistics
+  // ========================================================
+
+  Future<void> loadReviewsAndStats(String propertyId) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final results = await Future.wait([
+        repository.getReviews(propertyId),
+        repository.getStats(propertyId),
+      ]);
+
+      final reviews = results[0] as List<ReviewModel>;
+      final stats = results[1] as ReviewStats;
+
+      state = state.copyWith(
+        isLoading: false,
+        reviews: reviews,
+        stats: stats,
+        error: null,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  // ========================================================
   // Add Review
-  // ===========================================
+  // ========================================================
 
   Future<void> addReview({
     required String propertyId,
-    required double rating,
-    required String comment,
+    required int rating,
+    String? comment,
   }) async {
-    await repository.addReview(
-      propertyId: propertyId,
-      rating: rating,
-      comment: comment,
-    );
+    state = state.copyWith(isLoading: true, error: null);
 
-    await loadReviews(propertyId);
+    try {
+      await repository.addReview(
+        propertyId: propertyId,
+        rating: rating,
+        comment: comment,
+      );
+
+      await loadReviewsAndStats(propertyId);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
 
-  // ===========================================
+  // ========================================================
   // Update Review
-  // ===========================================
+  // ========================================================
 
   Future<void> updateReview({
     required String reviewId,
     required String propertyId,
-    required double rating,
-    required String comment,
+    required int rating,
+    String? comment,
   }) async {
-    await repository.updateReview(
-      reviewId: reviewId,
-      rating: rating,
-      comment: comment,
-    );
+    state = state.copyWith(isLoading: true, error: null);
 
-    await loadReviews(propertyId);
+    try {
+      await repository.updateReview(
+        reviewId: reviewId,
+        rating: rating,
+        comment: comment,
+      );
+
+      await loadReviewsAndStats(propertyId);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
 
-  // ===========================================
+  // ========================================================
   // Delete Review
-  // ===========================================
+  // ========================================================
 
   Future<void> deleteReview({
     required String reviewId,
     required String propertyId,
   }) async {
-    await repository.deleteReview(reviewId);
+    state = state.copyWith(isLoading: true, error: null);
 
-    await loadReviews(propertyId);
+    try {
+      await repository.deleteReview(reviewId);
+
+      await loadReviewsAndStats(propertyId);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  // ========================================================
+  // Clear Error
+  // ========================================================
+
+  void clearError() {
+    state = state.copyWith(error: null);
   }
 }
 
-// =============================================
+// ==========================================================
 // Provider
-// =============================================
+// ==========================================================
 
 final reviewProvider = StateNotifierProvider<ReviewNotifier, ReviewState>((
   ref,

@@ -1,180 +1,205 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../models/owner_property_model.dart';
-import '../../providers/owner_provider.dart';
-
+import '../../data/models/owner_property_model.dart';
 import 'edit_property_page.dart';
 
-class PropertyDetailsPage extends ConsumerWidget {
+class OwnerPropertyDetailsPage extends StatelessWidget {
+  const OwnerPropertyDetailsPage({super.key, required this.property});
+
   final OwnerPropertyModel property;
 
-  const PropertyDetailsPage({super.key, required this.property});
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Property Details'),
-
         actions: [
           IconButton(
+            icon: const Icon(Icons.edit),
             onPressed: () {
               Navigator.push(
                 context,
-
                 MaterialPageRoute(
-                  builder: (context) => EditPropertyPage(property: property),
+                  builder: (_) => EditPropertyPage(property: property),
                 ),
               );
             },
-
-            icon: const Icon(Icons.edit),
           ),
         ],
       ),
+      body: ListView(
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: property.imageUrl.isEmpty
+                ? Container(
+                    color: Colors.grey.shade300,
+                    child: const Icon(Icons.home, size: 80),
+                  )
+                : Image.network(
+                    property.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: Colors.grey.shade300,
+                      child: const Icon(Icons.home, size: 80),
+                    ),
+                  ),
+          ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  property.title,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
 
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 10),
 
-          children: [
-            Container(
-              height: 220,
+                Text(
+                  "₹${property.rent.toStringAsFixed(0)} / month",
+                  style: const TextStyle(
+                    fontSize: 22,
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
 
-              width: double.infinity,
+                const SizedBox(height: 20),
 
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
+                _InfoTile(
+                  icon: Icons.location_on,
+                  title: "Address",
+                  value:
+                      "${property.address}, ${property.locality}, ${property.city}",
+                ),
 
-                color: Colors.grey.shade300,
-              ),
+                _InfoTile(
+                  icon: Icons.apartment,
+                  title: "Property Type",
+                  value: property.propertyType,
+                ),
 
-              child: const Icon(Icons.home, size: 90),
-            ),
+                _InfoTile(
+                  icon: Icons.description,
+                  title: "Description",
+                  value: property.description,
+                ),
 
-            const SizedBox(height: 20),
+                _InfoTile(
+                  icon: Icons.visibility,
+                  title: "Views",
+                  value: property.views.toString(),
+                ),
 
-            Text(
-              property.title,
+                _InfoTile(
+                  icon: Icons.favorite,
+                  title: "Favorites",
+                  value: property.favorites.toString(),
+                ),
 
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
+                _InfoTile(
+                  icon: Icons.calendar_today,
+                  title: "Visit Requests",
+                  value: property.visitRequests.toString(),
+                ),
 
-            const SizedBox(height: 10),
+                const SizedBox(height: 30),
 
-            _detailRow(Icons.location_on, property.location),
-
-            _detailRow(Icons.home_work, property.propertyType),
-
-            _detailRow(Icons.bed, property.bhk),
-
-            _detailRow(Icons.currency_rupee, '₹${property.rent}/month'),
-
-            _detailRow(Icons.money, 'Deposit ₹${property.deposit}'),
-
-            const SizedBox(height: 20),
-
-            const Text(
-              'Description',
-
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(property.description, style: const TextStyle(fontSize: 16)),
-
-            const SizedBox(height: 30),
-
-            SizedBox(
-              width: double.infinity,
-
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-
-                    builder: (context) {
-                      return AlertDialog(
-                        title: const Text('Delete Property'),
-
-                        content: const Text(
-                          'Are you sure you want to delete this property?',
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.edit),
+                    label: const Text("Edit Property"),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditPropertyPage(property: property),
                         ),
-
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context, false);
-                            },
-
-                            child: const Text('Cancel'),
-                          ),
-
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context, true);
-                            },
-
-                            child: const Text('Delete'),
-                          ),
-                        ],
                       );
                     },
-                  );
+                  ),
+                ),
 
-                  if (confirm == true) {
-                    try {
-                      await ref
-                          .read(ownerProvider.notifier)
-                          .deleteProperty(property.id);
+                const SizedBox(height: 12),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.delete),
+                    label: const Text("Delete Property"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                    ),
+                    onPressed: () async {
+                      final delete = await showDialog<bool>(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text("Delete Property"),
+                          content: const Text(
+                            "Are you sure you want to delete this property?",
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text("Cancel"),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text("Delete"),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (delete != true) return;
+
+                      // TODO:
+                      // Call delete API
 
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Property Deleted Successfully'),
-                          ),
+                          const SnackBar(content: Text("Property deleted")),
                         );
 
                         Navigator.pop(context);
                       }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text(e.toString())));
-                      }
-                    }
-                  }
-                },
-
-                icon: const Icon(Icons.delete),
-
-                label: const Text('Delete Property'),
-              ),
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _detailRow(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+class _InfoTile extends StatelessWidget {
+  const _InfoTile({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
 
-      child: Row(
-        children: [
-          Icon(icon),
+  final IconData icon;
+  final String title;
+  final String value;
 
-          const SizedBox(width: 12),
-
-          Text(text, style: const TextStyle(fontSize: 16)),
-        ],
-      ),
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon),
+      title: Text(title),
+      subtitle: Text(value),
     );
   }
 }

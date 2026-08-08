@@ -1,16 +1,20 @@
 import '../../domain/entities/search_entity.dart';
 import '../../domain/repositories/search_repository.dart';
+import '../models/search_model.dart';
+import '../search_api.dart';
 
 class SearchRepositoryImpl implements SearchRepository {
+  SearchRepositoryImpl(this._api);
+
+  final SearchApi _api;
+
   @override
-  Future<List<SearchEntity>> load() async {
-    return [
-      const SearchEntity('Luxury Apartment', 'Downtown, 2 beds, pet-friendly'),
-      const SearchEntity('Garden Villa', 'Suburban, 3 beds, private garden'),
-      const SearchEntity(
-        'Studio Loft',
-        'Near transit, furnished, flexible lease',
-      ),
-    ];
+  Future<List<SearchModel>> search(SearchEntity filters) async {
+    return await _api.searchProperties(filters.query);
+  }
+
+  @override
+  Future<List<SearchModel>> recentSearches() async {
+    return await _api.recentSearches();
   }
 }

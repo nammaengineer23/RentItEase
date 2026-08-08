@@ -1,24 +1,39 @@
-import '../entities/chat_entity.dart';
+import '../entities/conversation_entity.dart';
+import '../entities/message_entity.dart';
 
 abstract class ChatRepository {
-  /// Load all conversations
-  Future<List<ChatEntity>> load();
+  /// Get all conversations for the authenticated user.
+  Future<List<ConversationEntity>> getConversations();
 
-  /// Load a single conversation
-  Future<ChatEntity?> getConversation(String chatId);
+  /// Start a conversation for a property.
+  Future<ConversationEntity> createConversation({
+    required String propertyId,
+  });
 
-  /// Send a text message
-  Future<void> sendMessage({required String chatId, required String message});
+  /// Get all messages in a conversation.
+  Future<List<MessageEntity>> getMessages({
+    required String conversationId,
+  });
 
-  /// Upload an image and send it
-  Future<void> sendImage({required String chatId, required String imagePath});
+  /// Send a text message.
+  Future<MessageEntity> sendMessage({
+    required String conversationId,
+    required String text,
+  });
 
-  /// Mark conversation as read
-  Future<void> markAsRead(String chatId);
+  /// Mark all unread messages in a conversation as read.
+  Future<void> markAsRead({
+    required String conversationId,
+  });
 
-  /// Delete a conversation
-  Future<void> deleteConversation(String chatId);
+  /// Edit an existing message.
+  Future<MessageEntity> editMessage({
+    required String messageId,
+    required String text,
+  });
 
-  /// Search conversations
-  Future<List<ChatEntity>> search(String keyword);
+  /// Delete an existing message.
+  Future<void> deleteMessage({
+    required String messageId,
+  });
 }

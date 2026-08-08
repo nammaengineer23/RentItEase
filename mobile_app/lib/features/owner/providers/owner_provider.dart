@@ -1,182 +1,179 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/owner_api.dart';
-import '../data/owner_repository.dart';
 import '../../../core/network/dio_provider.dart';
-import '../models/owner_property_model.dart';
-import '../models/visit_request_model.dart';
-import '../models/analytics_model.dart';
 
-// ===============================
-// Repository Provider
-// ===============================
+import '../data/api/owner_api.dart';
+import '../data/repositories/owner_repository_impl.dart';
+
+import '../domain/entities/owner_property_entity.dart';
+import '../domain/repositories/owner_repository.dart';
+
+import 'owner_state.dart';
 
 final ownerRepositoryProvider = Provider<OwnerRepository>((ref) {
   final dio = ref.watch(dioProvider);
 
-  return OwnerRepository(OwnerApi(dio));
+  return OwnerRepositoryImpl(OwnerApi(dio));
 });
 
-// ===============================
-// Owner State
-// ===============================
-
-class OwnerState {
-  final bool isLoading;
-
-  final List<OwnerPropertyModel> properties;
-
-  final List<VisitRequestModel> visits;
-
-  final AnalyticsModel? analytics;
-
-  final String? error;
-
-  OwnerState({
-    this.isLoading = false,
-
-    this.properties = const [],
-
-    this.visits = const [],
-
-    this.analytics,
-
-    this.error,
-  });
-
-  OwnerState copyWith({
-    bool? isLoading,
-
-    List<OwnerPropertyModel>? properties,
-
-    List<VisitRequestModel>? visits,
-
-    AnalyticsModel? analytics,
-
-    String? error,
-  }) {
-    return OwnerState(
-      isLoading: isLoading ?? this.isLoading,
-
-      properties: properties ?? this.properties,
-
-      visits: visits ?? this.visits,
-
-      analytics: analytics ?? this.analytics,
-
-      error: error ?? this.error,
-    );
-  }
-}
-
-// ===============================
-// Owner Notifier
-// ===============================
+final ownerProvider = StateNotifierProvider<OwnerNotifier, OwnerState>((ref) {
+  return OwnerNotifier(ref.watch(ownerRepositoryProvider));
+});
 
 class OwnerNotifier extends StateNotifier<OwnerState> {
+  OwnerNotifier(this.repository) : super(const OwnerState());
+
   final OwnerRepository repository;
 
-  OwnerNotifier(this.repository) : super(OwnerState());
+  // ==========================================================
+  // Dashboard
+  // ==========================================================
 
-  // ===========================
-  // Load Properties
-  // ===========================
-
-  Future<void> loadProperties() async {
-    state = state.copyWith(isLoading: true);
-
+  Future<void> loadDashboard() async {
     try {
-      final data = await repository.getMyProperties();
+      state = state.copyWith(
+        loading: true,
+        error: null,
+      );
 
-      state = state.copyWith(isLoading: false, properties: data);
+      final summary = await repository.getDashboardSummary();
+      final activities = await repository.getRecentActivities();
+
+      state = state.copyWith(
+        loading: false,
+        summary: summary,
+        activities: activities,
+        error: null,
+      );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        loading: false,
+        error: e.toString(),
+      );
     }
   }
 
-  // ===========================
-  // Add Property
-  // ===========================
-
-  Future<void> addProperty(Map<String, dynamic> data) async {
-    await repository.createProperty(data);
-
-    await loadProperties();
+  Future<void> refreshDashboard() async {
+    await loadDashboard();
   }
 
-  // ===========================
-  // Update Property
-  // ===========================
-
-  Future<void> updateProperty(String id, Map<String, dynamic> data) async {
-    await repository.updateProperty(id, data);
-
-    await loadProperties();
-  }
-
-  // ===========================
-  // Delete Property
-  // ===========================
-
-  Future<void> deleteProperty(String id) async {
-    await repository.deleteProperty(id);
-
-    await loadProperties();
-  }
-
-  // ===========================
-  // Visit Requests
-  // ===========================
-
-  Future<void> loadVisits() async {
-    try {
-      final data = await repository.getOwnerVisits();
-
-      state = state.copyWith(visits: data);
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-    }
-  }
-
-  Future<void> approveVisit(String id) async {
-    await repository.approveVisit(id);
-
-    await loadVisits();
-  }
-
-  Future<void> rejectVisit(String id) async {
-    await repository.rejectVisit(id);
-
-    await loadVisits();
-  }
-
-  Future<void> completeVisit(String id) async {
-    await repository.completeVisit(id);
-
-    await loadVisits();
-  }
-
-  // ===========================
+  // ==========================================================
   // Analytics
-  // ===========================
+  // ==========================================================
 
   Future<void> loadAnalytics() async {
     try {
-      final data = await repository.getAnalytics();
+      state = state.copyWith(
+        loading: true,
+        error: null,
+      );
 
-      state = state.copyWith(analytics: data);
+      final analytics = await repository.getAnalytics();
+
+      state = state.copyWith(
+        loading: false,
+        analytics: analytics,
+        error: null,
+      );
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(
+        loading: false,
+        error: e.toString(),
+      );
     }
   }
+
+  Future<void> refreshAnalytics() async {
+    await loadAnalytics();
+  }
+
+  // ==========================================================
+  // Properties
+  // ==========================================================
+
+  Future<void> loadMyProperties() async {
+    try {
+      state = state.copyWith(
+        loading: true,
+        error: null,
+      );
+
+      final properties = await repository.getMyProperties();
+
+      state = state.copyWith(
+        loading: false,
+        properties: properties,
+        error: null,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        loading: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  Future<void> addProperty(OwnerPropertyEntity property) async {
+    await repository.addProperty(property);
+    await loadMyProperties();
+  }
+
+  Future<void> updateProperty(OwnerPropertyEntity property) async {
+    await repository.updateProperty(property);
+    await loadMyProperties();
+  }
+
+  Future<void> deleteProperty(String propertyId) async {
+    await repository.deleteProperty(propertyId);
+    await loadMyProperties();
+  }
+
+  Future<void> refreshProperties() async {
+    await loadMyProperties();
+  }
+
+  // ==========================================================
+  // Visit Requests
+  // ==========================================================
+
+  Future<void> loadVisitRequests() async {
+    try {
+      state = state.copyWith(
+        loading: true,
+        error: null,
+      );
+
+      final visits = await repository.getVisitRequests();
+
+      state = state.copyWith(
+        loading: false,
+        visitRequests: visits,
+        error: null,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        loading: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  Future<void> approveVisit(String visitId) async {
+    await repository.approveVisit(visitId);
+    await loadVisitRequests();
+  }
+
+  Future<void> rejectVisit(String visitId) async {
+    await repository.rejectVisit(visitId);
+    await loadVisitRequests();
+  }
+
+  Future<void> completeVisit(String visitId) async {
+    await repository.completeVisit(visitId);
+    await loadVisitRequests();
+  }
+
+  Future<void> refreshVisitRequests() async {
+    await loadVisitRequests();
+  }
 }
-
-// ===============================
-// Provider
-// ===============================
-
-final ownerProvider = StateNotifierProvider<OwnerNotifier, OwnerState>((ref) {
-  final repository = ref.watch(ownerRepositoryProvider);
-
-  return OwnerNotifier(repository);
-});

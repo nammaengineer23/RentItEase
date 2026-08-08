@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/owner_provider.dart';
 
-import 'my_properties_page.dart';
-import 'owner_visits_page.dart';
-import 'owner_analytics_page.dart';
+import '../widgets/dashboard_card.dart';
 
 class OwnerDashboardPage extends ConsumerStatefulWidget {
   const OwnerDashboardPage({super.key});
@@ -20,13 +18,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
     super.initState();
 
     Future.microtask(() {
-      final notifier = ref.read(ownerProvider.notifier);
-
-      notifier.loadProperties();
-
-      notifier.loadVisits();
-
-      notifier.loadAnalytics();
+      ref.read(ownerProvider.notifier).loadDashboard();
     });
   }
 
@@ -37,170 +29,107 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Owner Dashboard')),
 
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(ownerProvider.notifier).refreshDashboard(),
 
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-
+        child: state.loading
+            ? const Center(child: CircularProgressIndicator())
+            : state.error != null
+            ? ListView(
                 children: [
-                  const Card(
-                    elevation: 3,
+                  const SizedBox(height: 120),
 
-                    child: ListTile(
-                      leading: CircleAvatar(child: Icon(Icons.person)),
-
-                      title: Text('Welcome Owner 👋'),
-
-                      subtitle: Text('Manage your properties easily'),
-                    ),
-                  ),
+                  const Icon(Icons.error_outline, color: Colors.red, size: 70),
 
                   const SizedBox(height: 20),
 
-                  GridView.count(
-                    shrinkWrap: true,
+                  Center(
+                    child: Text(state.error!, textAlign: TextAlign.center),
+                  ),
+                ],
+              )
+            : ListView(
+                padding: const EdgeInsets.all(16),
 
-                    physics: const NeverScrollableScrollPhysics(),
-
-                    crossAxisCount: 2,
-
-                    crossAxisSpacing: 10,
-
-                    mainAxisSpacing: 10,
-
-                    children: [
-                      _dashboardCard(
-                        icon: Icons.home,
-
-                        title: 'Properties',
-
-                        value: state.properties.length.toString(),
-                      ),
-
-                      _dashboardCard(
-                        icon: Icons.calendar_month,
-
-                        title: 'Visits',
-
-                        value: state.visits.length.toString(),
-                      ),
-
-                      _dashboardCard(
-                        icon: Icons.chat,
-
-                        title: 'Chats',
-
-                        value: '0',
-                      ),
-
-                      _dashboardCard(
-                        icon: Icons.visibility,
-
-                        title: 'Views',
-
-                        value: state.analytics?.totalViews.toString() ?? '0',
-                      ),
-                    ],
+                children: [
+                  DashboardCard(
+                    title: 'Properties',
+                    value: '${state.summary?.totalProperties ?? 0}',
+                    icon: Icons.home_work,
                   ),
 
-                  const SizedBox(height: 25),
+                  const SizedBox(height: 16),
+
+                  DashboardCard(
+                    title: 'Active Properties',
+                    value: '${state.summary?.activeProperties ?? 0}',
+                    icon: Icons.verified,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  DashboardCard(
+                    title: 'Pending Visits',
+                    value: '${state.summary?.pendingVisits ?? 0}',
+                    icon: Icons.event,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  DashboardCard(
+                    title: 'Completed Visits',
+                    value: '${state.summary?.completedVisits ?? 0}',
+                    icon: Icons.task_alt,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  DashboardCard(
+                    title: 'Property Views',
+                    value: '${state.summary?.totalViews ?? 0}',
+                    icon: Icons.visibility,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  DashboardCard(
+                    title: 'Favorites',
+                    value: '${state.summary?.totalFavorites ?? 0}',
+                    icon: Icons.favorite,
+                  ),
+
+                  const SizedBox(height: 30),
 
                   const Text(
-                    'Quick Actions',
-
+                    'Recent Activity',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 16),
 
-                  ListTile(
-                    leading: const Icon(Icons.home),
+                  if (state.activities.isEmpty)
+                    const Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Center(child: Text('No recent activity')),
+                      ),
+                    ),
 
-                    title: const Text('My Properties'),
-
-                    trailing: const Icon(Icons.arrow_forward_ios),
-
-                    onTap: () {
-                      Navigator.push(
-                        context,
-
-                        MaterialPageRoute(
-                          builder: (context) => const MyPropertiesPage(),
+                  ...state.activities.map(
+                    (activity) => Card(
+                      child: ListTile(
+                        leading: const CircleAvatar(child: Icon(Icons.history)),
+                        title: Text(activity.title),
+                        subtitle: Text(activity.description),
+                        trailing: Text(
+                          activity.type,
+                          style: const TextStyle(fontSize: 12),
                         ),
-                      );
-                    },
-                  ),
-
-                  ListTile(
-                    leading: const Icon(Icons.calendar_month),
-
-                    title: const Text('Visit Requests'),
-
-                    trailing: const Icon(Icons.arrow_forward_ios),
-
-                    onTap: () {
-                      Navigator.push(
-                        context,
-
-                        MaterialPageRoute(
-                          builder: (context) => const OwnerVisitsPage(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  ListTile(
-                    leading: const Icon(Icons.analytics),
-
-                    title: const Text('Analytics'),
-
-                    trailing: const Icon(Icons.arrow_forward_ios),
-
-                    onTap: () {
-                      Navigator.push(
-                        context,
-
-                        MaterialPageRoute(
-                          builder: (context) => const OwnerAnalyticsPage(),
-                        ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-    );
-  }
-
-  Widget _dashboardCard({
-    required IconData icon,
-
-    required String title,
-
-    required String value,
-  }) {
-    return Card(
-      elevation: 2,
-
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-
-        children: [
-          Icon(icon, size: 35),
-
-          const SizedBox(height: 10),
-
-          Text(
-            value,
-
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-
-          Text(title),
-        ],
       ),
     );
   }

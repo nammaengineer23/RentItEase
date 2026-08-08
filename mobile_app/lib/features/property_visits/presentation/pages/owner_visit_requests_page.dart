@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/entities/property_visit.dart';
-import '../../providers/property_visit_provider.dart';
+import '../../../property_visits/domain/entities/property_visit.dart';
+import '../../../property_visits/providers/property_visit_provider.dart';
 import '../widgets/visit_card.dart';
 
 class OwnerVisitRequestsPage extends ConsumerWidget {

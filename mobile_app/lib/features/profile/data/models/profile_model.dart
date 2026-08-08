@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 import '../../domain/entities/profile_entity.dart';
 
 class ProfileModel extends ProfileEntity {
@@ -17,17 +15,26 @@ class ProfileModel extends ProfileEntity {
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
     return ProfileModel(
-      id: json['id'] ?? '',
+      id: json['id']?.toString() ?? '',
+
       fullName: json['fullName'] ?? json['name'] ?? '',
+
       email: json['email'] ?? '',
+
       phone: json['phone'] ?? '',
+
       profileImage: json['profileImage'] ?? json['photoUrl'],
+
       role: json['role'] ?? 'USER',
+
       isVerified: json['isVerified'] ?? false,
+
       isActive: json['isActive'] ?? true,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
+
+      createdAt: DateTime.tryParse(
+            json['createdAt']?.toString() ?? '',
+          ) ??
+          DateTime.now(),
     );
   }
 
@@ -59,8 +66,21 @@ class ProfileModel extends ProfileEntity {
     );
   }
 
+  ProfileEntity toEntity() {
+    return ProfileEntity(
+      id: id,
+      fullName: fullName,
+      email: email,
+      phone: phone,
+      profileImage: profileImage,
+      role: role,
+      isVerified: isVerified,
+      isActive: isActive,
+      createdAt: createdAt,
+    );
+  }
+
   @override
-  @nonVirtual
   ProfileModel copyWith({
     String? id,
     String? fullName,

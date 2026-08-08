@@ -1,33 +1,40 @@
 import '../models/favorite_property_model.dart';
-
 import 'favorites_api.dart';
 
 class FavoritesRepository {
-  final FavoritesApi api;
+  FavoritesRepository(this._api);
 
-  FavoritesRepository(this.api);
+  final FavoritesApi _api;
 
-  // ===============================
-  // GET FAVORITES
-  // ===============================
+  //=========================================
+  // Get Favorites
+  //=========================================
 
-  Future<List<FavoritePropertyModel>> getFavorites() async {
-    return await api.getFavorites();
+  Future<List<FavoritePropertyModel>> getFavorites() {
+    return _api.getFavorites();
   }
 
-  // ===============================
-  // ADD FAVORITE
-  // ===============================
+  //=========================================
+  // Add Favorite
+  //=========================================
 
-  Future<void> addFavorite(String propertyId) async {
-    await api.addFavorite(propertyId);
+  Future<void> addFavorite(String propertyId) {
+    return _api.addFavorite(propertyId);
   }
 
-  // ===============================
-  // REMOVE FAVORITE
-  // ===============================
+  //=========================================
+  // Remove Favorite
+  //=========================================
 
-  Future<void> removeFavorite(String propertyId) async {
-    await api.removeFavorite(propertyId);
+  Future<void> removeFavorite(String propertyId) {
+    return _api.removeFavorite(propertyId);
+  }
+
+  //=========================================
+  // Check Favorite
+  //=========================================
+
+  Future<bool> isFavorite(String propertyId) {
+    return _api.isFavorite(propertyId);
   }
 }

@@ -3,13 +3,13 @@ import 'package:dio/dio.dart';
 import '../models/favorite_property_model.dart';
 
 class FavoritesApi {
-  final Dio dio;
-
   FavoritesApi(this.dio);
 
-  // ===============================
-  // GET FAVORITE PROPERTIES
-  // ===============================
+  final Dio dio;
+
+  //==================================================
+  // Get Favorite Properties
+  //==================================================
 
   Future<List<FavoritePropertyModel>> getFavorites() async {
     try {
@@ -17,35 +17,77 @@ class FavoritesApi {
 
       final data = response.data;
 
-      final list = data is List ? data : data['data'] ?? [];
+      List<dynamic> list = [];
 
-      return list.map((item) => FavoritePropertyModel.fromJson(item)).toList();
+      if (data is List) {
+        list = data;
+      } else if (data is Map<String, dynamic>) {
+        if (data['data'] is List) {
+          list = data['data'] as List<dynamic>;
+        } else if (data['favorites'] is List) {
+          list = data['favorites'] as List<dynamic>;
+        }
+      }
+
+      return list
+          .map(
+            (e) => FavoritePropertyModel.fromJson(
+              Map<String, dynamic>.from(e),
+            ),
+          )
+          .toList();
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Failed to load favorites');
+      throw Exception(
+        e.response?.data?['message'] ??
+            e.response?.statusMessage ??
+            'Failed to load favorites',
+      );
     }
   }
 
-  // ===============================
-  // ADD FAVORITE
-  // ===============================
+  //==================================================
+  // Add Favorite
+  //==================================================
 
   Future<void> addFavorite(String propertyId) async {
     try {
       await dio.post('/favorites/$propertyId');
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Failed to add favorite');
+      throw Exception(
+        e.response?.data?['message'] ??
+            e.response?.statusMessage ??
+            'Failed to add favorite',
+      );
     }
   }
 
-  // ===============================
-  // REMOVE FAVORITE
-  // ===============================
+  //==================================================
+  // Remove Favorite
+  //==================================================
 
   Future<void> removeFavorite(String propertyId) async {
     try {
       await dio.delete('/favorites/$propertyId');
     } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Failed to remove favorite');
+      throw Exception(
+        e.response?.data?['message'] ??
+            e.response?.statusMessage ??
+            'Failed to remove favorite',
+      );
+    }
+  }
+
+  //==================================================
+  // Check Favorite
+  //==================================================
+
+  Future<bool> isFavorite(String propertyId) async {
+    try {
+      final favorites = await getFavorites();
+
+      return favorites.any((e) => e.propertyId == propertyId);
+    } catch (_) {
+      return false;
     }
   }
 }

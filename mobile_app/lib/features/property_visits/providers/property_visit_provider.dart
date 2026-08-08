@@ -1,34 +1,53 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/dio_provider.dart';
+
+import '../data/api/property_visit_api.dart';
 import '../data/repositories/property_visit_repository_impl.dart';
 import '../domain/entities/property_visit.dart';
 import '../domain/repositories/property_visit_repository.dart';
 
-final propertyVisitRepositoryProvider = Provider<PropertyVisitRepository>((
-  ref,
-) {
-  return PropertyVisitRepositoryImpl();
+//==================================================
+// Repository Provider
+//==================================================
+
+final propertyVisitRepositoryProvider =
+    Provider<PropertyVisitRepository>((ref) {
+  final dio = ref.watch(dioProvider);
+
+  return PropertyVisitRepositoryImpl(
+    PropertyVisitApi(dio),
+  );
 });
 
+//==================================================
+// Provider
+//==================================================
+
 final propertyVisitProvider =
-    StateNotifierProvider<
-      PropertyVisitNotifier,
-      AsyncValue<List<PropertyVisit>>
-    >((ref) {
-      return PropertyVisitNotifier(ref.read(propertyVisitRepositoryProvider));
-    });
+    StateNotifierProvider<PropertyVisitNotifier,
+        AsyncValue<List<PropertyVisit>>>((ref) {
+  return PropertyVisitNotifier(
+    ref.watch(propertyVisitRepositoryProvider),
+  );
+});
+
+//==================================================
+// Notifier
+//==================================================
 
 class PropertyVisitNotifier
     extends StateNotifier<AsyncValue<List<PropertyVisit>>> {
-  final PropertyVisitRepository repository;
-
-  PropertyVisitNotifier(this.repository) : super(const AsyncLoading()) {
+  PropertyVisitNotifier(this.repository)
+      : super(const AsyncLoading()) {
     loadMyVisits();
   }
 
-  // ============================================
+  final PropertyVisitRepository repository;
+
+  //==================================================
   // Tenant Visits
-  // ============================================
+  //==================================================
 
   Future<void> loadMyVisits() async {
     try {
@@ -47,32 +66,24 @@ class PropertyVisitNotifier
     required DateTime visitDate,
     String? notes,
   }) async {
-    try {
-      await repository.bookVisit(
-        propertyId: propertyId,
-        visitDate: visitDate,
-        notes: notes,
-      );
+    await repository.bookVisit(
+      propertyId: propertyId,
+      visitDate: visitDate,
+      notes: notes,
+    );
 
-      await loadMyVisits();
-    } catch (e) {
-      rethrow;
-    }
+    await loadMyVisits();
   }
 
   Future<void> cancelVisit(String visitId) async {
-    try {
-      await repository.cancelVisit(visitId);
+    await repository.cancelVisit(visitId);
 
-      await loadMyVisits();
-    } catch (e) {
-      rethrow;
-    }
+    await loadMyVisits();
   }
 
-  // ============================================
+  //==================================================
   // Owner Visits
-  // ============================================
+  //==================================================
 
   Future<void> loadOwnerVisits() async {
     try {
@@ -87,38 +98,26 @@ class PropertyVisitNotifier
   }
 
   Future<void> approveVisit(String visitId) async {
-    try {
-      await repository.approveVisit(visitId);
+    await repository.approveVisit(visitId);
 
-      await loadOwnerVisits();
-    } catch (e) {
-      rethrow;
-    }
+    await loadOwnerVisits();
   }
 
   Future<void> rejectVisit(String visitId) async {
-    try {
-      await repository.rejectVisit(visitId);
+    await repository.rejectVisit(visitId);
 
-      await loadOwnerVisits();
-    } catch (e) {
-      rethrow;
-    }
+    await loadOwnerVisits();
   }
 
   Future<void> completeVisit(String visitId) async {
-    try {
-      await repository.completeVisit(visitId);
+    await repository.completeVisit(visitId);
 
-      await loadOwnerVisits();
-    } catch (e) {
-      rethrow;
-    }
+    await loadOwnerVisits();
   }
 
-  // ============================================
-  // Helpers
-  // ============================================
+  //==================================================
+  // Refresh Helpers
+  //==================================================
 
   Future<void> refreshMyVisits() async {
     await loadMyVisits();
