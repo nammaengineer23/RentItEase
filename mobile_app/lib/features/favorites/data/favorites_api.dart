@@ -7,9 +7,9 @@ class FavoritesApi {
 
   final Dio dio;
 
-  //==================================================
+  // ==================================================
   // Get Favorite Properties
-  //==================================================
+  // ==================================================
 
   Future<List<FavoritePropertyModel>> getFavorites() async {
     try {
@@ -22,72 +22,117 @@ class FavoritesApi {
       if (data is List) {
         list = data;
       } else if (data is Map<String, dynamic>) {
-        if (data['data'] is List) {
-          list = data['data'] as List<dynamic>;
-        } else if (data['favorites'] is List) {
+        if (data['favorites'] is List) {
           list = data['favorites'] as List<dynamic>;
+        } else if (data['data'] is List) {
+          list = data['data'] as List<dynamic>;
         }
       }
 
       return list
+          .whereType<Map>()
           .map(
-            (e) => FavoritePropertyModel.fromJson(
-              Map<String, dynamic>.from(e),
+            (item) => FavoritePropertyModel.fromJson(
+              Map<String, dynamic>.from(item),
             ),
           )
           .toList();
     } on DioException catch (e) {
       throw Exception(
-        e.response?.data?['message'] ??
-            e.response?.statusMessage ??
-            'Failed to load favorites',
+        _errorMessage(
+          e,
+          'Failed to load favorites',
+        ),
       );
     }
   }
 
-  //==================================================
+  // ==================================================
   // Add Favorite
-  //==================================================
+  // ==================================================
 
   Future<void> addFavorite(String propertyId) async {
     try {
       await dio.post('/favorites/$propertyId');
     } on DioException catch (e) {
       throw Exception(
-        e.response?.data?['message'] ??
-            e.response?.statusMessage ??
-            'Failed to add favorite',
+        _errorMessage(
+          e,
+          'Failed to add favorite',
+        ),
       );
     }
   }
 
-  //==================================================
+  // ==================================================
   // Remove Favorite
-  //==================================================
+  // ==================================================
 
   Future<void> removeFavorite(String propertyId) async {
     try {
       await dio.delete('/favorites/$propertyId');
     } on DioException catch (e) {
       throw Exception(
-        e.response?.data?['message'] ??
-            e.response?.statusMessage ??
-            'Failed to remove favorite',
+        _errorMessage(
+          e,
+          'Failed to remove favorite',
+        ),
       );
     }
   }
 
-  //==================================================
+  // ==================================================
   // Check Favorite
-  //==================================================
+  // ==================================================
 
   Future<bool> isFavorite(String propertyId) async {
     try {
-      final favorites = await getFavorites();
+      final response = await dio.get(
+        '/favorites/check/$propertyId',
+      );
 
-      return favorites.any((e) => e.propertyId == propertyId);
-    } catch (_) {
+      final data = response.data;
+
+      if (data is Map<String, dynamic>) {
+        return data['isFavorite'] == true;
+      }
+
       return false;
+    } on DioException catch (e) {
+      throw Exception(
+        _errorMessage(
+          e,
+          'Failed to check favorite',
+        ),
+      );
     }
+  }
+
+  // ==================================================
+  // Error Message
+  // ==================================================
+
+  String _errorMessage(
+    DioException error,
+    String fallback,
+  ) {
+    final responseData = error.response?.data;
+
+    if (responseData is Map<String, dynamic>) {
+      final message = responseData['message'];
+
+      if (message is String && message.isNotEmpty) {
+        return message;
+      }
+
+      final errorMessage = responseData['error'];
+
+      if (errorMessage is String &&
+          errorMessage.isNotEmpty) {
+        return errorMessage;
+      }
+    }
+
+    return error.response?.statusMessage ?? fallback;
   }
 }

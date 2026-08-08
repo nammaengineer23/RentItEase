@@ -1,0 +1,1476 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+data/
+  api/
+    property_visit_api.dart
+  models/
+    property_visit_model.dart
+  repositories/
+    property_visit_repository_impl.dart
+domain/
+  entities/
+    property_visit.dart
+  repositories/
+    property_visit_repository.dart
+presentation/
+  pages/
+    book_visit_page.dart
+    my_visits_page.dart
+    owner_visit_requests_page.dart
+  widgets/
+    visit_card.dart
+    visit_date_picker.dart
+    visit_status_chip.dart
+providers/
+  property_visit_provider.dart
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="data/api/property_visit_api.dart">
+import 'package:dio/dio.dart';
+
+import '../models/property_visit_model.dart';
+
+class PropertyVisitApi {
+  PropertyVisitApi(this._dio);
+
+  final Dio _dio;
+
+  static const String _basePath = '/property-visits';
+
+  Future<List<PropertyVisitModel>> getMyVisits() async {
+    final response = await _dio.get(_basePath);
+
+    final data = response.data as List;
+
+    return data
+        .map((e) => PropertyVisitModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<PropertyVisitModel>> getOwnerVisits() async {
+    final response = await _dio.get('$_basePath/owner');
+
+    final data = response.data as List;
+
+    return data
+        .map((e) => PropertyVisitModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> bookVisit({
+    required String propertyId,
+    required DateTime visitDate,
+    String? notes,
+  }) async {
+    await _dio.post(
+      _basePath,
+      data: {
+        'propertyId': propertyId,
+        'visitDate': visitDate.toIso8601String(),
+        'notes': notes,
+      },
+    );
+  }
+
+  Future<void> cancelVisit(String visitId) async {
+    await _dio.patch('$_basePath/$visitId/cancel');
+  }
+
+  Future<void> approveVisit(String visitId) async {
+    await _dio.patch('$_basePath/$visitId/approve');
+  }
+
+  Future<void> rejectVisit(String visitId) async {
+    await _dio.patch('$_basePath/$visitId/reject');
+  }
+
+  Future<void> completeVisit(String visitId) async {
+    await _dio.patch('$_basePath/$visitId/complete');
+  }
+}
+</file>
+
+<file path="data/models/property_visit_model.dart">
+import '../../domain/entities/property_visit.dart';
+
+class PropertyVisitModel extends PropertyVisit {
+  const PropertyVisitModel({
+    required super.id,
+    required super.propertyId,
+    required super.propertyTitle,
+    required super.propertyImage,
+    required super.ownerId,
+    required super.ownerName,
+    required super.tenantId,
+    required super.tenantName,
+    required super.visitDate,
+    required super.status,
+    super.notes,
+  });
+
+  factory PropertyVisitModel.fromJson(Map<String, dynamic> json) {
+    return PropertyVisitModel(
+      id: json['id']?.toString() ?? '',
+      propertyId: json['propertyId']?.toString() ?? '',
+      propertyTitle: json['propertyTitle'] ?? '',
+      propertyImage: json['propertyImage'] ?? '',
+      ownerId: json['ownerId']?.toString() ?? '',
+      ownerName: json['ownerName'] ?? '',
+      tenantId: json['tenantId']?.toString() ?? '',
+      tenantName: json['tenantName'] ?? '',
+      visitDate: DateTime.tryParse(json['visitDate'] ?? '') ?? DateTime.now(),
+      status: json['status'] ?? 'PENDING',
+      notes: json['notes'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'propertyId': propertyId,
+      'propertyTitle': propertyTitle,
+      'propertyImage': propertyImage,
+      'ownerId': ownerId,
+      'ownerName': ownerName,
+      'tenantId': tenantId,
+      'tenantName': tenantName,
+      'visitDate': visitDate.toIso8601String(),
+      'status': status,
+      'notes': notes,
+    };
+  }
+
+  @override
+PropertyVisitModel copyWith({
+  String? id,
+  String? propertyId,
+  String? propertyTitle,
+  String? propertyImage,
+  String? ownerId,
+  String? ownerName,
+  String? tenantId,
+  String? tenantName,
+    DateTime? visitDate,
+    String? status,
+    String? notes,
+  }) {
+    return PropertyVisitModel(
+      id: id ?? this.id,
+      propertyId: propertyId ?? this.propertyId,
+      propertyTitle: propertyTitle ?? this.propertyTitle,
+      propertyImage: propertyImage ?? this.propertyImage,
+      ownerId: ownerId ?? this.ownerId,
+      ownerName: ownerName ?? this.ownerName,
+      tenantId: tenantId ?? this.tenantId,
+      tenantName: tenantName ?? this.tenantName,
+      visitDate: visitDate ?? this.visitDate,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
+    );
+  }
+}
+</file>
+
+<file path="data/repositories/property_visit_repository_impl.dart">
+import '../../domain/entities/property_visit.dart';
+import '../../domain/repositories/property_visit_repository.dart';
+import '../api/property_visit_api.dart';
+
+class PropertyVisitRepositoryImpl implements PropertyVisitRepository {
+  PropertyVisitRepositoryImpl(this._api);
+
+  final PropertyVisitApi _api;
+
+  @override
+  Future<List<PropertyVisit>> getMyVisits() {
+    return _api.getMyVisits();
+  }
+
+  @override
+  Future<List<PropertyVisit>> getOwnerVisits() {
+    return _api.getOwnerVisits();
+  }
+
+  @override
+  Future<void> bookVisit({
+    required String propertyId,
+    required DateTime visitDate,
+    String? notes,
+  }) async {
+    await _api.bookVisit(
+      propertyId: propertyId,
+      visitDate: visitDate,
+      notes: notes,
+    );
+  }
+
+  @override
+  Future<void> cancelVisit(String visitId) {
+    return _api.cancelVisit(visitId);
+  }
+
+  @override
+  Future<void> approveVisit(String visitId) {
+    return _api.approveVisit(visitId);
+  }
+
+  @override
+  Future<void> rejectVisit(String visitId) {
+    return _api.rejectVisit(visitId);
+  }
+
+  @override
+  Future<void> completeVisit(String visitId) {
+    return _api.completeVisit(visitId);
+  }
+}
+</file>
+
+<file path="domain/entities/property_visit.dart">
+class PropertyVisit {
+  final String id;
+  final String propertyId;
+  final String propertyTitle;
+  final String propertyImage;
+
+  final String ownerId;
+  final String ownerName;
+
+  final String tenantId;
+  final String tenantName;
+
+  final DateTime visitDate;
+
+  final String status;
+
+  final String? notes;
+
+  const PropertyVisit({
+    required this.id,
+    required this.propertyId,
+    required this.propertyTitle,
+    required this.propertyImage,
+    required this.ownerId,
+    required this.ownerName,
+    required this.tenantId,
+    required this.tenantName,
+    required this.visitDate,
+    required this.status,
+    this.notes,
+  });
+
+  PropertyVisit copyWith({
+    String? id,
+    String? propertyId,
+    String? propertyTitle,
+    String? propertyImage,
+    String? ownerId,
+    String? ownerName,
+    String? tenantId,
+    String? tenantName,
+    DateTime? visitDate,
+    String? status,
+    String? notes,
+  }) {
+    return PropertyVisit(
+      id: id ?? this.id,
+      propertyId: propertyId ?? this.propertyId,
+      propertyTitle: propertyTitle ?? this.propertyTitle,
+      propertyImage: propertyImage ?? this.propertyImage,
+      ownerId: ownerId ?? this.ownerId,
+      ownerName: ownerName ?? this.ownerName,
+      tenantId: tenantId ?? this.tenantId,
+      tenantName: tenantName ?? this.tenantName,
+      visitDate: visitDate ?? this.visitDate,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
+    );
+  }
+}
+</file>
+
+<file path="domain/repositories/property_visit_repository.dart">
+import '../entities/property_visit.dart';
+
+abstract class PropertyVisitRepository {
+  /// Tenant
+
+  Future<List<PropertyVisit>> getMyVisits();
+
+  Future<void> bookVisit({
+    required String propertyId,
+    required DateTime visitDate,
+    String? notes,
+  });
+
+  Future<void> cancelVisit(String visitId);
+
+  /// Owner
+
+  Future<List<PropertyVisit>> getOwnerVisits();
+
+  Future<void> approveVisit(String visitId);
+
+  Future<void> rejectVisit(String visitId);
+
+  Future<void> completeVisit(String visitId);
+}
+</file>
+
+<file path="presentation/pages/book_visit_page.dart">
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../providers/property_visit_provider.dart';
+import '../widgets/visit_date_picker.dart';
+
+class BookVisitPage extends ConsumerStatefulWidget {
+  final String propertyId;
+  final String propertyTitle;
+  final String propertyImage;
+  final String ownerName;
+
+  const BookVisitPage({
+    super.key,
+    required this.propertyId,
+    required this.propertyTitle,
+    required this.propertyImage,
+    required this.ownerName,
+  });
+
+  @override
+  ConsumerState<BookVisitPage> createState() => _BookVisitPageState();
+}
+
+class _BookVisitPageState extends ConsumerState<BookVisitPage> {
+  final notesController = TextEditingController();
+
+  DateTime? visitDate;
+
+  bool loading = false;
+
+  Future<void> bookVisit() async {
+    if (visitDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select visit date.')),
+      );
+
+      return;
+    }
+
+    setState(() {
+      loading = true;
+    });
+
+    try {
+      await ref
+          .read(propertyVisitProvider.notifier)
+          .bookVisit(
+            propertyId: widget.propertyId,
+            visitDate: visitDate!,
+            notes: notesController.text.trim(),
+          );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Visit booked successfully 🎉')),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    notesController.dispose();
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Book Property Visit')),
+
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+
+          children: [
+            Card(
+              clipBehavior: Clip.antiAlias,
+
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+
+                children: [
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
+
+                    child: Image.network(
+                      widget.propertyImage,
+
+                      fit: BoxFit.cover,
+
+                      errorBuilder: (_, _, _) {
+                        return Container(
+                          color: Colors.grey.shade300,
+
+                          child: const Center(
+                            child: Icon(Icons.home, size: 70),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                      children: [
+                        Text(
+                          widget.propertyTitle,
+
+                          style: const TextStyle(
+                            fontSize: 22,
+
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        Row(
+                          children: [
+                            const Icon(Icons.person),
+
+                            const SizedBox(width: 8),
+
+                            Expanded(child: Text(widget.ownerName)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 25),
+
+            VisitDatePicker(
+              onChanged: (date) {
+                visitDate = date;
+              },
+            ),
+
+            const SizedBox(height: 25),
+
+            TextField(
+              controller: notesController,
+
+              maxLines: 4,
+
+              decoration: const InputDecoration(
+                labelText: 'Notes (Optional)',
+
+                hintText: 'Preferred time, instructions...',
+
+                border: OutlineInputBorder(),
+              ),
+            ),
+
+            const SizedBox(height: 35),
+
+            SizedBox(
+              width: double.infinity,
+
+              height: 55,
+
+              child: ElevatedButton.icon(
+                icon: loading
+                    ? const SizedBox(
+                        width: 22,
+
+                        height: 22,
+
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.calendar_month),
+
+                label: Text(loading ? 'Booking...' : 'Book Visit'),
+
+                onPressed: loading ? null : bookVisit,
+              ),
+            ),
+
+            const SizedBox(height: 30),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</file>
+
+<file path="presentation/pages/my_visits_page.dart">
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../domain/entities/property_visit.dart';
+import '../../providers/property_visit_provider.dart';
+import '../widgets/visit_card.dart';
+
+class MyVisitsPage extends ConsumerWidget {
+  const MyVisitsPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final visitsState = ref.watch(propertyVisitProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('My Property Visits')),
+
+      body: visitsState.when(
+        loading: () {
+          return const Center(child: CircularProgressIndicator());
+        },
+
+        error: (error, _) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 70, color: Colors.red),
+
+                  const SizedBox(height: 16),
+
+                  Text(error.toString(), textAlign: TextAlign.center),
+
+                  const SizedBox(height: 20),
+
+                  ElevatedButton(
+                    onPressed: () {
+                      ref
+                          .read(propertyVisitProvider.notifier)
+                          .refreshMyVisits();
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+
+        data: (List<PropertyVisit> visits) {
+          if (visits.isEmpty) {
+            return RefreshIndicator(
+              onRefresh: () {
+                return ref
+                    .read(propertyVisitProvider.notifier)
+                    .refreshMyVisits();
+              },
+              child: ListView(
+                children: const [
+                  SizedBox(height: 120),
+
+                  Icon(Icons.event_busy, size: 90, color: Colors.grey),
+
+                  SizedBox(height: 20),
+
+                  Center(
+                    child: Text(
+                      'No property visits booked yet.',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () {
+              return ref.read(propertyVisitProvider.notifier).refreshMyVisits();
+            },
+
+            child: ListView.builder(
+              padding: const EdgeInsets.only(top: 10, bottom: 20),
+
+              itemCount: visits.length,
+
+              itemBuilder: (context, index) {
+                final visit = visits[index];
+
+                return VisitCard(
+                  visit: visit,
+
+                  isOwner: false,
+
+                  onCancel: visit.status == "PENDING"
+                      ? () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (_) {
+                              return AlertDialog(
+                                title: const Text('Cancel Visit'),
+                                content: const Text(
+                                  'Are you sure you want to cancel this visit?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context, false);
+                                    },
+                                    child: const Text('No'),
+                                  ),
+
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.pop(context, true);
+                                    },
+                                    child: const Text('Yes'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+
+                          if (confirm != true) {
+                            return;
+                          }
+
+                          try {
+                            await ref
+                                .read(propertyVisitProvider.notifier)
+                                .cancelVisit(visit.id);
+
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Visit cancelled successfully.',
+                                  ),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(e.toString())),
+                              );
+                            }
+                          }
+                        }
+                      : null,
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+</file>
+
+<file path="presentation/pages/owner_visit_requests_page.dart">
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../property_visits/domain/entities/property_visit.dart';
+import '../../../property_visits/providers/property_visit_provider.dart';
+import '../widgets/visit_card.dart';
+
+class OwnerVisitRequestsPage extends ConsumerWidget {
+  const OwnerVisitRequestsPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final visitsState = ref.watch(propertyVisitProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Visit Requests')),
+      body: visitsState.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 70, color: Colors.red),
+
+                const SizedBox(height: 20),
+
+                Text(error.toString(), textAlign: TextAlign.center),
+
+                const SizedBox(height: 20),
+
+                ElevatedButton(
+                  onPressed: () {
+                    ref
+                        .read(propertyVisitProvider.notifier)
+                        .refreshOwnerVisits();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        data: (List<PropertyVisit> visits) {
+          if (visits.isEmpty) {
+            return RefreshIndicator(
+              onRefresh: () {
+                return ref
+                    .read(propertyVisitProvider.notifier)
+                    .refreshOwnerVisits();
+              },
+              child: ListView(
+                children: const [
+                  SizedBox(height: 120),
+
+                  Icon(Icons.event_busy, size: 90, color: Colors.grey),
+
+                  SizedBox(height: 20),
+
+                  Center(
+                    child: Text(
+                      'No visit requests found.',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () {
+              return ref
+                  .read(propertyVisitProvider.notifier)
+                  .refreshOwnerVisits();
+            },
+            child: ListView.builder(
+              padding: const EdgeInsets.only(top: 10, bottom: 20),
+              itemCount: visits.length,
+              itemBuilder: (context, index) {
+                final visit = visits[index];
+
+                return VisitCard(
+                  visit: visit,
+
+                  isOwner: true,
+
+                  onApprove: visit.status == "PENDING"
+                      ? () async {
+                          try {
+                            await ref
+                                .read(propertyVisitProvider.notifier)
+                                .approveVisit(visit.id);
+
+                            if (!context.mounted) {
+                              return;
+                            }
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Visit approved.')),
+                            );
+                          } catch (e) {
+                            if (!context.mounted) {
+                              return;
+                            }
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(e.toString())),
+                            );
+                          }
+                        }
+                      : null,
+
+                  onReject: visit.status == "PENDING"
+                      ? () async {
+                          try {
+                            await ref
+                                .read(propertyVisitProvider.notifier)
+                                .rejectVisit(visit.id);
+
+                            if (!context.mounted) {
+                              return;
+                            }
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Visit rejected.')),
+                            );
+                          } catch (e) {
+                            if (!context.mounted) {
+                              return;
+                            }
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(e.toString())),
+                            );
+                          }
+                        }
+                      : null,
+
+                  onComplete: visit.status == "APPROVED"
+                      ? () async {
+                          try {
+                            await ref
+                                .read(propertyVisitProvider.notifier)
+                                .completeVisit(visit.id);
+
+                            if (!context.mounted) {
+                              return;
+                            }
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Visit completed.')),
+                            );
+                          } catch (e) {
+                            if (!context.mounted) {
+                              return;
+                            }
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(e.toString())),
+                            );
+                          }
+                        }
+                      : null,
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+</file>
+
+<file path="presentation/widgets/visit_card.dart">
+import 'package:flutter/material.dart';
+
+import '../../domain/entities/property_visit.dart';
+import 'visit_status_chip.dart';
+
+class VisitCard extends StatelessWidget {
+  final PropertyVisit visit;
+
+  final bool isOwner;
+
+  final VoidCallback? onApprove;
+
+  final VoidCallback? onReject;
+
+  final VoidCallback? onComplete;
+
+  final VoidCallback? onCancel;
+
+  const VisitCard({
+    super.key,
+    required this.visit,
+    this.isOwner = false,
+    this.onApprove,
+    this.onReject,
+    this.onComplete,
+    this.onCancel,
+  });
+
+  String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+
+    final month = date.month.toString().padLeft(2, '0');
+
+    final year = date.year;
+
+    final hour = date.hour > 12
+        ? date.hour - 12
+        : (date.hour == 0 ? 12 : date.hour);
+
+    final minute = date.minute.toString().padLeft(2, '0');
+
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+
+    return "$day/$month/$year • $hour:$minute $period";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      clipBehavior: Clip.antiAlias,
+      elevation: 3,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          //=========================================
+          // Property Image
+          //=========================================
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Image.network(
+              visit.propertyImage,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Container(
+                color: Colors.grey.shade300,
+                child: const Center(child: Icon(Icons.home, size: 60)),
+              ),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  visit.propertyTitle,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 19,
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 18),
+
+                    const SizedBox(width: 8),
+
+                    Expanded(child: Text(_formatDate(visit.visitDate))),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                Row(
+                  children: [
+                    Icon(isOwner ? Icons.person : Icons.business, size: 18),
+
+                    const SizedBox(width: 8),
+
+                    Expanded(
+                      child: Text(isOwner ? visit.tenantName : visit.ownerName),
+                    ),
+                  ],
+                ),
+
+                if (visit.notes != null && visit.notes!.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+
+                  Text(
+                    visit.notes!,
+                    style: TextStyle(color: Colors.grey.shade700),
+                  ),
+                ],
+
+                const SizedBox(height: 16),
+
+                VisitStatusChip(status: visit.status),
+
+                const SizedBox(height: 18),
+
+                //=========================================
+                // Owner Buttons
+                //=========================================
+                if (isOwner && visit.status == "PENDING")
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: onApprove,
+                          icon: const Icon(Icons.check),
+                          label: const Text("Approve"),
+                        ),
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: onReject,
+                          icon: const Icon(Icons.close),
+                          label: const Text("Reject"),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                if (isOwner && visit.status == "APPROVED") ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: onComplete,
+                      icon: const Icon(Icons.task_alt),
+                      label: const Text("Mark Completed"),
+                    ),
+                  ),
+                ],
+
+                //=========================================
+                // Tenant Button
+                //=========================================
+                if (!isOwner && visit.status == "PENDING") ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: onCancel,
+                      icon: const Icon(Icons.cancel),
+                      label: const Text("Cancel Visit"),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="presentation/widgets/visit_date_picker.dart">
+import 'package:flutter/material.dart';
+
+class VisitDatePicker extends StatefulWidget {
+  final ValueChanged<DateTime> onChanged;
+
+  final DateTime? initialDate;
+
+  const VisitDatePicker({super.key, required this.onChanged, this.initialDate});
+
+  @override
+  State<VisitDatePicker> createState() => _VisitDatePickerState();
+}
+
+class _VisitDatePickerState extends State<VisitDatePicker> {
+  late DateTime selectedDateTime;
+
+  @override
+  void initState() {
+    super.initState();
+
+    selectedDateTime =
+        widget.initialDate ?? DateTime.now().add(const Duration(days: 1));
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onChanged(selectedDateTime);
+    });
+  }
+
+  Future<void> pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+
+      initialDate: selectedDateTime,
+
+      firstDate: DateTime.now(),
+
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      selectedDateTime = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        selectedDateTime.hour,
+        selectedDateTime.minute,
+      );
+    });
+
+    widget.onChanged(selectedDateTime);
+  }
+
+  Future<void> pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+
+      initialTime: TimeOfDay.fromDateTime(selectedDateTime),
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      selectedDateTime = DateTime(
+        selectedDateTime.year,
+        selectedDateTime.month,
+        selectedDateTime.day,
+        picked.hour,
+        picked.minute,
+      );
+    });
+
+    widget.onChanged(selectedDateTime);
+  }
+
+  String get formattedDate {
+    return "${selectedDateTime.day.toString().padLeft(2, '0')}/"
+        "${selectedDateTime.month.toString().padLeft(2, '0')}/"
+        "${selectedDateTime.year}";
+  }
+
+  String get formattedTime {
+    final hour = selectedDateTime.hour > 12
+        ? selectedDateTime.hour - 12
+        : (selectedDateTime.hour == 0 ? 12 : selectedDateTime.hour);
+
+    final minute = selectedDateTime.minute.toString().padLeft(2, '0');
+
+    final period = selectedDateTime.hour >= 12 ? "PM" : "AM";
+
+    return "$hour:$minute $period";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 1,
+
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+
+          children: [
+            const Text(
+              "Preferred Visit Schedule",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+
+            const SizedBox(height: 20),
+
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+
+              title: const Text("Visit Date"),
+
+              subtitle: Text(formattedDate),
+
+              trailing: const Icon(Icons.chevron_right),
+
+              onTap: pickDate,
+            ),
+
+            const Divider(),
+
+            ListTile(
+              leading: const Icon(Icons.access_time),
+
+              title: const Text("Visit Time"),
+
+              subtitle: Text(formattedTime),
+
+              trailing: const Icon(Icons.chevron_right),
+
+              onTap: pickTime,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</file>
+
+<file path="presentation/widgets/visit_status_chip.dart">
+import 'package:flutter/material.dart';
+
+class VisitStatusChip extends StatelessWidget {
+  final String status;
+
+  const VisitStatusChip({super.key, required this.status});
+
+  Color get backgroundColor {
+    switch (status.toUpperCase()) {
+      case 'APPROVED':
+        return Colors.green.shade100;
+
+      case 'REJECTED':
+        return Colors.red.shade100;
+
+      case 'COMPLETED':
+        return Colors.blue.shade100;
+
+      case 'CANCELLED':
+        return Colors.grey.shade300;
+
+      case 'PENDING':
+      default:
+        return Colors.orange.shade100;
+    }
+  }
+
+  Color get textColor {
+    switch (status.toUpperCase()) {
+      case 'APPROVED':
+        return Colors.green.shade800;
+
+      case 'REJECTED':
+        return Colors.red.shade800;
+
+      case 'COMPLETED':
+        return Colors.blue.shade800;
+
+      case 'CANCELLED':
+        return Colors.grey.shade800;
+
+      case 'PENDING':
+      default:
+        return Colors.orange.shade800;
+    }
+  }
+
+  IconData get icon {
+    switch (status.toUpperCase()) {
+      case 'APPROVED':
+        return Icons.check_circle;
+
+      case 'REJECTED':
+        return Icons.cancel;
+
+      case 'COMPLETED':
+        return Icons.task_alt;
+
+      case 'CANCELLED':
+        return Icons.block;
+
+      case 'PENDING':
+      default:
+        return Icons.schedule;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      avatar: Icon(icon, size: 18, color: textColor),
+      label: Text(
+        status.toUpperCase(),
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      ),
+      backgroundColor: backgroundColor,
+      side: BorderSide.none,
+      visualDensity: VisualDensity.compact,
+    );
+  }
+}
+</file>
+
+<file path="providers/property_visit_provider.dart">
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/network/dio_provider.dart';
+
+import '../data/api/property_visit_api.dart';
+import '../data/repositories/property_visit_repository_impl.dart';
+import '../domain/entities/property_visit.dart';
+import '../domain/repositories/property_visit_repository.dart';
+
+//==================================================
+// Repository Provider
+//==================================================
+
+final propertyVisitRepositoryProvider =
+    Provider<PropertyVisitRepository>((ref) {
+  final dio = ref.watch(dioProvider);
+
+  return PropertyVisitRepositoryImpl(
+    PropertyVisitApi(dio),
+  );
+});
+
+//==================================================
+// Provider
+//==================================================
+
+final propertyVisitProvider =
+    StateNotifierProvider<PropertyVisitNotifier,
+        AsyncValue<List<PropertyVisit>>>((ref) {
+  return PropertyVisitNotifier(
+    ref.watch(propertyVisitRepositoryProvider),
+  );
+});
+
+//==================================================
+// Notifier
+//==================================================
+
+class PropertyVisitNotifier
+    extends StateNotifier<AsyncValue<List<PropertyVisit>>> {
+  PropertyVisitNotifier(this.repository)
+      : super(const AsyncLoading()) {
+    loadMyVisits();
+  }
+
+  final PropertyVisitRepository repository;
+
+  //==================================================
+  // Tenant Visits
+  //==================================================
+
+  Future<void> loadMyVisits() async {
+    try {
+      state = const AsyncLoading();
+
+      final visits = await repository.getMyVisits();
+
+      state = AsyncData(visits);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  Future<void> bookVisit({
+    required String propertyId,
+    required DateTime visitDate,
+    String? notes,
+  }) async {
+    await repository.bookVisit(
+      propertyId: propertyId,
+      visitDate: visitDate,
+      notes: notes,
+    );
+
+    await loadMyVisits();
+  }
+
+  Future<void> cancelVisit(String visitId) async {
+    await repository.cancelVisit(visitId);
+
+    await loadMyVisits();
+  }
+
+  //==================================================
+  // Owner Visits
+  //==================================================
+
+  Future<void> loadOwnerVisits() async {
+    try {
+      state = const AsyncLoading();
+
+      final visits = await repository.getOwnerVisits();
+
+      state = AsyncData(visits);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  Future<void> approveVisit(String visitId) async {
+    await repository.approveVisit(visitId);
+
+    await loadOwnerVisits();
+  }
+
+  Future<void> rejectVisit(String visitId) async {
+    await repository.rejectVisit(visitId);
+
+    await loadOwnerVisits();
+  }
+
+  Future<void> completeVisit(String visitId) async {
+    await repository.completeVisit(visitId);
+
+    await loadOwnerVisits();
+  }
+
+  //==================================================
+  // Refresh Helpers
+  //==================================================
+
+  Future<void> refreshMyVisits() async {
+    await loadMyVisits();
+  }
+
+  Future<void> refreshOwnerVisits() async {
+    await loadOwnerVisits();
+  }
+}
+</file>
+
+</files>

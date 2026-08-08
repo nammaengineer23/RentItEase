@@ -2,7 +2,8 @@ import '../../domain/entities/property_visit.dart';
 import '../../domain/repositories/property_visit_repository.dart';
 import '../api/property_visit_api.dart';
 
-class PropertyVisitRepositoryImpl implements PropertyVisitRepository {
+class PropertyVisitRepositoryImpl
+    implements PropertyVisitRepository {
   PropertyVisitRepositoryImpl(this._api);
 
   final PropertyVisitApi _api;
@@ -22,8 +23,8 @@ class PropertyVisitRepositoryImpl implements PropertyVisitRepository {
     required String propertyId,
     required DateTime visitDate,
     String? notes,
-  }) async {
-    await _api.bookVisit(
+  }) {
+    return _api.bookVisit(
       propertyId: propertyId,
       visitDate: visitDate,
       notes: notes,

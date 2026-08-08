@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
 class VisitDatePicker extends StatefulWidget {
+  const VisitDatePicker({
+    super.key,
+    required this.onChanged,
+    this.initialDate,
+  });
+
   final ValueChanged<DateTime> onChanged;
-
   final DateTime? initialDate;
-
-  const VisitDatePicker({super.key, required this.onChanged, this.initialDate});
 
   @override
   State<VisitDatePicker> createState() => _VisitDatePickerState();
@@ -18,26 +21,48 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
   void initState() {
     super.initState();
 
+    final now = DateTime.now();
+
     selectedDateTime =
-        widget.initialDate ?? DateTime.now().add(const Duration(days: 1));
+        widget.initialDate ??
+        DateTime(
+          now.year,
+          now.month,
+          now.day + 1,
+          10,
+          0,
+        );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.onChanged(selectedDateTime);
+      if (mounted) {
+        widget.onChanged(selectedDateTime);
+      }
     });
   }
 
   Future<void> pickDate() async {
+    final now = DateTime.now();
+
     final picked = await showDatePicker(
       context: context,
-
-      initialDate: selectedDateTime,
-
-      firstDate: DateTime.now(),
-
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: selectedDateTime.isBefore(now)
+          ? now
+          : selectedDateTime,
+      firstDate: DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ),
+      lastDate: DateTime(
+        now.year + 1,
+        now.month,
+        now.day,
+      ),
     );
 
-    if (picked == null) return;
+    if (picked == null) {
+      return;
+    }
 
     setState(() {
       selectedDateTime = DateTime(
@@ -55,11 +80,14 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
   Future<void> pickTime() async {
     final picked = await showTimePicker(
       context: context,
-
-      initialTime: TimeOfDay.fromDateTime(selectedDateTime),
+      initialTime: TimeOfDay.fromDateTime(
+        selectedDateTime,
+      ),
     );
 
-    if (picked == null) return;
+    if (picked == null) {
+      return;
+    }
 
     setState(() {
       selectedDateTime = DateTime(
@@ -75,65 +103,71 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
   }
 
   String get formattedDate {
-    return "${selectedDateTime.day.toString().padLeft(2, '0')}/"
-        "${selectedDateTime.month.toString().padLeft(2, '0')}/"
-        "${selectedDateTime.year}";
+    return '${selectedDateTime.day.toString().padLeft(2, '0')}/'
+        '${selectedDateTime.month.toString().padLeft(2, '0')}/'
+        '${selectedDateTime.year}';
   }
 
   String get formattedTime {
     final hour = selectedDateTime.hour > 12
         ? selectedDateTime.hour - 12
-        : (selectedDateTime.hour == 0 ? 12 : selectedDateTime.hour);
+        : selectedDateTime.hour == 0
+            ? 12
+            : selectedDateTime.hour;
 
-    final minute = selectedDateTime.minute.toString().padLeft(2, '0');
+    final minute =
+        selectedDateTime.minute.toString().padLeft(2, '0');
 
-    final period = selectedDateTime.hour >= 12 ? "PM" : "AM";
+    final period =
+        selectedDateTime.hour >= 12 ? 'PM' : 'AM';
 
-    return "$hour:$minute $period";
+    return '$hour:$minute $period';
   }
 
   @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 1,
-
       child: Padding(
         padding: const EdgeInsets.all(16),
-
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-
           children: [
             const Text(
-              "Preferred Visit Schedule",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              'Preferred Visit Schedule',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
             ),
 
             const SizedBox(height: 20),
 
             ListTile(
-              leading: const Icon(Icons.calendar_today),
-
-              title: const Text("Visit Date"),
-
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(
+                Icons.calendar_today,
+              ),
+              title: const Text('Visit Date'),
               subtitle: Text(formattedDate),
-
-              trailing: const Icon(Icons.chevron_right),
-
+              trailing: const Icon(
+                Icons.chevron_right,
+              ),
               onTap: pickDate,
             ),
 
             const Divider(),
 
             ListTile(
-              leading: const Icon(Icons.access_time),
-
-              title: const Text("Visit Time"),
-
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(
+                Icons.access_time,
+              ),
+              title: const Text('Visit Time'),
               subtitle: Text(formattedTime),
-
-              trailing: const Icon(Icons.chevron_right),
-
+              trailing: const Icon(
+                Icons.chevron_right,
+              ),
               onTap: pickTime,
             ),
           ],

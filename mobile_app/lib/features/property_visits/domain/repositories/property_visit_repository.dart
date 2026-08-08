@@ -1,7 +1,9 @@
 import '../entities/property_visit.dart';
 
 abstract class PropertyVisitRepository {
-  /// Tenant
+  // ==================================================
+  // Tenant
+  // ==================================================
 
   Future<List<PropertyVisit>> getMyVisits();
 
@@ -13,7 +15,9 @@ abstract class PropertyVisitRepository {
 
   Future<void> cancelVisit(String visitId);
 
-  /// Owner
+  // ==================================================
+  // Owner
+  // ==================================================
 
   Future<List<PropertyVisit>> getOwnerVisits();
 

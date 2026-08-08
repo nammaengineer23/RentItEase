@@ -15,19 +15,73 @@ class PropertyVisitModel extends PropertyVisit {
     super.notes,
   });
 
-  factory PropertyVisitModel.fromJson(Map<String, dynamic> json) {
+  factory PropertyVisitModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final property =
+        json['property'] as Map<String, dynamic>? ?? {};
+
+    final owner =
+        property['owner'] as Map<String, dynamic>? ?? {};
+
+    final tenant =
+        json['tenant'] as Map<String, dynamic>? ?? {};
+
+    final images =
+        property['images'] as List<dynamic>? ?? [];
+
+    String propertyImage = '';
+
+    if (images.isNotEmpty) {
+      final image =
+          images.first as Map<String, dynamic>;
+
+      propertyImage =
+          image['url']?.toString() ??
+          image['imageUrl']?.toString() ??
+          image['secureUrl']?.toString() ??
+          '';
+    }
+
     return PropertyVisitModel(
       id: json['id']?.toString() ?? '',
-      propertyId: json['propertyId']?.toString() ?? '',
-      propertyTitle: json['propertyTitle'] ?? '',
-      propertyImage: json['propertyImage'] ?? '',
-      ownerId: json['ownerId']?.toString() ?? '',
-      ownerName: json['ownerName'] ?? '',
-      tenantId: json['tenantId']?.toString() ?? '',
-      tenantName: json['tenantName'] ?? '',
-      visitDate: DateTime.tryParse(json['visitDate'] ?? '') ?? DateTime.now(),
-      status: json['status'] ?? 'PENDING',
-      notes: json['notes'],
+
+      propertyId:
+          json['propertyId']?.toString() ??
+          property['id']?.toString() ??
+          '',
+
+      propertyTitle:
+          property['title']?.toString() ?? '',
+
+      propertyImage: propertyImage,
+
+      ownerId:
+          owner['id']?.toString() ??
+          property['ownerId']?.toString() ??
+          '',
+
+      ownerName:
+          owner['fullName']?.toString() ?? '',
+
+      tenantId:
+          json['tenantId']?.toString() ??
+          tenant['id']?.toString() ??
+          '',
+
+      tenantName:
+          tenant['fullName']?.toString() ?? '',
+
+      visitDate:
+          DateTime.tryParse(
+            json['visitDate']?.toString() ?? '',
+          ) ??
+          DateTime.now(),
+
+      status:
+          json['status']?.toString() ?? 'PENDING',
+
+      notes: json['notes']?.toString(),
     );
   }
 
@@ -48,15 +102,15 @@ class PropertyVisitModel extends PropertyVisit {
   }
 
   @override
-PropertyVisitModel copyWith({
-  String? id,
-  String? propertyId,
-  String? propertyTitle,
-  String? propertyImage,
-  String? ownerId,
-  String? ownerName,
-  String? tenantId,
-  String? tenantName,
+  PropertyVisitModel copyWith({
+    String? id,
+    String? propertyId,
+    String? propertyTitle,
+    String? propertyImage,
+    String? ownerId,
+    String? ownerName,
+    String? tenantId,
+    String? tenantName,
     DateTime? visitDate,
     String? status,
     String? notes,

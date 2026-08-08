@@ -7,9 +7,9 @@ import '../data/repositories/property_visit_repository_impl.dart';
 import '../domain/entities/property_visit.dart';
 import '../domain/repositories/property_visit_repository.dart';
 
-//==================================================
+// ==================================================
 // Repository Provider
-//==================================================
+// ==================================================
 
 final propertyVisitRepositoryProvider =
     Provider<PropertyVisitRepository>((ref) {
@@ -20,21 +20,21 @@ final propertyVisitRepositoryProvider =
   );
 });
 
-//==================================================
+// ==================================================
 // Provider
-//==================================================
+// ==================================================
 
-final propertyVisitProvider =
-    StateNotifierProvider<PropertyVisitNotifier,
-        AsyncValue<List<PropertyVisit>>>((ref) {
+final propertyVisitProvider = StateNotifierProvider<
+    PropertyVisitNotifier,
+    AsyncValue<List<PropertyVisit>>>((ref) {
   return PropertyVisitNotifier(
     ref.watch(propertyVisitRepositoryProvider),
   );
 });
 
-//==================================================
+// ==================================================
 // Notifier
-//==================================================
+// ==================================================
 
 class PropertyVisitNotifier
     extends StateNotifier<AsyncValue<List<PropertyVisit>>> {
@@ -45,9 +45,9 @@ class PropertyVisitNotifier
 
   final PropertyVisitRepository repository;
 
-  //==================================================
+  // ==================================================
   // Tenant Visits
-  //==================================================
+  // ==================================================
 
   Future<void> loadMyVisits() async {
     try {
@@ -81,9 +81,9 @@ class PropertyVisitNotifier
     await loadMyVisits();
   }
 
-  //==================================================
+  // ==================================================
   // Owner Visits
-  //==================================================
+  // ==================================================
 
   Future<void> loadOwnerVisits() async {
     try {
@@ -115,9 +115,9 @@ class PropertyVisitNotifier
     await loadOwnerVisits();
   }
 
-  //==================================================
+  // ==================================================
   // Refresh Helpers
-  //==================================================
+  // ==================================================
 
   Future<void> refreshMyVisits() async {
     await loadMyVisits();

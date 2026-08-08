@@ -5,11 +5,6 @@ import '../../providers/property_visit_provider.dart';
 import '../widgets/visit_date_picker.dart';
 
 class BookVisitPage extends ConsumerStatefulWidget {
-  final String propertyId;
-  final String propertyTitle;
-  final String propertyImage;
-  final String ownerName;
-
   const BookVisitPage({
     super.key,
     required this.propertyId,
@@ -18,23 +13,41 @@ class BookVisitPage extends ConsumerStatefulWidget {
     required this.ownerName,
   });
 
+  final String propertyId;
+  final String propertyTitle;
+  final String propertyImage;
+  final String ownerName;
+
   @override
   ConsumerState<BookVisitPage> createState() => _BookVisitPageState();
 }
 
 class _BookVisitPageState extends ConsumerState<BookVisitPage> {
-  final notesController = TextEditingController();
+  final TextEditingController notesController =
+      TextEditingController();
 
   DateTime? visitDate;
 
   bool loading = false;
 
   Future<void> bookVisit() async {
-    if (visitDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select visit date.')),
-      );
+    final selectedVisitDate = visitDate;
 
+    if (selectedVisitDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a visit date and time.'),
+        ),
+      );
+      return;
+    }
+
+    if (!selectedVisitDate.isAfter(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a future date and time.'),
+        ),
+      );
       return;
     }
 
@@ -47,23 +60,33 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
           .read(propertyVisitProvider.notifier)
           .bookVisit(
             propertyId: widget.propertyId,
-            visitDate: visitDate!,
-            notes: notesController.text.trim(),
+            visitDate: selectedVisitDate,
+            notes: notesController.text.trim().isEmpty
+                ? null
+                : notesController.text.trim(),
           );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Visit booked successfully 🎉')),
+        const SnackBar(
+          content: Text('Visit booked successfully.'),
+        ),
       );
 
-      Navigator.pop(context);
+      Navigator.of(context).pop();
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -76,75 +99,77 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
   @override
   void dispose() {
     notesController.dispose();
-
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Book Property Visit')),
-
+      appBar: AppBar(
+        title: const Text('Book Property Visit'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-
           children: [
+            // ==================================================
+            // Property Summary
+            // ==================================================
+
             Card(
               clipBehavior: Clip.antiAlias,
-
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-
                 children: [
                   AspectRatio(
                     aspectRatio: 16 / 9,
-
-                    child: Image.network(
-                      widget.propertyImage,
-
-                      fit: BoxFit.cover,
-
-                      errorBuilder: (_, _, _) {
-                        return Container(
-                          color: Colors.grey.shade300,
-
-                          child: const Center(
-                            child: Icon(Icons.home, size: 70),
+                    child: widget.propertyImage.isEmpty
+                        ? Container(
+                            color: Colors.grey.shade300,
+                            child: const Center(
+                              child: Icon(
+                                Icons.home,
+                                size: 70,
+                              ),
+                            ),
+                          )
+                        : Image.network(
+                            widget.propertyImage,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) {
+                              return Container(
+                                color: Colors.grey.shade300,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.home,
+                                    size: 70,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
                   ),
-
                   Padding(
                     padding: const EdgeInsets.all(16),
-
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-
                       children: [
                         Text(
                           widget.propertyTitle,
-
                           style: const TextStyle(
                             fontSize: 22,
-
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                         const SizedBox(height: 10),
-
                         Row(
                           children: [
                             const Icon(Icons.person),
-
                             const SizedBox(width: 8),
-
-                            Expanded(child: Text(widget.ownerName)),
+                            Expanded(
+                              child: Text(widget.ownerName),
+                            ),
                           ],
                         ),
                       ],
@@ -156,6 +181,10 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
 
             const SizedBox(height: 25),
 
+            // ==================================================
+            // Visit Date / Time
+            // ==================================================
+
             VisitDatePicker(
               onChanged: (date) {
                 visitDate = date;
@@ -164,45 +193,45 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
 
             const SizedBox(height: 25),
 
+            // ==================================================
+            // Notes
+            // ==================================================
+
             TextField(
               controller: notesController,
-
               maxLines: 4,
-
+              enabled: !loading,
               decoration: const InputDecoration(
                 labelText: 'Notes (Optional)',
-
                 hintText: 'Preferred time, instructions...',
-
                 border: OutlineInputBorder(),
               ),
             ),
 
             const SizedBox(height: 35),
 
+            // ==================================================
+            // Book Button
+            // ==================================================
+
             SizedBox(
               width: double.infinity,
-
               height: 55,
-
               child: ElevatedButton.icon(
+                onPressed: loading ? null : bookVisit,
                 icon: loading
                     ? const SizedBox(
                         width: 22,
-
                         height: 22,
-
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-
                           color: Colors.white,
                         ),
                       )
                     : const Icon(Icons.calendar_month),
-
-                label: Text(loading ? 'Booking...' : 'Book Visit'),
-
-                onPressed: loading ? null : bookVisit,
+                label: Text(
+                  loading ? 'Booking...' : 'Book Visit',
+                ),
               ),
             ),
 
@@ -213,3 +242,4 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
     );
   }
 }
+

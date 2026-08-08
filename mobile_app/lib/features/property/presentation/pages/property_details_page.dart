@@ -15,12 +15,12 @@ import '../widgets/property_price.dart';
 import '../widgets/property_status.dart';
 
 class PropertyDetailsPage extends ConsumerStatefulWidget {
-  final String propertyId;
-
   const PropertyDetailsPage({
     super.key,
     required this.propertyId,
   });
+
+  final String propertyId;
 
   @override
   ConsumerState<PropertyDetailsPage> createState() =>
@@ -30,19 +30,33 @@ class PropertyDetailsPage extends ConsumerStatefulWidget {
 class _PropertyDetailsPageState
     extends ConsumerState<PropertyDetailsPage> {
   PropertyEntity? property;
+
   bool isLoading = true;
+  bool isFavorite = false;
+  bool isFavoriteLoading = true;
+
   String? error;
 
   @override
   void initState() {
     super.initState();
+
     _loadProperty();
+    _checkFavorite();
   }
+
+  // ============================================================
+  // Load Property
+  // ============================================================
 
   Future<void> _loadProperty() async {
     try {
-      final repository = ref.read(propertyRepositoryProvider);
-      final result = await repository.getProperty(widget.propertyId);
+      final repository =
+          ref.read(propertyRepositoryProvider);
+
+      final result = await repository.getProperty(
+        widget.propertyId,
+      );
 
       if (!mounted) return;
 
@@ -60,6 +74,97 @@ class _PropertyDetailsPageState
     }
   }
 
+  // ============================================================
+  // Check Favorite
+  // ============================================================
+
+  Future<void> _checkFavorite() async {
+    try {
+      final favorite = await ref
+          .read(favoritesProvider.notifier)
+          .checkFavorite(widget.propertyId);
+
+      if (!mounted) return;
+
+      setState(() {
+        isFavorite = favorite;
+        isFavoriteLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        isFavorite = false;
+        isFavoriteLoading = false;
+      });
+    }
+  }
+
+  // ============================================================
+  // Toggle Favorite
+  // ============================================================
+
+  Future<void> _toggleFavorite() async {
+    if (isFavoriteLoading) return;
+
+    setState(() {
+      isFavoriteLoading = true;
+    });
+
+    final notifier =
+        ref.read(favoritesProvider.notifier);
+
+    bool success;
+
+    if (isFavorite) {
+      success = await notifier.removeFavorite(
+        widget.propertyId,
+      );
+    } else {
+      success = await notifier.addFavorite(
+        widget.propertyId,
+      );
+    }
+
+    if (!mounted) return;
+
+    if (success) {
+      setState(() {
+        isFavorite = !isFavorite;
+        isFavoriteLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isFavorite
+                ? 'Added to Favorites ❤️'
+                : 'Removed from Favorites',
+          ),
+        ),
+      );
+    } else {
+      setState(() {
+        isFavoriteLoading = false;
+      });
+
+      final providerError =
+          ref.read(favoritesProvider).error;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            providerError ?? 'Failed to update favorite',
+          ),
+        ),
+      );
+    }
+  }
+
+  // ============================================================
+  // Build
+  // ============================================================
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -74,21 +179,40 @@ class _PropertyDetailsPageState
       return Scaffold(
         appBar: AppBar(),
         body: Center(
-          child: Text(error!),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              error!,
+              textAlign: TextAlign.center,
+            ),
+          ),
         ),
       );
     }
 
-    final property = this.property!;
+    final property = this.property;
+
+    if (property == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Property not found.'),
+        ),
+      );
+    }
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
+          // ======================================================
+          // Property Header
+          // ======================================================
+
           SliverAppBar(
             expandedHeight: 320,
             pinned: true,
             backgroundColor: Colors.white,
             elevation: 0,
+
             leading: CircleAvatar(
               backgroundColor: Colors.white,
               child: IconButton(
@@ -96,53 +220,66 @@ class _PropertyDetailsPageState
                   Icons.arrow_back,
                   color: Colors.black,
                 ),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
               ),
             ),
+
             actions: [
               CircleAvatar(
                 backgroundColor: Colors.white,
                 child: IconButton(
-                  icon: const Icon(
-                    Icons.favorite_border,
-                    color: Colors.red,
-                  ),
-                  onPressed: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-
-                    await ref
-                        .read(favoritesProvider.notifier)
-                        .addFavorite(property.id);
-
-                    if (!mounted) return;
-
-                    messenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('Added to Favorites ❤️'),
-                      ),
-                    );
-                  },
+                  tooltip: isFavorite
+                      ? 'Remove from favorites'
+                      : 'Add to favorites',
+                  onPressed: isFavoriteLoading
+                      ? null
+                      : _toggleFavorite,
+                  icon: isFavoriteLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Icon(
+                          isFavorite
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: Colors.red,
+                        ),
                 ),
               ),
               const SizedBox(width: 10),
             ],
+
             flexibleSpace: FlexibleSpaceBar(
               background: PropertyImageSlider(
                 property: property,
               ),
             ),
           ),
+
+          // ======================================================
+          // Property Content
+          // ======================================================
+
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(18),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
                 children: [
                   PropertyPrice(
                     rent: property.rent,
                     isAvailable: property.isAvailable,
                   ),
+
                   const SizedBox(height: 14),
+
                   Text(
                     property.title,
                     style: const TextStyle(
@@ -150,12 +287,16 @@ class _PropertyDetailsPageState
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
                   const SizedBox(height: 10),
+
                   PropertyLocation(
                     locality: property.locality,
                     city: property.city,
                   ),
+
                   const SizedBox(height: 20),
+
                   PropertyFeatures(
                     bedrooms: property.bedrooms,
                     bathrooms: property.bathrooms,
@@ -163,14 +304,18 @@ class _PropertyDetailsPageState
                     area: property.area,
                     parking: property.parking,
                   ),
+
                   const SizedBox(height: 20),
+
                   PropertyStatus(
                     isVerified: property.isVerified,
                     isAvailable: property.isAvailable,
                     rating: property.rating,
                     views: property.views,
                   ),
+
                   const SizedBox(height: 28),
+
                   const Text(
                     'Description',
                     style: TextStyle(
@@ -178,7 +323,9 @@ class _PropertyDetailsPageState
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
                   const SizedBox(height: 10),
+
                   Text(
                     property.description,
                     style: const TextStyle(
@@ -186,7 +333,9 @@ class _PropertyDetailsPageState
                       height: 1.6,
                     ),
                   ),
+
                   const SizedBox(height: 30),
+
                   const Text(
                     'Owner Details',
                     style: TextStyle(
@@ -194,26 +343,32 @@ class _PropertyDetailsPageState
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
                   const SizedBox(height: 14),
+
                   Card(
                     elevation: 0,
                     color: Colors.grey.shade100,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius:
+                          BorderRadius.circular(14),
                     ),
                     child: ListTile(
                       leading: CircleAvatar(
                         child: Text(
                           property.ownerName.isEmpty
                               ? '?'
-                              : property.ownerName[0].toUpperCase(),
+                              : property.ownerName[0]
+                                  .toUpperCase(),
                         ),
                       ),
                       title: Text(property.ownerName),
                       subtitle: Text(property.ownerPhone),
                     ),
                   ),
+
                   const SizedBox(height: 30),
+
                   const Text(
                     'Location',
                     style: TextStyle(
@@ -221,14 +376,18 @@ class _PropertyDetailsPageState
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
                   const SizedBox(height: 15),
+
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius:
+                        BorderRadius.circular(16),
                     child: const SizedBox(
                       height: 300,
                       child: PropertyMap(),
                     ),
                   ),
+
                   const SizedBox(height: 100),
                 ],
               ),
@@ -236,6 +395,11 @@ class _PropertyDetailsPageState
           ),
         ],
       ),
+
+      // ==========================================================
+      // Bottom Actions
+      // ==========================================================
+
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -247,7 +411,10 @@ class _PropertyDetailsPageState
                   builder: (_) => BookVisitPage(
                     propertyId: property.id,
                     propertyTitle: property.title,
-                    propertyImage: property.imageUrls.isNotEmpty ? property.imageUrls.first: '',  
+                    propertyImage:
+                        property.imageUrls.isNotEmpty
+                            ? property.imageUrls.first
+                            : '',
                     ownerName: property.ownerName,
                   ),
                 ),

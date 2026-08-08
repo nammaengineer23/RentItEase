@@ -9,7 +9,8 @@ import '../models/favorite_property_model.dart';
 // Repository Provider
 // ======================================================
 
-final favoritesRepositoryProvider = Provider<FavoritesRepository>((ref) {
+final favoritesRepositoryProvider =
+    Provider<FavoritesRepository>((ref) {
   final dio = ref.watch(dioProvider);
 
   return FavoritesRepository(
@@ -36,11 +37,12 @@ class FavoritesState {
     bool? isLoading,
     List<FavoritePropertyModel>? favorites,
     String? error,
+    bool clearError = false,
   }) {
     return FavoritesState(
       isLoading: isLoading ?? this.isLoading,
       favorites: favorites ?? this.favorites,
-      error: error,
+      error: clearError ? null : (error ?? this.error),
     );
   }
 }
@@ -49,93 +51,142 @@ class FavoritesState {
 // Notifier
 // ======================================================
 
-class FavoritesNotifier extends StateNotifier<FavoritesState> {
-  FavoritesNotifier(this._repository) : super(const FavoritesState());
+class FavoritesNotifier
+    extends StateNotifier<FavoritesState> {
+  FavoritesNotifier(this._repository)
+      : super(const FavoritesState());
 
   final FavoritesRepository _repository;
 
-  // ======================================================
+  // ====================================================
   // Load Favorites
-  // ======================================================
+  // ====================================================
 
-  Future<void> loadFavorites() async {
+  Future<bool> loadFavorites() async {
     state = state.copyWith(
       isLoading: true,
-      error: null,
+      clearError: true,
     );
 
     try {
-      final favorites = await _repository.getFavorites();
+      final favorites =
+          await _repository.getFavorites();
 
       state = state.copyWith(
         isLoading: false,
         favorites: favorites,
-        error: null,
+        clearError: true,
       );
+
+      return true;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
       );
+
+      return false;
     }
   }
 
-  // ======================================================
+  // ====================================================
   // Add Favorite
-  // ======================================================
+  // ====================================================
 
-  Future<void> addFavorite(String propertyId) async {
+  Future<bool> addFavorite(
+    String propertyId,
+  ) async {
+    state = state.copyWith(
+      clearError: true,
+    );
+
     try {
       await _repository.addFavorite(propertyId);
 
-      await loadFavorites();
+      // Reload so the state contains the actual
+      // favorite returned by the backend.
+      return await loadFavorites();
     } catch (e) {
       state = state.copyWith(
         error: e.toString(),
       );
+
+      return false;
     }
   }
 
-  // ======================================================
+  // ====================================================
   // Remove Favorite
-  // ======================================================
+  // ====================================================
 
-  Future<void> removeFavorite(String propertyId) async {
+  Future<bool> removeFavorite(
+    String propertyId,
+  ) async {
+    state = state.copyWith(
+      clearError: true,
+    );
+
     try {
       await _repository.removeFavorite(propertyId);
 
-      await loadFavorites();
+      // Reload to keep Favorites Page synchronized.
+      return await loadFavorites();
     } catch (e) {
       state = state.copyWith(
         error: e.toString(),
       );
+
+      return false;
     }
   }
 
-  // ======================================================
-  // Check Favorite
-  // ======================================================
+  // ====================================================
+  // Check Favorite From Current State
+  // ====================================================
 
   bool isFavorite(String propertyId) {
     return state.favorites.any(
-      (favorite) => favorite.id == propertyId,
+      (favorite) =>
+          favorite.propertyId == propertyId,
     );
   }
 
-  // ======================================================
-  // Refresh
-  // ======================================================
+  // ====================================================
+  // Check Favorite From Backend
+  // ====================================================
 
-  Future<void> refresh() async {
-    await loadFavorites();
+  Future<bool> checkFavorite(
+    String propertyId,
+  ) async {
+    try {
+      return await _repository.isFavorite(
+        propertyId,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+      );
+
+      return false;
+    }
   }
 
-  // ======================================================
+  // ====================================================
+  // Refresh
+  // ====================================================
+
+  Future<bool> refresh() {
+    return loadFavorites();
+  }
+
+  // ====================================================
   // Clear Error
-  // ======================================================
+  // ====================================================
 
   void clearError() {
-    state = state.copyWith(error: null);
+    state = state.copyWith(
+      clearError: true,
+    );
   }
 }
 
@@ -143,10 +194,11 @@ class FavoritesNotifier extends StateNotifier<FavoritesState> {
 // Provider
 // ======================================================
 
-final favoritesProvider =
-    StateNotifierProvider<FavoritesNotifier, FavoritesState>(
+final favoritesProvider = StateNotifierProvider<
+    FavoritesNotifier, FavoritesState>(
   (ref) {
-    final repository = ref.watch(favoritesRepositoryProvider);
+    final repository =
+        ref.watch(favoritesRepositoryProvider);
 
     return FavoritesNotifier(repository);
   },

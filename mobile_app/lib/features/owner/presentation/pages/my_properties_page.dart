@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/owner_provider.dart';
-
 import '../widgets/property_owner_card.dart';
 
 class MyPropertiesPage extends ConsumerStatefulWidget {
@@ -28,29 +28,23 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('My Properties')),
-
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.pushNamed(context, '/owner/add-property');
+          context.push('/owner/add-property');
         },
         icon: const Icon(Icons.add),
         label: const Text('Add Property'),
       ),
-
       body: RefreshIndicator(
         onRefresh: () => ref.read(ownerProvider.notifier).refreshProperties(),
-
         child: state.loading
             ? const Center(child: CircularProgressIndicator())
             : state.error != null
             ? ListView(
                 children: [
                   const SizedBox(height: 120),
-
                   const Icon(Icons.error_outline, size: 70, color: Colors.red),
-
                   const SizedBox(height: 16),
-
                   Center(
                     child: Text(state.error!, textAlign: TextAlign.center),
                   ),
@@ -60,11 +54,8 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
             ? ListView(
                 children: const [
                   SizedBox(height: 120),
-
                   Icon(Icons.home_work_outlined, size: 80, color: Colors.grey),
-
                   SizedBox(height: 20),
-
                   Center(
                     child: Text(
                       'No properties found',
@@ -81,23 +72,12 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
 
                   return PropertyOwnerCard(
                     property: property,
-
                     onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/owner/property-details',
-                        arguments: property.id,
-                      );
+                      context.push('/owner/property-details', extra: property);
                     },
-
                     onEdit: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/owner/edit-property',
-                        arguments: property.id,
-                      );
+                      context.push('/owner/edit-property', extra: property);
                     },
-
                     onDelete: () async {
                       final confirm = await showDialog<bool>(
                         context: context,
@@ -119,13 +99,17 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
                         ),
                       );
 
-                      if (confirm != true) return;
+                      if (confirm != true) {
+                        return;
+                      }
 
                       await ref
                           .read(ownerProvider.notifier)
                           .deleteProperty(property.id);
 
-                      if (!context.mounted) return;
+                      if (!context.mounted) {
+                        return;
+                      }
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
