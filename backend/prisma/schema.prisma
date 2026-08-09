@@ -22,6 +22,8 @@ model User {
   tenantConversations Conversation[]       @relation("TenantConversations")
   favorites           Favorite[]
   sentMessages        Message[]            @relation("MessageSender")
+  leases              Lease[]              @relation("TenantLeases")
+  bookings            Booking[]            @relation("TenantBookings")
   notifications       Notification[]
   settings            UserSettings?
   otpCodes            OtpCode[]
@@ -32,21 +34,22 @@ model User {
   reviews             Review[]
   devices             UserDevice[]
 }
+
 model UserSettings {
-  id                    String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId                String   @unique
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  pushNotifications     Boolean  @default(true)
-  emailNotifications    Boolean  @default(true)
-  smsNotifications      Boolean  @default(false)
+  pushNotifications  Boolean @default(true)
+  emailNotifications Boolean @default(true)
+  smsNotifications   Boolean @default(false)
 
-  darkMode              Boolean  @default(false)
-  language              String   @default("en")
+  darkMode Boolean @default(false)
+  language String  @default("en")
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model UserDevice {
@@ -88,6 +91,8 @@ model Property {
   locality        String?
   longitude       Decimal?          @db.Decimal(9, 6)
   displayOrder    Int               @default(0)
+  bookings        Booking[]
+  leases          Lease[]
   conversations   Conversation[]
   favorites       Favorite[]
   owner           User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
@@ -157,6 +162,7 @@ model PropertyVisit {
   visitDate  DateTime
   status     VisitStatus @default(PENDING)
   notes      String?
+  booking    Booking?
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
   property   Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
@@ -167,8 +173,108 @@ model PropertyVisit {
   @@index([visitDate])
 }
 
-model Notification {
+model Booking {
+  id         String        @id @default(cuid())
+  propertyId String
+  tenantId   String
+  visitId    String        @unique
+  status     BookingStatus @default(PENDING)
 
+  monthlyRent     Decimal @db.Decimal(10, 2)
+  securityDeposit Decimal @db.Decimal(10, 2)
+
+  bookingDate DateTime  @default(now())
+  approvedAt  DateTime?
+  cancelledAt DateTime?
+  completedAt DateTime?
+
+  notes   String?
+  lease   Lease?
+  payment Payment?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  property Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenant   User          @relation("TenantBookings", fields: [tenantId], references: [id], onDelete: Cascade)
+  visit    PropertyVisit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([bookingDate])
+}
+
+model Lease {
+  id         String @id @default(cuid())
+  bookingId  String @unique
+  propertyId String
+  tenantId   String
+
+  status LeaseStatus @default(ACTIVE)
+
+  monthlyRent     Decimal @db.Decimal(10, 2)
+  securityDeposit Decimal @db.Decimal(10, 2)
+
+  startDate DateTime
+  endDate   DateTime?
+
+  signedAt     DateTime?
+  terminatedAt DateTime?
+  completedAt  DateTime?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking  Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenant   User     @relation("TenantLeases", fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model Payment {
+  id String @id @default(cuid())
+
+  bookingId String @unique
+
+  amount   Decimal @db.Decimal(10, 2)
+  currency String  @default("INR")
+
+  status PaymentStatus @default(CREATED)
+
+  razorpayOrderId   String  @unique
+  razorpayPaymentId String? @unique
+  razorpaySignature String?
+
+  paidAt        DateTime?
+  failedAt      DateTime?
+  failureReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model Notification {
   id String @id @default(cuid())
 
   userId String
@@ -188,7 +294,6 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@index([userId])
-
   @@index([relatedId])
 }
 
@@ -317,4 +422,21 @@ enum NotificationType {
 enum OtpPurpose {
   EMAIL_VERIFICATION
   PASSWORD_RESET
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  PAYMENT_PENDING
+  PAID
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum LeaseStatus {
+  ACTIVE
+  COMPLETED
+  TERMINATED
+  CANCELLED
 }

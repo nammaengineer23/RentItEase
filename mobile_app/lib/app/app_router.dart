@@ -233,9 +233,13 @@ class AppRouter {
       // Payment
       // ============================================================
       GoRoute(
-        path: '/payment',
+        path: '/payment/:bookingId',
         name: 'payment',
-        builder: (context, state) => const PaymentPage(),
+        builder: (context, state) {
+          final bookingId = state.pathParameters['bookingId']!;
+
+          return PaymentPage(bookingId: bookingId);
+        },
       ),
 
       // ============================================================

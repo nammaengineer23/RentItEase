@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 
-enum BookingStatus { pending, approved, rejected, completed, cancelled }
+enum BookingStatus {
+  pending,
+  approved,
+  rejected,
+  paymentPending,
+  paid,
+  completed,
+  cancelled,
+}
 
 class BookingStatusChip extends StatelessWidget {
   final BookingStatus status;
@@ -34,6 +42,20 @@ class BookingStatusChip extends StatelessWidget {
         textColor = Colors.red.shade800;
         icon = Icons.cancel;
         label = 'Rejected';
+        break;
+
+      case BookingStatus.paymentPending:
+        backgroundColor = Colors.amber.shade50;
+        textColor = Colors.amber.shade900;
+        icon = Icons.payment;
+        label = 'Payment Pending';
+        break;
+
+      case BookingStatus.paid:
+        backgroundColor = Colors.green.shade50;
+        textColor = Colors.green.shade800;
+        icon = Icons.verified;
+        label = 'Paid';
         break;
 
       case BookingStatus.completed:

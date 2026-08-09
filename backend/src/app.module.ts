@@ -6,7 +6,8 @@ import { join } from 'path';
 import * as Joi from 'joi';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-
+import { LeaseModule } from './modules/lease/lease.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { DatabaseModule } from './database/database.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { OtpModule } from './common/otp/otp.module';
@@ -36,46 +37,36 @@ import { UserDevicesModule } from './modules/user-devices/user-devices.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
-  isGlobal: true,
-  envFilePath: '.env',
+      isGlobal: true,
+      envFilePath: '.env',
 
-  validationSchema: Joi.object({
-    DATABASE_URL: Joi.string().required(),
+      validationSchema: Joi.object({
+        DATABASE_URL: Joi.string().required(),
 
-    JWT_ACCESS_SECRET: Joi.string()
-     .min(16)
-     .required(),
+        JWT_ACCESS_SECRET: Joi.string().min(16).required(),
 
-    JWT_REFRESH_SECRET: Joi.string()
-     .min(16)
-     .required(),
+        JWT_REFRESH_SECRET: Joi.string().min(16).required(),
 
-    FIREBASE_PROJECT_ID: Joi.string().required(),
+        FIREBASE_PROJECT_ID: Joi.string().required(),
 
-    FIREBASE_CLIENT_EMAIL: Joi.string()
-      .email()
-      .required(),
+        FIREBASE_CLIENT_EMAIL: Joi.string().email().required(),
 
-    FIREBASE_PRIVATE_KEY: Joi.string().required(),
+        FIREBASE_PRIVATE_KEY: Joi.string().required(),
 
-    PORT: Joi.number().default(3000),
+        PORT: Joi.number().default(3000),
 
-    NODE_ENV: Joi.string()
-      .valid(
-        'development',
-        'production',
-        'test',
-      )
-      .default('development'),
-  }),
-}),
+        NODE_ENV: Joi.string()
+          .valid('development', 'production', 'test')
+          .default('development'),
+      }),
+    }),
 
     ThrottlerModule.forRoot([
-  {
-    ttl: 60_000,
-    limit: 100,
-  },
- ]),
+      {
+        ttl: 60_000,
+        limit: 100,
+      },
+    ]),
 
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
@@ -98,6 +89,8 @@ import { UserDevicesModule } from './modules/user-devices/user-devices.module';
     ReviewsModule,
     OwnerDashboardModule,
     ChatModule,
+    LeaseModule,
+    PaymentsModule,
     PushNotificationsModule,
     AdminModule,
     HealthModule,
@@ -108,12 +101,11 @@ import { UserDevicesModule } from './modules/user-devices/user-devices.module';
   controllers: [AppController],
 
   providers: [
-  AppService,
-  {
-    provide: APP_GUARD,
-    useClass: ThrottlerGuard,
-  },
-],
-
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

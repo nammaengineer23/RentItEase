@@ -1,0 +1,1127 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+dto/
+  create-property-visit.dto.ts
+  update-property-visit.dto.ts
+entities/
+  property-visit.entity.ts
+property-visits.controller.ts
+property-visits.module.ts
+property-visits.service.ts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="dto/create-property-visit.dto.ts">
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsDateString,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
+
+export class CreatePropertyVisitDto {
+  @ApiProperty({
+    example: 'cmf3ab12cd34ef56gh78ij90',
+    description: 'Property ID',
+  })
+  @IsNotEmpty()
+  @IsString()
+  propertyId!: string;
+
+  @ApiProperty({
+    example: '2026-07-20T10:30:00.000Z',
+    description: 'Preferred visit date and time',
+  })
+  @IsDateString()
+  visitDate!: string;
+
+  @ApiPropertyOptional({
+    example: 'Please call me before arriving.',
+    description: 'Additional notes',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  notes?: string;
+}
+</file>
+
+<file path="dto/update-property-visit.dto.ts">
+import { PartialType } from '@nestjs/swagger';
+import { CreatePropertyVisitDto } from './create-property-visit.dto';
+
+export class UpdatePropertyVisitDto extends PartialType(
+  CreatePropertyVisitDto,
+) {}
+</file>
+
+<file path="entities/property-visit.entity.ts">
+export class PropertyVisit {}
+</file>
+
+<file path="property-visits.controller.ts">
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
+
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+import { PropertyVisitsService } from './property-visits.service';
+import { VisitStatus } from '@prisma/client';
+import { CreatePropertyVisitDto } from './dto/create-property-visit.dto';
+import { UpdatePropertyVisitDto } from './dto/update-property-visit.dto';
+
+@ApiTags('Property Visits')
+@Controller('property-visits')
+export class PropertyVisitsController {
+  constructor(
+    private readonly propertyVisitsService: PropertyVisitsService,
+  ) {}
+
+  // =====================================
+  // Create Visit Request
+  // =====================================
+
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Book property visit',
+  })
+  create(
+    @Body()
+    dto: CreatePropertyVisitDto,
+
+    @Request()
+    req: any,
+  ) {
+    return this.propertyVisitsService.create(
+      dto,
+      req.user,
+    );
+  }
+
+
+  // =====================================
+  // Owner Visit Requests
+  // =====================================
+
+  @Get('owner')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get owner visit requests',
+  })
+  getOwnerVisits(
+    @Request()
+    req: any,
+  ) {
+    return this.propertyVisitsService.getOwnerVisits(
+      req.user,
+    );
+  }
+
+  // =====================================
+  // Get All Visits
+  // =====================================
+
+  @Get()
+  findAll() {
+    return this.propertyVisitsService.findAll();
+  }
+
+  // =====================================
+  // Get Visit
+  // =====================================
+
+  @Get(':id')
+  findOne(
+    @Param('id')
+    id: string,
+  ) {
+    return this.propertyVisitsService.findOne(
+      id,
+    );
+  }
+
+  // =====================================
+  // Approve Visit
+  // =====================================
+
+  @Patch(':id/approve')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  approveVisit(
+    @Param('id')
+    id: string,
+
+    @Request()
+    req: any,
+  ) {
+    return this.propertyVisitsService.approveVisit(
+      id,
+      req.user,
+    );
+  }
+
+  // =====================================
+  // Reject Visit
+  // =====================================
+
+  @Patch(':id/reject')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  rejectVisit(
+    @Param('id')
+    id: string,
+
+    @Request()
+    req: any,
+  ) {
+    return this.propertyVisitsService.rejectVisit(
+      id,
+      req.user,
+    );
+  }
+
+  // =====================================
+  // Complete Visit
+  // =====================================
+
+  @Patch(':id/complete')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  completeVisit(
+    @Param('id')
+    id: string,
+
+    @Request()
+    req: any,
+  ) {
+    return this.propertyVisitsService.completeVisit(
+      id,
+      req.user,
+    );
+  }
+
+  // =====================================
+  // Cancel Visit
+  // =====================================
+
+  @Patch(':id/cancel')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  cancelVisit(
+    @Param('id')
+    id: string,
+
+    @Request()
+    req: any,
+  ) {
+    return this.propertyVisitsService.cancelVisit(
+      id,
+      req.user,
+    );
+  }
+
+  // =====================================
+  // Update Visit
+  // =====================================
+
+  @Patch(':id')
+  update(
+    @Param('id')
+    id: string,
+
+    @Body()
+    dto: UpdatePropertyVisitDto,
+  ) {
+    return this.propertyVisitsService.update(
+      id,
+      dto,
+    );
+  }
+
+  // =====================================
+  // Delete Visit
+  // =====================================
+
+  @Delete(':id')
+  remove(
+    @Param('id')
+    id: string,
+  ) {
+    return this.propertyVisitsService.remove(
+      id,
+    );
+  }
+}
+</file>
+
+<file path="property-visits.module.ts">
+import { Module } from '@nestjs/common';
+
+import { PrismaModule } from '../../prisma/prisma.module';
+import { MailModule } from '../../mail/mail.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+
+import { PropertyVisitsController } from './property-visits.controller';
+import { PropertyVisitsService } from './property-visits.service';
+
+import { PushNotificationsModule } from '../push-notifications/push-notifications.module';
+
+@Module({
+  imports: [
+    PrismaModule,
+    NotificationsModule,
+    MailModule,
+    PushNotificationsModule,
+  ],
+  controllers: [PropertyVisitsController],
+  providers: [PropertyVisitsService],
+})
+export class PropertyVisitsModule {}
+</file>
+
+<file path="property-visits.service.ts">
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+
+import { PrismaService } from '../../prisma/prisma.service';
+
+import { VisitStatus, UserRole } from '@prisma/client';
+
+import { CreatePropertyVisitDto } from './dto/create-property-visit.dto';
+import { UpdatePropertyVisitDto } from './dto/update-property-visit.dto';
+import { MailService } from '../../mail/mail.service';
+import { serializePrisma } from '../../common/utils/prisma-response.util';
+import { NotificationsService } from '../notifications/notifications.service';
+import { PushNotificationsService } from '../push-notifications/push-notifications.service';
+import { NotificationType } from '@prisma/client';
+@Injectable()
+export class PropertyVisitsService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+    private readonly notificationsService: NotificationsService,
+    private readonly pushNotificationsService: PushNotificationsService,
+  ) {}
+
+  // =====================================
+  // Create Visit Request
+  // =====================================
+
+  async create(dto: CreatePropertyVisitDto, user: any) {
+    const property = await this.prisma.property.findUnique({
+      where: {
+        id: dto.propertyId,
+      },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found.');
+    }
+
+    if (!property.isAvailable) {
+      throw new BadRequestException(
+        'This property is not available for visits.',
+      );
+    }
+
+    const visitDate = new Date(dto.visitDate);
+
+    if (visitDate.getTime() <= Date.now()) {
+      throw new BadRequestException('Visit date must be in the future.');
+    }
+
+    const existingVisit = await this.prisma.propertyVisit.findFirst({
+      where: {
+        propertyId: dto.propertyId,
+        visitDate,
+        status: {
+          in: [VisitStatus.PENDING, VisitStatus.APPROVED],
+        },
+      },
+    });
+
+    if (existingVisit) {
+      throw new BadRequestException('This time slot is already booked.');
+    }
+
+    const visit = await this.prisma.propertyVisit.create({
+      data: {
+        propertyId: dto.propertyId,
+        tenantId: user.id,
+        visitDate,
+        notes: dto.notes,
+      },
+
+      include: {
+        property: {
+          include: {
+            owner: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+              },
+            },
+
+            images: {
+              where: {
+                isPrimary: true,
+              },
+              orderBy: {
+                displayOrder: 'asc',
+              },
+            },
+          },
+        },
+
+        tenant: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    // ==========================
+    // Email Notification
+    // ==========================
+
+    /*  await this.mailService.sendVisitRequestEmail(
+    visit.property.owner.email,
+    {
+      ownerName: visit.property.owner.fullName,
+      tenantName: visit.tenant.fullName,
+      propertyTitle: visit.property.title,
+      visitDate: visit.visitDate,
+    },
+  );
+*/
+    // ==========================
+    // In-App Notification
+    // ==========================
+
+    await this.notificationsService.createNotification(
+      visit.property.owner.id,
+      'New Visit Request',
+      `${visit.tenant.fullName} requested a property visit.`,
+      NotificationType.VISIT_REQUEST,
+    );
+
+    // ==========================
+    // Push Notification (FCM)
+    // ==========================
+
+    await this.pushNotificationsService.sendToUser(
+      visit.property.owner.id,
+      'New Visit Request',
+      `${visit.tenant.fullName} requested a property visit for "${visit.property.title}".`,
+      {
+        type: 'VISIT_REQUEST',
+        propertyId: visit.property.id,
+        visitId: visit.id,
+      },
+    );
+
+    return {
+      success: true,
+      message: 'Visit booked successfully.',
+      data: visit,
+    };
+  }
+
+  // =====================================
+  // Owner Visits
+  // =====================================
+
+  async getOwnerVisits(user: any) {
+    const visits = await this.prisma.propertyVisit.findMany({
+      where: {
+        property: {
+          ownerId: user.id,
+        },
+      },
+
+      include: {
+        property: {
+          include: {
+            owner: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+              },
+            },
+
+            images: {
+              where: {
+                isPrimary: true,
+              },
+              orderBy: {
+                displayOrder: 'asc',
+              },
+            },
+          },
+        },
+
+        tenant: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+
+      orderBy: {
+        visitDate: 'asc',
+      },
+    });
+
+    return {
+      success: true,
+      total: visits.length,
+      visits: serializePrisma(visits),
+    };
+  }
+
+  // =====================================
+  // Get All
+  // =====================================
+
+  async findAll() {
+    const visits = await this.prisma.propertyVisit.findMany({
+      include: {
+        property: {
+          include: {
+            owner: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+              },
+            },
+
+            images: {
+              where: {
+                isPrimary: true,
+              },
+              orderBy: {
+                displayOrder: 'asc',
+              },
+            },
+          },
+        },
+
+        tenant: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+
+      orderBy: {
+        visitDate: 'asc',
+      },
+    });
+
+    return {
+      success: true,
+      total: visits.length,
+      visits: serializePrisma(visits),
+    };
+  }
+
+  // =====================================
+  // Get One
+  // =====================================
+
+  async findOne(id: string) {
+    const visit = await this.prisma.propertyVisit.findUnique({
+      where: {
+        id,
+      },
+
+      include: {
+        property: {
+          include: {
+            owner: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+              },
+            },
+
+            images: {
+              where: {
+                isPrimary: true,
+              },
+              orderBy: {
+                displayOrder: 'asc',
+              },
+            },
+          },
+        },
+
+        tenant: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    if (!visit) {
+      throw new NotFoundException('Visit not found.');
+    }
+
+    return serializePrisma(visit);
+  }
+
+  // =====================================
+  // Approve
+  // =====================================
+
+  // =====================================
+  // Approve
+  // =====================================
+
+  async approveVisit(id: string, user: any) {
+    const visit = await this.findOne(id);
+
+    if (visit.property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Access denied.');
+    }
+
+    const updatedVisit = await this.prisma.propertyVisit.update({
+      where: {
+        id,
+      },
+      data: {
+        status: VisitStatus.APPROVED,
+      },
+      include: {
+        property: {
+          include: {
+            owner: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+              },
+            },
+            images: {
+              where: {
+                isPrimary: true,
+              },
+            },
+          },
+        },
+        tenant: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    try {
+      await this.mailService.sendVisitApprovalEmail(
+        updatedVisit.tenant.email,
+        updatedVisit.tenant.fullName,
+        updatedVisit.property.title,
+        updatedVisit.visitDate.toLocaleString(),
+      );
+    } catch (error) {
+      console.error(error);
+    }
+
+    // ==========================
+    // In-App Notification
+    // ==========================
+
+    await this.notificationsService.createNotification(
+      updatedVisit.tenant.id,
+      'Visit Approved',
+      'Your property visit has been approved.',
+      NotificationType.VISIT_APPROVED,
+    );
+
+    // ==========================
+    // Push Notification (FCM)
+    // ==========================
+
+    await this.pushNotificationsService.sendToUser(
+      updatedVisit.tenant.id,
+      'Visit Approved',
+      `Your visit for "${updatedVisit.property.title}" has been approved.`,
+      {
+        type: 'VISIT_APPROVED',
+        propertyId: updatedVisit.property.id,
+        visitId: updatedVisit.id,
+      },
+    );
+
+    return {
+      success: true,
+      message: 'Visit approved successfully.',
+      data: serializePrisma(updatedVisit),
+    };
+  }
+  // =====================================
+  // Reject
+  // =====================================
+
+  // =====================================
+  // Reject
+  // =====================================
+
+  async rejectVisit(id: string, user: any) {
+    const visit = await this.findOne(id);
+
+    if (visit.property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Access denied.');
+    }
+
+    const updatedVisit = await this.prisma.propertyVisit.update({
+      where: {
+        id,
+      },
+      data: {
+        status: VisitStatus.REJECTED,
+      },
+      include: {
+        property: {
+          include: {
+            owner: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+              },
+            },
+            images: {
+              where: {
+                isPrimary: true,
+              },
+            },
+          },
+        },
+        tenant: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    // ==========================
+    // Email
+    // ==========================
+
+    try {
+      await this.mailService.sendVisitRejectedEmail(
+        updatedVisit.tenant.email,
+        updatedVisit.tenant.fullName,
+        updatedVisit.property.title,
+      );
+    } catch (error) {
+      console.error(error);
+    }
+
+    // ==========================
+    // In-App Notification
+    // ==========================
+
+    await this.notificationsService.createNotification(
+      updatedVisit.tenant.id,
+      'Visit Rejected',
+      `Your visit for "${updatedVisit.property.title}" has been rejected.`,
+      NotificationType.VISIT_REJECTED,
+    );
+
+    // ==========================
+    // Push Notification (FCM)
+    // ==========================
+
+    await this.pushNotificationsService.sendToUser(
+      updatedVisit.tenant.id,
+      'Visit Rejected',
+      `Your visit for "${updatedVisit.property.title}" has been rejected.`,
+      {
+        type: 'VISIT_REJECTED',
+        propertyId: updatedVisit.property.id,
+        visitId: updatedVisit.id,
+      },
+    );
+
+    return {
+      success: true,
+      message: 'Visit rejected successfully.',
+      data: serializePrisma(updatedVisit),
+    };
+  }
+  // =====================================
+  // Complete
+  // =====================================
+
+  // =====================================
+  // Complete
+  // =====================================
+
+  async completeVisit(id: string, user: any) {
+    const visit = await this.findOne(id);
+
+    if (visit.property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Access denied.');
+    }
+
+    const updatedVisit = await this.prisma.propertyVisit.update({
+      where: {
+        id,
+      },
+      data: {
+        status: VisitStatus.COMPLETED,
+      },
+      include: {
+        property: {
+          include: {
+            owner: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+              },
+            },
+            images: {
+              where: {
+                isPrimary: true,
+              },
+            },
+          },
+        },
+        tenant: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    // ==========================
+    // Email
+    // ==========================
+
+    try {
+      await this.mailService.sendVisitCompletedEmail(
+        updatedVisit.tenant.email,
+        updatedVisit.tenant.fullName,
+        updatedVisit.property.title,
+      );
+    } catch (error) {
+      console.error(error);
+    }
+
+    // ==========================
+    // In-App Notification
+    // ==========================
+
+    await this.notificationsService.createNotification(
+      updatedVisit.tenant.id,
+      'Visit Completed',
+      `Your visit for "${updatedVisit.property.title}" has been marked as completed.`,
+      NotificationType.VISIT_COMPLETED,
+    );
+
+    // ==========================
+    // Push Notification (FCM)
+    // ==========================
+
+    await this.pushNotificationsService.sendToUser(
+      updatedVisit.tenant.id,
+      'Visit Completed',
+      `Your visit for "${updatedVisit.property.title}" has been completed.`,
+      {
+        type: 'VISIT_COMPLETED',
+        propertyId: updatedVisit.property.id,
+        visitId: updatedVisit.id,
+      },
+    );
+
+    return {
+      success: true,
+      message: 'Visit completed successfully.',
+      data: serializePrisma(updatedVisit),
+    };
+  }
+
+  // =====================================
+  // Cancel
+  // =====================================
+
+  // =====================================
+  // Cancel
+  // =====================================
+
+  async cancelVisit(id: string, user: any) {
+    const visit = await this.findOne(id);
+
+    const isOwner = visit.property.ownerId === user.id;
+
+    const isTenant = visit.tenantId === user.id;
+
+    const isAdmin = user.role === UserRole.ADMIN;
+
+    if (!isOwner && !isTenant && !isAdmin) {
+      throw new ForbiddenException('Access denied.');
+    }
+
+    const updatedVisit = await this.prisma.propertyVisit.update({
+      where: {
+        id,
+      },
+      data: {
+        status: VisitStatus.CANCELLED,
+      },
+      include: {
+        property: {
+          include: {
+            owner: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+              },
+            },
+            images: {
+              where: {
+                isPrimary: true,
+              },
+            },
+          },
+        },
+        tenant: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    // =====================================
+    // Email
+    // =====================================
+
+    try {
+      if (isTenant) {
+        await this.mailService.sendVisitCancelledEmail(
+          updatedVisit.property.owner.email,
+          updatedVisit.property.owner.fullName,
+          updatedVisit.property.title,
+        );
+      } else {
+        await this.mailService.sendVisitCancelledEmail(
+          updatedVisit.tenant.email,
+          updatedVisit.tenant.fullName,
+          updatedVisit.property.title,
+        );
+      }
+    } catch (error) {
+      console.error(error);
+    }
+
+    // =====================================
+    // In-App Notification
+    // =====================================
+
+    const receiverId = isTenant
+      ? updatedVisit.property.owner.id
+      : updatedVisit.tenant.id;
+
+    const title = 'Visit Cancelled';
+
+    const message = isTenant
+      ? `${updatedVisit.tenant.fullName} cancelled the visit for "${updatedVisit.property.title}".`
+      : `Your visit for "${updatedVisit.property.title}" has been cancelled.`;
+
+    await this.notificationsService.createNotification(
+      receiverId,
+      title,
+      message,
+      NotificationType.VISIT_CANCELLED,
+    );
+
+    // =====================================
+    // Push Notification (FCM)
+    // =====================================
+
+    await this.pushNotificationsService.sendToUser(receiverId, title, message, {
+      type: 'VISIT_CANCELLED',
+      propertyId: updatedVisit.property.id,
+      visitId: updatedVisit.id,
+    });
+
+    return {
+      success: true,
+      message: 'Visit cancelled successfully.',
+      data: serializePrisma(updatedVisit),
+    };
+  }
+
+  // =====================================
+  // Update
+  // =====================================
+
+  async update(id: string, dto: UpdatePropertyVisitDto) {
+    await this.findOne(id);
+
+    const updatedVisit = await this.prisma.propertyVisit.update({
+      where: {
+        id,
+      },
+      data: {
+        ...(dto.visitDate && {
+          visitDate: new Date(dto.visitDate),
+        }),
+        ...(dto.notes !== undefined && {
+          notes: dto.notes,
+        }),
+      },
+      include: {
+        property: true,
+        tenant: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Visit updated successfully.',
+      data: serializePrisma(updatedVisit),
+    };
+  }
+
+  // =====================================
+  // Delete
+  // =====================================
+
+  async remove(id: string) {
+    await this.findOne(id);
+
+    await this.prisma.propertyVisit.delete({
+      where: {
+        id,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Visit deleted successfully.',
+    };
+  }
+}
+</file>
+
+</files>
