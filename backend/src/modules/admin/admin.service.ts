@@ -329,45 +329,99 @@ async deactivateUser(id: string) {
   }
 
   // ==========================
-  // Get Property Details
-  // ==========================
-  async getProperty(id: string) {
-    const property = await this.prisma.property.findUnique({
-      where: { id },
-      include: {
-        owner: true,
-        amenities: {
-          include: {
-            amenity: true,
-          },
+// Get Property Details
+// ==========================
+async getProperty(id: string) {
+  const property = await this.prisma.property.findUnique({
+    where: { id },
+
+    include: {
+      owner: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          photoUrl: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
         },
-        images: true,
-        reviews: {
-          include: {
-            user: true,
-          },
+      },
+
+      amenities: {
+        include: {
+          amenity: true,
         },
-        favorites: {
-          include: {
-            user: true,
-          },
-        },
-        visits: {
-          include: {
-            tenant: true,
+      },
+
+      images: true,
+
+      reviews: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+              photoUrl: true,
+              role: true,
+              isActive: true,
+              createdAt: true,
+              updatedAt: true,
+            },
           },
         },
       },
-    });
 
-    if (!property) {
-      throw new NotFoundException(
-        'Property not found.',
-      );
-    }
+      favorites: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+              photoUrl: true,
+              role: true,
+              isActive: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
+        },
+      },
 
-    return serializePrisma(property);
+      visits: {
+        include: {
+          tenant: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+              photoUrl: true,
+              role: true,
+              isActive: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!property) {
+    throw new NotFoundException(
+      'Property not found.',
+    );
   }
+
+  return serializePrisma(property);
+}
 
   // ==========================
   // Hide Property

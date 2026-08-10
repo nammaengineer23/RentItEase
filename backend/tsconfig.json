@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "node16",
+    "moduleResolution": "node16",
     "target": "ES2022",
     "lib": ["ES2022"],
 
@@ -18,8 +19,6 @@
     "rootDir": "./src",
     "outDir": "./dist",
 
-    "baseUrl": "./",
-
     "incremental": true,
     "skipLibCheck": true,
 
@@ -28,19 +27,16 @@
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
 
-    "moduleResolution": "node",
-
     "resolveJsonModule": true,
 
     "types": ["node"],
 
-
     "paths": {
-      "@/*": ["src/*"],
-      "@config/*": ["src/config/*"],
-      "@common/*": ["src/common/*"],
-      "@modules/*": ["src/modules/*"],
-      "@database/*": ["src/database/*"]
+      "@/*": ["./src/*"],
+      "@config/*": ["./src/config/*"],
+      "@common/*": ["./src/common/*"],
+      "@modules/*": ["./src/modules/*"],
+      "@database/*": ["./src/database/*"]
     }
   },
 

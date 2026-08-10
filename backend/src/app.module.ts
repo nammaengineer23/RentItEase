@@ -7,9 +7,12 @@ import * as Joi from 'joi';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LeaseModule } from './modules/lease/lease.module';
+import { PremiumListingsModule } from './modules/premium-listings/premium-listings.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { MembershipModule } from './modules/membership/membership.module';
 import { DatabaseModule } from './database/database.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
 import { OtpModule } from './common/otp/otp.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -17,6 +20,7 @@ import { PropertiesModule } from './modules/properties/properties.module';
 import { AmenitiesModule } from './modules/amenities/amenities.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { PropertyImagesModule } from './modules/property-images/property-images.module';
+import { BookingModule } from './modules/booking/booking.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { PropertyVisitsModule } from './modules/property-visits/property-visits.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -96,6 +100,10 @@ import { UserDevicesModule } from './modules/user-devices/user-devices.module';
     HealthModule,
     MailModule,
     UserDevicesModule,
+    MembershipModule,
+    PremiumListingsModule,
+    InvoicesModule,
+    BookingModule,
   ],
 
   controllers: [AppController],
