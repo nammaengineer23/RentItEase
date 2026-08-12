@@ -23,10 +23,7 @@ class OnboardingPage extends ConsumerWidget {
             // Skip Button
             //------------------------------------------
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Align(
                 alignment: Alignment.centerRight,
                 child: provider.isLastPage
@@ -50,12 +47,9 @@ class OnboardingPage extends ConsumerWidget {
               child: PageView.builder(
                 controller: provider.pageController,
                 itemCount: onboardingItems.length,
-                onPageChanged:
-                    ref.read(onboardingProvider).onPageChanged,
+                onPageChanged: ref.read(onboardingProvider).onPageChanged,
                 itemBuilder: (context, index) {
-                  return OnboardingItem(
-                    item: onboardingItems[index],
-                  );
+                  return OnboardingItem(item: onboardingItems[index]);
                 },
               ),
             ),
@@ -75,21 +69,14 @@ class OnboardingPage extends ConsumerWidget {
             // Next / Get Started Button
             //------------------------------------------
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                24,
-                0,
-                24,
-                35,
-              ),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 35),
               child: SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
                   onPressed: () async {
                     if (provider.isLastPage) {
-                      await ref
-                          .read(onboardingProvider)
-                          .completeOnboarding();
+                      await ref.read(onboardingProvider).completeOnboarding();
 
                       if (context.mounted) {
                         context.go('/auth');
@@ -100,17 +87,14 @@ class OnboardingPage extends ConsumerWidget {
                   },
                   style: ElevatedButton.styleFrom(
                     elevation: 0,
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primary,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   child: Text(
-                    provider.isLastPage
-                        ? 'Get Started'
-                        : 'Next',
+                    provider.isLastPage ? 'Get Started' : 'Next',
                     style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,

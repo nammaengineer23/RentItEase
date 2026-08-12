@@ -23,8 +23,7 @@ class BookVisitPage extends ConsumerStatefulWidget {
 }
 
 class _BookVisitPageState extends ConsumerState<BookVisitPage> {
-  final TextEditingController notesController =
-      TextEditingController();
+  final TextEditingController notesController = TextEditingController();
 
   DateTime? visitDate;
 
@@ -35,18 +34,14 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
 
     if (selectedVisitDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a visit date and time.'),
-        ),
+        const SnackBar(content: Text('Please select a visit date and time.')),
       );
       return;
     }
 
     if (!selectedVisitDate.isAfter(DateTime.now())) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a future date and time.'),
-        ),
+        const SnackBar(content: Text('Please select a future date and time.')),
       );
       return;
     }
@@ -71,9 +66,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Visit booked successfully.'),
-        ),
+        const SnackBar(content: Text('Visit booked successfully.')),
       );
 
       Navigator.of(context).pop();
@@ -82,11 +75,9 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       if (mounted) {
         setState(() {
@@ -105,9 +96,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Book Property Visit'),
-      ),
+      appBar: AppBar(title: const Text('Book Property Visit')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -116,7 +105,6 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
             // ==================================================
             // Property Summary
             // ==================================================
-
             Card(
               clipBehavior: Clip.antiAlias,
               child: Column(
@@ -128,10 +116,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
                         ? Container(
                             color: Colors.grey.shade300,
                             child: const Center(
-                              child: Icon(
-                                Icons.home,
-                                size: 70,
-                              ),
+                              child: Icon(Icons.home, size: 70),
                             ),
                           )
                         : Image.network(
@@ -141,10 +126,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
                               return Container(
                                 color: Colors.grey.shade300,
                                 child: const Center(
-                                  child: Icon(
-                                    Icons.home,
-                                    size: 70,
-                                  ),
+                                  child: Icon(Icons.home, size: 70),
                                 ),
                               );
                             },
@@ -167,9 +149,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
                           children: [
                             const Icon(Icons.person),
                             const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(widget.ownerName),
-                            ),
+                            Expanded(child: Text(widget.ownerName)),
                           ],
                         ),
                       ],
@@ -184,7 +164,6 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
             // ==================================================
             // Visit Date / Time
             // ==================================================
-
             VisitDatePicker(
               onChanged: (date) {
                 visitDate = date;
@@ -196,7 +175,6 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
             // ==================================================
             // Notes
             // ==================================================
-
             TextField(
               controller: notesController,
               maxLines: 4,
@@ -213,7 +191,6 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
             // ==================================================
             // Book Button
             // ==================================================
-
             SizedBox(
               width: double.infinity,
               height: 55,
@@ -229,9 +206,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
                         ),
                       )
                     : const Icon(Icons.calendar_month),
-                label: Text(
-                  loading ? 'Booking...' : 'Book Visit',
-                ),
+                label: Text(loading ? 'Booking...' : 'Book Visit'),
               ),
             ),
 
@@ -242,4 +217,3 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
     );
   }
 }
-

@@ -10,15 +10,13 @@ class LocationService {
   //==================================================
 
   Future<bool> requestPermission() async {
-    final serviceEnabled =
-        await Geolocator.isLocationServiceEnabled();
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
     if (!serviceEnabled) {
       return false;
     }
 
-    LocationPermission permission =
-        await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
 
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -43,17 +41,11 @@ class LocationService {
       return null;
     }
 
-    final Position position =
-        await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-      ),
+    final Position position = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
     );
 
-    return reverseGeocode(
-      position.latitude,
-      position.longitude,
-    );
+    return reverseGeocode(position.latitude, position.longitude);
   }
 
   //==================================================
@@ -64,8 +56,7 @@ class LocationService {
     double latitude,
     double longitude,
   ) async {
-    final List<geo.Placemark> placemarks =
-        await geo.placemarkFromCoordinates(
+    final List<geo.Placemark> placemarks = await geo.placemarkFromCoordinates(
       latitude,
       longitude,
     );
@@ -105,11 +96,8 @@ class LocationService {
   // Search Address
   //==================================================
 
-  Future<LocationModel?> searchAddress(
-    String address,
-  ) async {
-    final List<geo.Location> locations =
-        await geo.locationFromAddress(address);
+  Future<LocationModel?> searchAddress(String address) async {
+    final List<geo.Location> locations = await geo.locationFromAddress(address);
 
     if (locations.isEmpty) {
       return null;
@@ -117,10 +105,7 @@ class LocationService {
 
     final geo.Location location = locations.first;
 
-    return reverseGeocode(
-      location.latitude,
-      location.longitude,
-    );
+    return reverseGeocode(location.latitude, location.longitude);
   }
 
   //==================================================
@@ -155,10 +140,7 @@ class LocationService {
       'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude',
     );
 
-    if (!await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    )) {
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       throw Exception('Could not launch Google Navigation');
     }
   }
@@ -175,10 +157,7 @@ class LocationService {
       'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
     );
 
-    if (!await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    )) {
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       throw Exception('Could not launch Google Maps');
     }
   }

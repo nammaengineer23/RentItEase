@@ -2,8 +2,7 @@ import '../../domain/entities/property_visit.dart';
 import '../../domain/repositories/property_visit_repository.dart';
 import '../api/property_visit_api.dart';
 
-class PropertyVisitRepositoryImpl
-    implements PropertyVisitRepository {
+class PropertyVisitRepositoryImpl implements PropertyVisitRepository {
   PropertyVisitRepositoryImpl(this._api);
 
   final PropertyVisitApi _api;

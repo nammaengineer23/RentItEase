@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import '../domain/entities/settings_entity.dart';
 
 class SettingsCard extends StatelessWidget {
-  const SettingsCard({
-    super.key,
-    required this.settings,
-  });
+  const SettingsCard({super.key, required this.settings});
 
   final SettingsEntity settings;
 
@@ -47,9 +44,7 @@ class SettingsCard extends StatelessWidget {
             leading: const Icon(Icons.language),
             title: const Text('Language'),
             subtitle: Text(
-              settings.language == 'en'
-                  ? 'English'
-                  : settings.language,
+              settings.language == 'en' ? 'English' : settings.language,
             ),
           ),
         ],
@@ -80,9 +75,7 @@ class _SettingTile extends StatelessWidget {
       trailing: Icon(
         value ? Icons.toggle_on : Icons.toggle_off,
         size: 32,
-        color: value
-            ? Theme.of(context).colorScheme.primary
-            : Colors.grey,
+        color: value ? Theme.of(context).colorScheme.primary : Colors.grey,
       ),
     );
   }

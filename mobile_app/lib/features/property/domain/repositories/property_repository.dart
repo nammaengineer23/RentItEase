@@ -23,18 +23,13 @@ abstract class PropertyRepository {
   // Create Property
   //==================================================
 
-  Future<PropertyEntity> createProperty(
-    Map<String, dynamic> data,
-  );
+  Future<PropertyEntity> createProperty(Map<String, dynamic> data);
 
   //==================================================
   // Update Property
   //==================================================
 
-  Future<PropertyEntity> updateProperty(
-    String id,
-    Map<String, dynamic> data,
-  );
+  Future<PropertyEntity> updateProperty(String id, Map<String, dynamic> data);
 
   //==================================================
   // Delete Property

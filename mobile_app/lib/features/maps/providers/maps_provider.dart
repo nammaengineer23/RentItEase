@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../property/data/repositories/property_repository_impl.dart';
+import '../../property/domain/entities/property_entity.dart';
+import '../../property/providers/property_provider.dart';
 import '../models/location_model.dart';
 import '../services/location_service.dart';
 
 final mapsProvider = ChangeNotifierProvider<MapsProvider>(
-  (ref) => MapsProvider(),
+  (ref) => MapsProvider(ref.read(propertyRepositoryProvider)),
 );
 
 class MapsProvider extends ChangeNotifier {
+  MapsProvider(this._propertyRepository);
+
+  final PropertyRepositoryImpl _propertyRepository;
   final LocationService _locationService = LocationService();
 
   //====================================================
@@ -33,39 +39,12 @@ class MapsProvider extends ChangeNotifier {
   LocationModel? selectedLocation;
 
   //====================================================
-  // Nearby Properties (Dummy)
-  // Replace with API later
+  // Nearby Properties
   //====================================================
 
-  final List<LocationModel> nearbyProperties = [
-    const LocationModel(
-      latitude: 12.9698,
-      longitude: 77.7500,
-      address: 'Prestige Lakeside Habitat',
-      city: 'Bengaluru',
-      state: 'Karnataka',
-      country: 'India',
-      postalCode: '560066',
-    ),
-    const LocationModel(
-      latitude: 12.9752,
-      longitude: 77.6065,
-      address: 'Brigade Road Apartment',
-      city: 'Bengaluru',
-      state: 'Karnataka',
-      country: 'India',
-      postalCode: '560001',
-    ),
-    const LocationModel(
-      latitude: 12.9784,
-      longitude: 77.6408,
-      address: 'Indiranagar Residency',
-      city: 'Bengaluru',
-      state: 'Karnataka',
-      country: 'India',
-      postalCode: '560038',
-    ),
-  ];
+  List<PropertyEntity> nearbyProperties = [];
+
+  PropertyEntity? selectedProperty;
 
   //====================================================
   // Search
@@ -84,6 +63,20 @@ class MapsProvider extends ChangeNotifier {
     selectedLocation = location;
     latitude = location.latitude;
     longitude = location.longitude;
+
+    notifyListeners();
+  }
+
+  //====================================================
+  // Select Property
+  //====================================================
+
+  void selectProperty(PropertyEntity property) {
+    selectedProperty = property;
+
+    latitude = property.latitude;
+    longitude = property.longitude;
+
     notifyListeners();
   }
 
@@ -94,6 +87,7 @@ class MapsProvider extends ChangeNotifier {
   void moveCamera({required double lat, required double lng}) {
     latitude = lat;
     longitude = lng;
+
     notifyListeners();
   }
 
@@ -128,6 +122,8 @@ class MapsProvider extends ChangeNotifier {
         latitude = location.latitude;
         longitude = location.longitude;
         selectedLocation = location;
+
+        await loadNearbyProperties();
       }
     } catch (e) {
       debugPrint('Current Location Error: $e');
@@ -135,6 +131,28 @@ class MapsProvider extends ChangeNotifier {
 
     isLoading = false;
     notifyListeners();
+  }
+
+  //====================================================
+  // Load Nearby Properties
+  //====================================================
+
+  Future<void> loadNearbyProperties({double radius = 5}) async {
+    try {
+      final properties = await _propertyRepository.getNearbyProperties(
+        latitude: latitude,
+        longitude: longitude,
+        radius: radius,
+      );
+
+      nearbyProperties = List<PropertyEntity>.from(properties);
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Nearby Properties Error: $e');
+      nearbyProperties = [];
+      notifyListeners();
+    }
   }
 
   //====================================================
@@ -154,6 +172,8 @@ class MapsProvider extends ChangeNotifier {
         latitude = result.latitude;
         longitude = result.longitude;
         selectedLocation = result;
+
+        await loadNearbyProperties();
       }
     } catch (e) {
       debugPrint('Search Error: $e');
@@ -164,16 +184,21 @@ class MapsProvider extends ChangeNotifier {
   }
 
   //====================================================
-  // User tapped on map
+  // User Tapped Map
   //====================================================
 
   Future<void> updateLocationFromMap(double lat, double lng) async {
     latitude = lat;
     longitude = lng;
+
+    selectedProperty = null;
+
     notifyListeners();
 
     try {
       selectedLocation = await _locationService.reverseGeocode(lat, lng);
+
+      await loadNearbyProperties();
     } catch (e) {
       debugPrint('Reverse Geocode Error: $e');
     }
@@ -182,30 +207,61 @@ class MapsProvider extends ChangeNotifier {
   }
 
   //====================================================
-  // Distance
+  // Distance From Current Map Location
   //====================================================
 
   double distanceFrom({
     required double userLatitude,
     required double userLongitude,
   }) {
-    if (selectedLocation == null) {
+    if (selectedProperty == null) {
       return 0;
     }
 
     return _locationService.calculateDistance(
       startLat: userLatitude,
       startLng: userLongitude,
-      endLat: selectedLocation!.latitude,
-      endLng: selectedLocation!.longitude,
+      endLat: selectedProperty!.latitude,
+      endLng: selectedProperty!.longitude,
     );
   }
 
   //====================================================
-  // Google Maps Navigation
+  // Distance To Property
+  //====================================================
+
+  double distanceToProperty(PropertyEntity property) {
+    return _locationService.calculateDistance(
+      startLat: latitude,
+      startLng: longitude,
+      endLat: property.latitude,
+      endLng: property.longitude,
+    );
+  }
+
+  //====================================================
+  // Navigate To Selected Property
+  //====================================================
+
+  Future<void> openPropertyNavigation(PropertyEntity property) async {
+    selectedProperty = property;
+
+    await _locationService.openNavigation(
+      latitude: property.latitude,
+      longitude: property.longitude,
+    );
+  }
+
+  //====================================================
+  // Navigate To Selected Location
   //====================================================
 
   Future<void> openNavigation() async {
+    if (selectedProperty != null) {
+      await openPropertyNavigation(selectedProperty!);
+      return;
+    }
+
     if (selectedLocation == null) return;
 
     await _locationService.openNavigation(
@@ -215,10 +271,18 @@ class MapsProvider extends ChangeNotifier {
   }
 
   //====================================================
-  // Open Google Maps
+  // Open In Google Maps
   //====================================================
 
   Future<void> openInGoogleMaps() async {
+    if (selectedProperty != null) {
+      await _locationService.openLocation(
+        latitude: selectedProperty!.latitude,
+        longitude: selectedProperty!.longitude,
+      );
+      return;
+    }
+
     if (selectedLocation == null) return;
 
     await _locationService.openLocation(
@@ -228,14 +292,28 @@ class MapsProvider extends ChangeNotifier {
   }
 
   //====================================================
+  // Clear Selected Property
+  //====================================================
+
+  void clearSelectedProperty() {
+    selectedProperty = null;
+    notifyListeners();
+  }
+
+  //====================================================
   // Reset Selected Location
   //====================================================
 
   void clearSelectedLocation() {
     selectedLocation = null;
+    selectedProperty = null;
+
     latitude = defaultLatitude;
     longitude = defaultLongitude;
     zoom = 15;
+
+    nearbyProperties = [];
+
     notifyListeners();
   }
 }

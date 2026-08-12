@@ -12,13 +12,9 @@ class SettingsPage extends ConsumerWidget {
     final settingsState = ref.watch(settingsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: settingsState.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
 
         error: (error, _) => _ErrorView(
           error: error,
@@ -28,9 +24,7 @@ class SettingsPage extends ConsumerWidget {
         ),
 
         data: (SettingsEntity settings) {
-          return _SettingsContent(
-            settings: settings,
-          );
+          return _SettingsContent(settings: settings);
         },
       ),
     );
@@ -42,9 +36,7 @@ class SettingsPage extends ConsumerWidget {
 // ============================================================
 
 class _SettingsContent extends ConsumerWidget {
-  const _SettingsContent({
-    required this.settings,
-  });
+  const _SettingsContent({required this.settings});
 
   final SettingsEntity settings;
 
@@ -58,7 +50,9 @@ class _SettingsContent extends ConsumerWidget {
     String? language,
   }) async {
     try {
-      await ref.read(settingsProvider.notifier).updateSettings(
+      await ref
+          .read(settingsProvider.notifier)
+          .updateSettings(
             pushNotifications: pushNotifications,
             emailNotifications: emailNotifications,
             smsNotifications: smsNotifications,
@@ -73,22 +67,18 @@ class _SettingsContent extends ConsumerWidget {
       final state = ref.read(settingsProvider);
 
       if (state.hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(state.error.toString()),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(state.error.toString())));
       }
     } catch (e) {
       if (!context.mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -196,14 +186,16 @@ class _SettingsContent extends ConsumerWidget {
                     onPressed: loading
                         ? null
                         : () async {
-                            final currentPassword =
-                                currentPasswordController.text.trim();
+                            final currentPassword = currentPasswordController
+                                .text
+                                .trim();
 
-                            final newPassword =
-                                newPasswordController.text.trim();
+                            final newPassword = newPasswordController.text
+                                .trim();
 
-                            final confirmPassword =
-                                confirmPasswordController.text.trim();
+                            final confirmPassword = confirmPasswordController
+                                .text
+                                .trim();
 
                             if (currentPassword.isEmpty ||
                                 newPassword.isEmpty ||
@@ -232,9 +224,7 @@ class _SettingsContent extends ConsumerWidget {
                             if (newPassword != confirmPassword) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text(
-                                    'New passwords do not match.',
-                                  ),
+                                  content: Text('New passwords do not match.'),
                                 ),
                               );
                               return;
@@ -275,9 +265,7 @@ class _SettingsContent extends ConsumerWidget {
                               });
 
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(e.toString()),
-                                ),
+                                SnackBar(content: Text(e.toString())),
                               );
                             }
                           },
@@ -285,9 +273,7 @@ class _SettingsContent extends ConsumerWidget {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('Change Password'),
                   ),
@@ -304,10 +290,7 @@ class _SettingsContent extends ConsumerWidget {
     }
   }
 
-  Future<void> _deleteAccount(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -347,9 +330,7 @@ class _SettingsContent extends ConsumerWidget {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account deleted successfully.'),
-        ),
+        const SnackBar(content: Text('Account deleted successfully.')),
       );
 
       // Authentication/logout navigation will be connected here
@@ -359,11 +340,9 @@ class _SettingsContent extends ConsumerWidget {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -379,19 +358,14 @@ class _SettingsContent extends ConsumerWidget {
         children: [
           const Text(
             'Preferences',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 8),
 
           Text(
             'Customize your RentItEase experience.',
-            style: TextStyle(
-              color: Colors.grey.shade700,
-            ),
+            style: TextStyle(color: Colors.grey.shade700),
           ),
 
           const SizedBox(height: 24),
@@ -399,7 +373,6 @@ class _SettingsContent extends ConsumerWidget {
           // ==================================================
           // Notifications
           // ==================================================
-
           const _SectionTitle(
             icon: Icons.notifications_outlined,
             title: 'Notifications',
@@ -411,48 +384,30 @@ class _SettingsContent extends ConsumerWidget {
                 SwitchListTile(
                   secondary: const Icon(Icons.notifications),
                   title: const Text('Push Notifications'),
-                  subtitle: const Text(
-                    'Receive notifications on your device',
-                  ),
+                  subtitle: const Text('Receive notifications on your device'),
                   value: settings.pushNotifications,
                   onChanged: (value) {
-                    _updateSetting(
-                      context,
-                      ref,
-                      pushNotifications: value,
-                    );
+                    _updateSetting(context, ref, pushNotifications: value);
                   },
                 ),
                 const Divider(height: 1),
                 SwitchListTile(
                   secondary: const Icon(Icons.email_outlined),
                   title: const Text('Email Notifications'),
-                  subtitle: const Text(
-                    'Receive important updates by email',
-                  ),
+                  subtitle: const Text('Receive important updates by email'),
                   value: settings.emailNotifications,
                   onChanged: (value) {
-                    _updateSetting(
-                      context,
-                      ref,
-                      emailNotifications: value,
-                    );
+                    _updateSetting(context, ref, emailNotifications: value);
                   },
                 ),
                 const Divider(height: 1),
                 SwitchListTile(
                   secondary: const Icon(Icons.sms_outlined),
                   title: const Text('SMS Notifications'),
-                  subtitle: const Text(
-                    'Receive important updates by SMS',
-                  ),
+                  subtitle: const Text('Receive important updates by SMS'),
                   value: settings.smsNotifications,
                   onChanged: (value) {
-                    _updateSetting(
-                      context,
-                      ref,
-                      smsNotifications: value,
-                    );
+                    _updateSetting(context, ref, smsNotifications: value);
                   },
                 ),
               ],
@@ -464,7 +419,6 @@ class _SettingsContent extends ConsumerWidget {
           // ==================================================
           // Appearance
           // ==================================================
-
           const _SectionTitle(
             icon: Icons.palette_outlined,
             title: 'Appearance',
@@ -474,16 +428,10 @@ class _SettingsContent extends ConsumerWidget {
             child: SwitchListTile(
               secondary: const Icon(Icons.dark_mode_outlined),
               title: const Text('Dark Mode'),
-              subtitle: const Text(
-                'Use a dark appearance throughout the app',
-              ),
+              subtitle: const Text('Use a dark appearance throughout the app'),
               value: settings.darkMode,
               onChanged: (value) {
-                _updateSetting(
-                  context,
-                  ref,
-                  darkMode: value,
-                );
+                _updateSetting(context, ref, darkMode: value);
               },
             ),
           ),
@@ -493,20 +441,14 @@ class _SettingsContent extends ConsumerWidget {
           // ==================================================
           // Language
           // ==================================================
-
-          const _SectionTitle(
-            icon: Icons.language,
-            title: 'Language',
-          ),
+          const _SectionTitle(icon: Icons.language, title: 'Language'),
 
           Card(
             child: ListTile(
               leading: const Icon(Icons.translate),
               title: const Text('App Language'),
               subtitle: Text(
-                settings.language == 'en'
-                    ? 'English'
-                    : settings.language,
+                settings.language == 'en' ? 'English' : settings.language,
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () async {
@@ -520,9 +462,7 @@ class _SettingsContent extends ConsumerWidget {
                           const ListTile(
                             title: Text(
                               'Select Language',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
                           ListTile(
@@ -545,11 +485,7 @@ class _SettingsContent extends ConsumerWidget {
                   return;
                 }
 
-                await _updateSetting(
-                  context,
-                  ref,
-                  language: language,
-                );
+                await _updateSetting(context, ref, language: language);
               },
             ),
           ),
@@ -559,19 +495,13 @@ class _SettingsContent extends ConsumerWidget {
           // ==================================================
           // Security
           // ==================================================
-
-          const _SectionTitle(
-            icon: Icons.security_outlined,
-            title: 'Security',
-          ),
+          const _SectionTitle(icon: Icons.security_outlined, title: 'Security'),
 
           Card(
             child: ListTile(
               leading: const Icon(Icons.lock_outline),
               title: const Text('Change Password'),
-              subtitle: const Text(
-                'Update your account password',
-              ),
+              subtitle: const Text('Update your account password'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 _showChangePasswordDialog(context, ref);
@@ -584,7 +514,6 @@ class _SettingsContent extends ConsumerWidget {
           // ==================================================
           // Danger Zone
           // ==================================================
-
           const _SectionTitle(
             icon: Icons.warning_amber_outlined,
             title: 'Account',
@@ -592,10 +521,7 @@ class _SettingsContent extends ConsumerWidget {
 
           Card(
             child: ListTile(
-              leading: const Icon(
-                Icons.delete_outline,
-                color: Colors.red,
-              ),
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
               title: const Text(
                 'Delete Account',
                 style: TextStyle(
@@ -606,10 +532,7 @@ class _SettingsContent extends ConsumerWidget {
               subtitle: const Text(
                 'Permanently delete your RentItEase account',
               ),
-              trailing: const Icon(
-                Icons.chevron_right,
-                color: Colors.red,
-              ),
+              trailing: const Icon(Icons.chevron_right, color: Colors.red),
               onTap: () {
                 _deleteAccount(context, ref);
               },
@@ -621,10 +544,7 @@ class _SettingsContent extends ConsumerWidget {
           Center(
             child: Text(
               'RentItEase Settings',
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
             ),
           ),
 
@@ -640,10 +560,7 @@ class _SettingsContent extends ConsumerWidget {
 // ============================================================
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.icon,
-    required this.title,
-  });
+  const _SectionTitle({required this.icon, required this.title});
 
   final IconData icon;
   final String title;
@@ -651,23 +568,14 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        left: 4,
-        bottom: 10,
-      ),
+      padding: const EdgeInsets.only(left: 4, bottom: 10),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 20,
-          ),
+          Icon(icon, size: 20),
           const SizedBox(width: 8),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -680,10 +588,7 @@ class _SectionTitle extends StatelessWidget {
 // ============================================================
 
 class _ErrorView extends StatelessWidget {
-  const _ErrorView({
-    required this.error,
-    required this.onRetry,
-  });
+  const _ErrorView({required this.error, required this.onRetry});
 
   final Object error;
   final VoidCallback onRetry;
@@ -696,29 +601,16 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 70,
-              color: Colors.red,
-            ),
+            const Icon(Icons.error_outline, size: 70, color: Colors.red),
             const SizedBox(height: 20),
             const Text(
               'Unable to load settings.',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            Text(
-              error.toString(),
-              textAlign: TextAlign.center,
-            ),
+            Text(error.toString(), textAlign: TextAlign.center),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),
       ),

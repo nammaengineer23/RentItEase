@@ -12,9 +12,7 @@ class ReviewApi {
   // ==========================================================
 
   Future<List<ReviewModel>> getReviews(String propertyId) async {
-    final response = await dio.get(
-      '/reviews/$propertyId',
-    );
+    final response = await dio.get('/reviews/$propertyId');
 
     final responseData = response.data;
 
@@ -39,16 +37,12 @@ class ReviewApi {
   // ==========================================================
 
   Future<ReviewStats> getStats(String propertyId) async {
-    final response = await dio.get(
-      '/reviews/$propertyId/stats',
-    );
+    final response = await dio.get('/reviews/$propertyId/stats');
 
     final responseData = response.data;
 
     if (responseData is! Map<String, dynamic>) {
-      throw Exception(
-        'Invalid review statistics response from server.',
-      );
+      throw Exception('Invalid review statistics response from server.');
     }
 
     return ReviewStats.fromJson(responseData);
@@ -65,26 +59,19 @@ class ReviewApi {
   }) async {
     final response = await dio.post(
       '/reviews/$propertyId',
-      data: {
-        'rating': rating,
-        'comment': comment,
-      },
+      data: {'rating': rating, 'comment': comment},
     );
 
     final responseData = response.data;
 
     if (responseData is! Map<String, dynamic>) {
-      throw Exception(
-        'Invalid review response from server.',
-      );
+      throw Exception('Invalid review response from server.');
     }
 
     final review = responseData['review'];
 
     if (review is! Map<String, dynamic>) {
-      throw Exception(
-        'Review data missing from server response.',
-      );
+      throw Exception('Review data missing from server response.');
     }
 
     return ReviewModel.fromJson(review);
@@ -101,26 +88,19 @@ class ReviewApi {
   }) async {
     final response = await dio.patch(
       '/reviews/$reviewId',
-      data: {
-        'rating': rating,
-        'comment': comment,
-      },
+      data: {'rating': rating, 'comment': comment},
     );
 
     final responseData = response.data;
 
     if (responseData is! Map<String, dynamic>) {
-      throw Exception(
-        'Invalid review response from server.',
-      );
+      throw Exception('Invalid review response from server.');
     }
 
     final review = responseData['review'];
 
     if (review is! Map<String, dynamic>) {
-      throw Exception(
-        'Review data missing from server response.',
-      );
+      throw Exception('Review data missing from server response.');
     }
 
     return ReviewModel.fromJson(review);
@@ -131,9 +111,7 @@ class ReviewApi {
   // ==========================================================
 
   Future<void> deleteReview(String reviewId) async {
-    await dio.delete(
-      '/reviews/$reviewId',
-    );
+    await dio.delete('/reviews/$reviewId');
   }
 }
 
@@ -152,18 +130,10 @@ class ReviewStats {
   final int totalReviews;
   final Map<int, int> ratings;
 
-  factory ReviewStats.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory ReviewStats.fromJson(Map<String, dynamic> json) {
     final rawRatings = json['ratings'];
 
-    final ratings = <int, int>{
-      1: 0,
-      2: 0,
-      3: 0,
-      4: 0,
-      5: 0,
-    };
+    final ratings = <int, int>{1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
 
     if (rawRatings is Map) {
       for (final entry in rawRatings.entries) {
@@ -175,20 +145,15 @@ class ReviewStats {
           if (value is num) {
             ratings[key] = value.toInt();
           } else {
-            ratings[key] =
-                int.tryParse(value.toString()) ?? 0;
+            ratings[key] = int.tryParse(value.toString()) ?? 0;
           }
         }
       }
     }
 
     return ReviewStats(
-      averageRating: _parseDouble(
-        json['averageRating'],
-      ),
-      totalReviews: _parseInt(
-        json['totalReviews'],
-      ),
+      averageRating: _parseDouble(json['averageRating']),
+      totalReviews: _parseInt(json['totalReviews']),
       ratings: ratings,
     );
   }
@@ -198,10 +163,7 @@ class ReviewStats {
       return value.toDouble();
     }
 
-    return double.tryParse(
-          value?.toString() ?? '',
-        ) ??
-        0.0;
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
   }
 
   static int _parseInt(dynamic value) {
@@ -209,9 +171,6 @@ class ReviewStats {
       return value.toInt();
     }
 
-    return int.tryParse(
-          value?.toString() ?? '',
-        ) ??
-        0;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 }

@@ -15,10 +15,7 @@ import '../widgets/property_price.dart';
 import '../widgets/property_status.dart';
 
 class PropertyDetailsPage extends ConsumerStatefulWidget {
-  const PropertyDetailsPage({
-    super.key,
-    required this.propertyId,
-  });
+  const PropertyDetailsPage({super.key, required this.propertyId});
 
   final String propertyId;
 
@@ -27,8 +24,7 @@ class PropertyDetailsPage extends ConsumerStatefulWidget {
       _PropertyDetailsPageState();
 }
 
-class _PropertyDetailsPageState
-    extends ConsumerState<PropertyDetailsPage> {
+class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
   PropertyEntity? property;
 
   bool isLoading = true;
@@ -51,12 +47,9 @@ class _PropertyDetailsPageState
 
   Future<void> _loadProperty() async {
     try {
-      final repository =
-          ref.read(propertyRepositoryProvider);
+      final repository = ref.read(propertyRepositoryProvider);
 
-      final result = await repository.getProperty(
-        widget.propertyId,
-      );
+      final result = await repository.getProperty(widget.propertyId);
 
       if (!mounted) return;
 
@@ -111,19 +104,14 @@ class _PropertyDetailsPageState
       isFavoriteLoading = true;
     });
 
-    final notifier =
-        ref.read(favoritesProvider.notifier);
+    final notifier = ref.read(favoritesProvider.notifier);
 
     bool success;
 
     if (isFavorite) {
-      success = await notifier.removeFavorite(
-        widget.propertyId,
-      );
+      success = await notifier.removeFavorite(widget.propertyId);
     } else {
-      success = await notifier.addFavorite(
-        widget.propertyId,
-      );
+      success = await notifier.addFavorite(widget.propertyId);
     }
 
     if (!mounted) return;
@@ -137,9 +125,7 @@ class _PropertyDetailsPageState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            isFavorite
-                ? 'Added to Favorites ❤️'
-                : 'Removed from Favorites',
+            isFavorite ? 'Added to Favorites ❤️' : 'Removed from Favorites',
           ),
         ),
       );
@@ -148,15 +134,10 @@ class _PropertyDetailsPageState
         isFavoriteLoading = false;
       });
 
-      final providerError =
-          ref.read(favoritesProvider).error;
+      final providerError = ref.read(favoritesProvider).error;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            providerError ?? 'Failed to update favorite',
-          ),
-        ),
+        SnackBar(content: Text(providerError ?? 'Failed to update favorite')),
       );
     }
   }
@@ -168,11 +149,7 @@ class _PropertyDetailsPageState
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (error != null) {
@@ -181,10 +158,7 @@ class _PropertyDetailsPageState
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text(
-              error!,
-              textAlign: TextAlign.center,
-            ),
+            child: Text(error!, textAlign: TextAlign.center),
           ),
         ),
       );
@@ -193,11 +167,7 @@ class _PropertyDetailsPageState
     final property = this.property;
 
     if (property == null) {
-      return const Scaffold(
-        body: Center(
-          child: Text('Property not found.'),
-        ),
-      );
+      return const Scaffold(body: Center(child: Text('Property not found.')));
     }
 
     return Scaffold(
@@ -206,7 +176,6 @@ class _PropertyDetailsPageState
           // ======================================================
           // Property Header
           // ======================================================
-
           SliverAppBar(
             expandedHeight: 320,
             pinned: true,
@@ -216,10 +185,7 @@ class _PropertyDetailsPageState
             leading: CircleAvatar(
               backgroundColor: Colors.white,
               child: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: Colors.black,
-                ),
+                icon: const Icon(Icons.arrow_back, color: Colors.black),
                 onPressed: () {
                   Navigator.pop(context);
                 },
@@ -233,21 +199,15 @@ class _PropertyDetailsPageState
                   tooltip: isFavorite
                       ? 'Remove from favorites'
                       : 'Add to favorites',
-                  onPressed: isFavoriteLoading
-                      ? null
-                      : _toggleFavorite,
+                  onPressed: isFavoriteLoading ? null : _toggleFavorite,
                   icon: isFavoriteLoading
                       ? const SizedBox(
                           width: 22,
                           height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Icon(
-                          isFavorite
-                              ? Icons.favorite
-                              : Icons.favorite_border,
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
                           color: Colors.red,
                         ),
                 ),
@@ -256,22 +216,18 @@ class _PropertyDetailsPageState
             ],
 
             flexibleSpace: FlexibleSpaceBar(
-              background: PropertyImageSlider(
-                property: property,
-              ),
+              background: PropertyImageSlider(property: property),
             ),
           ),
 
           // ======================================================
           // Property Content
           // ======================================================
-
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(18),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   PropertyPrice(
                     rent: property.rent,
@@ -293,6 +249,8 @@ class _PropertyDetailsPageState
                   PropertyLocation(
                     locality: property.locality,
                     city: property.city,
+                    latitude: property.latitude,
+                    longitude: property.longitude,
                   ),
 
                   const SizedBox(height: 20),
@@ -318,30 +276,21 @@ class _PropertyDetailsPageState
 
                   const Text(
                     'Description',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
 
                   const SizedBox(height: 10),
 
                   Text(
                     property.description,
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      height: 1.6,
-                    ),
+                    style: const TextStyle(color: Colors.grey, height: 1.6),
                   ),
 
                   const SizedBox(height: 30),
 
                   const Text(
                     'Owner Details',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
 
                   const SizedBox(height: 14),
@@ -350,16 +299,14 @@ class _PropertyDetailsPageState
                     elevation: 0,
                     color: Colors.grey.shade100,
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: ListTile(
                       leading: CircleAvatar(
                         child: Text(
                           property.ownerName.isEmpty
                               ? '?'
-                              : property.ownerName[0]
-                                  .toUpperCase(),
+                              : property.ownerName[0].toUpperCase(),
                         ),
                       ),
                       title: Text(property.ownerName),
@@ -371,20 +318,19 @@ class _PropertyDetailsPageState
 
                   const Text(
                     'Location',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
 
                   const SizedBox(height: 15),
 
                   ClipRRect(
-                    borderRadius:
-                        BorderRadius.circular(16),
-                    child: const SizedBox(
+                    borderRadius: BorderRadius.circular(16),
+                    child: SizedBox(
                       height: 300,
-                      child: PropertyMap(),
+                      child: PropertyMap(
+                        latitude: property.latitude,
+                        longitude: property.longitude,
+                      ),
                     ),
                   ),
 
@@ -399,7 +345,6 @@ class _PropertyDetailsPageState
       // ==========================================================
       // Bottom Actions
       // ==========================================================
-
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -411,10 +356,9 @@ class _PropertyDetailsPageState
                   builder: (_) => BookVisitPage(
                     propertyId: property.id,
                     propertyTitle: property.title,
-                    propertyImage:
-                        property.imageUrls.isNotEmpty
-                            ? property.imageUrls.first
-                            : '',
+                    propertyImage: property.imageUrls.isNotEmpty
+                        ? property.imageUrls.first
+                        : '',
                     ownerName: property.ownerName,
                   ),
                 ),
@@ -422,11 +366,7 @@ class _PropertyDetailsPageState
             },
             onContactOwner: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Calling ${property.ownerName}',
-                  ),
-                ),
+                SnackBar(content: Text('Calling ${property.ownerName}')),
               );
             },
           ),

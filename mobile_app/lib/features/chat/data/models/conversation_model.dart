@@ -12,45 +12,30 @@ class ConversationModel extends ConversationEntity {
     required super.updatedAt,
   });
 
-  factory ConversationModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
-    final property =
-        json['property'] as Map<String, dynamic>?;
+  factory ConversationModel.fromJson(Map<String, dynamic> json) {
+    final property = json['property'] as Map<String, dynamic>?;
 
-    final otherUser =
-        json['otherUser'] as Map<String, dynamic>?;
+    final otherUser = json['otherUser'] as Map<String, dynamic>?;
 
-    final lastMessageData =
-        json['lastMessage'] as Map<String, dynamic>?;
+    final lastMessageData = json['lastMessage'] as Map<String, dynamic>?;
 
     return ConversationModel(
-      conversationId:
-          json['conversationId']?.toString() ?? '',
+      conversationId: json['conversationId']?.toString() ?? '',
 
-      propertyId:
-          property?['id']?.toString() ?? '',
+      propertyId: property?['id']?.toString() ?? '',
 
-      propertyTitle:
-          property?['title']?.toString() ?? 'Property',
+      propertyTitle: property?['title']?.toString() ?? 'Property',
 
-      propertyImage:
-          property?['imageUrl']?.toString(),
+      propertyImage: property?['imageUrl']?.toString(),
 
-      otherUserId:
-          otherUser?['id']?.toString() ?? '',
+      otherUserId: otherUser?['id']?.toString() ?? '',
 
-      otherUserName:
-          otherUser?['fullName']?.toString() ??
-          'User',
+      otherUserName: otherUser?['fullName']?.toString() ?? 'User',
 
-      lastMessage:
-          lastMessageData?['text']?.toString(),
+      lastMessage: lastMessageData?['text']?.toString(),
 
       updatedAt:
-          DateTime.tryParse(
-            json['updatedAt']?.toString() ?? '',
-          ) ??
+          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
           DateTime.now(),
     );
   }
@@ -63,15 +48,8 @@ class ConversationModel extends ConversationEntity {
         'title': propertyTitle,
         'imageUrl': propertyImage,
       },
-      'otherUser': {
-        'id': otherUserId,
-        'fullName': otherUserName,
-      },
-      'lastMessage': lastMessage == null
-          ? null
-          : {
-              'text': lastMessage,
-            },
+      'otherUser': {'id': otherUserId, 'fullName': otherUserName},
+      'lastMessage': lastMessage == null ? null : {'text': lastMessage},
       'updatedAt': updatedAt.toIso8601String(),
     };
   }

@@ -21,11 +21,7 @@ class PropertyVisitApi {
     final visits = data['visits'] as List<dynamic>? ?? [];
 
     return visits
-        .map(
-          (e) => PropertyVisitModel.fromJson(
-            e as Map<String, dynamic>,
-          ),
-        )
+        .map((e) => PropertyVisitModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
@@ -41,11 +37,7 @@ class PropertyVisitApi {
     final visits = data['visits'] as List<dynamic>? ?? [];
 
     return visits
-        .map(
-          (e) => PropertyVisitModel.fromJson(
-            e as Map<String, dynamic>,
-          ),
-        )
+        .map((e) => PropertyVisitModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
@@ -63,8 +55,7 @@ class PropertyVisitApi {
       data: {
         'propertyId': propertyId,
         'visitDate': visitDate.toIso8601String(),
-        if (notes != null && notes.trim().isNotEmpty)
-          'notes': notes.trim(),
+        if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
       },
     );
   }
@@ -74,9 +65,7 @@ class PropertyVisitApi {
   // ==========================================================
 
   Future<void> cancelVisit(String visitId) async {
-    await _dio.patch(
-      '$_basePath/$visitId/cancel',
-    );
+    await _dio.patch('$_basePath/$visitId/cancel');
   }
 
   // ==========================================================
@@ -84,9 +73,7 @@ class PropertyVisitApi {
   // ==========================================================
 
   Future<void> approveVisit(String visitId) async {
-    await _dio.patch(
-      '$_basePath/$visitId/approve',
-    );
+    await _dio.patch('$_basePath/$visitId/approve');
   }
 
   // ==========================================================
@@ -94,9 +81,7 @@ class PropertyVisitApi {
   // ==========================================================
 
   Future<void> rejectVisit(String visitId) async {
-    await _dio.patch(
-      '$_basePath/$visitId/reject',
-    );
+    await _dio.patch('$_basePath/$visitId/reject');
   }
 
   // ==========================================================
@@ -104,8 +89,6 @@ class PropertyVisitApi {
   // ==========================================================
 
   Future<void> completeVisit(String visitId) async {
-    await _dio.patch(
-      '$_basePath/$visitId/complete',
-    );
+    await _dio.patch('$_basePath/$visitId/complete');
   }
 }

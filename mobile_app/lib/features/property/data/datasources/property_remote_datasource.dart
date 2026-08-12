@@ -4,9 +4,7 @@ import '../../../../config/environment.dart';
 import '../../../../core/network/api_client.dart';
 
 class PropertyRemoteDataSource {
-  PropertyRemoteDataSource({
-    Dio? dio,
-  }) : _dio = dio ?? ApiClient.shared.dio;
+  PropertyRemoteDataSource({Dio? dio}) : _dio = dio ?? ApiClient.shared.dio;
 
   final Dio _dio;
 
@@ -14,9 +12,7 @@ class PropertyRemoteDataSource {
   // Get All Properties
   // =========================================
 
-  Future<List<dynamic>> getProperties({
-    Map<String, dynamic>? query,
-  }) async {
+  Future<List<dynamic>> getProperties({Map<String, dynamic>? query}) async {
     final response = await _dio.get(
       ApiPaths.properties,
       queryParameters: query,
@@ -30,9 +26,7 @@ class PropertyRemoteDataSource {
   // =========================================
 
   Future<Map<String, dynamic>> getProperty(String id) async {
-    final response = await _dio.get(
-      '${ApiPaths.properties}/$id',
-    );
+    final response = await _dio.get('${ApiPaths.properties}/$id');
 
     return _extractMap(response.data);
   }
@@ -42,9 +36,7 @@ class PropertyRemoteDataSource {
   // =========================================
 
   Future<List<dynamic>> getMyProperties() async {
-    final response = await _dio.get(
-      ApiPaths.myProperties,
-    );
+    final response = await _dio.get(ApiPaths.myProperties);
 
     return _extractList(response.data);
   }
@@ -54,9 +46,7 @@ class PropertyRemoteDataSource {
   // =========================================
 
   Future<Map<String, dynamic>> getHomeProperties() async {
-    final response = await _dio.get(
-      ApiPaths.homeProperties,
-    );
+    final response = await _dio.get(ApiPaths.homeProperties);
 
     return _extractMap(response.data);
   }
@@ -86,13 +76,8 @@ class PropertyRemoteDataSource {
   // Create Property
   // =========================================
 
-  Future<Map<String, dynamic>> createProperty(
-    Map<String, dynamic> body,
-  ) async {
-    final response = await _dio.post(
-      ApiPaths.properties,
-      data: body,
-    );
+  Future<Map<String, dynamic>> createProperty(Map<String, dynamic> body) async {
+    final response = await _dio.post(ApiPaths.properties, data: body);
 
     return _extractMap(response.data);
   }
@@ -105,10 +90,7 @@ class PropertyRemoteDataSource {
     required String id,
     required Map<String, dynamic> body,
   }) async {
-    final response = await _dio.patch(
-      '${ApiPaths.properties}/$id',
-      data: body,
-    );
+    final response = await _dio.patch('${ApiPaths.properties}/$id', data: body);
 
     return _extractMap(response.data);
   }
@@ -118,9 +100,7 @@ class PropertyRemoteDataSource {
   // =========================================
 
   Future<void> deleteProperty(String id) async {
-    await _dio.delete(
-      '${ApiPaths.properties}/$id',
-    );
+    await _dio.delete('${ApiPaths.properties}/$id');
   }
 
   // =========================================
@@ -133,9 +113,7 @@ class PropertyRemoteDataSource {
   }) async {
     final response = await _dio.post(
       '${ApiPaths.properties}/$propertyId/amenities',
-      data: {
-        'amenities': amenities,
-      },
+      data: {'amenities': amenities},
     );
 
     return _extractMap(response.data);

@@ -69,9 +69,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 widget.userName.isEmpty
                     ? '?'
                     : widget.userName.substring(0, 1).toUpperCase(),
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(width: 12),
@@ -79,17 +77,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.userName,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(widget.userName, overflow: TextOverflow.ellipsis),
                   Text(
                     notifier.isTyping ? 'Typing...' : 'Online',
                     style: TextStyle(
                       fontSize: 12,
-                      color: notifier.isTyping
-                          ? Colors.green
-                          : Colors.grey,
+                      color: notifier.isTyping ? Colors.green : Colors.grey,
                     ),
                   ),
                 ],
@@ -102,9 +95,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             icon: const Icon(Icons.call),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Voice calling coming soon.'),
-                ),
+                const SnackBar(content: Text('Voice calling coming soon.')),
               );
             },
           ),
@@ -112,9 +103,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             icon: const Icon(Icons.videocam),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Video calling coming soon.'),
-                ),
+                const SnackBar(content: Text('Video calling coming soon.')),
               );
             },
           ),
@@ -125,18 +114,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               }
             },
             itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: 'clear',
-                child: Text('Clear Chat'),
-              ),
-              PopupMenuItem(
-                value: 'report',
-                child: Text('Report User'),
-              ),
-              PopupMenuItem(
-                value: 'block',
-                child: Text('Block User'),
-              ),
+              PopupMenuItem(value: 'clear', child: Text('Clear Chat')),
+              PopupMenuItem(value: 'report', child: Text('Report User')),
+              PopupMenuItem(value: 'block', child: Text('Block User')),
             ],
           ),
         ],
@@ -150,17 +130,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               color: Colors.orange.shade50,
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.home,
-                    color: Colors.orange,
-                  ),
+                  const Icon(Icons.home, color: Colors.orange),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       widget.propertyTitle!,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -172,9 +147,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               itemCount: messages.length,
               itemBuilder: (context, index) {
-                return ChatBubble(
-                  message: messages[index],
-                );
+                return ChatBubble(message: messages[index]);
               },
             ),
           ),

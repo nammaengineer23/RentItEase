@@ -31,10 +31,7 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
 
   Future<void> loadDashboard() async {
     try {
-      state = state.copyWith(
-        loading: true,
-        error: null,
-      );
+      state = state.copyWith(loading: true, error: null);
 
       final summary = await repository.getDashboardSummary();
       final activities = await repository.getRecentActivities();
@@ -46,10 +43,7 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
         error: null,
       );
     } catch (e) {
-      state = state.copyWith(
-        loading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(loading: false, error: e.toString());
     }
   }
 
@@ -63,23 +57,13 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
 
   Future<void> loadAnalytics() async {
     try {
-      state = state.copyWith(
-        loading: true,
-        error: null,
-      );
+      state = state.copyWith(loading: true, error: null);
 
       final analytics = await repository.getAnalytics();
 
-      state = state.copyWith(
-        loading: false,
-        analytics: analytics,
-        error: null,
-      );
+      state = state.copyWith(loading: false, analytics: analytics, error: null);
     } catch (e) {
-      state = state.copyWith(
-        loading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(loading: false, error: e.toString());
     }
   }
 
@@ -93,10 +77,7 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
 
   Future<void> loadMyProperties() async {
     try {
-      state = state.copyWith(
-        loading: true,
-        error: null,
-      );
+      state = state.copyWith(loading: true, error: null);
 
       final properties = await repository.getMyProperties();
 
@@ -106,10 +87,7 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
         error: null,
       );
     } catch (e) {
-      state = state.copyWith(
-        loading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(loading: false, error: e.toString());
     }
   }
 
@@ -138,10 +116,7 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
 
   Future<void> loadVisitRequests() async {
     try {
-      state = state.copyWith(
-        loading: true,
-        error: null,
-      );
+      state = state.copyWith(loading: true, error: null);
 
       final visits = await repository.getVisitRequests();
 
@@ -151,10 +126,7 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
         error: null,
       );
     } catch (e) {
-      state = state.copyWith(
-        loading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(loading: false, error: e.toString());
     }
   }
 

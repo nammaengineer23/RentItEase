@@ -31,9 +31,8 @@ class ProfileModel extends ProfileEntity {
 
       isActive: json['isActive'] ?? true,
 
-      createdAt: DateTime.tryParse(
-            json['createdAt']?.toString() ?? '',
-          ) ??
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.now(),
     );
   }

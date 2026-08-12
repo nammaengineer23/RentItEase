@@ -6,14 +6,10 @@ abstract class ChatRepository {
   Future<List<ConversationEntity>> getConversations();
 
   /// Start a conversation for a property.
-  Future<ConversationEntity> createConversation({
-    required String propertyId,
-  });
+  Future<ConversationEntity> createConversation({required String propertyId});
 
   /// Get all messages in a conversation.
-  Future<List<MessageEntity>> getMessages({
-    required String conversationId,
-  });
+  Future<List<MessageEntity>> getMessages({required String conversationId});
 
   /// Send a text message.
   Future<MessageEntity> sendMessage({
@@ -22,9 +18,7 @@ abstract class ChatRepository {
   });
 
   /// Mark all unread messages in a conversation as read.
-  Future<void> markAsRead({
-    required String conversationId,
-  });
+  Future<void> markAsRead({required String conversationId});
 
   /// Edit an existing message.
   Future<MessageEntity> editMessage({
@@ -33,7 +27,5 @@ abstract class ChatRepository {
   });
 
   /// Delete an existing message.
-  Future<void> deleteMessage({
-    required String messageId,
-  });
+  Future<void> deleteMessage({required String messageId});
 }

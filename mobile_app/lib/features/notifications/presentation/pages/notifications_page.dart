@@ -8,22 +8,49 @@ class NotificationsPage extends ConsumerStatefulWidget {
   const NotificationsPage({super.key});
 
   @override
-  ConsumerState<NotificationsPage> createState() =>
-      _NotificationsPageState();
+  ConsumerState<NotificationsPage> createState() => _NotificationsPageState();
 }
 
-class _NotificationsPageState
-    extends ConsumerState<NotificationsPage> {
+class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   @override
   void initState() {
     super.initState();
 
     Future.microtask(() {
-      ref.read(notificationsProvider.notifier).loadNotifications();
+      if (!mounted) return;
+
+      final state = ref.read(notificationsProvider);
+
+      if (!state.isLoading && state.notifications.isEmpty) {
+        ref.read(notificationsProvider.notifier).loadNotifications();
+      }
     });
   }
 
   Future<void> _refresh() async {
+    await ref.read(notificationsProvider.notifier).refresh();
+  }
+
+  Future<void> _markAllAsRead() async {
+    await ref.read(notificationsProvider.notifier).markAllAsRead();
+
+    if (!mounted) return;
+
+    final error = ref.read(notificationsProvider).error;
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('All notifications marked as read')),
+    );
+  }
+
+  Future<void> _retry() async {
     await ref.read(notificationsProvider.notifier).refresh();
   }
 
@@ -40,11 +67,9 @@ class _NotificationsPageState
               const SizedBox(width: 8),
               CircleAvatar(
                 radius: 11,
-                backgroundColor: Colors.red,
                 child: Text(
                   '${state.unreadCount}',
                   style: const TextStyle(
-                    color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
@@ -54,94 +79,91 @@ class _NotificationsPageState
           ],
         ),
         actions: [
-          if (state.notifications.isNotEmpty &&
-              state.unreadCount > 0)
+          if (state.notifications.isNotEmpty && state.unreadCount > 0)
             TextButton(
-              onPressed: () async {
-                await ref
-                    .read(notificationsProvider.notifier)
-                    .markAllAsRead();
-
-                if (!context.mounted) return;
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'All notifications marked as read',
-                    ),
-                  ),
-                );
-              },
+              onPressed: state.isLoading ? null : _markAllAsRead,
               child: const Text('Mark All'),
             ),
         ],
       ),
-      body: state.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
-          : state.error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisAlignment:
-                          MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          size: 70,
-                          color: Colors.red,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          state.error!,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: _refresh,
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : state.notifications.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.notifications_none,
-                            size: 80,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'No Notifications',
-                            style: TextStyle(
-                              fontSize: 18,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _refresh,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount:
-                            state.notifications.length,
-                        itemBuilder: (context, index) {
-                          return NotificationTile(
-                            notification:
-                                state.notifications[index],
-                          );
-                        },
-                      ),
-                    ),
+      body: _buildBody(state),
+    );
+  }
+
+  Widget _buildBody(NotificationsState state) {
+    if (state.isLoading && state.notifications.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.error != null && state.notifications.isEmpty) {
+      return _buildErrorState(state.error!);
+    }
+
+    if (state.notifications.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: state.notifications.length,
+        itemBuilder: (context, index) {
+          final notification = state.notifications[index];
+
+          return NotificationTile(notification: notification);
+        },
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 70),
+            const SizedBox(height: 16),
+            const Text(
+              'Unable to load notifications',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text(error, textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: _retry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 180),
+          Icon(Icons.notifications_none, size: 80),
+          SizedBox(height: 16),
+          Center(
+            child: Text(
+              'No Notifications',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            ),
+          ),
+          SizedBox(height: 180),
+        ],
+      ),
     );
   }
 }

@@ -16,9 +16,7 @@ import '../domain/repositories/search_repository.dart';
 final searchRepositoryProvider = Provider<SearchRepository>((ref) {
   final dio = ref.watch(dioProvider);
 
-  return SearchRepositoryImpl(
-    SearchApi(dio),
-  );
+  return SearchRepositoryImpl(SearchApi(dio));
 });
 
 //=========================================
@@ -67,24 +65,14 @@ class SearchNotifier extends StateNotifier<SearchState> {
   //=========================================
 
   Future<void> search(SearchEntity filters) async {
-    state = state.copyWith(
-      isLoading: true,
-      error: null,
-      filters: filters,
-    );
+    state = state.copyWith(isLoading: true, error: null, filters: filters);
 
     try {
       final results = await _repository.search(filters);
 
-      state = state.copyWith(
-        isLoading: false,
-        results: results,
-      );
+      state = state.copyWith(isLoading: false, results: results);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -93,23 +81,14 @@ class SearchNotifier extends StateNotifier<SearchState> {
   //=========================================
 
   Future<void> loadRecentSearches() async {
-    state = state.copyWith(
-      isLoading: true,
-      error: null,
-    );
+    state = state.copyWith(isLoading: true, error: null);
 
     try {
       final results = await _repository.recentSearches();
 
-      state = state.copyWith(
-        isLoading: false,
-        results: results,
-      );
+      state = state.copyWith(isLoading: false, results: results);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -126,9 +105,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
   //=========================================
 
   void clearError() {
-    state = state.copyWith(
-      error: null,
-    );
+    state = state.copyWith(error: null);
   }
 }
 
@@ -136,9 +113,8 @@ class SearchNotifier extends StateNotifier<SearchState> {
 // Provider
 //=========================================
 
-final searchProvider =
-    StateNotifierProvider<SearchNotifier, SearchState>((ref) {
-  return SearchNotifier(
-    ref.watch(searchRepositoryProvider),
-  );
+final searchProvider = StateNotifierProvider<SearchNotifier, SearchState>((
+  ref,
+) {
+  return SearchNotifier(ref.watch(searchRepositoryProvider));
 });

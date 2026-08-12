@@ -25,9 +25,7 @@ class RatingBarWidget extends StatelessWidget {
         final star = index + 1;
 
         return Icon(
-          star <= rating
-              ? Icons.star
-              : Icons.star_border,
+          star <= rating ? Icons.star : Icons.star_border,
           color: star <= rating ? fill : empty,
           size: size,
         );

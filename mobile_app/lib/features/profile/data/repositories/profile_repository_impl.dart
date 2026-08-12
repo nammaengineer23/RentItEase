@@ -2,11 +2,9 @@ import '../../domain/entities/profile_entity.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../models/profile_model.dart';
 
-class ProfileRepositoryImpl implements ProfileRepository
-{
+class ProfileRepositoryImpl implements ProfileRepository {
   @override
-  Future<ProfileEntity> getProfile() async
-{
+  Future<ProfileEntity> getProfile() async {
     // TODO:
     // Replace with Dio API call:
     // GET /api/v1/auth/me
@@ -16,21 +14,21 @@ class ProfileRepositoryImpl implements ProfileRepository
     return ProfileModel(
       id: 'user_001',
 
-fullName: 'RentItEase User',
+      fullName: 'RentItEase User',
 
-email: 'user@RentItEase.com',
+      email: 'user@RentItEase.com',
 
-phone: '+91 9876543210',
+      phone: '+91 9876543210',
 
-profileImage: null,
+      profileImage: null,
 
-role: 'USER',
+      role: 'USER',
 
-isVerified: true,
+      isVerified: true,
 
-isActive: true,
+      isActive: true,
 
-createdAt: DateTime.now(),
+      createdAt: DateTime.now(),
     );
   }
 
@@ -38,9 +36,8 @@ createdAt: DateTime.now(),
   Future<ProfileEntity> updateProfile({
     required String fullName,
 
- required String phone,
-  }) async
-{
+    required String phone,
+  }) async {
     // TODO:
     // Replace with API:
     // PATCH /api/v1/users/profile
@@ -50,27 +47,26 @@ createdAt: DateTime.now(),
     return ProfileModel(
       id: 'user_001',
 
-fullName: fullName,
+      fullName: fullName,
 
-email: 'user@RentItEase.com',
+      email: 'user@RentItEase.com',
 
-phone: phone,
+      phone: phone,
 
-profileImage: null,
+      profileImage: null,
 
-role: 'USER',
+      role: 'USER',
 
-isVerified: true,
+      isVerified: true,
 
-isActive: true,
+      isActive: true,
 
-createdAt: DateTime.now(),
+      createdAt: DateTime.now(),
     );
   }
 
   @override
-  Future<String> uploadProfileImage(String imagePath) async
-{
+  Future<String> uploadProfileImage(String imagePath) async {
     // TODO:
     // Upload to Firebase Storage
     // Return download URL
@@ -81,8 +77,7 @@ createdAt: DateTime.now(),
   }
 
   @override
-  Future<void> logout() async
-{
+  Future<void> logout() async {
     // TODO:
     // Clear:
     // JWT Access Token

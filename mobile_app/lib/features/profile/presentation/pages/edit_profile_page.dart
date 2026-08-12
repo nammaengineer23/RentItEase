@@ -25,17 +25,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
     final profile = ref.read(profileProvider).value;
 
-    nameController = TextEditingController(
-      text: profile?.fullName ?? '',
-    );
+    nameController = TextEditingController(text: profile?.fullName ?? '');
 
-    phoneController = TextEditingController(
-      text: profile?.phone ?? '',
-    );
+    phoneController = TextEditingController(text: profile?.phone ?? '');
 
-    emailController = TextEditingController(
-      text: profile?.email ?? '',
-    );
+    emailController = TextEditingController(text: profile?.email ?? '');
   }
 
   String? validateName(String? value) {
@@ -72,7 +66,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     });
 
     try {
-      await ref.read(profileProvider.notifier).updateProfile(
+      await ref
+          .read(profileProvider.notifier)
+          .updateProfile(
             fullName: nameController.text.trim(),
             phone: phoneController.text.trim(),
           );
@@ -82,20 +78,16 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile updated successfully'),
-        ),
+        const SnackBar(content: Text('Profile updated successfully')),
       );
 
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       if (mounted) {
         setState(() {
@@ -118,9 +110,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     final profile = ref.watch(profileProvider).value;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Profile'),
-      ),
+      appBar: AppBar(title: const Text('Edit Profile')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -129,16 +119,15 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             children: [
               CircleAvatar(
                 radius: 55,
-                backgroundImage: profile?.profileImage != null &&
+                backgroundImage:
+                    profile?.profileImage != null &&
                         profile!.profileImage!.isNotEmpty
                     ? NetworkImage(profile.profileImage!)
                     : null,
-                child: profile?.profileImage == null ||
+                child:
+                    profile?.profileImage == null ||
                         profile!.profileImage!.isEmpty
-                    ? const Icon(
-                        Icons.person,
-                        size: 55,
-                      )
+                    ? const Icon(Icons.person, size: 55)
                     : null,
               ),
 

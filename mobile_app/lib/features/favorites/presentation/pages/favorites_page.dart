@@ -9,27 +9,21 @@ class FavoritesPage extends ConsumerStatefulWidget {
   const FavoritesPage({super.key});
 
   @override
-  ConsumerState<FavoritesPage> createState() =>
-      _FavoritesPageState();
+  ConsumerState<FavoritesPage> createState() => _FavoritesPageState();
 }
 
-class _FavoritesPageState
-    extends ConsumerState<FavoritesPage> {
+class _FavoritesPageState extends ConsumerState<FavoritesPage> {
   @override
   void initState() {
     super.initState();
 
     Future.microtask(() {
-      ref
-          .read(favoritesProvider.notifier)
-          .loadFavorites();
+      ref.read(favoritesProvider.notifier).loadFavorites();
     });
   }
 
   Future<void> _refresh() async {
-    await ref
-        .read(favoritesProvider.notifier)
-        .loadFavorites();
+    await ref.read(favoritesProvider.notifier).loadFavorites();
   }
 
   @override
@@ -37,51 +31,28 @@ class _FavoritesPageState
     final state = ref.watch(favoritesProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Favorites ❤️'),
-        centerTitle: true,
-      ),
-      body: _buildBody(
-        context,
-        state,
-      ),
+      appBar: AppBar(title: const Text('My Favorites ❤️'), centerTitle: true),
+      body: _buildBody(context, state),
     );
   }
 
-  Widget _buildBody(
-    BuildContext context,
-    FavoritesState state,
-  ) {
-    if (state.isLoading &&
-        state.favorites.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+  Widget _buildBody(BuildContext context, FavoritesState state) {
+    if (state.isLoading && state.favorites.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
     }
 
-    if (state.error != null &&
-        state.favorites.isEmpty) {
+    if (state.error != null && state.favorites.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
-            mainAxisAlignment:
-                MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.error_outline,
-                size: 70,
-              ),
+              const Icon(Icons.error_outline, size: 70),
               const SizedBox(height: 16),
-              Text(
-                state.error!,
-                textAlign: TextAlign.center,
-              ),
+              Text(state.error!, textAlign: TextAlign.center),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _refresh,
-                child: const Text('Retry'),
-              ),
+              ElevatedButton(onPressed: _refresh, child: const Text('Retry')),
             ],
           ),
         ),
@@ -92,29 +63,21 @@ class _FavoritesPageState
       return RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
-          physics:
-              const AlwaysScrollableScrollPhysics(),
+          physics: const AlwaysScrollableScrollPhysics(),
           children: const [
             SizedBox(height: 180),
-            Icon(
-              Icons.favorite_border,
-              size: 90,
-            ),
+            Icon(Icons.favorite_border, size: 90),
             SizedBox(height: 20),
             Center(
               child: Text(
                 'No Favorite Properties',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
             ),
             SizedBox(height: 10),
             Center(
               child: Padding(
-                padding:
-                    EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
                   'Save properties to quickly find '
                   'them later.',
@@ -130,34 +93,26 @@ class _FavoritesPageState
     return RefreshIndicator(
       onRefresh: _refresh,
       child: ListView.separated(
-        physics:
-            const AlwaysScrollableScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         itemCount: state.favorites.length,
-        separatorBuilder: (_, _) =>
-            const SizedBox(height: 16),
+        separatorBuilder: (_, _) => const SizedBox(height: 16),
         itemBuilder: (context, index) {
-          final property =
-              state.favorites[index];
+          final property = state.favorites[index];
 
           return FavoritePropertyCard(
             property: property,
             onTap: () {
-              context.push(
-                '/property/${property.propertyId}',
-              );
+              context.push('/property/${property.propertyId}');
             },
             onRemove: () async {
               final success = await ref
                   .read(favoritesProvider.notifier)
-                  .removeFavorite(
-                    property.propertyId,
-                  );
+                  .removeFavorite(property.propertyId);
 
               if (!context.mounted) return;
 
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(
+              ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
                     success

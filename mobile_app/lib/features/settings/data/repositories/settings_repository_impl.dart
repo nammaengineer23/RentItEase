@@ -13,9 +13,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<SettingsEntity> getSettings() async {
     final response = await _dio.get('/settings');
 
-    return SettingsModel.fromJson(
-      response.data as Map<String, dynamic>,
-    );
+    return SettingsModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   @override
@@ -48,14 +46,9 @@ class SettingsRepositoryImpl implements SettingsRepository {
       data['language'] = language;
     }
 
-    final response = await _dio.patch(
-      '/settings',
-      data: data,
-    );
+    final response = await _dio.patch('/settings', data: data);
 
-    return SettingsModel.fromJson(
-      response.data as Map<String, dynamic>,
-    );
+    return SettingsModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   @override
@@ -65,10 +58,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
   }) async {
     await _dio.patch(
       '/settings/password',
-      data: {
-        'currentPassword': currentPassword,
-        'newPassword': newPassword,
-      },
+      data: {'currentPassword': currentPassword, 'newPassword': newPassword},
     );
   }
 

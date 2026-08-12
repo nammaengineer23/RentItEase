@@ -15,38 +15,26 @@ class MessageModel extends MessageEntity {
     super.deletedAt,
   });
 
-  factory MessageModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
-    final sender =
-        json['sender'] as Map<String, dynamic>?;
+  factory MessageModel.fromJson(Map<String, dynamic> json) {
+    final sender = json['sender'] as Map<String, dynamic>?;
 
     return MessageModel(
       id: json['id']?.toString() ?? '',
 
-      conversationId:
-          json['conversationId']?.toString() ?? '',
+      conversationId: json['conversationId']?.toString() ?? '',
 
-      senderId:
-          json['senderId']?.toString() ?? '',
+      senderId: json['senderId']?.toString() ?? '',
 
-      senderName:
-          sender?['fullName']?.toString() ??
-          'User',
+      senderName: sender?['fullName']?.toString() ?? 'User',
 
-      text:
-          json['text']?.toString() ?? '',
+      text: json['text']?.toString() ?? '',
 
-      messageType:
-          json['messageType']?.toString() ?? 'TEXT',
+      messageType: json['messageType']?.toString() ?? 'TEXT',
 
-      isRead:
-          json['isRead'] == true,
+      isRead: json['isRead'] == true,
 
       createdAt:
-          DateTime.tryParse(
-            json['createdAt']?.toString() ?? '',
-          ) ??
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.now(),
 
       readAt: _parseDate(json['readAt']),
@@ -77,10 +65,7 @@ class MessageModel extends MessageEntity {
       'readAt': readAt?.toIso8601String(),
       'editedAt': editedAt?.toIso8601String(),
       'deletedAt': deletedAt?.toIso8601String(),
-      'sender': {
-        'id': senderId,
-        'fullName': senderName,
-      },
+      'sender': {'id': senderId, 'fullName': senderName},
     };
   }
 }

@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 
 class VisitDatePicker extends StatefulWidget {
-  const VisitDatePicker({
-    super.key,
-    required this.onChanged,
-    this.initialDate,
-  });
+  const VisitDatePicker({super.key, required this.onChanged, this.initialDate});
 
   final ValueChanged<DateTime> onChanged;
   final DateTime? initialDate;
@@ -24,14 +20,7 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
     final now = DateTime.now();
 
     selectedDateTime =
-        widget.initialDate ??
-        DateTime(
-          now.year,
-          now.month,
-          now.day + 1,
-          10,
-          0,
-        );
+        widget.initialDate ?? DateTime(now.year, now.month, now.day + 1, 10, 0);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -45,19 +34,9 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
 
     final picked = await showDatePicker(
       context: context,
-      initialDate: selectedDateTime.isBefore(now)
-          ? now
-          : selectedDateTime,
-      firstDate: DateTime(
-        now.year,
-        now.month,
-        now.day,
-      ),
-      lastDate: DateTime(
-        now.year + 1,
-        now.month,
-        now.day,
-      ),
+      initialDate: selectedDateTime.isBefore(now) ? now : selectedDateTime,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: DateTime(now.year + 1, now.month, now.day),
     );
 
     if (picked == null) {
@@ -80,9 +59,7 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
   Future<void> pickTime() async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(
-        selectedDateTime,
-      ),
+      initialTime: TimeOfDay.fromDateTime(selectedDateTime),
     );
 
     if (picked == null) {
@@ -112,14 +89,12 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
     final hour = selectedDateTime.hour > 12
         ? selectedDateTime.hour - 12
         : selectedDateTime.hour == 0
-            ? 12
-            : selectedDateTime.hour;
+        ? 12
+        : selectedDateTime.hour;
 
-    final minute =
-        selectedDateTime.minute.toString().padLeft(2, '0');
+    final minute = selectedDateTime.minute.toString().padLeft(2, '0');
 
-    final period =
-        selectedDateTime.hour >= 12 ? 'PM' : 'AM';
+    final period = selectedDateTime.hour >= 12 ? 'PM' : 'AM';
 
     return '$hour:$minute $period';
   }
@@ -135,24 +110,17 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
           children: [
             const Text(
               'Preferred Visit Schedule',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
 
             const SizedBox(height: 20),
 
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(
-                Icons.calendar_today,
-              ),
+              leading: const Icon(Icons.calendar_today),
               title: const Text('Visit Date'),
               subtitle: Text(formattedDate),
-              trailing: const Icon(
-                Icons.chevron_right,
-              ),
+              trailing: const Icon(Icons.chevron_right),
               onTap: pickDate,
             ),
 
@@ -160,14 +128,10 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
 
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(
-                Icons.access_time,
-              ),
+              leading: const Icon(Icons.access_time),
               title: const Text('Visit Time'),
               subtitle: Text(formattedTime),
-              trailing: const Icon(
-                Icons.chevron_right,
-              ),
+              trailing: const Icon(Icons.chevron_right),
               onTap: pickTime,
             ),
           ],

@@ -62,7 +62,9 @@ class CategoryGrid extends StatelessWidget {
               decoration: BoxDecoration(
                 color: category.color.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: category.color.withValues(alpha: 0.25)),
+                border: Border.all(
+                  color: category.color.withValues(alpha: 0.25),
+                ),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

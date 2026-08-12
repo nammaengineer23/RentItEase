@@ -7,28 +7,21 @@ import '../widgets/rating_bar_widget.dart';
 import '../widgets/review_card.dart';
 
 class ReviewsPage extends ConsumerStatefulWidget {
-  const ReviewsPage({
-    super.key,
-    required this.propertyId,
-  });
+  const ReviewsPage({super.key, required this.propertyId});
 
   final String propertyId;
 
   @override
-  ConsumerState<ReviewsPage> createState() =>
-      _ReviewsPageState();
+  ConsumerState<ReviewsPage> createState() => _ReviewsPageState();
 }
 
-class _ReviewsPageState
-    extends ConsumerState<ReviewsPage> {
+class _ReviewsPageState extends ConsumerState<ReviewsPage> {
   @override
   void initState() {
     super.initState();
 
     Future.microtask(() {
-      ref
-          .read(reviewProvider.notifier)
-          .loadReviewsAndStats(widget.propertyId);
+      ref.read(reviewProvider.notifier).loadReviewsAndStats(widget.propertyId);
     });
   }
 
@@ -39,14 +32,11 @@ class _ReviewsPageState
     final stats = state.stats;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reviews'),
-      ),
+      appBar: AppBar(title: const Text('Reviews')),
 
       // ======================================================
       // Write Review
       // ======================================================
-
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           _showAddReviewDialog(context);
@@ -58,31 +48,23 @@ class _ReviewsPageState
       // ======================================================
       // Body
       // ======================================================
-
       body: state.isLoading && reviews.isEmpty
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
+          ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: () {
                 return ref
                     .read(reviewProvider.notifier)
-                    .loadReviewsAndStats(
-                      widget.propertyId,
-                    );
+                    .loadReviewsAndStats(widget.propertyId);
               },
               child: reviews.isEmpty
                   ? ListView(
-                      physics:
-                          const AlwaysScrollableScrollPhysics(),
+                      physics: const AlwaysScrollableScrollPhysics(),
                       children: const [
                         SizedBox(height: 180),
                         Center(
                           child: Text(
                             'No reviews yet.',
-                            style: TextStyle(
-                              fontSize: 16,
-                            ),
+                            style: TextStyle(fontSize: 16),
                           ),
                         ),
                       ],
@@ -92,41 +74,27 @@ class _ReviewsPageState
                         // ====================================
                         // Rating Summary
                         // ====================================
-
-                        _buildRatingSummary(
-                          stats,
-                          reviews.length,
-                        ),
+                        _buildRatingSummary(stats, reviews.length),
 
                         // ====================================
                         // Reviews
                         // ====================================
-
                         Expanded(
                           child: ListView.builder(
-                            padding:
-                                const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(16),
                             itemCount: reviews.length,
-                            itemBuilder:
-                                (context, index) {
-                              final review =
-                                  reviews[index];
+                            itemBuilder: (context, index) {
+                              final review = reviews[index];
 
                               return ReviewCard(
                                 review: review,
 
                                 onEdit: () {
-                                  _showEditReviewDialog(
-                                    context,
-                                    review,
-                                  );
+                                  _showEditReviewDialog(context, review);
                                 },
 
                                 onDelete: () {
-                                  _confirmDeleteReview(
-                                    context,
-                                    review.id,
-                                  );
+                                  _confirmDeleteReview(context, review.id);
                                 },
                               );
                             },
@@ -142,15 +110,10 @@ class _ReviewsPageState
   // Rating Summary
   // ==========================================================
 
-  Widget _buildRatingSummary(
-    ReviewStats? stats,
-    int fallbackCount,
-  ) {
-    final averageRating =
-        stats?.averageRating ?? 0.0;
+  Widget _buildRatingSummary(ReviewStats? stats, int fallbackCount) {
+    final averageRating = stats?.averageRating ?? 0.0;
 
-    final totalReviews =
-        stats?.totalReviews ?? fallbackCount;
+    final totalReviews = stats?.totalReviews ?? fallbackCount;
 
     return Container(
       width: double.infinity,
@@ -160,27 +123,16 @@ class _ReviewsPageState
         children: [
           Text(
             averageRating.toStringAsFixed(1),
-            style: const TextStyle(
-              fontSize: 42,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 42, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 8),
 
-          RatingBarWidget(
-            rating: averageRating.round(),
-            size: 28,
-          ),
+          RatingBarWidget(rating: averageRating.round(), size: 28),
 
           const SizedBox(height: 8),
 
-          Text(
-            '$totalReviews Reviews',
-            style: const TextStyle(
-              fontSize: 16,
-            ),
-          ),
+          Text('$totalReviews Reviews', style: const TextStyle(fontSize: 16)),
 
           if (stats != null) ...[
             const SizedBox(height: 16),
@@ -195,9 +147,7 @@ class _ReviewsPageState
   // Rating Breakdown
   // ==========================================================
 
-  Widget _buildRatingBreakdown(
-    ReviewStats stats,
-  ) {
+  Widget _buildRatingBreakdown(ReviewStats stats) {
     return Column(
       children: [
         _ratingRow(5, stats.ratings[5] ?? 0),
@@ -209,54 +159,34 @@ class _ReviewsPageState
     );
   }
 
-  Widget _ratingRow(
-    int rating,
-    int count,
-  ) {
-    final total =
-        ref.read(reviewProvider).stats?.totalReviews ?? 0;
+  Widget _ratingRow(int rating, int count) {
+    final total = ref.read(reviewProvider).stats?.totalReviews ?? 0;
 
-    final percentage = total == 0
-        ? 0.0
-        : count / total;
+    final percentage = total == 0 ? 0.0 : count / total;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 3,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
           SizedBox(
             width: 24,
-            child: Text(
-              '$rating',
-              textAlign: TextAlign.right,
-            ),
+            child: Text('$rating', textAlign: TextAlign.right),
           ),
 
           const SizedBox(width: 4),
 
-          const Icon(
-            Icons.star,
-            size: 16,
-            color: Colors.amber,
-          ),
+          const Icon(Icons.star, size: 16, color: Colors.amber),
 
           const SizedBox(width: 8),
 
           Expanded(
             child: ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: percentage,
                 minHeight: 7,
-                backgroundColor:
-                    Colors.grey.shade300,
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(
-                  Colors.amber,
-                ),
+                backgroundColor: Colors.grey.shade300,
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
               ),
             ),
           ),
@@ -268,10 +198,7 @@ class _ReviewsPageState
             child: Text(
               '$count',
               textAlign: TextAlign.right,
-              style: TextStyle(
-                color: Colors.grey.shade700,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
             ),
           ),
         ],
@@ -283,9 +210,7 @@ class _ReviewsPageState
   // Add Review Dialog
   // ==========================================================
 
-  void _showAddReviewDialog(
-    BuildContext context,
-  ) {
+  void _showAddReviewDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (_) {
@@ -308,10 +233,7 @@ class _ReviewsPageState
   // Edit Review Dialog
   // ==========================================================
 
-  void _showEditReviewDialog(
-    BuildContext context,
-    review,
-  ) {
+  void _showEditReviewDialog(BuildContext context, review) {
     showDialog(
       context: context,
       builder: (_) {
@@ -346,9 +268,7 @@ class _ReviewsPageState
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Delete Review'),
-          content: const Text(
-            'Are you sure you want to delete this review?',
-          ),
+          content: const Text('Are you sure you want to delete this review?'),
           actions: [
             TextButton(
               onPressed: () {
@@ -377,9 +297,6 @@ class _ReviewsPageState
 
     await ref
         .read(reviewProvider.notifier)
-        .deleteReview(
-          reviewId: reviewId,
-          propertyId: widget.propertyId,
-        );
+        .deleteReview(reviewId: reviewId, propertyId: widget.propertyId);
   }
 }

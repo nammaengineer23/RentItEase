@@ -17,14 +17,10 @@ class ChatApi {
   }) async {
     final response = await dio.post(
       '/chat/conversations',
-      data: {
-        'propertyId': propertyId,
-      },
+      data: {'propertyId': propertyId},
     );
 
-    return ConversationModel.fromJson(
-      _extractData(response.data),
-    );
+    return ConversationModel.fromJson(_extractData(response.data));
   }
 
   // ==========================================================
@@ -32,19 +28,11 @@ class ChatApi {
   // ==========================================================
 
   Future<List<ConversationModel>> getConversations() async {
-    final response = await dio.get(
-      '/chat/conversations',
-    );
+    final response = await dio.get('/chat/conversations');
 
     final data = _extractList(response.data);
 
-    return data
-        .map(
-          (json) => ConversationModel.fromJson(
-            json,
-          ),
-        )
-        .toList();
+    return data.map((json) => ConversationModel.fromJson(json)).toList();
   }
 
   // ==========================================================
@@ -60,13 +48,7 @@ class ChatApi {
 
     final data = _extractList(response.data);
 
-    return data
-        .map(
-          (json) => MessageModel.fromJson(
-            json,
-          ),
-        )
-        .toList();
+    return data.map((json) => MessageModel.fromJson(json)).toList();
   }
 
   // ==========================================================
@@ -79,26 +61,18 @@ class ChatApi {
   }) async {
     final response = await dio.post(
       '/chat/conversations/$conversationId/messages',
-      data: {
-        'text': text,
-      },
+      data: {'text': text},
     );
 
-    return MessageModel.fromJson(
-      _extractData(response.data),
-    );
+    return MessageModel.fromJson(_extractData(response.data));
   }
 
   // ==========================================================
   // Mark As Read
   // ==========================================================
 
-  Future<void> markAsRead({
-    required String conversationId,
-  }) async {
-    await dio.patch(
-      '/chat/conversations/$conversationId/read',
-    );
+  Future<void> markAsRead({required String conversationId}) async {
+    await dio.patch('/chat/conversations/$conversationId/read');
   }
 
   // ==========================================================
@@ -111,26 +85,18 @@ class ChatApi {
   }) async {
     final response = await dio.patch(
       '/chat/messages/$messageId',
-      data: {
-        'text': text,
-      },
+      data: {'text': text},
     );
 
-    return MessageModel.fromJson(
-      _extractData(response.data),
-    );
+    return MessageModel.fromJson(_extractData(response.data));
   }
 
   // ==========================================================
   // Delete Message
   // ==========================================================
 
-  Future<void> deleteMessage({
-    required String messageId,
-  }) async {
-    await dio.delete(
-      '/chat/messages/$messageId',
-    );
+  Future<void> deleteMessage({required String messageId}) async {
+    await dio.delete('/chat/messages/$messageId');
   }
 
   // ==========================================================

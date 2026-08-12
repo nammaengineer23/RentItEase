@@ -9,13 +9,12 @@ import '../models/notification_model.dart';
 // Repository Provider
 //=========================================
 
-final notificationsRepositoryProvider =
-    Provider<NotificationsRepository>((ref) {
+final notificationsRepositoryProvider = Provider<NotificationsRepository>((
+  ref,
+) {
   final dio = ref.watch(dioProvider);
 
-  return NotificationsRepository(
-    NotificationsApi(dio),
-  );
+  return NotificationsRepository(NotificationsApi(dio));
 });
 
 //=========================================
@@ -35,8 +34,7 @@ class NotificationsState {
     this.error,
   });
 
-  int get unreadCount =>
-      notifications.where((e) => !e.isRead).length;
+  int get unreadCount => notifications.where((e) => !e.isRead).length;
 
   NotificationsState copyWith({
     bool? isLoading,
@@ -55,10 +53,8 @@ class NotificationsState {
 // Notifications Notifier
 //=========================================
 
-class NotificationsNotifier
-    extends StateNotifier<NotificationsState> {
-  NotificationsNotifier(this._repository)
-      : super(const NotificationsState());
+class NotificationsNotifier extends StateNotifier<NotificationsState> {
+  NotificationsNotifier(this._repository) : super(const NotificationsState());
 
   final NotificationsRepository _repository;
 
@@ -67,24 +63,14 @@ class NotificationsNotifier
   //=========================================
 
   Future<void> loadNotifications() async {
-    state = state.copyWith(
-      isLoading: true,
-      error: null,
-    );
+    state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final notifications =
-          await _repository.getNotifications();
+      final notifications = await _repository.getNotifications();
 
-      state = state.copyWith(
-        isLoading: false,
-        notifications: notifications,
-      );
+      state = state.copyWith(isLoading: false, notifications: notifications);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -106,9 +92,7 @@ class NotificationsNotifier
 
       await loadNotifications();
     } catch (e) {
-      state = state.copyWith(
-        error: e.toString(),
-      );
+      state = state.copyWith(error: e.toString());
     }
   }
 
@@ -122,9 +106,7 @@ class NotificationsNotifier
 
       await loadNotifications();
     } catch (e) {
-      state = state.copyWith(
-        error: e.toString(),
-      );
+      state = state.copyWith(error: e.toString());
     }
   }
 
@@ -138,9 +120,7 @@ class NotificationsNotifier
 
       await loadNotifications();
     } catch (e) {
-      state = state.copyWith(
-        error: e.toString(),
-      );
+      state = state.copyWith(error: e.toString());
     }
   }
 
@@ -149,9 +129,7 @@ class NotificationsNotifier
   //=========================================
 
   void clearError() {
-    state = state.copyWith(
-      error: null,
-    );
+    state = state.copyWith(error: null);
   }
 }
 
@@ -159,10 +137,7 @@ class NotificationsNotifier
 // Provider
 //=========================================
 
-final notificationsProvider = StateNotifierProvider<
-    NotificationsNotifier,
-    NotificationsState>((ref) {
-  return NotificationsNotifier(
-    ref.watch(notificationsRepositoryProvider),
-  );
-});
+final notificationsProvider =
+    StateNotifierProvider<NotificationsNotifier, NotificationsState>((ref) {
+      return NotificationsNotifier(ref.watch(notificationsRepositoryProvider));
+    });

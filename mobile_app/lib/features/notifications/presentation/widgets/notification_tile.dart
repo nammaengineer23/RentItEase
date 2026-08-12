@@ -5,10 +5,7 @@ import '../../models/notification_model.dart';
 import '../../providers/notifications_provider.dart';
 
 class NotificationTile extends ConsumerWidget {
-  const NotificationTile({
-    super.key,
-    required this.notification,
-  });
+  const NotificationTile({super.key, required this.notification});
 
   final NotificationModel notification;
 
@@ -21,10 +18,7 @@ class NotificationTile extends ConsumerWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         color: Colors.red,
-        child: const Icon(
-          Icons.delete,
-          color: Colors.white,
-        ),
+        child: const Icon(Icons.delete, color: Colors.white),
       ),
       onDismissed: (_) async {
         await ref
@@ -33,11 +27,9 @@ class NotificationTile extends ConsumerWidget {
 
         if (!context.mounted) return;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Notification deleted'),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Notification deleted')));
       },
       child: Card(
         elevation: notification.isRead ? 1 : 3,
@@ -49,8 +41,7 @@ class NotificationTile extends ConsumerWidget {
                 : Theme.of(context).colorScheme.primary,
             child: Icon(
               _icon(notification.type),
-              color:
-                  notification.isRead ? Colors.grey : Colors.white,
+              color: notification.isRead ? Colors.grey : Colors.white,
             ),
           ),
           title: Row(
@@ -84,10 +75,7 @@ class NotificationTile extends ConsumerWidget {
               const SizedBox(height: 6),
               Text(
                 _format(notification.createdAt),
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
             ],
           ),

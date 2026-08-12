@@ -16,18 +16,14 @@ class SearchApi {
     try {
       final response = await _dio.get(
         '/properties/search',
-        queryParameters: {
-          'q': query,
-        },
+        queryParameters: {'q': query},
       );
 
       final data = response.data;
 
       final list = data is List ? data : data['data'] ?? [];
 
-      return List<SearchModel>.from(
-        list.map((e) => SearchModel.fromJson(e)),
-      );
+      return List<SearchModel>.from(list.map((e) => SearchModel.fromJson(e)));
     } on DioException catch (e) {
       throw Exception(
         e.response?.data.toString() ?? 'Failed to search properties.',
@@ -42,21 +38,16 @@ class SearchApi {
 
   Future<List<SearchModel>> recentSearches() async {
     try {
-      final response = await _dio.get(
-        '/properties/recent-searches',
-      );
+      final response = await _dio.get('/properties/recent-searches');
 
       final data = response.data;
 
       final list = data is List ? data : data['data'] ?? [];
 
-      return List<SearchModel>.from(
-        list.map((e) => SearchModel.fromJson(e)),
-      );
+      return List<SearchModel>.from(list.map((e) => SearchModel.fromJson(e)));
     } on DioException catch (e) {
       throw Exception(
-        e.response?.data.toString() ??
-            'Failed to load recent searches.',
+        e.response?.data.toString() ?? 'Failed to load recent searches.',
       );
     }
   }

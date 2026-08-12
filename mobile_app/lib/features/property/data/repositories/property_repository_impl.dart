@@ -5,10 +5,8 @@ import '../datasources/property_remote_datasource.dart';
 import '../models/property_model.dart';
 
 class PropertyRepositoryImpl implements PropertyRepository {
-  PropertyRepositoryImpl({
-    PropertyRemoteDataSource? remoteDataSource,
-  }) : _remoteDataSource =
-            remoteDataSource ?? PropertyRemoteDataSource();
+  PropertyRepositoryImpl({PropertyRemoteDataSource? remoteDataSource})
+    : _remoteDataSource = remoteDataSource ?? PropertyRemoteDataSource();
 
   final PropertyRemoteDataSource _remoteDataSource;
 
@@ -64,9 +62,7 @@ class PropertyRepositoryImpl implements PropertyRepository {
   //==========================================================
 
   @override
-  Future<PropertyEntity> createProperty(
-    Map<String, dynamic> data,
-  ) async {
+  Future<PropertyEntity> createProperty(Map<String, dynamic> data) async {
     final response = await _remoteDataSource.createProperty(data);
 
     return PropertyModel.fromJson(response).toEntity();
@@ -81,10 +77,7 @@ class PropertyRepositoryImpl implements PropertyRepository {
     String id,
     Map<String, dynamic> data,
   ) async {
-    final response = await _remoteDataSource.updateProperty(
-      id: id,
-      body: data,
-    );
+    final response = await _remoteDataSource.updateProperty(id: id, body: data);
 
     return PropertyModel.fromJson(response).toEntity();
   }
@@ -156,9 +149,7 @@ class PropertyRepositoryImpl implements PropertyRepository {
 
       if (locality != null &&
           locality.isNotEmpty &&
-          !property.locality.toLowerCase().contains(
-                locality.toLowerCase(),
-              )) {
+          !property.locality.toLowerCase().contains(locality.toLowerCase())) {
         return false;
       }
 
@@ -200,15 +191,11 @@ class PropertyRepositoryImpl implements PropertyRepository {
 
   @override
   Future<void> removeFromFavorites(String propertyId) async {
-    _favorites.removeWhere(
-      (element) => element.id == propertyId,
-    );
+    _favorites.removeWhere((element) => element.id == propertyId);
   }
 
   @override
   Future<bool> isFavorite(String propertyId) async {
-    return _favorites.any(
-      (element) => element.id == propertyId,
-    );
+    return _favorites.any((element) => element.id == propertyId);
   }
 }

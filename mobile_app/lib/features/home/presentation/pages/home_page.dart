@@ -13,27 +13,23 @@ import '../widgets/nearby_properties.dart';
 import '../widgets/recent_search_widget.dart';
 import '../widgets/search_section.dart';
 
-class HomePage extends ConsumerStatefulWidget
-{
-const HomePage({super.key});
+class HomePage extends ConsumerStatefulWidget {
+  const HomePage({super.key});
 
   @override
   ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends ConsumerState<HomePage>
-{
+class _HomePageState extends ConsumerState<HomePage> {
   int _currentIndex = 0;
 
   final List<String> _recentSearches = ['Whitefield', '2 BHK', 'Under ₹20,000'];
 
   @override
-  void initState() 
-{
+  void initState() {
     super.initState();
 
-    Future.microtask(()
-{
+    Future.microtask(() {
       ref.read(notificationsProvider.notifier).loadNotifications();
 
       ref.read(propertyProvider.notifier).loadProperties();
@@ -41,8 +37,7 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 
   @override
-  Widget build(BuildContext context) 
-{
+  Widget build(BuildContext context) {
     final propertyState = ref.watch(propertyProvider);
 
     final notificationState = ref.watch(notificationsProvider);
@@ -50,39 +45,38 @@ class _HomePageState extends ConsumerState<HomePage>
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-title: const Column(
+        title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-children: [
+          children: [
             Text(
               'RentItEase',
-style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
             ),
-Text('Find your perfect home', style: TextStyle(fontSize: 13)),
+            Text('Find your perfect home', style: TextStyle(fontSize: 13)),
           ],
         ),
-actions: [
+        actions: [
           Stack(
             children: [
               IconButton(
-                onPressed: ()
-{
+                onPressed: () {
                   context.push('/notifications');
                 },
-icon: const Icon(Icons.notifications_none),
+                icon: const Icon(Icons.notifications_none),
               ),
-if (notificationState.unreadCount > 0)
+              if (notificationState.unreadCount > 0)
                 Positioned(
                   right: 8,
-top: 8,
-child: Container(
+                  top: 8,
+                  child: Container(
                     padding: const EdgeInsets.all(4),
-decoration: const BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.red,
-shape: BoxShape.circle,
+                      shape: BoxShape.circle,
                     ),
-child: Text(
+                    child: Text(
                       notificationState.unreadCount.toString(),
-style: const TextStyle(color: Colors.white, fontSize: 10),
+                      style: const TextStyle(color: Colors.white, fontSize: 10),
                     ),
                   ),
                 ),
@@ -90,92 +84,84 @@ style: const TextStyle(color: Colors.white, fontSize: 10),
           ),
         ],
       ),
-body: propertyState.when(
+      body: propertyState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-error: (error, stack) => Center(
+        error: (error, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-children: [
+            children: [
               const Icon(Icons.error_outline, size: 60, color: Colors.red),
-const SizedBox(height: 12),
-Text(error.toString(), textAlign: TextAlign.center),
-const SizedBox(height: 20),
-ElevatedButton(
-                onPressed: ()
-{
+              const SizedBox(height: 12),
+              Text(error.toString(), textAlign: TextAlign.center),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
                   ref.read(propertyProvider.notifier).loadProperties();
                 },
-child: const Text('Retry'),
+                child: const Text('Retry'),
               ),
             ],
           ),
         ),
-data: (properties)
-{
+        data: (properties) {
           final featured = properties.where((e) => e.isFeatured).toList();
 
           return RefreshIndicator(
-            onRefresh: () async
-{
+            onRefresh: () async {
               await ref.read(propertyProvider.notifier).refresh();
             },
-child: SingleChildScrollView(
+            child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-child: Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-children: [
+                children: [
                   SearchSection(onChanged: (value) {}),
 
-const SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-const CategoryGrid(),
+                  const CategoryGrid(),
 
-const SizedBox(height: 28),
+                  const SizedBox(height: 28),
 
-FeaturedProperties(
+                  FeaturedProperties(
                     properties: featured,
-onTap: _openProperty,
+                    onTap: _openProperty,
                   ),
 
-const SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
-RecentSearchWidget(
+                  RecentSearchWidget(
                     recentSearches: _recentSearches,
-onSearchSelected: (search) {},
-onDeleteSearch: (search)
-{
-                      setState(()
-{
+                    onSearchSelected: (search) {},
+                    onDeleteSearch: (search) {
+                      setState(() {
                         _recentSearches.remove(search);
                       });
                     },
                   ),
 
-const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-NearbyProperties(
+                  NearbyProperties(
                     properties: properties,
-onTap: _openProperty,
+                    onTap: _openProperty,
                   ),
 
-const SizedBox(height: 20),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
           );
         },
       ),
-bottomNavigationBar: HomeBottomNavigation(
+      bottomNavigationBar: HomeBottomNavigation(
         currentIndex: _currentIndex,
-onTap: (index)
-{
-          setState(()
-{
+        onTap: (index) {
+          setState(() {
             _currentIndex = index;
           });
 
-          switch (index)
-{
+          switch (index) {
             case 0:
               context.go('/home');
               break;
@@ -201,8 +187,7 @@ onTap: (index)
     );
   }
 
-  void _openProperty(PropertyEntity property) 
-{
+  void _openProperty(PropertyEntity property) {
     context.push('/property/${property.id}');
   }
 }

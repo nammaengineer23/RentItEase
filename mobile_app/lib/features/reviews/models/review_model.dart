@@ -96,9 +96,6 @@ class ReviewModel {
   }
 
   static DateTime _parseDateTime(dynamic value) {
-    return DateTime.tryParse(
-          value?.toString() ?? '',
-        ) ??
-        DateTime.now();
+    return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
   }
 }

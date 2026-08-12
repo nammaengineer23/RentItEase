@@ -13,12 +13,10 @@ class AddReviewDialog extends StatefulWidget {
   final void Function(int rating, String? comment) onSubmit;
 
   @override
-  State<AddReviewDialog> createState() =>
-      _AddReviewDialogState();
+  State<AddReviewDialog> createState() => _AddReviewDialogState();
 }
 
-class _AddReviewDialogState
-    extends State<AddReviewDialog> {
+class _AddReviewDialogState extends State<AddReviewDialog> {
   late int _rating;
   late TextEditingController _commentController;
 
@@ -28,9 +26,7 @@ class _AddReviewDialogState
 
     _rating = widget.initialRating.clamp(1, 5);
 
-    _commentController = TextEditingController(
-      text: widget.initialComment,
-    );
+    _commentController = TextEditingController(text: widget.initialComment);
   }
 
   @override
@@ -44,18 +40,14 @@ class _AddReviewDialogState
     final isEditing = widget.initialComment.isNotEmpty;
 
     return AlertDialog(
-      title: Text(
-        isEditing ? 'Edit Review' : 'Write Review',
-      ),
+      title: Text(isEditing ? 'Edit Review' : 'Write Review'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
               'Rate this property',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 16),
@@ -63,7 +55,6 @@ class _AddReviewDialogState
             // ==================================================
             // Rating
             // ==================================================
-
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(5, (index) {
@@ -72,9 +63,7 @@ class _AddReviewDialogState
                 return IconButton(
                   tooltip: '$star star',
                   icon: Icon(
-                    star <= _rating
-                        ? Icons.star
-                        : Icons.star_border,
+                    star <= _rating ? Icons.star : Icons.star_border,
                     color: Colors.amber,
                     size: 34,
                   ),
@@ -91,9 +80,7 @@ class _AddReviewDialogState
 
             Text(
               '$_rating / 5',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
 
             const SizedBox(height: 20),
@@ -101,7 +88,6 @@ class _AddReviewDialogState
             // ==================================================
             // Comment
             // ==================================================
-
             TextField(
               controller: _commentController,
               maxLines: 4,
@@ -126,19 +112,13 @@ class _AddReviewDialogState
 
         ElevatedButton(
           onPressed: () {
-            final comment =
-                _commentController.text.trim();
+            final comment = _commentController.text.trim();
 
-            widget.onSubmit(
-              _rating,
-              comment.isEmpty ? null : comment,
-            );
+            widget.onSubmit(_rating, comment.isEmpty ? null : comment);
 
             Navigator.of(context).pop();
           },
-          child: Text(
-            isEditing ? 'Update' : 'Submit',
-          ),
+          child: Text(isEditing ? 'Update' : 'Submit'),
         ),
       ],
     );

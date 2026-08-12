@@ -11,10 +11,7 @@ import '../widgets/password_strength.dart';
 class RegisterPage extends ConsumerStatefulWidget {
   final VoidCallback onLogin;
 
-  const RegisterPage({
-    super.key,
-    required this.onLogin,
-  });
+  const RegisterPage({super.key, required this.onLogin});
 
   @override
   ConsumerState<RegisterPage> createState() => _RegisterPageState();
@@ -79,9 +76,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            provider.errorMessage ?? 'Registration Failed',
-          ),
+          content: Text(provider.errorMessage ?? 'Registration Failed'),
           backgroundColor: Colors.red,
         ),
       );
@@ -210,9 +205,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
                 const SizedBox(height: 16),
 
-                PasswordStrength(
-                  password: _passwordController.text,
-                ),
+                PasswordStrength(password: _passwordController.text),
 
                 const SizedBox(height: 30),
 

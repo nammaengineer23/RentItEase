@@ -52,8 +52,7 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
 
   List<PropertyEntity> featuredProperties() {
     return state.maybeWhen(
-      data: (properties) =>
-          properties.where((e) => e.isFeatured).toList(),
+      data: (properties) => properties.where((e) => e.isFeatured).toList(),
       orElse: () => [],
     );
   }
@@ -64,8 +63,7 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
 
   List<PropertyEntity> availableProperties() {
     return state.maybeWhen(
-      data: (properties) =>
-          properties.where((e) => e.isAvailable).toList(),
+      data: (properties) => properties.where((e) => e.isAvailable).toList(),
       orElse: () => [],
     );
   }
@@ -120,9 +118,7 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
   // Create
   //==========================================================
 
-  Future<void> addProperty(
-    Map<String, dynamic> data,
-  ) async {
+  Future<void> addProperty(Map<String, dynamic> data) async {
     await _repository.createProperty(data);
 
     await loadProperties();
@@ -132,10 +128,7 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
   // Update
   //==========================================================
 
-  Future<void> updateProperty(
-    String id,
-    Map<String, dynamic> data,
-  ) async {
+  Future<void> updateProperty(String id, Map<String, dynamic> data) async {
     await _repository.updateProperty(id, data);
 
     await loadProperties();
@@ -176,10 +169,7 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
   }
 }
 
-final propertyProvider = StateNotifierProvider<
-    PropertyNotifier,
-    AsyncValue<List<PropertyEntity>>>(
-  (ref) => PropertyNotifier(
-    ref.read(propertyRepositoryProvider),
-  ),
-);
+final propertyProvider =
+    StateNotifierProvider<PropertyNotifier, AsyncValue<List<PropertyEntity>>>(
+      (ref) => PropertyNotifier(ref.read(propertyRepositoryProvider)),
+    );

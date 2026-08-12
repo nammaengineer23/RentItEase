@@ -32,18 +32,12 @@ class FavoritesApi {
       return list
           .whereType<Map>()
           .map(
-            (item) => FavoritePropertyModel.fromJson(
-              Map<String, dynamic>.from(item),
-            ),
+            (item) =>
+                FavoritePropertyModel.fromJson(Map<String, dynamic>.from(item)),
           )
           .toList();
     } on DioException catch (e) {
-      throw Exception(
-        _errorMessage(
-          e,
-          'Failed to load favorites',
-        ),
-      );
+      throw Exception(_errorMessage(e, 'Failed to load favorites'));
     }
   }
 
@@ -55,12 +49,7 @@ class FavoritesApi {
     try {
       await dio.post('/favorites/$propertyId');
     } on DioException catch (e) {
-      throw Exception(
-        _errorMessage(
-          e,
-          'Failed to add favorite',
-        ),
-      );
+      throw Exception(_errorMessage(e, 'Failed to add favorite'));
     }
   }
 
@@ -72,12 +61,7 @@ class FavoritesApi {
     try {
       await dio.delete('/favorites/$propertyId');
     } on DioException catch (e) {
-      throw Exception(
-        _errorMessage(
-          e,
-          'Failed to remove favorite',
-        ),
-      );
+      throw Exception(_errorMessage(e, 'Failed to remove favorite'));
     }
   }
 
@@ -87,9 +71,7 @@ class FavoritesApi {
 
   Future<bool> isFavorite(String propertyId) async {
     try {
-      final response = await dio.get(
-        '/favorites/check/$propertyId',
-      );
+      final response = await dio.get('/favorites/check/$propertyId');
 
       final data = response.data;
 
@@ -99,12 +81,7 @@ class FavoritesApi {
 
       return false;
     } on DioException catch (e) {
-      throw Exception(
-        _errorMessage(
-          e,
-          'Failed to check favorite',
-        ),
-      );
+      throw Exception(_errorMessage(e, 'Failed to check favorite'));
     }
   }
 
@@ -112,10 +89,7 @@ class FavoritesApi {
   // Error Message
   // ==================================================
 
-  String _errorMessage(
-    DioException error,
-    String fallback,
-  ) {
+  String _errorMessage(DioException error, String fallback) {
     final responseData = error.response?.data;
 
     if (responseData is Map<String, dynamic>) {
@@ -127,8 +101,7 @@ class FavoritesApi {
 
       final errorMessage = responseData['error'];
 
-      if (errorMessage is String &&
-          errorMessage.isNotEmpty) {
+      if (errorMessage is String && errorMessage.isNotEmpty) {
         return errorMessage;
       }
     }

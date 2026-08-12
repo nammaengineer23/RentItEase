@@ -28,6 +28,8 @@ class PropertyModel {
     required this.ownerName,
     required this.ownerPhone,
     required this.createdAt,
+    required this.latitude,
+    required this.longitude,
   });
 
   final String id;
@@ -57,6 +59,9 @@ class PropertyModel {
   final String ownerPhone;
   final DateTime createdAt;
 
+  final double latitude;
+  final double longitude;
+
   factory PropertyModel.fromJson(Map<String, dynamic> json) {
     return PropertyModel(
       id: json['id']?.toString() ?? '',
@@ -80,17 +85,21 @@ class PropertyModel {
       isVerified: json['isVerified'] == true,
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       views: (json['views'] as num?)?.toInt() ?? 0,
-      imageUrls: (json['imageUrls'] as List<dynamic>?)
+      imageUrls:
+          (json['imageUrls'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
       ownerId: json['ownerId']?.toString() ?? '',
       ownerName: json['ownerName']?.toString() ?? '',
       ownerPhone: json['ownerPhone']?.toString() ?? '',
-      createdAt: DateTime.tryParse(
-            json['createdAt']?.toString() ?? '',
-          ) ??
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.now(),
+
+      // Backend Decimal(9,6) values arrive as JSON numbers.
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -122,6 +131,9 @@ class PropertyModel {
       'ownerName': ownerName,
       'ownerPhone': ownerPhone,
       'createdAt': createdAt.toIso8601String(),
+
+      'latitude': double.parse(latitude.toStringAsFixed(6)),
+      'longitude': double.parse(longitude.toStringAsFixed(6)),
     };
   }
 
@@ -152,6 +164,8 @@ class PropertyModel {
     String? ownerName,
     String? ownerPhone,
     DateTime? createdAt,
+    double? latitude,
+    double? longitude,
   }) {
     return PropertyModel(
       id: id ?? this.id,
@@ -180,6 +194,8 @@ class PropertyModel {
       ownerName: ownerName ?? this.ownerName,
       ownerPhone: ownerPhone ?? this.ownerPhone,
       createdAt: createdAt ?? this.createdAt,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 
@@ -211,6 +227,8 @@ class PropertyModel {
       ownerName: ownerName,
       ownerPhone: ownerPhone,
       createdAt: createdAt,
+      latitude: latitude,
+      longitude: longitude,
     );
   }
 
@@ -242,6 +260,8 @@ class PropertyModel {
       ownerName: entity.ownerName,
       ownerPhone: entity.ownerPhone,
       createdAt: entity.createdAt,
+      latitude: entity.latitude,
+      longitude: entity.longitude,
     );
   }
 }

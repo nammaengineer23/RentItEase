@@ -19,12 +19,10 @@ class ReviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasPhoto =
-        review.userPhoto != null &&
-        review.userPhoto!.trim().isNotEmpty;
+        review.userPhoto != null && review.userPhoto!.trim().isNotEmpty;
 
     final hasComment =
-        review.comment != null &&
-        review.comment!.trim().isNotEmpty;
+        review.comment != null && review.comment!.trim().isNotEmpty;
 
     final initial = review.userName.trim().isNotEmpty
         ? review.userName.trim().substring(0, 1).toUpperCase()
@@ -33,9 +31,7 @@ class ReviewCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -44,7 +40,6 @@ class ReviewCard extends StatelessWidget {
             // ==================================================
             // User Information
             // ==================================================
-
             Row(
               children: [
                 CircleAvatar(
@@ -56,9 +51,7 @@ class ReviewCard extends StatelessWidget {
                       ? null
                       : Text(
                           initial,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                 ),
 
@@ -66,8 +59,7 @@ class ReviewCard extends StatelessWidget {
 
                 Expanded(
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         review.userName.isNotEmpty
@@ -81,10 +73,7 @@ class ReviewCard extends StatelessWidget {
 
                       const SizedBox(height: 4),
 
-                      RatingBarWidget(
-                        rating: review.rating,
-                        size: 18,
-                      ),
+                      RatingBarWidget(rating: review.rating, size: 18),
                     ],
                   ),
                 ),
@@ -92,7 +81,6 @@ class ReviewCard extends StatelessWidget {
                 // ==================================================
                 // Actions
                 // ==================================================
-
                 if (onEdit != null || onDelete != null)
                   PopupMenuButton<String>(
                     onSelected: (value) {
@@ -127,14 +115,10 @@ class ReviewCard extends StatelessWidget {
             // ==================================================
             // Comment
             // ==================================================
-
             if (hasComment)
               Text(
                 review.comment!,
-                style: TextStyle(
-                  color: Colors.grey.shade700,
-                  height: 1.5,
-                ),
+                style: TextStyle(color: Colors.grey.shade700, height: 1.5),
               )
             else
               Text(
@@ -150,15 +134,11 @@ class ReviewCard extends StatelessWidget {
             // ==================================================
             // Date
             // ==================================================
-
             Align(
               alignment: Alignment.centerRight,
               child: Text(
                 _formatDate(review.createdAt),
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
             ),
           ],

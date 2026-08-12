@@ -22,8 +22,8 @@ final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
 
 final settingsProvider =
     AsyncNotifierProvider<SettingsNotifier, SettingsEntity>(
-  SettingsNotifier.new,
-);
+      SettingsNotifier.new,
+    );
 
 // ============================================================
 // Settings Notifier
@@ -59,12 +59,9 @@ class SettingsNotifier extends AsyncNotifier<SettingsEntity> {
     // Keep the current UI data while the API request is running.
     state = AsyncData(
       SettingsEntity(
-        pushNotifications:
-            pushNotifications ?? current.pushNotifications,
-        emailNotifications:
-            emailNotifications ?? current.emailNotifications,
-        smsNotifications:
-            smsNotifications ?? current.smsNotifications,
+        pushNotifications: pushNotifications ?? current.pushNotifications,
+        emailNotifications: emailNotifications ?? current.emailNotifications,
+        smsNotifications: smsNotifications ?? current.smsNotifications,
         darkMode: darkMode ?? current.darkMode,
         language: language ?? current.language,
       ),
@@ -115,8 +112,6 @@ class SettingsNotifier extends AsyncNotifier<SettingsEntity> {
   Future<void> refresh() async {
     state = const AsyncLoading();
 
-    state = await AsyncValue.guard(
-      repository.getSettings,
-    );
+    state = await AsyncValue.guard(repository.getSettings);
   }
 }

@@ -15,26 +15,19 @@ class PropertyVisitModel extends PropertyVisit {
     super.notes,
   });
 
-  factory PropertyVisitModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
-    final property =
-        json['property'] as Map<String, dynamic>? ?? {};
+  factory PropertyVisitModel.fromJson(Map<String, dynamic> json) {
+    final property = json['property'] as Map<String, dynamic>? ?? {};
 
-    final owner =
-        property['owner'] as Map<String, dynamic>? ?? {};
+    final owner = property['owner'] as Map<String, dynamic>? ?? {};
 
-    final tenant =
-        json['tenant'] as Map<String, dynamic>? ?? {};
+    final tenant = json['tenant'] as Map<String, dynamic>? ?? {};
 
-    final images =
-        property['images'] as List<dynamic>? ?? [];
+    final images = property['images'] as List<dynamic>? ?? [];
 
     String propertyImage = '';
 
     if (images.isNotEmpty) {
-      final image =
-          images.first as Map<String, dynamic>;
+      final image = images.first as Map<String, dynamic>;
 
       propertyImage =
           image['url']?.toString() ??
@@ -47,39 +40,25 @@ class PropertyVisitModel extends PropertyVisit {
       id: json['id']?.toString() ?? '',
 
       propertyId:
-          json['propertyId']?.toString() ??
-          property['id']?.toString() ??
-          '',
+          json['propertyId']?.toString() ?? property['id']?.toString() ?? '',
 
-      propertyTitle:
-          property['title']?.toString() ?? '',
+      propertyTitle: property['title']?.toString() ?? '',
 
       propertyImage: propertyImage,
 
-      ownerId:
-          owner['id']?.toString() ??
-          property['ownerId']?.toString() ??
-          '',
+      ownerId: owner['id']?.toString() ?? property['ownerId']?.toString() ?? '',
 
-      ownerName:
-          owner['fullName']?.toString() ?? '',
+      ownerName: owner['fullName']?.toString() ?? '',
 
-      tenantId:
-          json['tenantId']?.toString() ??
-          tenant['id']?.toString() ??
-          '',
+      tenantId: json['tenantId']?.toString() ?? tenant['id']?.toString() ?? '',
 
-      tenantName:
-          tenant['fullName']?.toString() ?? '',
+      tenantName: tenant['fullName']?.toString() ?? '',
 
       visitDate:
-          DateTime.tryParse(
-            json['visitDate']?.toString() ?? '',
-          ) ??
+          DateTime.tryParse(json['visitDate']?.toString() ?? '') ??
           DateTime.now(),
 
-      status:
-          json['status']?.toString() ?? 'PENDING',
+      status: json['status']?.toString() ?? 'PENDING',
 
       notes: json['notes']?.toString(),
     );

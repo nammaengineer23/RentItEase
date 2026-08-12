@@ -26,9 +26,7 @@ class ProfileApi {
 
       return ProfileModel.fromJson(json);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data.toString() ?? 'Failed to load profile.',
-      );
+      throw Exception(e.response?.data.toString() ?? 'Failed to load profile.');
     }
   }
 
@@ -44,10 +42,7 @@ class ProfileApi {
     try {
       final response = await _dio.patch(
         '/users/profile',
-        data: {
-          'fullName': fullName,
-          'phone': phone,
-        },
+        data: {'fullName': fullName, 'phone': phone},
       );
 
       final data = response.data;
@@ -77,25 +72,17 @@ class ProfileApi {
         'file': await MultipartFile.fromFile(filePath),
       });
 
-      final response = await _dio.post(
-        '/uploads/image',
-        data: formData,
-      );
+      final response = await _dio.post('/uploads/image', data: formData);
 
       final data = response.data;
 
       if (data is Map<String, dynamic>) {
-        return data['url'] ??
-            data['imageUrl'] ??
-            data['data']?['url'] ??
-            '';
+        return data['url'] ?? data['imageUrl'] ?? data['data']?['url'] ?? '';
       }
 
       return '';
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data.toString() ?? 'Image upload failed.',
-      );
+      throw Exception(e.response?.data.toString() ?? 'Image upload failed.');
     }
   }
 }

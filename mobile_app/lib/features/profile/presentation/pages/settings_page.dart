@@ -9,25 +9,18 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Settings'), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.only(top: 12, bottom: 30),
         children: [
           //==================================================
           // Account
           //==================================================
-
           const Padding(
             padding: EdgeInsets.fromLTRB(18, 10, 18, 10),
             child: Text(
               'Account',
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
             ),
           ),
 
@@ -47,9 +40,7 @@ class SettingsPage extends StatelessWidget {
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text(
-                    'Change Password module will be added soon.',
-                  ),
+                  content: Text('Change Password module will be added soon.'),
                 ),
               );
             },
@@ -58,15 +49,11 @@ class SettingsPage extends StatelessWidget {
           //==================================================
           // Preferences
           //==================================================
-
           const Padding(
             padding: EdgeInsets.fromLTRB(18, 24, 18, 10),
             child: Text(
               'Preferences',
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
             ),
           ),
 
@@ -77,9 +64,7 @@ class SettingsPage extends StatelessWidget {
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text(
-                    'Notification settings coming soon.',
-                  ),
+                  content: Text('Notification settings coming soon.'),
                 ),
               );
             },
@@ -92,9 +77,7 @@ class SettingsPage extends StatelessWidget {
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text(
-                    'Theme switching will be available soon.',
-                  ),
+                  content: Text('Theme switching will be available soon.'),
                 ),
               );
             },
@@ -107,9 +90,7 @@ class SettingsPage extends StatelessWidget {
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text(
-                    'Language selection coming soon.',
-                  ),
+                  content: Text('Language selection coming soon.'),
                 ),
               );
             },
@@ -118,15 +99,11 @@ class SettingsPage extends StatelessWidget {
           //==================================================
           // Support
           //==================================================
-
           const Padding(
             padding: EdgeInsets.fromLTRB(18, 24, 18, 10),
             child: Text(
               'Support',
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
             ),
           ),
 
@@ -136,11 +113,7 @@ class SettingsPage extends StatelessWidget {
             subtitle: 'Contact RentEase support',
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Support module coming soon.',
-                  ),
-                ),
+                const SnackBar(content: Text('Support module coming soon.')),
               );
             },
           ),

@@ -15,9 +15,7 @@ import '../domain/repositories/profile_repository.dart';
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   final dio = ref.watch(dioProvider);
 
-  return ProfileRepositoryImpl(
-    ProfileApi(dio),
-  );
+  return ProfileRepositoryImpl(ProfileApi(dio));
 });
 
 //======================================================
@@ -26,10 +24,8 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
 
 final profileProvider =
     StateNotifierProvider<ProfileNotifier, AsyncValue<ProfileEntity?>>((ref) {
-  return ProfileNotifier(
-    ref.read(profileRepositoryProvider),
-  );
-});
+      return ProfileNotifier(ref.read(profileRepositoryProvider));
+    });
 
 //======================================================
 // Profile Notifier
@@ -90,11 +86,7 @@ class ProfileNotifier extends StateNotifier<AsyncValue<ProfileEntity?>> {
     try {
       final imageUrl = await _repository.uploadProfileImage(imagePath);
 
-      state = AsyncData(
-        current.copyWith(
-          profileImage: imageUrl,
-        ),
-      );
+      state = AsyncData(current.copyWith(profileImage: imageUrl));
     } catch (e, stackTrace) {
       state = AsyncError(e, stackTrace);
     }

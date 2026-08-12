@@ -26,6 +26,8 @@ class PropertyEntity {
     required this.ownerName,
     required this.ownerPhone,
     required this.createdAt,
+    required this.latitude,
+    required this.longitude,
   });
 
   final String id;
@@ -54,4 +56,10 @@ class PropertyEntity {
   final String ownerName;
   final String ownerPhone;
   final DateTime createdAt;
+
+  /// Property GPS coordinates.
+  ///
+  /// Backend stores these using Decimal(9, 6).
+  final double latitude;
+  final double longitude;
 }

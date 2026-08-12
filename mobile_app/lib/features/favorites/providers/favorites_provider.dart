@@ -9,13 +9,10 @@ import '../models/favorite_property_model.dart';
 // Repository Provider
 // ======================================================
 
-final favoritesRepositoryProvider =
-    Provider<FavoritesRepository>((ref) {
+final favoritesRepositoryProvider = Provider<FavoritesRepository>((ref) {
   final dio = ref.watch(dioProvider);
 
-  return FavoritesRepository(
-    FavoritesApi(dio),
-  );
+  return FavoritesRepository(FavoritesApi(dio));
 });
 
 // ======================================================
@@ -51,10 +48,8 @@ class FavoritesState {
 // Notifier
 // ======================================================
 
-class FavoritesNotifier
-    extends StateNotifier<FavoritesState> {
-  FavoritesNotifier(this._repository)
-      : super(const FavoritesState());
+class FavoritesNotifier extends StateNotifier<FavoritesState> {
+  FavoritesNotifier(this._repository) : super(const FavoritesState());
 
   final FavoritesRepository _repository;
 
@@ -63,14 +58,10 @@ class FavoritesNotifier
   // ====================================================
 
   Future<bool> loadFavorites() async {
-    state = state.copyWith(
-      isLoading: true,
-      clearError: true,
-    );
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      final favorites =
-          await _repository.getFavorites();
+      final favorites = await _repository.getFavorites();
 
       state = state.copyWith(
         isLoading: false,
@@ -80,10 +71,7 @@ class FavoritesNotifier
 
       return true;
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
 
       return false;
     }
@@ -93,12 +81,8 @@ class FavoritesNotifier
   // Add Favorite
   // ====================================================
 
-  Future<bool> addFavorite(
-    String propertyId,
-  ) async {
-    state = state.copyWith(
-      clearError: true,
-    );
+  Future<bool> addFavorite(String propertyId) async {
+    state = state.copyWith(clearError: true);
 
     try {
       await _repository.addFavorite(propertyId);
@@ -107,9 +91,7 @@ class FavoritesNotifier
       // favorite returned by the backend.
       return await loadFavorites();
     } catch (e) {
-      state = state.copyWith(
-        error: e.toString(),
-      );
+      state = state.copyWith(error: e.toString());
 
       return false;
     }
@@ -119,12 +101,8 @@ class FavoritesNotifier
   // Remove Favorite
   // ====================================================
 
-  Future<bool> removeFavorite(
-    String propertyId,
-  ) async {
-    state = state.copyWith(
-      clearError: true,
-    );
+  Future<bool> removeFavorite(String propertyId) async {
+    state = state.copyWith(clearError: true);
 
     try {
       await _repository.removeFavorite(propertyId);
@@ -132,9 +110,7 @@ class FavoritesNotifier
       // Reload to keep Favorites Page synchronized.
       return await loadFavorites();
     } catch (e) {
-      state = state.copyWith(
-        error: e.toString(),
-      );
+      state = state.copyWith(error: e.toString());
 
       return false;
     }
@@ -145,27 +121,18 @@ class FavoritesNotifier
   // ====================================================
 
   bool isFavorite(String propertyId) {
-    return state.favorites.any(
-      (favorite) =>
-          favorite.propertyId == propertyId,
-    );
+    return state.favorites.any((favorite) => favorite.propertyId == propertyId);
   }
 
   // ====================================================
   // Check Favorite From Backend
   // ====================================================
 
-  Future<bool> checkFavorite(
-    String propertyId,
-  ) async {
+  Future<bool> checkFavorite(String propertyId) async {
     try {
-      return await _repository.isFavorite(
-        propertyId,
-      );
+      return await _repository.isFavorite(propertyId);
     } catch (e) {
-      state = state.copyWith(
-        error: e.toString(),
-      );
+      state = state.copyWith(error: e.toString());
 
       return false;
     }
@@ -184,9 +151,7 @@ class FavoritesNotifier
   // ====================================================
 
   void clearError() {
-    state = state.copyWith(
-      clearError: true,
-    );
+    state = state.copyWith(clearError: true);
   }
 }
 
@@ -194,12 +159,9 @@ class FavoritesNotifier
 // Provider
 // ======================================================
 
-final favoritesProvider = StateNotifierProvider<
-    FavoritesNotifier, FavoritesState>(
-  (ref) {
-    final repository =
-        ref.watch(favoritesRepositoryProvider);
+final favoritesProvider =
+    StateNotifierProvider<FavoritesNotifier, FavoritesState>((ref) {
+      final repository = ref.watch(favoritesRepositoryProvider);
 
-    return FavoritesNotifier(repository);
-  },
-);
+      return FavoritesNotifier(repository);
+    });

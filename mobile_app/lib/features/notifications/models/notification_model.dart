@@ -1,18 +1,4 @@
 class NotificationModel {
-  final String id;
-
-  final String title;
-
-  final String message;
-
-  final String type;
-
-  final bool isRead;
-
-  final DateTime createdAt;
-
-  final String? relatedId;
-
   const NotificationModel({
     required this.id,
     required this.title,
@@ -23,17 +9,33 @@ class NotificationModel {
     this.relatedId,
   });
 
+  final String id;
+  final String title;
+  final String message;
+  final String type;
+  final bool isRead;
+  final DateTime createdAt;
+  final String? relatedId;
+
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    final createdAtValue = json['createdAt'];
+
+    DateTime createdAt = DateTime.now();
+
+    if (createdAtValue is String && createdAtValue.isNotEmpty) {
+      createdAt = DateTime.tryParse(createdAtValue) ?? DateTime.now();
+    } else if (createdAtValue is DateTime) {
+      createdAt = createdAtValue;
+    }
+
     return NotificationModel(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      message: json['message'] ?? '',
-      type: json['type'] ?? 'GENERAL',
-      isRead: json['isRead'] ?? false,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
-      relatedId: json['relatedId'],
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? 'Notification',
+      message: json['message']?.toString() ?? '',
+      type: json['type']?.toString() ?? 'GENERAL',
+      isRead: json['isRead'] == true,
+      createdAt: createdAt,
+      relatedId: json['relatedId']?.toString(),
     );
   }
 

@@ -19,14 +19,9 @@ class ProfilePage extends ConsumerWidget {
     final profileState = ref.watch(profileProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Profile'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('My Profile'), centerTitle: true),
       body: profileState.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
 
         error: (error, stackTrace) => Center(
           child: Padding(
@@ -34,16 +29,9 @@ class ProfilePage extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 60,
-                  color: Colors.red,
-                ),
+                const Icon(Icons.error_outline, size: 60, color: Colors.red),
                 const SizedBox(height: 16),
-                Text(
-                  error.toString(),
-                  textAlign: TextAlign.center,
-                ),
+                Text(error.toString(), textAlign: TextAlign.center),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
@@ -58,9 +46,7 @@ class ProfilePage extends ConsumerWidget {
 
         data: (profile) {
           if (profile == null) {
-            return const Center(
-              child: Text('No profile found'),
-            );
+            return const Center(child: Text('No profile found'));
           }
 
           return RefreshIndicator(
@@ -99,9 +85,7 @@ class ProfilePage extends ConsumerWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const MyVisitsPage(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const MyVisitsPage()),
                     );
                   },
                 ),
@@ -113,9 +97,7 @@ class ProfilePage extends ConsumerWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const FavoritesPage(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const FavoritesPage()),
                     );
                   },
                 ),

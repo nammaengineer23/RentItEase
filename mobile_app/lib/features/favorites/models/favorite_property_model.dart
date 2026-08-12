@@ -25,13 +25,9 @@ class FavoritePropertyModel {
   final String address;
   final String? imageUrl;
 
-  factory FavoritePropertyModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory FavoritePropertyModel.fromJson(Map<String, dynamic> json) {
     final property = json['property'] is Map
-        ? Map<String, dynamic>.from(
-            json['property'] as Map,
-          )
+        ? Map<String, dynamic>.from(json['property'] as Map)
         : json;
 
     String? imageUrl;
@@ -53,9 +49,7 @@ class FavoritePropertyModel {
           if (item is Map) {
             final image = Map<String, dynamic>.from(item);
 
-            final url = image['url'] ??
-                image['imageUrl'] ??
-                image['secureUrl'];
+            final url = image['url'] ?? image['imageUrl'] ?? image['secureUrl'];
 
             if (url is String && url.isNotEmpty) {
               imageUrl = url;
@@ -112,9 +106,7 @@ class FavoritePropertyModel {
     return double.tryParse(value.toString()) ?? 0;
   }
 
-  static String _buildLocation(
-    Map<String, dynamic> property,
-  ) {
+  static String _buildLocation(Map<String, dynamic> property) {
     final location = property['location'];
 
     if (location is String && location.isNotEmpty) {

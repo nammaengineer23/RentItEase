@@ -11,26 +11,25 @@ import '../domain/repositories/property_visit_repository.dart';
 // Repository Provider
 // ==================================================
 
-final propertyVisitRepositoryProvider =
-    Provider<PropertyVisitRepository>((ref) {
+final propertyVisitRepositoryProvider = Provider<PropertyVisitRepository>((
+  ref,
+) {
   final dio = ref.watch(dioProvider);
 
-  return PropertyVisitRepositoryImpl(
-    PropertyVisitApi(dio),
-  );
+  return PropertyVisitRepositoryImpl(PropertyVisitApi(dio));
 });
 
 // ==================================================
 // Provider
 // ==================================================
 
-final propertyVisitProvider = StateNotifierProvider<
-    PropertyVisitNotifier,
-    AsyncValue<List<PropertyVisit>>>((ref) {
-  return PropertyVisitNotifier(
-    ref.watch(propertyVisitRepositoryProvider),
-  );
-});
+final propertyVisitProvider =
+    StateNotifierProvider<
+      PropertyVisitNotifier,
+      AsyncValue<List<PropertyVisit>>
+    >((ref) {
+      return PropertyVisitNotifier(ref.watch(propertyVisitRepositoryProvider));
+    });
 
 // ==================================================
 // Notifier
@@ -38,8 +37,7 @@ final propertyVisitProvider = StateNotifierProvider<
 
 class PropertyVisitNotifier
     extends StateNotifier<AsyncValue<List<PropertyVisit>>> {
-  PropertyVisitNotifier(this.repository)
-      : super(const AsyncLoading()) {
+  PropertyVisitNotifier(this.repository) : super(const AsyncLoading()) {
     loadMyVisits();
   }
 

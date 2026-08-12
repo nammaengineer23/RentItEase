@@ -52,6 +52,4 @@ class SearchEntity {
       sortBy: sortBy ?? this.sortBy,
     );
   }
-
-  
 }

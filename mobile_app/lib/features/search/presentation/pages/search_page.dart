@@ -31,11 +31,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   Future<void> _search() async {
-    await ref.read(searchProvider.notifier).search(
-          SearchEntity(
-            query: searchController.text.trim(),
-          ),
-        );
+    await ref
+        .read(searchProvider.notifier)
+        .search(SearchEntity(query: searchController.text.trim()));
   }
 
   @override
@@ -43,9 +41,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     final state = ref.watch(searchProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Search Properties'),
-      ),
+      appBar: AppBar(title: const Text('Search Properties')),
       body: Column(
         children: [
           Padding(
@@ -69,53 +65,40 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           ),
           Expanded(
             child: state.isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(),
-                  )
+                ? const Center(child: CircularProgressIndicator())
                 : state.error != null
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Text(
-                            state.error!,
-                            textAlign: TextAlign.center,
-                          ),
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text(state.error!, textAlign: TextAlign.center),
+                    ),
+                  )
+                : state.results.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.search_off, size: 80, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'No properties found',
+                          style: TextStyle(fontSize: 18),
                         ),
-                      )
-                    : state.results.isEmpty
-                        ? const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.search_off,
-                                  size: 80,
-                                  color: Colors.grey,
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'No properties found',
-                                  style: TextStyle(fontSize: 18),
-                                ),
-                              ],
-                            ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: () async {
-                              await ref
-                                  .read(searchProvider.notifier)
-                                  .refresh();
-                            },
-                            child: ListView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: state.results.length,
-                              itemBuilder: (_, index) {
-                                return SearchCard(
-                                  entity: state.results[index],
-                                );
-                              },
-                            ),
-                          ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () async {
+                      await ref.read(searchProvider.notifier).refresh();
+                    },
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: state.results.length,
+                      itemBuilder: (_, index) {
+                        return SearchCard(entity: state.results[index]);
+                      },
+                    ),
+                  ),
           ),
         ],
       ),

@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/models/search_model.dart';
 
 class SearchCard extends StatelessWidget {
-  const SearchCard({
-    super.key,
-    required this.entity,
-  });
+  const SearchCard({super.key, required this.entity});
 
   final SearchModel entity;
 
@@ -28,17 +25,13 @@ class SearchCard extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (entity.city != null)
-              Text('City: ${entity.city}'),
+            if (entity.city != null) Text('City: ${entity.city}'),
 
-            if (entity.locality != null)
-              Text('Locality: ${entity.locality}'),
+            if (entity.locality != null) Text('Locality: ${entity.locality}'),
 
-            if (entity.propertyType != null)
-              Text(entity.propertyType!),
+            if (entity.propertyType != null) Text(entity.propertyType!),
 
-            if (entity.bedrooms != null)
-              Text('${entity.bedrooms} BHK'),
+            if (entity.bedrooms != null) Text('${entity.bedrooms} BHK'),
 
             if (entity.minRent != null || entity.maxRent != null)
               Text(

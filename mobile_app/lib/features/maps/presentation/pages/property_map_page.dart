@@ -20,7 +20,8 @@ class _PropertyMapPageState extends ConsumerState<PropertyMapPage> {
 
   final TextEditingController _searchController = TextEditingController();
 
-  final Completer<GoogleMapController> _controller = Completer();
+  final Completer<GoogleMapController> _controller =
+      Completer<GoogleMapController>();
 
   int? selectedMarkerIndex;
 
@@ -40,6 +41,10 @@ class _PropertyMapPageState extends ConsumerState<PropertyMapPage> {
     super.dispose();
   }
 
+  //==================================================
+  // Build Property Markers
+  //==================================================
+
   Set<Marker> _buildMarkers(MapsProvider provider) {
     final markers = <Marker>{};
 
@@ -48,13 +53,18 @@ class _PropertyMapPageState extends ConsumerState<PropertyMapPage> {
 
       markers.add(
         Marker(
-          markerId: MarkerId(i.toString()),
+          markerId: MarkerId(property.id),
           position: LatLng(property.latitude, property.longitude),
-          infoWindow: InfoWindow(title: property.address),
+          infoWindow: InfoWindow(
+            title: property.title,
+            snippet: property.address,
+          ),
           onTap: () {
             setState(() {
               selectedMarkerIndex = i;
             });
+
+            provider.selectProperty(property);
           },
         ),
       );
@@ -63,15 +73,33 @@ class _PropertyMapPageState extends ConsumerState<PropertyMapPage> {
     return markers;
   }
 
-  Future<void> _moveCamera(double lat, double lng) async {
+  //==================================================
+  // Move Camera
+  //==================================================
+
+  Future<void> _moveCamera(double latitude, double longitude) async {
     if (_mapController == null) return;
 
     await _mapController!.animateCamera(
       CameraUpdate.newCameraPosition(
-        CameraPosition(target: LatLng(lat, lng), zoom: 16),
+        CameraPosition(target: LatLng(latitude, longitude), zoom: 16),
       ),
     );
   }
+
+  //==================================================
+  // Close Selected Property
+  //==================================================
+
+  void _clearSelectedProperty() {
+    setState(() {
+      selectedMarkerIndex = null;
+    });
+  }
+
+  //==================================================
+  // Build
+  //==================================================
 
   @override
   Widget build(BuildContext context) {
@@ -80,9 +108,9 @@ class _PropertyMapPageState extends ConsumerState<PropertyMapPage> {
     return Scaffold(
       body: Stack(
         children: [
-          //--------------------------------------------------
+          //==================================================
           // Google Map
-          //--------------------------------------------------
+          //==================================================
           GoogleMap(
             initialCameraPosition: CameraPosition(
               target: LatLng(provider.latitude, provider.longitude),
@@ -93,9 +121,7 @@ class _PropertyMapPageState extends ConsumerState<PropertyMapPage> {
             myLocationButtonEnabled: false,
 
             zoomControlsEnabled: false,
-
             compassEnabled: true,
-
             mapToolbarEnabled: false,
 
             markers: _buildMarkers(provider),
@@ -109,9 +135,7 @@ class _PropertyMapPageState extends ConsumerState<PropertyMapPage> {
             },
 
             onTap: (latLng) async {
-              setState(() {
-                selectedMarkerIndex = null;
-              });
+              _clearSelectedProperty();
 
               await provider.updateLocationFromMap(
                 latLng.latitude,
@@ -120,9 +144,9 @@ class _PropertyMapPageState extends ConsumerState<PropertyMapPage> {
             },
           ),
 
-          //--------------------------------------------------
+          //==================================================
           // Search Bar
-          //--------------------------------------------------
+          //==================================================
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -131,12 +155,10 @@ class _PropertyMapPageState extends ConsumerState<PropertyMapPage> {
                 borderRadius: BorderRadius.circular(30),
                 child: TextField(
                   controller: _searchController,
-
                   textInputAction: TextInputAction.search,
 
                   decoration: InputDecoration(
                     hintText: 'Search location...',
-
                     prefixIcon: const Icon(Icons.search),
 
                     suffixIcon: IconButton(
@@ -150,9 +172,13 @@ class _PropertyMapPageState extends ConsumerState<PropertyMapPage> {
                       borderRadius: BorderRadius.circular(30),
                       borderSide: BorderSide.none,
                     ),
+
+                    filled: true,
                   ),
 
                   onSubmitted: (value) async {
+                    if (value.trim().isEmpty) return;
+
                     await provider.searchLocation(value);
 
                     await _moveCamera(provider.latitude, provider.longitude);
@@ -162,19 +188,20 @@ class _PropertyMapPageState extends ConsumerState<PropertyMapPage> {
             ),
           ),
 
-          //--------------------------------------------------
+          //==================================================
           // Current Location Button
-          //--------------------------------------------------
+          //==================================================
           Positioned(
             right: 16,
             bottom: 170,
             child: CurrentLocationButton(mapController: _mapController),
           ),
 
-          //--------------------------------------------------
+          //==================================================
           // Selected Property Information
-          //--------------------------------------------------
-          if (selectedMarkerIndex != null)
+          //==================================================
+          if (selectedMarkerIndex != null &&
+              selectedMarkerIndex! < provider.nearbyProperties.length)
             Positioned(
               left: 0,
               right: 0,
@@ -185,34 +212,39 @@ class _PropertyMapPageState extends ConsumerState<PropertyMapPage> {
                       provider.nearbyProperties[selectedMarkerIndex!];
 
                   return PropertyMarkerInfo(
-                    title: property.address,
-                    address: '${property.city}, ${property.state}',
-                    price: '₹18,000 / month',
-                    imageUrl: '',
-                    rating: 4.6,
-                    distance: 2.3,
+                    title: property.title,
+
+                    address: '${property.locality}, ${property.city}',
+
+                    price: '₹${property.rent.toStringAsFixed(0)} / month',
+
+                    imageUrl: property.imageUrls.isNotEmpty
+                        ? property.imageUrls.first.toString()
+                        : '',
+
+                    rating: property.rating,
+
+                    distance: provider.distanceFrom(
+                      userLatitude: provider.latitude,
+                      userLongitude: provider.longitude,
+                    ),
 
                     onNavigate: () async {
-                      await provider.openNavigation();
+                      await provider.openPropertyNavigation(property);
                     },
 
                     onViewDetails: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Open Property Details')),
-                      );
-
-                      // TODO:
-                      // Navigate to PropertyDetailsPage
-                      // Navigator.push(...)
+                      // Property details navigation
+                      // will be connected here.
                     },
                   );
                 },
               ),
             ),
 
-          //--------------------------------------------------
+          //==================================================
           // Loading Indicator
-          //--------------------------------------------------
+          //==================================================
           if (provider.isLoading)
             Container(
               color: Colors.black12,
