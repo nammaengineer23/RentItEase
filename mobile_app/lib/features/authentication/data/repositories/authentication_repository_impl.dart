@@ -4,36 +4,37 @@ import '../models/register_request.dart';
 import '../../services/authentication_service.dart';
 
 class AuthenticationRepositoryImpl {
-  AuthenticationRepositoryImpl({AuthenticationService? service})
-    : _service = service ?? AuthenticationService();
+  AuthenticationRepositoryImpl({
+    AuthenticationService? service,
+  }) : _service = service ?? AuthenticationService();
 
   final AuthenticationService _service;
 
-  Future<AuthResponse> login(LoginRequest request) async {
+  Future<AuthResponse> login(LoginRequest request) {
     return _service.login(request);
   }
 
-  Future<AuthResponse> register(RegisterRequest request) async {
+  Future<AuthResponse> register(RegisterRequest request) {
     return _service.register(request);
   }
 
-  Future<void> logout() async {
-    await _service.logout();
+  Future<void> logout() {
+    return _service.logout();
   }
 
-  Future<void> refreshToken() async {
-    await _service.refreshToken();
+  Future<void> refreshToken() {
+    return _service.refreshToken();
   }
 
-  Future<void> firebaseLogin(String idToken) async {
-    await _service.firebaseLogin(idToken);
+  Future<AuthResponse> firebaseLogin(String idToken) {
+    return _service.firebaseLogin(idToken);
   }
 
-  Future<AuthResponse?> restoreSession() async {
+  Future<AuthResponse?> restoreSession() {
     return _service.restoreSession();
   }
 
-  Future<void> saveSession(AuthResponse response) async {
-    await _service.saveSession(response);
+  Future<void> saveSession(AuthResponse response) {
+    return _service.saveSession(response);
   }
 }

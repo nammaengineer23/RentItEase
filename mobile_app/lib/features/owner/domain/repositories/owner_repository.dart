@@ -26,9 +26,39 @@ abstract class OwnerRepository {
 
   Future<OwnerPropertyEntity> getProperty(String propertyId);
 
-  Future<void> addProperty(OwnerPropertyEntity property);
+  Future<void> addProperty(
+    OwnerPropertyEntity property, {
+    required double area,
+    required int bathrooms,
+    required int bedrooms,
+    required String country,
+    required String furnishing,
+    String? landmark,
+    double? latitude,
+    double? longitude,
+    required bool parking,
+    required bool petFriendly,
+    required String pincode,
+    required double securityDeposit,
+    required String stateName,
+  });
 
-  Future<void> updateProperty(OwnerPropertyEntity property);
+  Future<void> updateProperty(
+    OwnerPropertyEntity property, {
+    required double area,
+    required int bathrooms,
+    required int bedrooms,
+    required String country,
+    required String furnishing,
+    String? landmark,
+    double? latitude,
+    double? longitude,
+    required bool parking,
+    required bool petFriendly,
+    required String pincode,
+    required double securityDeposit,
+    required String stateName,
+  });
 
   Future<void> deleteProperty(String propertyId);
 

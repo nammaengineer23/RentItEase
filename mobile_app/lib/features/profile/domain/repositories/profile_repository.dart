@@ -1,18 +1,31 @@
 import '../entities/profile_entity.dart';
 
 abstract class ProfileRepository {
-  // Get current logged-in user profile
+  // ============================================================
+  // CURRENT PROFILE
+  // ============================================================
+
   Future<ProfileEntity> getProfile();
 
-  // Update user profile details
+  // ============================================================
+  // UPDATE PROFILE
+  // ============================================================
+
   Future<ProfileEntity> updateProfile({
     required String fullName,
     required String phone,
+    String? photoUrl,
   });
 
-  // Upload profile image
+  // ============================================================
+  // PROFILE IMAGE
+  // ============================================================
+
   Future<String> uploadProfileImage(String imagePath);
 
-  // Logout user
+  // ============================================================
+  // LOGOUT
+  // ============================================================
+
   Future<void> logout();
 }

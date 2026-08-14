@@ -9,48 +9,41 @@ class ProfileRepositoryImpl implements ProfileRepository {
 
   final ProfileApi _api;
 
-  //=========================================
-  // Get Profile
-  //=========================================
-
   @override
   Future<ProfileEntity> getProfile() async {
     final ProfileModel model = await _api.getProfile();
     return model.toEntity();
   }
 
-  //=========================================
-  // Update Profile
-  //=========================================
-
   @override
   Future<ProfileEntity> updateProfile({
     required String fullName,
     required String phone,
+    String? photoUrl,
   }) async {
     final ProfileModel model = await _api.updateProfile(
       fullName: fullName,
       phone: phone,
+      photoUrl: photoUrl,
     );
 
     return model.toEntity();
   }
-
-  //=========================================
-  // Upload Profile Image
-  //=========================================
 
   @override
   Future<String> uploadProfileImage(String imagePath) {
     return _api.uploadProfileImage(imagePath);
   }
 
-  //=========================================
-  // Logout
-  //=========================================
-
   @override
   Future<void> logout() async {
-    // JWT removal will be handled in Auth module.
+    // Global authentication state owns logout.
+    //
+    // AuthenticationProvider.logout() calls:
+    //   POST /auth/logout
+    //   StorageService.clearTokens()
+    //
+    // Therefore this method intentionally does not duplicate
+    // the logout API request.
   }
 }

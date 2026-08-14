@@ -5,17 +5,19 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { NotificationType, UserRole, VisitStatus } from '@prisma/client';
+
 import { PrismaService } from '../../prisma/prisma.service';
 
-import { VisitStatus, UserRole } from '@prisma/client';
+import { MailService } from '../../mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { PushNotificationsService } from '../push-notifications/push-notifications.service';
+
+import { serializePrisma } from '../../common/utils/prisma-response.util';
 
 import { CreatePropertyVisitDto } from './dto/create-property-visit.dto';
 import { UpdatePropertyVisitDto } from './dto/update-property-visit.dto';
-import { MailService } from '../../mail/mail.service';
-import { serializePrisma } from '../../common/utils/prisma-response.util';
-import { NotificationsService } from '../notifications/notifications.service';
-import { PushNotificationsService } from '../push-notifications/push-notifications.service';
-import { NotificationType } from '@prisma/client';
+
 @Injectable()
 export class PropertyVisitsService {
   constructor(
@@ -25,9 +27,9 @@ export class PropertyVisitsService {
     private readonly pushNotificationsService: PushNotificationsService,
   ) {}
 
-  // =====================================
+  // ============================================================
   // Create Visit Request
-  // =====================================
+  // ============================================================
 
   async create(dto: CreatePropertyVisitDto, user: any) {
     const property = await this.prisma.property.findUnique({
@@ -46,12 +48,24 @@ export class PropertyVisitsService {
       );
     }
 
+    // Prevent owner from booking a visit on their own property.
+    if (property.ownerId === user.id) {
+      throw new BadRequestException(
+        'You cannot book a visit for your own property.',
+      );
+    }
+
     const visitDate = new Date(dto.visitDate);
+
+    if (Number.isNaN(visitDate.getTime())) {
+      throw new BadRequestException('Invalid visit date.');
+    }
 
     if (visitDate.getTime() <= Date.now()) {
       throw new BadRequestException('Visit date must be in the future.');
     }
 
+    // Prevent duplicate active bookings for the same property/time.
     const existingVisit = await this.prisma.propertyVisit.findFirst({
       where: {
         propertyId: dto.propertyId,
@@ -108,23 +122,25 @@ export class PropertyVisitsService {
       },
     });
 
-    // ==========================
+    // ============================================================
     // Email Notification
-    // ==========================
+    // ============================================================
 
-    /*  await this.mailService.sendVisitRequestEmail(
-    visit.property.owner.email,
-    {
-      ownerName: visit.property.owner.fullName,
-      tenantName: visit.tenant.fullName,
-      propertyTitle: visit.property.title,
-      visitDate: visit.visitDate,
-    },
-  );
-*/
-    // ==========================
+    /*
+    await this.mailService.sendVisitRequestEmail(
+      visit.property.owner.email,
+      {
+        ownerName: visit.property.owner.fullName,
+        tenantName: visit.tenant.fullName,
+        propertyTitle: visit.property.title,
+        visitDate: visit.visitDate,
+      },
+    );
+    */
+
+    // ============================================================
     // In-App Notification
-    // ==========================
+    // ============================================================
 
     await this.notificationsService.createNotification(
       visit.property.owner.id,
@@ -133,9 +149,9 @@ export class PropertyVisitsService {
       NotificationType.VISIT_REQUEST,
     );
 
-    // ==========================
-    // Push Notification (FCM)
-    // ==========================
+    // ============================================================
+    // Push Notification
+    // ============================================================
 
     await this.pushNotificationsService.sendToUser(
       visit.property.owner.id,
@@ -151,13 +167,83 @@ export class PropertyVisitsService {
     return {
       success: true,
       message: 'Visit booked successfully.',
-      data: visit,
+      data: serializePrisma(visit),
     };
   }
 
-  // =====================================
+  // ============================================================
+  // Get Visits
+  //
+  // Tenant:
+  //   only own visits
+  //
+  // Admin:
+  //   all visits
+  //
+  // Owner:
+  //   returns own tenant visits if they happen to have any;
+  //   owner-specific requests use /owner.
+  // ============================================================
+
+  async findAll(user: any) {
+    const where =
+      user.role === UserRole.ADMIN
+        ? {}
+        : {
+            tenantId: user.id,
+          };
+
+    const visits = await this.prisma.propertyVisit.findMany({
+      where,
+
+      include: {
+        property: {
+          include: {
+            owner: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+              },
+            },
+
+            images: {
+              where: {
+                isPrimary: true,
+              },
+              orderBy: {
+                displayOrder: 'asc',
+              },
+            },
+          },
+        },
+
+        tenant: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+
+      orderBy: {
+        visitDate: 'asc',
+      },
+    });
+
+    return {
+      success: true,
+      total: visits.length,
+      visits: serializePrisma(visits),
+    };
+  }
+
+  // ============================================================
   // Owner Visits
-  // =====================================
+  // ============================================================
 
   async getOwnerVisits(user: any) {
     const visits = await this.prisma.propertyVisit.findMany({
@@ -212,62 +298,11 @@ export class PropertyVisitsService {
     };
   }
 
-  // =====================================
-  // Get All
-  // =====================================
+  // ============================================================
+  // Find One - Authorized
+  // ============================================================
 
-  async findAll() {
-    const visits = await this.prisma.propertyVisit.findMany({
-      include: {
-        property: {
-          include: {
-            owner: {
-              select: {
-                id: true,
-                fullName: true,
-                email: true,
-                phone: true,
-              },
-            },
-
-            images: {
-              where: {
-                isPrimary: true,
-              },
-              orderBy: {
-                displayOrder: 'asc',
-              },
-            },
-          },
-        },
-
-        tenant: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            phone: true,
-          },
-        },
-      },
-
-      orderBy: {
-        visitDate: 'asc',
-      },
-    });
-
-    return {
-      success: true,
-      total: visits.length,
-      visits: serializePrisma(visits),
-    };
-  }
-
-  // =====================================
-  // Get One
-  // =====================================
-
-  async findOne(id: string) {
+  async findOne(id: string, user: any) {
     const visit = await this.prisma.propertyVisit.findUnique({
       where: {
         id,
@@ -311,31 +346,41 @@ export class PropertyVisitsService {
       throw new NotFoundException('Visit not found.');
     }
 
+    const isAdmin = user.role === UserRole.ADMIN;
+
+    const isTenant = visit.tenantId === user.id;
+
+    const isOwner = visit.property.ownerId === user.id;
+
+    if (!isAdmin && !isTenant && !isOwner) {
+      throw new ForbiddenException('Access denied.');
+    }
+
     return serializePrisma(visit);
   }
 
-  // =====================================
+  // ============================================================
   // Approve
-  // =====================================
-
-  // =====================================
-  // Approve
-  // =====================================
+  // ============================================================
 
   async approveVisit(id: string, user: any) {
-    const visit = await this.findOne(id);
+    const visit = await this.getAuthorizedVisitForOwnerAction(id, user);
 
-    if (visit.property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('Access denied.');
+    if (visit.status !== VisitStatus.PENDING) {
+      throw new BadRequestException(
+        `Only pending visits can be approved. Current status: ${visit.status}.`,
+      );
     }
 
     const updatedVisit = await this.prisma.propertyVisit.update({
       where: {
         id,
       },
+
       data: {
         status: VisitStatus.APPROVED,
       },
+
       include: {
         property: {
           include: {
@@ -347,6 +392,7 @@ export class PropertyVisitsService {
                 phone: true,
               },
             },
+
             images: {
               where: {
                 isPrimary: true,
@@ -354,6 +400,7 @@ export class PropertyVisitsService {
             },
           },
         },
+
         tenant: {
           select: {
             id: true,
@@ -365,6 +412,10 @@ export class PropertyVisitsService {
       },
     });
 
+    // ============================================================
+    // Email
+    // ============================================================
+
     try {
       await this.mailService.sendVisitApprovalEmail(
         updatedVisit.tenant.email,
@@ -373,12 +424,12 @@ export class PropertyVisitsService {
         updatedVisit.visitDate.toLocaleString(),
       );
     } catch (error) {
-      console.error(error);
+      console.error('Visit approval email failed:', error);
     }
 
-    // ==========================
+    // ============================================================
     // In-App Notification
-    // ==========================
+    // ============================================================
 
     await this.notificationsService.createNotification(
       updatedVisit.tenant.id,
@@ -387,9 +438,9 @@ export class PropertyVisitsService {
       NotificationType.VISIT_APPROVED,
     );
 
-    // ==========================
-    // Push Notification (FCM)
-    // ==========================
+    // ============================================================
+    // Push
+    // ============================================================
 
     await this.pushNotificationsService.sendToUser(
       updatedVisit.tenant.id,
@@ -408,28 +459,29 @@ export class PropertyVisitsService {
       data: serializePrisma(updatedVisit),
     };
   }
-  // =====================================
-  // Reject
-  // =====================================
 
-  // =====================================
+  // ============================================================
   // Reject
-  // =====================================
+  // ============================================================
 
   async rejectVisit(id: string, user: any) {
-    const visit = await this.findOne(id);
+    const visit = await this.getAuthorizedVisitForOwnerAction(id, user);
 
-    if (visit.property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('Access denied.');
+    if (visit.status !== VisitStatus.PENDING) {
+      throw new BadRequestException(
+        `Only pending visits can be rejected. Current status: ${visit.status}.`,
+      );
     }
 
     const updatedVisit = await this.prisma.propertyVisit.update({
       where: {
         id,
       },
+
       data: {
         status: VisitStatus.REJECTED,
       },
+
       include: {
         property: {
           include: {
@@ -441,6 +493,7 @@ export class PropertyVisitsService {
                 phone: true,
               },
             },
+
             images: {
               where: {
                 isPrimary: true,
@@ -448,6 +501,7 @@ export class PropertyVisitsService {
             },
           },
         },
+
         tenant: {
           select: {
             id: true,
@@ -459,9 +513,9 @@ export class PropertyVisitsService {
       },
     });
 
-    // ==========================
+    // ============================================================
     // Email
-    // ==========================
+    // ============================================================
 
     try {
       await this.mailService.sendVisitRejectedEmail(
@@ -470,12 +524,12 @@ export class PropertyVisitsService {
         updatedVisit.property.title,
       );
     } catch (error) {
-      console.error(error);
+      console.error('Visit rejection email failed:', error);
     }
 
-    // ==========================
+    // ============================================================
     // In-App Notification
-    // ==========================
+    // ============================================================
 
     await this.notificationsService.createNotification(
       updatedVisit.tenant.id,
@@ -484,9 +538,9 @@ export class PropertyVisitsService {
       NotificationType.VISIT_REJECTED,
     );
 
-    // ==========================
-    // Push Notification (FCM)
-    // ==========================
+    // ============================================================
+    // Push
+    // ============================================================
 
     await this.pushNotificationsService.sendToUser(
       updatedVisit.tenant.id,
@@ -505,28 +559,29 @@ export class PropertyVisitsService {
       data: serializePrisma(updatedVisit),
     };
   }
-  // =====================================
-  // Complete
-  // =====================================
 
-  // =====================================
+  // ============================================================
   // Complete
-  // =====================================
+  // ============================================================
 
   async completeVisit(id: string, user: any) {
-    const visit = await this.findOne(id);
+    const visit = await this.getAuthorizedVisitForOwnerAction(id, user);
 
-    if (visit.property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('Access denied.');
+    if (visit.status !== VisitStatus.APPROVED) {
+      throw new BadRequestException(
+        `Only approved visits can be completed. Current status: ${visit.status}.`,
+      );
     }
 
     const updatedVisit = await this.prisma.propertyVisit.update({
       where: {
         id,
       },
+
       data: {
         status: VisitStatus.COMPLETED,
       },
+
       include: {
         property: {
           include: {
@@ -538,6 +593,7 @@ export class PropertyVisitsService {
                 phone: true,
               },
             },
+
             images: {
               where: {
                 isPrimary: true,
@@ -545,6 +601,7 @@ export class PropertyVisitsService {
             },
           },
         },
+
         tenant: {
           select: {
             id: true,
@@ -556,9 +613,9 @@ export class PropertyVisitsService {
       },
     });
 
-    // ==========================
+    // ============================================================
     // Email
-    // ==========================
+    // ============================================================
 
     try {
       await this.mailService.sendVisitCompletedEmail(
@@ -567,12 +624,12 @@ export class PropertyVisitsService {
         updatedVisit.property.title,
       );
     } catch (error) {
-      console.error(error);
+      console.error('Visit completion email failed:', error);
     }
 
-    // ==========================
+    // ============================================================
     // In-App Notification
-    // ==========================
+    // ============================================================
 
     await this.notificationsService.createNotification(
       updatedVisit.tenant.id,
@@ -581,9 +638,9 @@ export class PropertyVisitsService {
       NotificationType.VISIT_COMPLETED,
     );
 
-    // ==========================
-    // Push Notification (FCM)
-    // ==========================
+    // ============================================================
+    // Push
+    // ============================================================
 
     await this.pushNotificationsService.sendToUser(
       updatedVisit.tenant.id,
@@ -603,34 +660,33 @@ export class PropertyVisitsService {
     };
   }
 
-  // =====================================
+  // ============================================================
   // Cancel
-  // =====================================
-
-  // =====================================
-  // Cancel
-  // =====================================
+  // ============================================================
 
   async cancelVisit(id: string, user: any) {
-    const visit = await this.findOne(id);
+    const visit = await this.getAuthorizedVisit(id, user);
 
-    const isOwner = visit.property.ownerId === user.id;
+    if (
+      visit.status === VisitStatus.COMPLETED ||
+      visit.status === VisitStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        `A ${visit.status.toLowerCase()} visit cannot be cancelled.`,
+      );
+    }
 
     const isTenant = visit.tenantId === user.id;
-
-    const isAdmin = user.role === UserRole.ADMIN;
-
-    if (!isOwner && !isTenant && !isAdmin) {
-      throw new ForbiddenException('Access denied.');
-    }
 
     const updatedVisit = await this.prisma.propertyVisit.update({
       where: {
         id,
       },
+
       data: {
         status: VisitStatus.CANCELLED,
       },
+
       include: {
         property: {
           include: {
@@ -642,6 +698,7 @@ export class PropertyVisitsService {
                 phone: true,
               },
             },
+
             images: {
               where: {
                 isPrimary: true,
@@ -649,6 +706,7 @@ export class PropertyVisitsService {
             },
           },
         },
+
         tenant: {
           select: {
             id: true,
@@ -660,9 +718,9 @@ export class PropertyVisitsService {
       },
     });
 
-    // =====================================
+    // ============================================================
     // Email
-    // =====================================
+    // ============================================================
 
     try {
       if (isTenant) {
@@ -679,12 +737,12 @@ export class PropertyVisitsService {
         );
       }
     } catch (error) {
-      console.error(error);
+      console.error('Visit cancellation email failed:', error);
     }
 
-    // =====================================
-    // In-App Notification
-    // =====================================
+    // ============================================================
+    // Notification receiver
+    // ============================================================
 
     const receiverId = isTenant
       ? updatedVisit.property.owner.id
@@ -703,9 +761,9 @@ export class PropertyVisitsService {
       NotificationType.VISIT_CANCELLED,
     );
 
-    // =====================================
-    // Push Notification (FCM)
-    // =====================================
+    // ============================================================
+    // Push
+    // ============================================================
 
     await this.pushNotificationsService.sendToUser(receiverId, title, message, {
       type: 'VISIT_CANCELLED',
@@ -720,27 +778,39 @@ export class PropertyVisitsService {
     };
   }
 
-  // =====================================
+  // ============================================================
   // Update
-  // =====================================
+  // ============================================================
 
-  async update(id: string, dto: UpdatePropertyVisitDto) {
-    await this.findOne(id);
+  async update(id: string, dto: UpdatePropertyVisitDto, user: any) {
+    const visit = await this.getAuthorizedVisit(id, user);
+
+    if (visit.status !== VisitStatus.PENDING) {
+      throw new BadRequestException('Only pending visits can be updated.');
+    }
+
+    // Only tenant, owner or admin can update.
+    // Property ownership is already checked by
+    // getAuthorizedVisit().
 
     const updatedVisit = await this.prisma.propertyVisit.update({
       where: {
         id,
       },
+
       data: {
         ...(dto.visitDate && {
           visitDate: new Date(dto.visitDate),
         }),
+
         ...(dto.notes !== undefined && {
           notes: dto.notes,
         }),
       },
+
       include: {
         property: true,
+
         tenant: {
           select: {
             id: true,
@@ -759,12 +829,12 @@ export class PropertyVisitsService {
     };
   }
 
-  // =====================================
+  // ============================================================
   // Delete
-  // =====================================
+  // ============================================================
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, user: any) {
+    await this.getAuthorizedVisit(id, user);
 
     await this.prisma.propertyVisit.delete({
       where: {
@@ -776,5 +846,81 @@ export class PropertyVisitsService {
       success: true,
       message: 'Visit deleted successfully.',
     };
+  }
+
+  // ============================================================
+  // Authorization Helpers
+  // ============================================================
+
+  private async getAuthorizedVisit(id: string, user: any) {
+    const visit = await this.prisma.propertyVisit.findUnique({
+      where: {
+        id,
+      },
+
+      include: {
+        property: {
+          select: {
+            id: true,
+            ownerId: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    if (!visit) {
+      throw new NotFoundException('Visit not found.');
+    }
+
+    const isAdmin = user.role === UserRole.ADMIN;
+
+    const isTenant = visit.tenantId === user.id;
+
+    const isOwner = visit.property.ownerId === user.id;
+
+    if (!isAdmin && !isTenant && !isOwner) {
+      throw new ForbiddenException('Access denied.');
+    }
+
+    return visit;
+  }
+
+  // ============================================================
+  // Owner/Admin Authorization
+  // ============================================================
+
+  private async getAuthorizedVisitForOwnerAction(id: string, user: any) {
+    const visit = await this.prisma.propertyVisit.findUnique({
+      where: {
+        id,
+      },
+
+      include: {
+        property: {
+          select: {
+            id: true,
+            ownerId: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    if (!visit) {
+      throw new NotFoundException('Visit not found.');
+    }
+
+    const isAdmin = user.role === UserRole.ADMIN;
+
+    const isOwner = visit.property.ownerId === user.id;
+
+    if (!isAdmin && !isOwner) {
+      throw new ForbiddenException(
+        'Only the property owner or administrator can perform this action.',
+      );
+    }
+
+    return visit;
   }
 }

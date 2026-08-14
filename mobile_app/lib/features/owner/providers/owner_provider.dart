@@ -34,6 +34,7 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
       state = state.copyWith(loading: true, error: null);
 
       final summary = await repository.getDashboardSummary();
+
       final activities = await repository.getRecentActivities();
 
       state = state.copyWith(
@@ -91,19 +92,124 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
     }
   }
 
-  Future<void> addProperty(OwnerPropertyEntity property) async {
-    await repository.addProperty(property);
-    await loadMyProperties();
+  // ==========================================================
+  // Add Property
+  // ==========================================================
+
+  Future<void> addProperty(
+    OwnerPropertyEntity property, {
+    required double area,
+    required int bathrooms,
+    required int bedrooms,
+    required String country,
+    required String furnishing,
+    String? landmark,
+    double? latitude,
+    double? longitude,
+    required bool parking,
+    required bool petFriendly,
+    required String pincode,
+    required double securityDeposit,
+    required String stateName,
+  }) async {
+    try {
+      state = state.copyWith(loading: true, error: null);
+
+      await repository.addProperty(
+        property,
+        area: area,
+        bathrooms: bathrooms,
+        bedrooms: bedrooms,
+        country: country,
+        furnishing: furnishing,
+        landmark: landmark,
+        latitude: latitude,
+        longitude: longitude,
+        parking: parking,
+        petFriendly: petFriendly,
+        pincode: pincode,
+        securityDeposit: securityDeposit,
+        stateName: stateName,
+      );
+
+      await loadMyProperties();
+
+      state = state.copyWith(error: null);
+    } catch (e) {
+      state = state.copyWith(loading: false, error: e.toString());
+
+      rethrow;
+    }
   }
 
-  Future<void> updateProperty(OwnerPropertyEntity property) async {
-    await repository.updateProperty(property);
-    await loadMyProperties();
+  // ==========================================================
+  // Update Property
+  // ==========================================================
+
+  Future<void> updateProperty(
+    OwnerPropertyEntity property, {
+    required double area,
+    required int bathrooms,
+    required int bedrooms,
+    required String country,
+    required String furnishing,
+    String? landmark,
+    double? latitude,
+    double? longitude,
+    required bool parking,
+    required bool petFriendly,
+    required String pincode,
+    required double securityDeposit,
+    required String stateName,
+  }) async {
+    try {
+      state = state.copyWith(loading: true, error: null);
+
+      await repository.updateProperty(
+        property,
+        area: area,
+        bathrooms: bathrooms,
+        bedrooms: bedrooms,
+        country: country,
+        furnishing: furnishing,
+        landmark: landmark,
+        latitude: latitude,
+        longitude: longitude,
+        parking: parking,
+        petFriendly: petFriendly,
+        pincode: pincode,
+        securityDeposit: securityDeposit,
+        stateName: stateName,
+      );
+
+      await loadMyProperties();
+
+      state = state.copyWith(error: null);
+    } catch (e) {
+      state = state.copyWith(loading: false, error: e.toString());
+
+      rethrow;
+    }
   }
+
+  // ==========================================================
+  // Delete Property
+  // ==========================================================
 
   Future<void> deleteProperty(String propertyId) async {
-    await repository.deleteProperty(propertyId);
-    await loadMyProperties();
+    try {
+      state = state.copyWith(loading: true, error: null);
+
+      await repository.deleteProperty(propertyId);
+
+      await loadMyProperties();
+
+      state = state.copyWith(error: null);
+    } catch (e) {
+      state = state.copyWith(loading: false, error: e.toString());
+
+      rethrow;
+    }
   }
 
   Future<void> refreshProperties() async {
@@ -131,18 +237,45 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
   }
 
   Future<void> approveVisit(String visitId) async {
-    await repository.approveVisit(visitId);
-    await loadVisitRequests();
+    try {
+      state = state.copyWith(loading: true, error: null);
+
+      await repository.approveVisit(visitId);
+
+      await loadVisitRequests();
+    } catch (e) {
+      state = state.copyWith(loading: false, error: e.toString());
+
+      rethrow;
+    }
   }
 
   Future<void> rejectVisit(String visitId) async {
-    await repository.rejectVisit(visitId);
-    await loadVisitRequests();
+    try {
+      state = state.copyWith(loading: true, error: null);
+
+      await repository.rejectVisit(visitId);
+
+      await loadVisitRequests();
+    } catch (e) {
+      state = state.copyWith(loading: false, error: e.toString());
+
+      rethrow;
+    }
   }
 
   Future<void> completeVisit(String visitId) async {
-    await repository.completeVisit(visitId);
-    await loadVisitRequests();
+    try {
+      state = state.copyWith(loading: true, error: null);
+
+      await repository.completeVisit(visitId);
+
+      await loadVisitRequests();
+    } catch (e) {
+      state = state.copyWith(loading: false, error: e.toString());
+
+      rethrow;
+    }
   }
 
   Future<void> refreshVisitRequests() async {

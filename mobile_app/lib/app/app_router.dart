@@ -6,7 +6,7 @@ import '../features/authentication/presentation/pages/forgot_password_page.dart'
 import '../features/authentication/presentation/pages/login_page.dart';
 import '../features/authentication/presentation/pages/register_page.dart';
 
-import '../features/booking/presentation/pages/booking_page.dart';
+import '../features/property_visits/presentation/pages/book_visit_page.dart';
 import '../features/booking/presentation/pages/my_bookings_page.dart';
 
 import '../features/chat/presentation/pages/chat_list_page.dart';
@@ -215,14 +215,39 @@ class AppRouter {
       ),
 
       // ============================================================
+// Property Visit
+// ============================================================
+GoRoute(
+  path: '/book-visit/:propertyId',
+  name: 'book-visit',
+  builder: (context, state) {
+    final propertyId = state.pathParameters['propertyId'] ?? '';
+
+    final extra = state.extra;
+
+    String propertyTitle = '';
+    String propertyImage = '';
+    String ownerName = '';
+
+    if (extra is Map<String, dynamic>) {
+      propertyTitle = extra['propertyTitle']?.toString() ?? '';
+      propertyImage = extra['propertyImage']?.toString() ?? '';
+      ownerName = extra['ownerName']?.toString() ?? '';
+    }
+
+    return BookVisitPage(
+      propertyId: propertyId,
+      propertyTitle: propertyTitle,
+      propertyImage: propertyImage,
+      ownerName: ownerName,
+    );
+  },
+),
+
+      // ============================================================
       // Booking
       // ============================================================
-      GoRoute(
-        path: '/booking',
-        name: 'booking',
-        builder: (context, state) => const BookingPage(),
-      ),
-
+      
       GoRoute(
         path: '/my-bookings',
         name: 'my-bookings',

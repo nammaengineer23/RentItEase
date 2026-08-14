@@ -6,7 +6,7 @@ class Environment {
   /// 10.0.2.2; physical devices and release builds must supply their API URL.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://RentItEase-production-4d16.up.railway.app/api/v1',
+    defaultValue: 'http://localhost:3000/api/v1',
   );
 }
 

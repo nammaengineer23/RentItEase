@@ -16,24 +16,18 @@ class ProfileModel extends ProfileEntity {
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
     return ProfileModel(
       id: json['id']?.toString() ?? '',
-
-      fullName: json['fullName'] ?? json['name'] ?? '',
-
-      email: json['email'] ?? '',
-
-      phone: json['phone'] ?? '',
-
-      profileImage: json['profileImage'] ?? json['photoUrl'],
-
-      role: json['role'] ?? 'USER',
-
-      isVerified: json['isVerified'] ?? false,
-
-      isActive: json['isActive'] ?? true,
-
-      createdAt:
-          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
-          DateTime.now(),
+      fullName: json['fullName']?.toString() ??
+          json['name']?.toString() ??
+          '',
+      email: json['email']?.toString() ?? '',
+      phone: json['phone']?.toString() ?? '',
+      profileImage: _stringValue(
+        json['photoUrl'] ?? json['profileImage'],
+      ),
+      role: json['role']?.toString() ?? 'USER',
+      isVerified: json['isVerified'] == true,
+      isActive: json['isActive'] != false,
+      createdAt: _parseDate(json['createdAt']),
     );
   }
 
@@ -43,7 +37,7 @@ class ProfileModel extends ProfileEntity {
       'fullName': fullName,
       'email': email,
       'phone': phone,
-      'profileImage': profileImage,
+      'photoUrl': profileImage,
       'role': role,
       'isVerified': isVerified,
       'isActive': isActive,
@@ -102,5 +96,23 @@ class ProfileModel extends ProfileEntity {
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
     );
+  }
+
+  static String? _stringValue(dynamic value) {
+    if (value == null) return null;
+
+    final result = value.toString().trim();
+
+    return result.isEmpty ? null : result;
+  }
+
+  static DateTime _parseDate(dynamic value) {
+    if (value == null) {
+      return DateTime.now();
+    }
+
+    final parsed = DateTime.tryParse(value.toString());
+
+    return parsed ?? DateTime.now();
   }
 }

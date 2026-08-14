@@ -3,7 +3,6 @@ import '../../domain/entities/dashboard_summary_entity.dart';
 import '../../domain/entities/owner_property_entity.dart';
 import '../../domain/entities/visit_request_entity.dart';
 import '../../domain/repositories/owner_repository.dart';
-
 import '../api/owner_api.dart';
 
 class OwnerRepositoryImpl implements OwnerRepository {
@@ -51,28 +50,84 @@ class OwnerRepositoryImpl implements OwnerRepository {
   }
 
   @override
-  Future<void> addProperty(OwnerPropertyEntity property) {
+  Future<void> addProperty(
+    OwnerPropertyEntity property, {
+    required double area,
+    required int bathrooms,
+    required int bedrooms,
+    required String country,
+    required String furnishing,
+    String? landmark,
+    double? latitude,
+    double? longitude,
+    required bool parking,
+    required bool petFriendly,
+    required String pincode,
+    required double securityDeposit,
+    required String stateName,
+  }) {
     return _api.addProperty({
       'title': property.title,
-      'city': property.city,
+      'description': property.description,
+      'price': property.rent,
+      'address': property.address,
       'locality': property.locality,
-      'rent': property.rent,
-      'imageUrl': property.imageUrl,
-      'isAvailable': property.isAvailable,
-      'isVerified': property.isVerified,
+      'landmark': landmark,
+      'city': property.city,
+      'state': stateName,
+      'country': country,
+      'pincode': pincode,
+      'latitude': latitude,
+      'longitude': longitude,
+      'bedrooms': bedrooms,
+      'bathrooms': bathrooms,
+      'area': area,
+      'propertyType': _propertyTypeToApi(property.propertyType),
+      'furnishing': _furnishingToApi(furnishing),
+      'parking': parking,
+      'petFriendly': petFriendly,
+      'securityDeposit': securityDeposit,
     });
   }
 
   @override
-  Future<void> updateProperty(OwnerPropertyEntity property) {
+  Future<void> updateProperty(
+    OwnerPropertyEntity property, {
+    required double area,
+    required int bathrooms,
+    required int bedrooms,
+    required String country,
+    required String furnishing,
+    String? landmark,
+    double? latitude,
+    double? longitude,
+    required bool parking,
+    required bool petFriendly,
+    required String pincode,
+    required double securityDeposit,
+    required String stateName,
+  }) {
     return _api.updateProperty(property.id, {
       'title': property.title,
-      'city': property.city,
+      'description': property.description,
+      'price': property.rent,
+      'address': property.address,
       'locality': property.locality,
-      'rent': property.rent,
-      'imageUrl': property.imageUrl,
-      'isAvailable': property.isAvailable,
-      'isVerified': property.isVerified,
+      'landmark': landmark,
+      'city': property.city,
+      'state': stateName,
+      'country': country,
+      'pincode': pincode,
+      'latitude': latitude,
+      'longitude': longitude,
+      'bedrooms': bedrooms,
+      'bathrooms': bathrooms,
+      'area': area,
+      'propertyType': _propertyTypeToApi(property.propertyType),
+      'furnishing': _furnishingToApi(furnishing),
+      'parking': parking,
+      'petFriendly': petFriendly,
+      'securityDeposit': securityDeposit,
     });
   }
 
@@ -103,5 +158,53 @@ class OwnerRepositoryImpl implements OwnerRepository {
   @override
   Future<void> completeVisit(String visitId) {
     return _api.completeVisit(visitId);
+  }
+
+  // ==========================================================
+  // Helpers
+  // ==========================================================
+
+  String _propertyTypeToApi(String value) {
+    switch (value.trim().toLowerCase()) {
+      case 'apartment':
+        return 'APARTMENT';
+
+      case 'house':
+      case 'independent house':
+        return 'HOUSE';
+
+      case 'villa':
+        return 'VILLA';
+
+      case 'studio':
+        return 'STUDIO';
+
+      case 'room':
+        return 'ROOM';
+
+      case 'pg':
+        return 'PG';
+
+      default:
+        return value.toUpperCase();
+    }
+  }
+
+  String _furnishingToApi(String value) {
+    switch (value.trim().toLowerCase()) {
+      case 'unfurnished':
+        return 'UNFURNISHED';
+
+      case 'semi furnished':
+      case 'semi_furnished':
+        return 'SEMI_FURNISHED';
+
+      case 'fully furnished':
+      case 'fully_furnished':
+        return 'FULLY_FURNISHED';
+
+      default:
+        return value.toUpperCase();
+    }
   }
 }

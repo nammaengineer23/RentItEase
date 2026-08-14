@@ -11,6 +11,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+
 import {
   ApiBearerAuth,
   ApiBody,
@@ -18,8 +19,12 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+
+import { PropertyImageSection } from '@prisma/client';
+
 import { PropertyImagesService } from './property-images.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ReorderImagesDto } from './dto/reorder-images.dto';
@@ -27,9 +32,7 @@ import { ReorderImagesDto } from './dto/reorder-images.dto';
 @ApiTags('Property Images')
 @Controller('property-images')
 export class PropertyImagesController {
-  constructor(
-    private readonly propertyImagesService: PropertyImagesService,
-  ) {}
+  constructor(private readonly propertyImagesService: PropertyImagesService) {}
 
   // ==========================================
   // Upload Images
@@ -39,7 +42,7 @@ export class PropertyImagesController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Upload property images',
+    summary: 'Upload property images by section',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -48,6 +51,7 @@ export class PropertyImagesController {
       properties: {
         files: {
           type: 'array',
+          maxItems: 2,
           items: {
             type: 'string',
             format: 'binary',
@@ -55,21 +59,26 @@ export class PropertyImagesController {
         },
         isPrimary: {
           type: 'boolean',
+          example: false,
+        },
+        section: {
+          type: 'string',
+          enum: Object.values(PropertyImageSection),
+          example: 'KITCHEN',
         },
       },
-      
+      required: ['files', 'section'],
     },
   })
-@UseInterceptors(
-  FilesInterceptor('files', 10, {
-    storage: memoryStorage(),
-    limits: {
-      fileSize: 5 * 1024 * 1024,
-    },
-  }),
-)
-
-uploadImages(
+  @UseInterceptors(
+    FilesInterceptor('files', 2, {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    }),
+  )
+  async uploadImages(
     @Param('propertyId')
     propertyId: string,
 
@@ -77,16 +86,29 @@ uploadImages(
     files: Express.Multer.File[],
 
     @Body()
-    body: { isPrimary?: boolean },
+    body: {
+      isPrimary?: string | boolean;
+      section?: string;
+    },
 
     @Request()
     req: any,
   ) {
-    console.log('USER:', req.user);
+    const section =
+      body.section &&
+      Object.values(PropertyImageSection).includes(
+        body.section as PropertyImageSection,
+      )
+        ? (body.section as PropertyImageSection)
+        : PropertyImageSection.OTHER;
+
+    const isPrimary = body.isPrimary === true || body.isPrimary === 'true';
+
     return this.propertyImagesService.uploadImages(
       propertyId,
       files,
-      body.isPrimary ?? false,
+      isPrimary,
+      section,
       req.user,
     );
   }
@@ -103,9 +125,7 @@ uploadImages(
     @Param('propertyId')
     propertyId: string,
   ) {
-    return this.propertyImagesService.getImages(
-      propertyId,
-    );
+    return this.propertyImagesService.getImages(propertyId);
   }
 
   // ==========================================
@@ -128,11 +148,7 @@ uploadImages(
     @Request()
     req: any,
   ) {
-    return this.propertyImagesService.setPrimary(
-      propertyId,
-      imageId,
-      req.user,
-    );
+    return this.propertyImagesService.setPrimary(propertyId, imageId, req.user);
   }
 
   // ==========================================
@@ -155,11 +171,7 @@ uploadImages(
     @Request()
     req: any,
   ) {
-    return this.propertyImagesService.reorderImages(
-      propertyId,
-      dto,
-      req.user,
-    );
+    return this.propertyImagesService.reorderImages(propertyId, dto, req.user);
   }
 
   // ==========================================

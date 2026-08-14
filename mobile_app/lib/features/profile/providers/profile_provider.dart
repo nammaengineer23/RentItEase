@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/dio_provider.dart';
+import '../../authentication/providers/authentication_provider.dart';
 
 import '../data/profile_api.dart';
 import '../data/profile_repository.dart';
@@ -8,39 +9,48 @@ import '../data/profile_repository.dart';
 import '../domain/entities/profile_entity.dart';
 import '../domain/repositories/profile_repository.dart';
 
-//======================================================
-// Repository Provider
-//======================================================
+// ============================================================
+// PROFILE REPOSITORY PROVIDER
+// ============================================================
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   final dio = ref.watch(dioProvider);
 
-  return ProfileRepositoryImpl(ProfileApi(dio));
+  return ProfileRepositoryImpl(
+    ProfileApi(dio),
+  );
 });
 
-//======================================================
-// Profile Provider
-//======================================================
+// ============================================================
+// PROFILE PROVIDER
+// ============================================================
 
 final profileProvider =
     StateNotifierProvider<ProfileNotifier, AsyncValue<ProfileEntity?>>((ref) {
-      return ProfileNotifier(ref.read(profileRepositoryProvider));
+      return ProfileNotifier(
+        ref,
+        ref.read(profileRepositoryProvider),
+      );
     });
 
-//======================================================
-// Profile Notifier
-//======================================================
+// ============================================================
+// PROFILE NOTIFIER
+// ============================================================
 
 class ProfileNotifier extends StateNotifier<AsyncValue<ProfileEntity?>> {
-  ProfileNotifier(this._repository) : super(const AsyncLoading()) {
+  ProfileNotifier(
+    this._ref,
+    this._repository,
+  ) : super(const AsyncLoading()) {
     loadProfile();
   }
 
+  final Ref _ref;
   final ProfileRepository _repository;
 
-  //======================================================
-  // Load Profile
-  //======================================================
+  // ============================================================
+  // LOAD PROFILE
+  // ============================================================
 
   Future<void> loadProfile() async {
     try {
@@ -54,18 +64,20 @@ class ProfileNotifier extends StateNotifier<AsyncValue<ProfileEntity?>> {
     }
   }
 
-  //======================================================
-  // Update Profile
-  //======================================================
+  // ============================================================
+  // UPDATE PROFILE
+  // ============================================================
 
   Future<void> updateProfile({
     required String fullName,
     required String phone,
+    String? photoUrl,
   }) async {
     try {
       final updated = await _repository.updateProfile(
         fullName: fullName,
         phone: phone,
+        photoUrl: photoUrl,
       );
 
       state = AsyncData(updated);
@@ -74,43 +86,80 @@ class ProfileNotifier extends StateNotifier<AsyncValue<ProfileEntity?>> {
     }
   }
 
-  //======================================================
-  // Upload Profile Image
-  //======================================================
+  // ============================================================
+  // UPLOAD PROFILE IMAGE
+  // ============================================================
 
   Future<void> uploadImage(String imagePath) async {
     final current = state.value;
 
-    if (current == null) return;
+    if (current == null) {
+      return;
+    }
 
     try {
       final imageUrl = await _repository.uploadProfileImage(imagePath);
 
-      state = AsyncData(current.copyWith(profileImage: imageUrl));
+      if (imageUrl.isEmpty) {
+        throw Exception(
+          'Profile image upload did not return an image URL.',
+        );
+      }
+
+      final updated = current.copyWith(
+        profileImage: imageUrl,
+      );
+
+      state = AsyncData(updated);
+
+      // Persist the uploaded image URL to the backend.
+      final persisted = await _repository.updateProfile(
+        fullName: updated.fullName,
+        phone: updated.phone,
+        photoUrl: imageUrl,
+      );
+
+      state = AsyncData(persisted);
     } catch (e, stackTrace) {
       state = AsyncError(e, stackTrace);
     }
   }
 
-  //======================================================
-  // Refresh
-  //======================================================
+  // ============================================================
+  // REFRESH
+  // ============================================================
 
   Future<void> refresh() async {
     await loadProfile();
   }
 
-  //======================================================
-  // Logout
-  //======================================================
+  // ============================================================
+  // LOGOUT
+  //
+  // AuthenticationProvider performs:
+  //
+  // POST /auth/logout
+  // StorageService.clearTokens()
+  // _authResponse = null
+  //
+  // We then clear the Profile provider as well.
+  // ============================================================
 
   Future<void> logout() async {
     try {
-      await _repository.logout();
+      await _ref.read(authenticationProvider).logout();
 
       state = const AsyncData(null);
     } catch (e, stackTrace) {
       state = AsyncError(e, stackTrace);
     }
+  }
+
+  // ============================================================
+  // CLEAR LOCAL PROFILE STATE
+  // ============================================================
+
+  void clear() {
+    state = const AsyncData(null);
   }
 }

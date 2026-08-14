@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../payment/presentation/pages/payment_page.dart';
 import '../../providers/booking_provider.dart';
 import '../widgets/booking_card.dart';
+import 'package:go_router/go_router.dart';
 
 class MyBookingsPage extends ConsumerWidget {
   const MyBookingsPage({super.key});
@@ -52,16 +52,11 @@ class MyBookingsPage extends ConsumerWidget {
                   onTap: () {
                     _showBookingDetails(context, booking);
                   },
-                  onPayNow: booking.status == 'PAYMENT_PENDING'
-                      ? () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  PaymentPage(bookingId: booking.id),
-                            ),
-                          );
-                        }
-                      : null,
+                 onPayNow: booking.status.toUpperCase() == 'PAYMENT_PENDING'
+                         ? () {
+                               context.push('/payment/${booking.id}');
+                              }
+                       : null,
                 );
               },
             ),

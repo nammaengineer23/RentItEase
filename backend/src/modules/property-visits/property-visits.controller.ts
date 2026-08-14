@@ -10,201 +10,152 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 import { PropertyVisitsService } from './property-visits.service';
-import { VisitStatus } from '@prisma/client';
 import { CreatePropertyVisitDto } from './dto/create-property-visit.dto';
 import { UpdatePropertyVisitDto } from './dto/update-property-visit.dto';
 
 @ApiTags('Property Visits')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('property-visits')
 export class PropertyVisitsController {
-  constructor(
-    private readonly propertyVisitsService: PropertyVisitsService,
-  ) {}
+  constructor(private readonly propertyVisitsService: PropertyVisitsService) {}
 
-  // =====================================
-  // Create Visit Request
-  // =====================================
+  // ============================================================
+  // Tenant: Book Visit
+  // ============================================================
 
   @Post()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Book property visit',
+    summary: 'Book a property visit',
   })
-  create(
-    @Body()
-    dto: CreatePropertyVisitDto,
-
-    @Request()
-    req: any,
-  ) {
-    return this.propertyVisitsService.create(
-      dto,
-      req.user,
-    );
+  create(@Body() dto: CreatePropertyVisitDto, @Request() req: any) {
+    return this.propertyVisitsService.create(dto, req.user);
   }
 
-
-  // =====================================
-  // Owner Visit Requests
-  // =====================================
-
-  @Get('owner')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Get owner visit requests',
-  })
-  getOwnerVisits(
-    @Request()
-    req: any,
-  ) {
-    return this.propertyVisitsService.getOwnerVisits(
-      req.user,
-    );
-  }
-
-  // =====================================
-  // Get All Visits
-  // =====================================
+  // ============================================================
+  // Tenant: My Visits
+  //
+  // GET /property-visits
+  //
+  // Non-admin users receive only their own tenant visits.
+  // Admin receives all visits.
+  // ============================================================
 
   @Get()
-  findAll() {
-    return this.propertyVisitsService.findAll();
+  @ApiOperation({
+    summary: 'Get my property visits',
+  })
+  findAll(@Request() req: any) {
+    return this.propertyVisitsService.findAll(req.user);
   }
 
-  // =====================================
-  // Get Visit
-  // =====================================
+  // ============================================================
+  // Owner: Visit Requests
+  // ============================================================
+
+  @Get('owner')
+  @ApiOperation({
+    summary: 'Get property visit requests for owner',
+  })
+  getOwnerVisits(@Request() req: any) {
+    return this.propertyVisitsService.getOwnerVisits(req.user);
+  }
+
+  // ============================================================
+  // Get Single Visit
+  //
+  // Only:
+  // - tenant belonging to visit
+  // - property owner
+  // - admin
+  // ============================================================
 
   @Get(':id')
-  findOne(
-    @Param('id')
-    id: string,
-  ) {
-    return this.propertyVisitsService.findOne(
-      id,
-    );
+  @ApiOperation({
+    summary: 'Get a property visit',
+  })
+  findOne(@Param('id') id: string, @Request() req: any) {
+    return this.propertyVisitsService.findOne(id, req.user);
   }
 
-  // =====================================
-  // Approve Visit
-  // =====================================
+  // ============================================================
+  // Owner/Admin: Approve
+  // ============================================================
 
   @Patch(':id/approve')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  approveVisit(
-    @Param('id')
-    id: string,
-
-    @Request()
-    req: any,
-  ) {
-    return this.propertyVisitsService.approveVisit(
-      id,
-      req.user,
-    );
+  @ApiOperation({
+    summary: 'Approve property visit',
+  })
+  approveVisit(@Param('id') id: string, @Request() req: any) {
+    return this.propertyVisitsService.approveVisit(id, req.user);
   }
 
-  // =====================================
-  // Reject Visit
-  // =====================================
+  // ============================================================
+  // Owner/Admin: Reject
+  // ============================================================
 
   @Patch(':id/reject')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  rejectVisit(
-    @Param('id')
-    id: string,
-
-    @Request()
-    req: any,
-  ) {
-    return this.propertyVisitsService.rejectVisit(
-      id,
-      req.user,
-    );
+  @ApiOperation({
+    summary: 'Reject property visit',
+  })
+  rejectVisit(@Param('id') id: string, @Request() req: any) {
+    return this.propertyVisitsService.rejectVisit(id, req.user);
   }
 
-  // =====================================
-  // Complete Visit
-  // =====================================
+  // ============================================================
+  // Owner/Admin: Complete
+  // ============================================================
 
   @Patch(':id/complete')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  completeVisit(
-    @Param('id')
-    id: string,
-
-    @Request()
-    req: any,
-  ) {
-    return this.propertyVisitsService.completeVisit(
-      id,
-      req.user,
-    );
+  @ApiOperation({
+    summary: 'Complete property visit',
+  })
+  completeVisit(@Param('id') id: string, @Request() req: any) {
+    return this.propertyVisitsService.completeVisit(id, req.user);
   }
 
-  // =====================================
-  // Cancel Visit
-  // =====================================
+  // ============================================================
+  // Tenant/Owner/Admin: Cancel
+  // ============================================================
 
   @Patch(':id/cancel')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  cancelVisit(
-    @Param('id')
-    id: string,
-
-    @Request()
-    req: any,
-  ) {
-    return this.propertyVisitsService.cancelVisit(
-      id,
-      req.user,
-    );
+  @ApiOperation({
+    summary: 'Cancel property visit',
+  })
+  cancelVisit(@Param('id') id: string, @Request() req: any) {
+    return this.propertyVisitsService.cancelVisit(id, req.user);
   }
 
-  // =====================================
-  // Update Visit
-  // =====================================
+  // ============================================================
+  // Authorized Update
+  // ============================================================
 
   @Patch(':id')
+  @ApiOperation({
+    summary: 'Update property visit',
+  })
   update(
-    @Param('id')
-    id: string,
-
-    @Body()
-    dto: UpdatePropertyVisitDto,
+    @Param('id') id: string,
+    @Body() dto: UpdatePropertyVisitDto,
+    @Request() req: any,
   ) {
-    return this.propertyVisitsService.update(
-      id,
-      dto,
-    );
+    return this.propertyVisitsService.update(id, dto, req.user);
   }
 
-  // =====================================
-  // Delete Visit
-  // =====================================
+  // ============================================================
+  // Authorized Delete
+  // ============================================================
 
   @Delete(':id')
-  remove(
-    @Param('id')
-    id: string,
-  ) {
-    return this.propertyVisitsService.remove(
-      id,
-    );
+  @ApiOperation({
+    summary: 'Delete property visit',
+  })
+  remove(@Param('id') id: string, @Request() req: any) {
+    return this.propertyVisitsService.remove(id, req.user);
   }
 }

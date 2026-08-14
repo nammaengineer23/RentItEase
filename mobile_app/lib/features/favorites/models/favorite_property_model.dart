@@ -25,58 +25,67 @@ class FavoritePropertyModel {
   final String address;
   final String? imageUrl;
 
-  factory FavoritePropertyModel.fromJson(Map<String, dynamic> json) {
-    final property = json['property'] is Map
-        ? Map<String, dynamic>.from(json['property'] as Map)
-        : json;
+  // ============================================================
+  // JSON → Model
+  // ============================================================
 
-    String? imageUrl;
+  factory FavoritePropertyModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    /*
+     * Backend response:
+     *
+     * {
+     *   id: "...",
+     *   userId: "...",
+     *   propertyId: "...",
+     *   property: {
+     *     id: "...",
+     *     title: "...",
+     *     description: "...",
+     *     price: ...,
+     *     securityDeposit: ...,
+     *     address: "...",
+     *     city: "...",
+     *     locality: "...",
+     *     propertyType: "...",
+     *     bedrooms: ...,
+     *     images: [
+     *       {
+     *         imageUrl: "...",
+     *         isPrimary: true
+     *       }
+     *     ]
+     *   }
+     * }
+     */
 
-    // Direct imageUrl support.
-    final directImage = property['imageUrl'];
-
-    if (directImage is String && directImage.isNotEmpty) {
-      imageUrl = directImage;
-    }
-
-    // Backend currently returns primary images
-    // through property.images.
-    if (imageUrl == null) {
-      final images = property['images'];
-
-      if (images is List && images.isNotEmpty) {
-        for (final item in images) {
-          if (item is Map) {
-            final image = Map<String, dynamic>.from(item);
-
-            final url = image['url'] ?? image['imageUrl'] ?? image['secureUrl'];
-
-            if (url is String && url.isNotEmpty) {
-              imageUrl = url;
-              break;
-            }
-          } else if (item is String && item.isNotEmpty) {
-            imageUrl = item;
-            break;
-          }
-        }
-      }
-    }
+    final property = _asMap(json['property']) ?? json;
 
     return FavoritePropertyModel(
-      id: json['id']?.toString() ?? '',
-      propertyId: property['id']?.toString() ?? '',
-      title: property['title']?.toString() ?? '',
-      description: property['description']?.toString() ?? '',
-      propertyType: property['propertyType']?.toString() ?? '',
-      bhk: property['bhk']?.toString() ?? '',
-      rent: _toDouble(property['rent']),
-      deposit: _toDouble(property['deposit']),
+      id: _toStringValue(json['id']),
+      propertyId: _toStringValue(
+        property['id'] ?? json['propertyId'],
+      ),
+      title: _toStringValue(property['title']),
+      description: _toStringValue(property['description']),
+      propertyType: _toStringValue(property['propertyType']),
+      bhk: _buildBhk(property),
+      rent: _toDouble(
+        property['price'] ?? property['rent'],
+      ),
+      deposit: _toDouble(
+        property['securityDeposit'] ?? property['deposit'],
+      ),
       location: _buildLocation(property),
-      address: property['address']?.toString() ?? '',
-      imageUrl: imageUrl,
+      address: _toStringValue(property['address']),
+      imageUrl: _extractImageUrl(property),
     );
   }
+
+  // ============================================================
+  // Model → JSON
+  // ============================================================
 
   Map<String, dynamic> toJson() {
     return {
@@ -94,27 +103,117 @@ class FavoritePropertyModel {
     };
   }
 
+  // ============================================================
+  // Helpers
+  // ============================================================
+
+  static Map<String, dynamic>? _asMap(dynamic value) {
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+
+    return null;
+  }
+
+  // ============================================================
+  // String Conversion
+  // ============================================================
+
+  static String _toStringValue(dynamic value) {
+    if (value == null) {
+      return '';
+    }
+
+    return value.toString();
+  }
+
+  // ============================================================
+  // Number Conversion
+  // ============================================================
+
   static double _toDouble(dynamic value) {
     if (value == null) {
-      return 0;
+      return 0.0;
     }
 
     if (value is num) {
       return value.toDouble();
     }
 
-    return double.tryParse(value.toString()) ?? 0;
+    return double.tryParse(value.toString()) ?? 0.0;
   }
 
-  static String _buildLocation(Map<String, dynamic> property) {
-    final location = property['location'];
+  // ============================================================
+  // BHK
+  // ============================================================
 
-    if (location is String && location.isNotEmpty) {
-      return location;
+  static String _buildBhk(
+    Map<String, dynamic> property,
+  ) {
+    /*
+     * Current Prisma Property model stores:
+     *
+     * bedrooms: Int
+     *
+     * Some older Flutter/backend responses may provide:
+     *
+     * bhk: "2 BHK"
+     */
+
+    final existingBhk = property['bhk'];
+
+    if (existingBhk != null &&
+        existingBhk.toString().trim().isNotEmpty) {
+      return existingBhk.toString();
     }
 
-    final locality = property['locality']?.toString() ?? '';
-    final city = property['city']?.toString() ?? '';
+    final bedrooms = property['bedrooms'];
+
+    if (bedrooms is num) {
+      return '${bedrooms.toInt()} BHK';
+    }
+
+    if (bedrooms != null &&
+        bedrooms.toString().trim().isNotEmpty) {
+      return '${bedrooms.toString()} BHK';
+    }
+
+    return '';
+  }
+
+  // ============================================================
+  // Location
+  // ============================================================
+
+  static String _buildLocation(
+    Map<String, dynamic> property,
+  ) {
+    /*
+     * Prefer an explicit location field if one exists.
+     *
+     * Otherwise construct:
+     *
+     * locality, city
+     *
+     * or:
+     *
+     * city
+     */
+
+    final explicitLocation = property['location'];
+
+    if (explicitLocation is String &&
+        explicitLocation.trim().isNotEmpty) {
+      return explicitLocation.trim();
+    }
+
+    final locality = _toStringValue(
+      property['locality'],
+    ).trim();
+
+    final city = _toStringValue(
+      property['city'],
+    ).trim();
 
     if (locality.isNotEmpty && city.isNotEmpty) {
       return '$locality, $city';
@@ -124,6 +223,109 @@ class FavoritePropertyModel {
       return locality;
     }
 
-    return city;
+    if (city.isNotEmpty) {
+      return city;
+    }
+
+    return _toStringValue(
+      property['address'],
+    ).trim();
+  }
+
+  // ============================================================
+  // Image URL
+  // ============================================================
+
+  static String? _extractImageUrl(
+    Map<String, dynamic> property,
+  ) {
+    /*
+     * Current Prisma model:
+     *
+     * PropertyImage.imageUrl
+     *
+     * We also support older/alternative API names so that
+     * the Flutter app remains tolerant of existing responses.
+     */
+
+    final directImageUrl = property['imageUrl'];
+
+    if (directImageUrl is String &&
+        directImageUrl.trim().isNotEmpty) {
+      return directImageUrl.trim();
+    }
+
+    final images = property['images'];
+
+    if (images is! List || images.isEmpty) {
+      return null;
+    }
+
+    // First preference: primary image.
+    for (final item in images) {
+      final image = _asMap(item);
+
+      if (image == null) {
+        continue;
+      }
+
+      final isPrimary = image['isPrimary'] == true;
+
+      if (!isPrimary) {
+        continue;
+      }
+
+      final url = _extractImageUrlFromItem(image);
+
+      if (url != null) {
+        return url;
+      }
+    }
+
+    // Fallback: first valid image.
+    for (final item in images) {
+      if (item is String &&
+          item.trim().isNotEmpty) {
+        return item.trim();
+      }
+
+      final image = _asMap(item);
+
+      if (image == null) {
+        continue;
+      }
+
+      final url = _extractImageUrlFromItem(image);
+
+      if (url != null) {
+        return url;
+      }
+    }
+
+    return null;
+  }
+
+  // ============================================================
+  // Individual Image
+  // ============================================================
+
+  static String? _extractImageUrlFromItem(
+    Map<String, dynamic> image,
+  ) {
+    final candidates = [
+      image['imageUrl'],
+      image['url'],
+      image['secureUrl'],
+      image['src'],
+    ];
+
+    for (final candidate in candidates) {
+      if (candidate is String &&
+          candidate.trim().isNotEmpty) {
+        return candidate.trim();
+      }
+    }
+
+    return null;
   }
 }

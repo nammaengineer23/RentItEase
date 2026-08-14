@@ -105,11 +105,24 @@ class AuthenticationProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+  _errorMessage = null;
+
+  try {
     await _repository.logout();
+  } finally {
+    // Always clear local authentication state.
+    //
+    // AuthenticationService.logout() also clears:
+    // accessToken
+    // refreshToken
+    //
+    // even when the backend request fails.
     _authResponse = null;
+    _isLoading = false;
 
     notifyListeners();
   }
+}
 
   Future<void> loadSavedSession() async {
     try {

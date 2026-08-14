@@ -1,10 +1,11 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 
-import { UserRole } from '@prisma/client';
+import { PropertyImageSection, UserRole } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
 import { FirebaseService } from '../../firebase/firebase.service';
@@ -25,78 +26,111 @@ export class PropertyImagesService {
     propertyId: string,
     files: Express.Multer.File[],
     isPrimary: boolean,
+    section: PropertyImageSection,
     user: any,
   ) {
-    const property =
-      await this.prisma.property.findUnique({
-        where: {
-          id: propertyId,
-        },
-      });
+    const property = await this.prisma.property.findUnique({
+      where: {
+        id: propertyId,
+      },
+    });
 
     if (!property) {
-      throw new NotFoundException(
-        'Property not found.',
-      );
+      throw new NotFoundException('Property not found.');
     }
 
-    if (
-      property.ownerId !== user.id &&
-      user.role !== UserRole.ADMIN
-    ) {
-      throw new ForbiddenException(
-        'You are not allowed to upload images.',
-      );
+    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('You are not allowed to upload images.');
     }
 
     if (!files || files.length === 0) {
-      throw new NotFoundException(
-        'No images uploaded.',
+      throw new BadRequestException('No images uploaded.');
+    }
+
+    if (files.length > 2) {
+      throw new BadRequestException(
+        'Maximum 2 images can be uploaded at a time.',
       );
     }
 
-    const currentCount =
-      await this.prisma.propertyImage.count({
+    // ==========================================
+    // Maximum 2 images per section
+    // ==========================================
+
+    const currentSectionCount = await this.prisma.propertyImage.count({
+      where: {
+        propertyId,
+        section,
+      },
+    });
+
+    if (currentSectionCount + files.length > 2) {
+      throw new BadRequestException(
+        `${section} can have a maximum of 2 images. ` +
+          `Currently ${currentSectionCount} image(s) exist.`,
+      );
+    }
+
+    // ==========================================
+    // Current total image count
+    // ==========================================
+
+    const currentCount = await this.prisma.propertyImage.count({
+      where: {
+        propertyId,
+      },
+    });
+
+    // ==========================================
+    // Primary image handling
+    // ==========================================
+
+    // If this upload is marked primary, make sure
+    // the property has only one primary image.
+    if (isPrimary) {
+      await this.prisma.propertyImage.updateMany({
         where: {
           propertyId,
+          isPrimary: true,
+        },
+        data: {
+          isPrimary: false,
         },
       });
+    }
 
     const images = [];
 
-    for (
-      let index = 0;
-      index < files.length;
-      index++
-    ) {
+    // ==========================================
+    // Upload files
+    // ==========================================
+
+    for (let index = 0; index < files.length; index++) {
       const file = files[index];
 
-      const uploadResult =
-        await this.firebaseService.uploadImage(
-          file,
-          'properties',
-        );
+      const uploadResult = await this.firebaseService.uploadImage(
+        file,
+        'properties',
+      );
 
-      const image =
-        await this.prisma.propertyImage.create({
-          data: {
-            propertyId,
-            imageUrl: uploadResult.imageUrl,
-            publicId: uploadResult.publicId,
-            displayOrder:
-              currentCount + index,
-            isPrimary:
-              isPrimary && index === 0,
-          },
-        });
+      const image = await this.prisma.propertyImage.create({
+        data: {
+          propertyId,
+          imageUrl: uploadResult.imageUrl,
+          publicId: uploadResult.publicId,
+          displayOrder: currentCount + index,
+          section,
+          isPrimary: isPrimary && index === 0,
+        },
+      });
 
       images.push(image);
     }
 
     return {
       success: true,
-      message:
-        'Images uploaded successfully.',
+      message: 'Images uploaded successfully.',
+      section,
       images,
     };
   }
@@ -105,18 +139,33 @@ export class PropertyImagesService {
   // Get Images
   // =====================================
 
-  async getImages(
-    propertyId: string,
-  ) {
-    const images =
-      await this.prisma.propertyImage.findMany({
-        where: {
-          propertyId,
+  async getImages(propertyId: string) {
+    const property = await this.prisma.property.findUnique({
+      where: {
+        id: propertyId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found.');
+    }
+
+    const images = await this.prisma.propertyImage.findMany({
+      where: {
+        propertyId,
+      },
+      orderBy: [
+        {
+          section: 'asc',
         },
-        orderBy: {
+        {
           displayOrder: 'asc',
         },
-      });
+      ],
+    });
 
     return {
       success: true,
@@ -128,31 +177,32 @@ export class PropertyImagesService {
   // Set Primary Image
   // =====================================
 
-  async setPrimary(
-    propertyId: string,
-    imageId: string,
-    user: any,
-  ) {
-    const property =
-      await this.prisma.property.findUnique({
-        where: {
-          id: propertyId,
-        },
-      });
+  async setPrimary(propertyId: string, imageId: string, user: any) {
+    const property = await this.prisma.property.findUnique({
+      where: {
+        id: propertyId,
+      },
+    });
 
     if (!property) {
-      throw new NotFoundException(
-        'Property not found.',
-      );
+      throw new NotFoundException('Property not found.');
     }
 
-    if (
-      property.ownerId !== user.id &&
-      user.role !== UserRole.ADMIN
-    ) {
-      throw new ForbiddenException(
-        'Access denied.',
-      );
+    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Access denied.');
+    }
+
+    // IMPORTANT:
+    // Verify the image belongs to this property.
+    const image = await this.prisma.propertyImage.findFirst({
+      where: {
+        id: imageId,
+        propertyId,
+      },
+    });
+
+    if (!image) {
+      throw new NotFoundException('Image not found for this property.');
     }
 
     await this.prisma.$transaction([
@@ -177,8 +227,7 @@ export class PropertyImagesService {
 
     return {
       success: true,
-      message:
-        'Primary image updated successfully.',
+      message: 'Primary image updated successfully.',
     };
   }
 
@@ -186,31 +235,34 @@ export class PropertyImagesService {
   // Reorder Images
   // =====================================
 
-  async reorderImages(
-    propertyId: string,
-    dto: ReorderImagesDto,
-    user: any,
-  ) {
-    const property =
-      await this.prisma.property.findUnique({
+  async reorderImages(propertyId: string, dto: ReorderImagesDto, user: any) {
+    const property = await this.prisma.property.findUnique({
+      where: {
+        id: propertyId,
+      },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found.');
+    }
+
+    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Access denied.');
+    }
+
+    for (const image of dto.images) {
+      const existing = await this.prisma.propertyImage.findFirst({
         where: {
-          id: propertyId,
+          id: image.imageId,
+          propertyId,
         },
       });
 
-    if (!property) {
-      throw new NotFoundException(
-        'Property not found.',
-      );
-    }
-
-    if (
-      property.ownerId !== user.id &&
-      user.role !== UserRole.ADMIN
-    ) {
-      throw new ForbiddenException(
-        'Access denied.',
-      );
+      if (!existing) {
+        throw new NotFoundException(
+          `Image ${image.imageId} does not belong to this property.`,
+        );
+      }
     }
 
     await this.prisma.$transaction(
@@ -220,8 +272,7 @@ export class PropertyImagesService {
             id: image.imageId,
           },
           data: {
-            displayOrder:
-              image.displayOrder,
+            displayOrder: image.displayOrder,
           },
         }),
       ),
@@ -229,8 +280,7 @@ export class PropertyImagesService {
 
     return {
       success: true,
-      message:
-        'Images reordered successfully.',
+      message: 'Images reordered successfully.',
     };
   }
 
@@ -238,71 +288,55 @@ export class PropertyImagesService {
   // Delete Image
   // =====================================
 
-  async deleteImage(
-    propertyId: string,
-    imageId: string,
-    user: any,
-  ) {
-    const property =
-      await this.prisma.property.findUnique({
-        where: {
-          id: propertyId,
-        },
-      });
+  async deleteImage(propertyId: string, imageId: string, user: any) {
+    const property = await this.prisma.property.findUnique({
+      where: {
+        id: propertyId,
+      },
+    });
 
     if (!property) {
-      throw new NotFoundException(
-        'Property not found.',
-      );
+      throw new NotFoundException('Property not found.');
     }
 
-    if (
-      property.ownerId !== user.id &&
-      user.role !== UserRole.ADMIN
-    ) {
-      throw new ForbiddenException(
-        'Access denied.',
-      );
+    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Access denied.');
     }
 
-    const image =
-      await this.prisma.propertyImage.findUnique({
-        where: {
-          id: imageId,
-        },
-      });
+    const image = await this.prisma.propertyImage.findFirst({
+      where: {
+        id: imageId,
+        propertyId,
+      },
+    });
 
     if (!image) {
-      throw new NotFoundException(
-        'Image not found.',
-      );
+      throw new NotFoundException('Image not found for this property.');
     }
 
-    // Delete image from Firebase Storage
+    // Delete image from Firebase Storage.
     if (image.publicId) {
-      await this.firebaseService.deleteImage(
-        image.publicId,
-      );
+      await this.firebaseService.deleteImage(image.publicId);
     }
 
-    // Delete image from database
+    // Delete image from database.
     await this.prisma.propertyImage.delete({
       where: {
         id: imageId,
       },
     });
 
-    // Assign another image as primary if needed
+    // If deleted image was primary,
+    // assign the first remaining image.
     if (image.isPrimary) {
-      const nextImage =
-        await this.prisma.propertyImage.findFirst({
-          where: {
-            propertyId,
-          },
-          orderBy: {
-            displayOrder: 'asc',
-          },
-        });
+      const nextImage = await this.prisma.propertyImage.findFirst({
+        where: {
+          propertyId,
+        },
+        orderBy: {
+          displayOrder: 'asc',
+        },
+      });
 
       if (nextImage) {
         await this.prisma.propertyImage.update({
@@ -318,8 +352,7 @@ export class PropertyImagesService {
 
     return {
       success: true,
-      message:
-        'Image deleted successfully.',
+      message: 'Image deleted successfully.',
     };
   }
 }

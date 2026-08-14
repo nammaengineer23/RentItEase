@@ -14,6 +14,8 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
 
+    "isolatedModules": true,
+
     "sourceMap": true,
 
     "rootDir": "./src",
@@ -29,8 +31,8 @@
 
     "resolveJsonModule": true,
 
-    "types": ["node"],
-
+    "types": ["node", "jest"],
+    
     "paths": {
       "@/*": ["./src/*"],
       "@config/*": ["./src/config/*"],

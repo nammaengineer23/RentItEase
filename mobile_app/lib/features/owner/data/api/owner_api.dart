@@ -79,20 +79,38 @@ class OwnerApi {
   Future<OwnerPropertyModel> getProperty(String propertyId) async {
     final response = await _dio.get('/properties/$propertyId');
 
-    return OwnerPropertyModel.fromJson(
-      Map<String, dynamic>.from(response.data as Map),
-    );
+    final raw = response.data;
+
+    final data = raw is Map && raw['property'] is Map ? raw['property'] : raw;
+
+    return OwnerPropertyModel.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
-  Future<void> addProperty(Map<String, dynamic> body) async {
-    await _dio.post('/properties', data: body);
+  // ==========================================================
+  // Property CRUD
+  // ==========================================================
+
+  Future<OwnerPropertyModel> addProperty(Map<String, dynamic> body) async {
+    final response = await _dio.post('/properties', data: body);
+
+    final raw = response.data;
+
+    final data = raw is Map && raw['property'] is Map ? raw['property'] : raw;
+
+    return OwnerPropertyModel.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
-  Future<void> updateProperty(
+  Future<OwnerPropertyModel> updateProperty(
     String propertyId,
     Map<String, dynamic> body,
   ) async {
-    await _dio.patch('/properties/$propertyId', data: body);
+    final response = await _dio.patch('/properties/$propertyId', data: body);
+
+    final raw = response.data;
+
+    final data = raw is Map && raw['property'] is Map ? raw['property'] : raw;
+
+    return OwnerPropertyModel.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
   Future<void> deleteProperty(String propertyId) async {

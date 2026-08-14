@@ -122,15 +122,30 @@ model PropertyAmenity {
   @@id([propertyId, amenityId])
 }
 
+enum PropertyImageSection {
+  HALL
+  KITCHEN
+  BEDROOM
+  BATHROOM
+  BALCONY
+  DINING
+  LIVING_ROOM
+  EXTERIOR
+  PARKING
+  OTHER
+}
+
 model PropertyImage {
-  id           String   @id @default(cuid())
+  id           String               @id @default(cuid())
   imageUrl     String
   publicId     String?
-  isPrimary    Boolean  @default(false)
-  displayOrder Int      @default(0)
+  isPrimary    Boolean              @default(false)
+  displayOrder Int                  @default(0)
+  section      PropertyImageSection @default(OTHER)
   propertyId   String
-  createdAt    DateTime @default(now())
-  property     Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt    DateTime             @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 }
 
 model Favorite {
