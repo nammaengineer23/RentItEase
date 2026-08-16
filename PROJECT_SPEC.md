@@ -529,6 +529,38 @@ SMS
 
 ---
 
+# Social Media Marketing Automation
+
+Property Promotion Video
+
+Owner Marketing Consent
+
+Automatic Video Generation
+
+AI Caption & Hashtags
+
+Instagram Publishing
+
+Facebook Publishing
+
+YouTube Shorts Publishing
+
+Social Media Scheduling
+
+Admin Approval Automation
+
+Publishing Status & Logs
+
+Property Promotion Analytics
+
+Media Storage
+
+Video Templates
+
+Retry & Failure Handling
+
+Audit Trail
+
 # AI Features
 
 AI Property Description

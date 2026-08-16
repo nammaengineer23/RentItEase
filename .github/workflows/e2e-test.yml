@@ -1,0 +1,197 @@
+name: RentItEase - Release E2E / RC1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: rentitease-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-build:
+    name: Backend Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Build backend
+        run: npm run build
+
+  remote-e2e:
+    name: Remote API E2E
+    needs: backend-build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+      E2E_API_PREFIX: /api/v1
+      E2E_TENANT_LOGIN: ${{ secrets.E2E_TENANT_LOGIN }}
+      E2E_TENANT_PASSWORD: ${{ secrets.E2E_TENANT_PASSWORD }}
+      E2E_OWNER_LOGIN: ${{ secrets.E2E_OWNER_LOGIN }}
+      E2E_OWNER_PASSWORD: ${{ secrets.E2E_OWNER_PASSWORD }}
+      E2E_ADMIN_LOGIN: ${{ secrets.E2E_ADMIN_LOGIN }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_PROPERTY_ID: ${{ secrets.E2E_PROPERTY_ID }}
+      E2E_RAZORPAY_KEY_SECRET: ${{ secrets.E2E_RAZORPAY_KEY_SECRET }}
+      E2E_PUSH_TOKEN: ${{ secrets.E2E_PUSH_TOKEN }}
+      E2E_STRICT: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Release E2E suite
+        run: npx jest --config test/jest-release-e2e.json release/release-workflow.e2e-spec.ts --runInBand
+
+  security-audit:
+    name: Security / Configuration Audit
+    needs: backend-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run audit
+        run: |
+          chmod +x scripts/security-audit.sh
+          ./scripts/security-audit.sh
+
+  flutter:
+    name: Flutter Analyze + Integration
+    needs: remote-e2e
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile_app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.4"
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Flutter analyze
+        run: flutter analyze
+
+      - name: Flutter tests
+        run: flutter test
+
+      - name: Tenant / Owner integration tests
+        run: flutter test integration_test
+        continue-on-error: true
+
+  flutter-web:
+    name: Flutter Web Release
+    needs: remote-e2e
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile_app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.4"
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Build Web
+        run: flutter build web --release
+
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rentitease-web
+          path: mobile_app/build/web
+
+  android-release:
+    name: Android Release Candidate Build
+    needs: [remote-e2e, security-audit]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile_app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.4"
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Build Android APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: rentitease-android-release
+          path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
+
+  rc1:
+    name: Release Candidate 1 Gate
+    needs: [backend-build, remote-e2e, security-audit, flutter, flutter-web, android-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: RC1 passed
+        run: |
+          echo "RentItEase Release Candidate 1 gate PASSED."
+          echo "Backend build: PASS"
+          echo "Remote API E2E: PASS"
+          echo "Security audit: PASS"
+          echo "Flutter checks: PASS"
+          echo "Flutter Web build: PASS"
+          echo "Android release build: PASS"

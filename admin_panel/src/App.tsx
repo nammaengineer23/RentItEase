@@ -10,6 +10,7 @@ import { VisitsPage } from "./pages/VisitsPage";
 import { AdminLayout } from "./layouts/AdminLayout";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { BillingPage } from "./pages/BillingPage";
+import { SocialMediaPage } from "./pages/SocialMediaPage";
 
 
 export default function App() {
@@ -27,7 +28,8 @@ export default function App() {
             <Route path="/visits" element={<VisitsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/billing" element={<BillingPage />} />
-
+            <Route path="/social-media" element={<SocialMediaPage />} />
+            
           </Route>
         </Route>
 

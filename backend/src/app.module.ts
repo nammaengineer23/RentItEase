@@ -36,7 +36,7 @@ import { HealthModule } from './modules/health/health.module';
 import { MailModule } from './mail/mail.module';
 import { UserDevicesModule } from './modules/user-devices/user-devices.module';
 import { AdminBillingModule } from "./modules/admin-billing/admin-billing.module";
-
+import { SocialMediaModule } from './modules/social-media/social-media.module';
 
 
 
@@ -106,7 +106,8 @@ import { AdminBillingModule } from "./modules/admin-billing/admin-billing.module
     PremiumListingsModule,
     InvoicesModule,
     BookingModule,
-    AdminBillingModule
+    AdminBillingModule,
+    SocialMediaModule,
   ],
 
   controllers: [AppController],

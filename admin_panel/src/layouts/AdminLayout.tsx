@@ -8,8 +8,7 @@ const navItems = [
   { label: "Reviews", path: "/reviews" },
   { label: "Visits", path: "/visits" },
   { label: "Analytics", path: "/analytics" },
-  { label: "Billing", path: "/billing" },
-
+  { label: "Social Media", path: "/social-media" },
 ];
 
 export function AdminLayout() {
