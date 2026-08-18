@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '../../database/prisma.module';
+import { PrismaModule } from '../../prisma/prisma.module';
 import { SocialMediaController } from './social-media.controller';
 import { OwnerSocialMediaController } from './owner-social-media.controller';
 import { SocialMediaService } from './social-media.service';
