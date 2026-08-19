@@ -619,67 +619,63 @@ export class PropertyVisitsService {
         },
       },
     });
-
     // ============================================================
-    // DEBUG: Email
+    // Notifications
     // ============================================================
-
-    console.log('⏱️ COMPLETE: starting email');
-
-    try {
-      await this.mailService.sendVisitCompletedEmail(
+    
+    // Email must never block visit completion.
+    void this.mailService
+      .sendVisitCompletedEmail(
         updatedVisit.tenant.email,
         updatedVisit.tenant.fullName,
         updatedVisit.property.title,
+      )
+      .catch((error) => {
+        console.error(
+          'Visit completion email failed:',
+          error?.message || error,
+        );
+      });
+    
+    // In-app notification
+    try {
+      await this.notificationsService.createNotification(
+        updatedVisit.tenant.id,
+        'Visit Completed',
+        `Your visit for "${updatedVisit.property.title}" has been marked as completed.`,
+        NotificationType.VISIT_COMPLETED,
       );
-
-      console.log('✅ COMPLETE: email finished');
     } catch (error) {
-      console.error('❌ COMPLETE: email failed:', error);
+      console.error(
+        'Visit completion in-app notification failed:',
+        error?.message || error,
+      );
     }
-
-    // ============================================================
-    // DEBUG: In-App Notification
-    // ============================================================
-
-    console.log('⏱️ COMPLETE: starting in-app notification');
-
-    await this.notificationsService.createNotification(
-      updatedVisit.tenant.id,
-      'Visit Completed',
-      `Your visit for "${updatedVisit.property.title}" has been marked as completed.`,
-      NotificationType.VISIT_COMPLETED,
-    );
-
-    console.log('✅ COMPLETE: in-app notification finished');
-
-    // ============================================================
-    // DEBUG: Push
-    // ============================================================
-
-    console.log('⏱️ COMPLETE: starting push');
-
-    await this.pushNotificationsService.sendToUser(
-      updatedVisit.tenant.id,
-      'Visit Completed',
-      `Your visit for "${updatedVisit.property.title}" has been completed.`,
-      {
-        type: 'VISIT_COMPLETED',
-        propertyId: updatedVisit.property.id,
-        visitId: updatedVisit.id,
-      },
-    );
-
-    console.log('✅ COMPLETE: push finished');
-
-    console.log('🏁 COMPLETE: returning response');
-
+    
+    // Push notification must never block visit completion.
+    void this.pushNotificationsService
+      .sendToUser(
+        updatedVisit.tenant.id,
+        'Visit Completed',
+        `Your visit for "${updatedVisit.property.title}" has been completed.`,
+        {
+          type: 'VISIT_COMPLETED',
+          propertyId: updatedVisit.property.id,
+          visitId: updatedVisit.id,
+        },
+      )
+      .catch((error) => {
+        console.error(
+          'Visit completion push notification failed:',
+          error?.message || error,
+        );
+      });
+    
     return {
       success: true,
       message: 'Visit completed successfully.',
       data: serializePrisma(updatedVisit),
     };
-  }
 
   // ============================================================
   // Cancel
