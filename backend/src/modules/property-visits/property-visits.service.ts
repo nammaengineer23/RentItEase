@@ -466,6 +466,7 @@ return {
   message: 'Visit approved successfully.',
   data: serializePrisma(updatedVisit),
 };
+}
   // ============================================================
   // Reject
   // ============================================================
