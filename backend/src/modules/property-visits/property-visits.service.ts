@@ -413,53 +413,59 @@ export class PropertyVisitsService {
     });
 
     // ============================================================
-    // Email
-    // ============================================================
+// Email
+// ============================================================
 
-    try {
-      await this.mailService.sendVisitApprovalEmail(
-        updatedVisit.tenant.email,
-        updatedVisit.tenant.fullName,
-        updatedVisit.property.title,
-        updatedVisit.visitDate.toLocaleString(),
-      );
-    } catch (error) {
-      console.error('Visit approval email failed:', error);
-    }
+void this.mailService
+  .sendVisitApprovalEmail(
+    updatedVisit.tenant.email,
+    updatedVisit.tenant.fullName,
+    updatedVisit.property.title,
+    updatedVisit.visitDate.toLocaleString(),
+  )
+  .catch((error) => {
+    console.error('Visit approval email failed:', error);
+  });
 
-    // ============================================================
-    // In-App Notification
-    // ============================================================
+// ============================================================
+// In-App Notification — non-blocking
+// ============================================================
 
-    await this.notificationsService.createNotification(
-      updatedVisit.tenant.id,
-      'Visit Approved',
-      'Your property visit has been approved.',
-      NotificationType.VISIT_APPROVED,
-    );
+void this.notificationsService
+  .createNotification(
+    updatedVisit.tenant.id,
+    'Visit Approved',
+    'Your property visit has been approved.',
+    NotificationType.VISIT_APPROVED,
+  )
+  .catch((error) => {
+    console.error('Visit approval notification failed:', error);
+  });
 
-    // ============================================================
-    // Push
-    // ============================================================
+// ============================================================
+// Push Notification — non-blocking
+// ============================================================
 
-    await this.pushNotificationsService.sendToUser(
-      updatedVisit.tenant.id,
-      'Visit Approved',
-      `Your visit for "${updatedVisit.property.title}" has been approved.`,
-      {
-        type: 'VISIT_APPROVED',
-        propertyId: updatedVisit.property.id,
-        visitId: updatedVisit.id,
-      },
-    );
+void this.pushNotificationsService
+  .sendToUser(
+    updatedVisit.tenant.id,
+    'Visit Approved',
+    `Your visit for "${updatedVisit.property.title}" has been approved.`,
+    {
+      type: 'VISIT_APPROVED',
+      propertyId: updatedVisit.property.id,
+      visitId: updatedVisit.id,
+    },
+  )
+  .catch((error) => {
+    console.error('Visit approval push notification failed:', error);
+  });
 
-    return {
-      success: true,
-      message: 'Visit approved successfully.',
-      data: serializePrisma(updatedVisit),
-    };
-  }
-
+return {
+  success: true,
+  message: 'Visit approved successfully.',
+  data: serializePrisma(updatedVisit),
+};
   // ============================================================
   // Reject
   // ============================================================
