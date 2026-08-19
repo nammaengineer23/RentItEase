@@ -645,7 +645,7 @@ export class PropertyVisitsService {
         `Your visit for "${updatedVisit.property.title}" has been marked as completed.`,
         NotificationType.VISIT_COMPLETED,
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error(
         'Visit completion in-app notification failed:',
         error?.message || error,
@@ -664,7 +664,7 @@ export class PropertyVisitsService {
           visitId: updatedVisit.id,
         },
       )
-      .catch((error) => {
+      .catch((error: any) => {
         console.error(
           'Visit completion push notification failed:',
           error?.message || error,
@@ -676,6 +676,7 @@ export class PropertyVisitsService {
       message: 'Visit completed successfully.',
       data: serializePrisma(updatedVisit),
     };
+    }
 
   // ============================================================
   // Cancel
