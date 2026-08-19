@@ -413,60 +413,60 @@ export class PropertyVisitsService {
     });
 
     // ============================================================
-// Email
-// ============================================================
+    // Email
+    // ============================================================
 
-void this.mailService
-  .sendVisitApprovalEmail(
-    updatedVisit.tenant.email,
-    updatedVisit.tenant.fullName,
-    updatedVisit.property.title,
-    updatedVisit.visitDate.toLocaleString(),
-  )
-  .catch((error) => {
-    console.error('Visit approval email failed:', error);
-  });
+    void this.mailService
+      .sendVisitApprovalEmail(
+        updatedVisit.tenant.email,
+        updatedVisit.tenant.fullName,
+        updatedVisit.property.title,
+        updatedVisit.visitDate.toLocaleString(),
+      )
+      .catch((error) => {
+        console.error('Visit approval email failed:', error);
+      });
 
-// ============================================================
-// In-App Notification — non-blocking
-// ============================================================
+    // ============================================================
+    // In-App Notification — non-blocking
+    // ============================================================
 
-void this.notificationsService
-  .createNotification(
-    updatedVisit.tenant.id,
-    'Visit Approved',
-    'Your property visit has been approved.',
-    NotificationType.VISIT_APPROVED,
-  )
-  .catch((error) => {
-    console.error('Visit approval notification failed:', error);
-  });
+    void this.notificationsService
+      .createNotification(
+        updatedVisit.tenant.id,
+        'Visit Approved',
+        'Your property visit has been approved.',
+        NotificationType.VISIT_APPROVED,
+      )
+      .catch((error) => {
+        console.error('Visit approval notification failed:', error);
+      });
 
-// ============================================================
-// Push Notification — non-blocking
-// ============================================================
+    // ============================================================
+    // Push Notification — non-blocking
+    // ============================================================
 
-void this.pushNotificationsService
-  .sendToUser(
-    updatedVisit.tenant.id,
-    'Visit Approved',
-    `Your visit for "${updatedVisit.property.title}" has been approved.`,
-    {
-      type: 'VISIT_APPROVED',
-      propertyId: updatedVisit.property.id,
-      visitId: updatedVisit.id,
-    },
-  )
-  .catch((error) => {
-    console.error('Visit approval push notification failed:', error);
-  });
+    void this.pushNotificationsService
+      .sendToUser(
+        updatedVisit.tenant.id,
+        'Visit Approved',
+        `Your visit for "${updatedVisit.property.title}" has been approved.`,
+        {
+          type: 'VISIT_APPROVED',
+          propertyId: updatedVisit.property.id,
+          visitId: updatedVisit.id,
+        },
+      )
+      .catch((error) => {
+        console.error('Visit approval push notification failed:', error);
+      });
 
-return {
-  success: true,
-  message: 'Visit approved successfully.',
-  data: serializePrisma(updatedVisit),
-};
-}
+    return {
+      success: true,
+      message: 'Visit approved successfully.',
+      data: serializePrisma(updatedVisit),
+    };
+  }
   // ============================================================
   // Reject
   // ============================================================
@@ -621,8 +621,10 @@ return {
     });
 
     // ============================================================
-    // Email
+    // DEBUG: Email
     // ============================================================
+
+    console.log('⏱️ COMPLETE: starting email');
 
     try {
       await this.mailService.sendVisitCompletedEmail(
@@ -630,13 +632,17 @@ return {
         updatedVisit.tenant.fullName,
         updatedVisit.property.title,
       );
+
+      console.log('✅ COMPLETE: email finished');
     } catch (error) {
-      console.error('Visit completion email failed:', error);
+      console.error('❌ COMPLETE: email failed:', error);
     }
 
     // ============================================================
-    // In-App Notification
+    // DEBUG: In-App Notification
     // ============================================================
+
+    console.log('⏱️ COMPLETE: starting in-app notification');
 
     await this.notificationsService.createNotification(
       updatedVisit.tenant.id,
@@ -645,9 +651,13 @@ return {
       NotificationType.VISIT_COMPLETED,
     );
 
+    console.log('✅ COMPLETE: in-app notification finished');
+
     // ============================================================
-    // Push
+    // DEBUG: Push
     // ============================================================
+
+    console.log('⏱️ COMPLETE: starting push');
 
     await this.pushNotificationsService.sendToUser(
       updatedVisit.tenant.id,
@@ -659,6 +669,10 @@ return {
         visitId: updatedVisit.id,
       },
     );
+
+    console.log('✅ COMPLETE: push finished');
+
+    console.log('🏁 COMPLETE: returning response');
 
     return {
       success: true,
