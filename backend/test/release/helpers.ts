@@ -114,3 +114,50 @@ export function unwrapArray(body: any): any[] {
   if (Array.isArray(d?.items)) return d.items;
   return [];
 }
+/**
+ * Ensure the user has no ACTIVE membership before a release E2E test
+ * creates a fresh membership.
+ *
+ * Release E2E tests run against the persistent Railway/Neon database,
+ * so previous test runs may leave an ACTIVE membership behind.
+ *
+ * We deliberately expire existing ACTIVE memberships through the API
+ * rather than deleting database records or weakening the backend rule.
+ */
+export async function clearActiveMemberships(
+  userId: string,
+  token: string,
+) {
+  const res = await request(apiUrl())
+    .get(`/membership/users/${userId}`)
+    .set(auth(token));
+
+  statusOk(res, [200]);
+
+  const memberships = unwrapArray(res.body);
+
+  const activeMemberships = memberships.filter(
+    (membership: any) => membership?.status === 'ACTIVE',
+  );
+
+  for (const membership of activeMemberships) {
+    if (!membership?.id) continue;
+
+    const expire = await request(apiUrl())
+      .patch(`/membership/${membership.id}/expire`)
+      .set(auth(token));
+
+    statusOk(expire, [200, 201]);
+
+    const expired = extractData(expire.body);
+
+    if (expired?.status !== 'EXPIRED') {
+      throw new Error(
+        `Failed to expire existing membership ${membership.id}: ` +
+          JSON.stringify(expire.body),
+      );
+    }
+  }
+
+  return activeMemberships.length;
+}

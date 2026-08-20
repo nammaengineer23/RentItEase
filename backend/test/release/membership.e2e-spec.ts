@@ -1,7 +1,13 @@
 import request from 'supertest';
 import { describe, expect, it } from '@jest/globals';
 
-import { apiUrl, auth, extractData, login } from './helpers';
+import {
+  apiUrl,
+  auth,
+  clearActiveMemberships,
+  extractData,
+  login,
+} from './helpers';
 
 describe('Release E2E • Membership', () => {
   let tenantToken = '';
@@ -164,6 +170,14 @@ describe('Release E2E • Membership', () => {
     expect(ownerToken).toBeTruthy();
     expect(tenantUserId).toBeTruthy();
     expect(planId).toBeTruthy();
+
+    const cleared = await clearActiveMemberships(tenantUserId, ownerToken);
+
+    if (cleared > 0) {
+      console.log(
+        `Release E2E: expired ${cleared} existing active membership(s) for tenant ${tenantUserId}`,
+      );
+    }
 
     const res = await request(apiUrl())
       .post(`/membership/users/${tenantUserId}`)
