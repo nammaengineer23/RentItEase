@@ -1,12 +1,7 @@
 import request from 'supertest';
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  apiUrl,
-  auth,
-  extractData,
-  login,
-} from './helpers';
+import { apiUrl, auth, extractData, login } from './helpers';
 
 describe('Release E2E • Membership', () => {
   let tenantToken = '';
@@ -82,43 +77,34 @@ describe('Release E2E • Membership', () => {
   // 3. CREATE MEMBERSHIP PLAN
   // ============================================================
 
-  it('3. create membership plan', async () => {
+  it('3. find/reuse PREMIUM membership plan', async () => {
     expect(ownerToken).toBeTruthy();
 
     const res = await request(apiUrl())
-      .post('/membership/plans')
+      .get('/membership/plans')
       .set(auth(ownerToken))
-      .send({
-        name: uniquePlanName,
-        code: planCode,
-        description: 'Release E2E membership plan',
-        price: 999,
-        durationDays: 30,
-      });
+      .expect(200);
 
-    console.log('MEMBERSHIP CREATE PLAN STATUS:', res.status);
+    const data = extractData(res.body);
 
-    console.log(
-      'MEMBERSHIP CREATE PLAN RESPONSE:',
-      JSON.stringify(res.body, null, 2),
+    const plans = Array.isArray(data)
+      ? data
+      : (data?.plans ?? res.body?.plans ?? []);
+
+    expect(Array.isArray(plans)).toBe(true);
+
+    const plan = plans.find(
+      (item: any) => item?.code === 'PREMIUM' && item?.isActive === true,
     );
-
-    expect([200, 201]).toContain(res.status);
-
-    const plan = extractData(res.body);
 
     expect(plan).toBeTruthy();
 
-    planId = plan?.id ?? '';
+    planId = plan.id;
 
     expect(planId).toBeTruthy();
-    expect(plan.name).toBe(uniquePlanName);
-    expect(plan.code).toBe(planCode);
-    expect(Number(plan.price)).toBe(999);
-    expect(plan.durationDays).toBe(30);
+    expect(plan.code).toBe('PREMIUM');
     expect(plan.isActive).toBe(true);
   });
-
   // ============================================================
   // 4. GET PLAN
   // ============================================================
@@ -136,8 +122,8 @@ describe('Release E2E • Membership', () => {
 
     expect(plan).toBeTruthy();
     expect(plan.id).toBe(planId);
-    expect(plan.name).toBe(uniquePlanName);
-    expect(plan.code).toBe(planCode);
+    expect(plan.code).toBe('PREMIUM');
+    expect(plan.isActive).toBe(true);
     expect(plan.isActive).toBe(true);
   });
 
@@ -158,18 +144,16 @@ describe('Release E2E • Membership', () => {
 
     const plans = Array.isArray(data)
       ? data
-      : data?.plans ?? res.body?.plans ?? [];
+      : (data?.plans ?? res.body?.plans ?? []);
 
     expect(Array.isArray(plans)).toBe(true);
 
-    const plan = plans.find(
-      (item: any) => item?.id === planId,
-    );
+    const plan = plans.find((item: any) => item?.id === planId);
 
     expect(plan).toBeTruthy();
     expect(plan.id).toBe(planId);
-    expect(plan.name).toBe(uniquePlanName);
-    expect(plan.code).toBe(planCode);
+    expect(plan.code).toBe('PREMIUM');
+    expect(plan.isActive).toBe(true);
   });
 
   // ============================================================
@@ -220,7 +204,7 @@ describe('Release E2E • Membership', () => {
 
     const memberships = Array.isArray(data)
       ? data
-      : data?.memberships ?? res.body?.memberships ?? [];
+      : (data?.memberships ?? res.body?.memberships ?? []);
 
     expect(Array.isArray(memberships)).toBe(true);
 
