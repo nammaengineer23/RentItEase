@@ -5,7 +5,7 @@ import { apiUrl, extractData, login, statusOk } from './helpers';
 describe('Release E2E • Membership', () => {
   it('plan → membership → activation → expiry/renewal', async () => {
     const loginResult = await login(
-      process.env.E2E_TENANT_LOGIN!,
+      process.env.E2E_TENANT_EMAIL!,
       process.env.E2E_TENANT_PASSWORD!,
     );
     const user = extractData(loginResult.body)?.user ?? extractData(loginResult.body);

@@ -307,6 +307,7 @@ export class BookingService {
           },
         },
         visit: true,
+        payment: true,
       },
     });
 

@@ -5,7 +5,7 @@ import { apiUrl, auth, login, statusOk } from './helpers';
 describe('Release E2E • Push Notifications', () => {
   it('register → test → unregister device when a token is supplied', async () => {
     const token = (
-      await login(process.env.E2E_TENANT_LOGIN!, process.env.E2E_TENANT_PASSWORD!)
+      await login(process.env.E2E_TENANT_EMAIL!, process.env.E2E_TENANT_PASSWORD!)
     ).token;
     const deviceToken = process.env.E2E_PUSH_TOKEN;
 

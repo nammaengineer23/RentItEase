@@ -27,12 +27,12 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
 
   it('01 Authentication: tenant + owner login', async () => {
     const tenant = await login(
-      process.env.E2E_TENANT_LOGIN!,
+      process.env.E2E_TENANT_EMAIL!,
       process.env.E2E_TENANT_PASSWORD!,
     );
 
     const owner = await login(
-      process.env.E2E_OWNER_LOGIN!,
+      process.env.E2E_OWNER_EMAIL!,
       process.env.E2E_OWNER_PASSWORD!,
     );
 

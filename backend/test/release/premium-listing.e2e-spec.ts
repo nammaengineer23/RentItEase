@@ -5,7 +5,7 @@ import { apiUrl, extractData, login, statusOk } from './helpers';
 describe('Release E2E • Premium Listing', () => {
   it('purchase → activation → expiry', async () => {
     const loginResult = await login(
-      process.env.E2E_OWNER_LOGIN!,
+      process.env.E2E_OWNER_EMAIL!,
       process.env.E2E_OWNER_PASSWORD!,
     );
     const user = extractData(loginResult.body)?.user ?? extractData(loginResult.body);

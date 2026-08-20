@@ -5,7 +5,7 @@ import { apiUrl, auth, extractData, login, statusOk } from './helpers';
 describe('Release E2E • Chat', () => {
   it('send → read → edit → delete', async () => {
     const tenant = await login(
-      process.env.E2E_TENANT_LOGIN!,
+      process.env.E2E_TENANT_EMAIL!,
       process.env.E2E_TENANT_PASSWORD!,
     );
     const token = tenant.token;

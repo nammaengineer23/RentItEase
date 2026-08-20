@@ -5,7 +5,7 @@ import { apiUrl, login } from './helpers';
 describe('Release E2E • Authentication', () => {
   it('login → me', async () => {
     const result = await login(
-      process.env.E2E_TENANT_LOGIN!,
+      process.env.E2E_TENANT_EMAIL!,
       process.env.E2E_TENANT_PASSWORD!,
     );
 

@@ -16,16 +16,16 @@ const required = [
 
 // Backward-compatible login handling:
 // Existing file uses E2E_TENANT_EMAIL / E2E_OWNER_EMAIL.
-// Release tests use E2E_TENANT_LOGIN / E2E_OWNER_LOGIN.
-if (!process.env.E2E_TENANT_LOGIN && process.env.E2E_TENANT_EMAIL) {
-  process.env.E2E_TENANT_LOGIN = process.env.E2E_TENANT_EMAIL;
+// Release tests use E2E_TENANT_EMAIL / E2E_OWNER_EMAIL.
+if (!process.env.E2E_TENANT_EMAIL && process.env.E2E_TENANT_EMAIL) {
+  process.env.E2E_TENANT_EMAIL = process.env.E2E_TENANT_EMAIL;
 }
 
-if (!process.env.E2E_OWNER_LOGIN && process.env.E2E_OWNER_EMAIL) {
-  process.env.E2E_OWNER_LOGIN = process.env.E2E_OWNER_EMAIL;
+if (!process.env.E2E_OWNER_EMAIL && process.env.E2E_OWNER_EMAIL) {
+  process.env.E2E_OWNER_EMAIL = process.env.E2E_OWNER_EMAIL;
 }
 
-required.push('E2E_TENANT_LOGIN', 'E2E_OWNER_LOGIN');
+required.push('E2E_TENANT_EMAIL', 'E2E_OWNER_EMAIL');
 
 if ((process.env.E2E_STRICT ?? 'true') === 'true') {
   const missing = required.filter((key) => !process.env[key]);
@@ -39,8 +39,8 @@ if ((process.env.E2E_STRICT ?? 'true') === 'true') {
         'backend/test/.env.e2e',
         '',
         'Existing E2E email variables are automatically mapped:',
-        'E2E_TENANT_EMAIL -> E2E_TENANT_LOGIN',
-        'E2E_OWNER_EMAIL  -> E2E_OWNER_LOGIN',
+        'E2E_TENANT_EMAIL -> E2E_TENANT_EMAIL',
+        'E2E_OWNER_EMAIL  -> E2E_OWNER_EMAIL',
       ].join('\n'),
     );
   }
@@ -64,8 +64,8 @@ console.log(' RentItEase Release E2E Environment');
 console.log('==============================================');
 console.log(`Base URL: ${process.env.E2E_BASE_URL}`);
 console.log(`API Prefix: ${process.env.E2E_API_PREFIX}`);
-console.log(`Tenant login: ${process.env.E2E_TENANT_LOGIN}`);
-console.log(`Owner login: ${process.env.E2E_OWNER_LOGIN}`);
+console.log(`Tenant login: ${process.env.E2E_TENANT_EMAIL}`);
+console.log(`Owner login: ${process.env.E2E_OWNER_EMAIL}`);
 console.log(`Property ID: ${process.env.E2E_PROPERTY_ID}`);
 console.log('==============================================');
 console.log('');

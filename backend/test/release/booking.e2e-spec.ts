@@ -20,7 +20,7 @@ describe('Release E2E • Booking', () => {
 
   it('0. cleanup previous E2E booking', async () => {
     const tenantLogin = await login(
-      process.env.E2E_TENANT_LOGIN!,
+      process.env.E2E_TENANT_EMAIL!,
       process.env.E2E_TENANT_PASSWORD!,
     );
 
@@ -74,7 +74,7 @@ describe('Release E2E • Booking', () => {
     if (!tenantToken) {
       tenantToken = (
         await login(
-          process.env.E2E_TENANT_LOGIN!,
+          process.env.E2E_TENANT_EMAIL!,
           process.env.E2E_TENANT_PASSWORD!,
         )
       ).token;
@@ -86,7 +86,7 @@ describe('Release E2E • Booking', () => {
   it('2. owner login', async () => {
     ownerToken = (
       await login(
-        process.env.E2E_OWNER_LOGIN!,
+        process.env.E2E_OWNER_EMAIL!,
         process.env.E2E_OWNER_PASSWORD!,
       )
     ).token;
@@ -138,13 +138,9 @@ describe('Release E2E • Booking', () => {
 
     bookingId = booking?.id ?? booking?.booking?.id;
 
-    bookingId = extractData(res.body)?.id ?? extractData(res.body)?.booking?.id;
-expect(bookingId).toBeTruthy();
-
-console.log(`E2E BOOKING ID: ${bookingId}`);
-
-process.env.E2E_BOOKING_ID = bookingId!;
     expect(bookingId).toBeTruthy();
+
+    console.log(`E2E BOOKING ID: ${bookingId}`);
 
     process.env.E2E_BOOKING_ID = bookingId!;
   });

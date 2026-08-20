@@ -5,7 +5,7 @@ import { apiUrl, auth, login } from './helpers';
 describe('Release E2E • Lease', () => {
   it('Lease API is implemented and reachable', async () => {
     const token = (
-      await login(process.env.E2E_TENANT_LOGIN!, process.env.E2E_TENANT_PASSWORD!)
+      await login(process.env.E2E_TENANT_EMAIL!, process.env.E2E_TENANT_PASSWORD!)
     ).token;
 
     const res = await request(apiUrl())
@@ -27,7 +27,7 @@ describe('Release E2E • Lease', () => {
     if (!leaseId) return;
 
     const token = (
-      await login(process.env.E2E_TENANT_LOGIN!, process.env.E2E_TENANT_PASSWORD!)
+      await login(process.env.E2E_TENANT_EMAIL!, process.env.E2E_TENANT_PASSWORD!)
     ).token;
 
     const res = await request(apiUrl())
