@@ -550,7 +550,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
 
   it('09 Admin → users → properties → reviews → visits → billing', async () => {
     const admin = await login(
-      process.env.E2E_ADMIN_LOGIN!,
+      process.env.E2E_ADMIN_EMAIL!,
       process.env.E2E_ADMIN_PASSWORD!,
     );
 
