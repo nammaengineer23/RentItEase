@@ -46,7 +46,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('assets/images/logo.png', width: 120, height: 120),
+            Image.asset('assets/images/branding/rentitease_logo_512x512.png', width: 120, height: 120),
 
             const SizedBox(height: 30),
 

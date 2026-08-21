@@ -29,7 +29,7 @@ class AnimatedLogo extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(32),
-              child: Image.asset('assets/images/logo.png', fit: BoxFit.cover),
+              child: Image.asset('assets/images/branding/rentitease_logo_512x512.png', fit: BoxFit.cover),
             ),
           ),
         ),

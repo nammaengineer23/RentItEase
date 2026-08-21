@@ -27,7 +27,7 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
 
   @override
   Widget build(BuildContext context) {
-    final images = widget.property.imageUrls;
+    final images = widget.property.imageUrls.where((url) => url.trim().isNotEmpty).toList();
 
     return SizedBox(
       height: 220,
@@ -36,15 +36,11 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
             child: images.isEmpty
-                ? Container(
-                    color: Colors.grey.shade300,
-                    child: const Center(
-                      child: Icon(
-                        Icons.image_not_supported,
-                        size: 60,
-                        color: Colors.grey,
-                      ),
-                    ),
+                ? Image.asset(
+                    "assets/images/properties/property_placeholder_landscape_1280x853.png",
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
                   )
                 : PageView.builder(
                     controller: _pageController,
@@ -63,19 +59,19 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
                             return child;
                           }
 
-                          return Container(
-                            color: Colors.grey.shade200,
-                            child: const Center(
-                              child: CircularProgressIndicator(),
-                            ),
+                          return Image.asset(
+                            "assets/images/properties/property_placeholder_landscape_1280x853.png",
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
                           );
                         },
                         errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey.shade300,
-                            child: const Center(
-                              child: Icon(Icons.broken_image, size: 50),
-                            ),
+                          return Image.asset(
+                            "assets/images/properties/property_placeholder_landscape_1280x853.png",
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
                           );
                         },
                       );
@@ -153,3 +149,4 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
     );
   }
 }
+

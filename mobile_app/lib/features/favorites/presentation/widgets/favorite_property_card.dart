@@ -71,7 +71,7 @@ class FavoritePropertyCard extends ConsumerWidget {
             return child;
           }
 
-          return const Center(child: CircularProgressIndicator());
+          return _imagePlaceholder();
         },
         errorBuilder: (context, error, stackTrace) {
           return _imagePlaceholder();
@@ -85,11 +85,11 @@ class FavoritePropertyCard extends ConsumerWidget {
   // ======================================================
 
   Widget _imagePlaceholder() {
-    return Container(
+    return Image.asset(
+      "assets/images/properties/property_placeholder_landscape_1280x853.png",
       height: 180,
       width: double.infinity,
-      color: Colors.grey.shade300,
-      child: const Icon(Icons.home, size: 70, color: Colors.grey),
+      fit: BoxFit.cover,
     );
   }
 
@@ -175,3 +175,4 @@ class FavoritePropertyCard extends ConsumerWidget {
     );
   }
 }
+

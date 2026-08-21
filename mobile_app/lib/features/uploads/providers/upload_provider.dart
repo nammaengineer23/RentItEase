@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import '../../../config/environment.dart';
 import '../data/upload_api.dart';
 import '../data/upload_repository.dart';
 import '../models/uploaded_image_model.dart';
@@ -16,7 +16,7 @@ import '../models/uploaded_image_model.dart';
 final dioProvider = Provider<Dio>((ref) {
   return Dio(
     BaseOptions(
-      baseUrl: 'http://10.102.95.119:3000/api/v1',
+      baseUrl: Environment.apiBaseUrl,
       headers: {'Content-Type': 'application/json'},
     ),
   );

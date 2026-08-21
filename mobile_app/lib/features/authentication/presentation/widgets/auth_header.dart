@@ -12,7 +12,7 @@ class AuthHeader extends StatelessWidget {
       children: [
         Hero(
           tag: 'app_logo',
-          child: Image.asset('assets/images/logo.png', width: 90, height: 90),
+          child: Image.asset('assets/images/branding/rentitease_logo_512x512.png', width: 90, height: 90),
         ),
 
         const SizedBox(height: 24),

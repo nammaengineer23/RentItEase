@@ -15,9 +15,11 @@ jobs:
   backend-build:
     name: Backend Build
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: backend
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,25 +41,34 @@ jobs:
         run: npm run build
 
   remote-e2e:
-    name: Remote API E2E
+    name: Tenant / Owner / Admin Remote E2E
     needs: backend-build
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: backend
+
     env:
-      E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+      E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
       E2E_API_PREFIX: /api/v1
-      E2E_TENANT_LOGIN: ${{ secrets.E2E_TENANT_LOGIN }}
+
+      E2E_TENANT_EMAIL: ${{ secrets.E2E_TENANT_EMAIL }}
       E2E_TENANT_PASSWORD: ${{ secrets.E2E_TENANT_PASSWORD }}
-      E2E_OWNER_LOGIN: ${{ secrets.E2E_OWNER_LOGIN }}
+
+      E2E_OWNER_EMAIL: ${{ secrets.E2E_OWNER_EMAIL }}
       E2E_OWNER_PASSWORD: ${{ secrets.E2E_OWNER_PASSWORD }}
-      E2E_ADMIN_LOGIN: ${{ secrets.E2E_ADMIN_LOGIN }}
+
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
-      E2E_PROPERTY_ID: ${{ secrets.E2E_PROPERTY_ID }}
+
+      E2E_PROPERTY_ID: ${{ vars.E2E_PROPERTY_ID }}
+
       E2E_RAZORPAY_KEY_SECRET: ${{ secrets.E2E_RAZORPAY_KEY_SECRET }}
       E2E_PUSH_TOKEN: ${{ secrets.E2E_PUSH_TOKEN }}
+
       E2E_STRICT: "true"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,14 +87,21 @@ jobs:
         run: npx prisma generate
 
       - name: Release E2E suite
-        run: npx jest --config test/jest-release-e2e.json release/release-workflow.e2e-spec.ts --runInBand
+        run: |
+          npx jest \
+            --config test/jest-release-e2e.json \
+            release/release-workflow.e2e-spec.ts \
+            --runInBand \
+            --verbose
 
   security-audit:
     name: Security / Configuration Audit
     needs: backend-build
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Run audit
         run: |
           chmod +x scripts/security-audit.sh
@@ -93,9 +111,11 @@ jobs:
     name: Flutter Analyze + Integration
     needs: remote-e2e
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: mobile_app
+
     steps:
       - uses: actions/checkout@v4
 
@@ -123,9 +143,11 @@ jobs:
     name: Flutter Web Release
     needs: remote-e2e
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: mobile_app
+
     steps:
       - uses: actions/checkout@v4
 
@@ -136,10 +158,14 @@ jobs:
           channel: stable
           cache: true
 
-      - run: flutter pub get
+      - name: Flutter pub get
+        run: flutter pub get
 
       - name: Build Web
-        run: flutter build web --release
+        run: |
+          flutter build web \
+            --release \
+            --dart-define=API_BASE_URL=${{ vars.E2E_BASE_URL }}/api/v1
 
       - name: Upload Web artifact
         uses: actions/upload-artifact@v4
@@ -151,9 +177,11 @@ jobs:
     name: Android Release Candidate Build
     needs: [remote-e2e, security-audit]
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: mobile_app
+
     steps:
       - uses: actions/checkout@v4
 
@@ -170,10 +198,14 @@ jobs:
           channel: stable
           cache: true
 
-      - run: flutter pub get
+      - name: Flutter pub get
+        run: flutter pub get
 
       - name: Build Android APK
-        run: flutter build apk --release
+        run: |
+          flutter build apk \
+            --release \
+            --dart-define=API_BASE_URL=${{ vars.E2E_BASE_URL }}/api/v1
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -183,15 +215,29 @@ jobs:
 
   rc1:
     name: Release Candidate 1 Gate
-    needs: [backend-build, remote-e2e, security-audit, flutter, flutter-web, android-release]
+    needs:
+      [
+        backend-build,
+        remote-e2e,
+        security-audit,
+        flutter,
+        flutter-web,
+        android-release
+      ]
     runs-on: ubuntu-latest
+
     steps:
       - name: RC1 passed
         run: |
-          echo "RentItEase Release Candidate 1 gate PASSED."
+          echo "=============================================="
+          echo " RentItEase Release Candidate 1"
+          echo "=============================================="
           echo "Backend build: PASS"
-          echo "Remote API E2E: PASS"
+          echo "Tenant / Owner / Admin Remote E2E: PASS"
           echo "Security audit: PASS"
           echo "Flutter checks: PASS"
           echo "Flutter Web build: PASS"
           echo "Android release build: PASS"
+          echo "=============================================="
+          echo " RentItEase RC1 RELEASE GATE PASSED"
+          echo "=============================================="
