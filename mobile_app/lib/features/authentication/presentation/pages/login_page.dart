@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 import '../../providers/authentication_provider.dart';
@@ -44,11 +45,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     if (!mounted) return;
 
-    if (success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Login Successful')));
-    } else {
+ if (success) {
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(
+    const SnackBar(
+      content: Text('Login Successful'),
+    ),
+  );
+
+  context.go('/home');
+}
+    else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(provider.errorMessage ?? 'Login Failed')),
       );
