@@ -28,6 +28,7 @@ dependencies:
   url_launcher: ^6.3.2
   geocoding: ^4.0.0
   razorpay_flutter: ^1.4.5
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -39,5 +40,8 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/images/branding/rentitease_logo_512x512.png
     - assets/animations/
+    - assets/images/branding/
+    - assets/images/icons/
+    - assets/images/icons/feature/
+    - assets/images/icons/utility/

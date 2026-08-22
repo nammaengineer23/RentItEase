@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class SocialLoginButton extends StatelessWidget {
   const SocialLoginButton({
@@ -35,9 +36,7 @@ class SocialLoginButton extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _GoogleIcon(),
-
                   SizedBox(width: 12),
-
                   Flexible(
                     child: Text(
                       'Continue with Google',
@@ -58,29 +57,19 @@ class SocialLoginButton extends StatelessWidget {
   }
 }
 
-/// Local Google-style "G" icon.
+/// Official Google G logo loaded from the local SVG asset.
 ///
-/// This deliberately does not use Image.network so widget tests,
-/// Flutter Web and offline rendering do not depend on Google's
-/// external image URL.
+/// Using SVG keeps the logo sharp on Android, Web, and high-density
+/// displays without depending on an external network image.
 class _GoogleIcon extends StatelessWidget {
   const _GoogleIcon();
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
-      width: 24,
-      height: 24,
-      child: Center(
-        child: Text(
-          'G',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF4285F4),
-          ),
-        ),
-      ),
+    return SvgPicture.asset(
+      'assets/images/branding/google_g.svg',
+      width: 22,
+      height: 22,
     );
   }
 }

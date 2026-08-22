@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../onboarding/services/onboarding_service.dart';
@@ -34,8 +35,12 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     }
 
     await ref.read(authenticationProvider).loadSavedSession();
+
     if (!mounted) return;
-    context.go(ref.read(authenticationProvider).isLoggedIn ? '/home' : '/auth');
+
+    context.go(
+      ref.read(authenticationProvider).isLoggedIn ? '/home' : '/auth',
+    );
   }
 
   @override
@@ -46,15 +51,19 @@ class _SplashPageState extends ConsumerState<SplashPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('assets/images/branding/rentitease_logo_512x512.png', width: 120, height: 120),
+            SvgPicture.asset(
+              'assets/images/branding/rentitease_logo_512x512.svg',
+              width: 120,
+              height: 120,
+            ),
 
             const SizedBox(height: 30),
 
             Text(
               'RentItEase',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
 
             const SizedBox(height: 12),

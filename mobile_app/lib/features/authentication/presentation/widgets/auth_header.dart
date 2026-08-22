@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class AuthHeader extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const AuthHeader({super.key, required this.title, required this.subtitle});
+  const AuthHeader({
+    super.key,
+    required this.title,
+    required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +17,11 @@ class AuthHeader extends StatelessWidget {
       children: [
         Hero(
           tag: 'app_logo',
-          child: Image.asset('assets/images/branding/rentitease_logo_512x512.png', width: 90, height: 90),
+          child: SvgPicture.asset(
+            'assets/images/branding/rentitease_logo_512x512.svg',
+            width: 90,
+            height: 90,
+          ),
         ),
 
         const SizedBox(height: 24),
@@ -21,9 +30,9 @@ class AuthHeader extends StatelessWidget {
           title,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
         ),
 
         const SizedBox(height: 12),
@@ -34,9 +43,9 @@ class AuthHeader extends StatelessWidget {
             subtitle,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.grey.shade600,
-              height: 1.5,
-            ),
+                  color: Colors.grey.shade600,
+                  height: 1.5,
+                ),
           ),
         ),
       ],

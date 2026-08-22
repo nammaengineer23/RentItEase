@@ -16,22 +16,34 @@ class AuthenticationService {
   final StorageService _storage;
 
   Future<AuthResponse> login(LoginRequest request) async {
-    final response = await _client.dio.post<Map<String, dynamic>>(
-      ApiPaths.login,
-      data: request.toJson(),
-    );
+  final response = await _client.dio.post<Map<String, dynamic>>(
+    ApiPaths.login,
+    data: request.toJson(),
+  );
 
-    return AuthResponse.fromJson(response.data!);
+  final data = response.data?['data'] as Map<String, dynamic>?;
+
+  if (data == null) {
+    throw Exception('Invalid login response: missing data');
   }
+
+  return AuthResponse.fromJson(data);
+}
 
   Future<AuthResponse> register(RegisterRequest request) async {
-    final response = await _client.dio.post<Map<String, dynamic>>(
-      ApiPaths.register,
-      data: request.toJson(),
-    );
+  final response = await _client.dio.post<Map<String, dynamic>>(
+    ApiPaths.register,
+    data: request.toJson(),
+  );
 
-    return AuthResponse.fromJson(response.data!);
+  final data = response.data?['data'] as Map<String, dynamic>?;
+
+  if (data == null) {
+    throw Exception('Invalid registration response: missing data');
   }
+
+  return AuthResponse.fromJson(data);
+}
 
   Future<void> logout() async {
     try {

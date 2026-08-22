@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class AnimatedLogo extends StatelessWidget {
   final Animation<double> animation;
 
-  const AnimatedLogo({super.key, required this.animation});
+  const AnimatedLogo({
+    super.key,
+    required this.animation,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +33,10 @@ class AnimatedLogo extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(32),
-              child: Image.asset('assets/images/branding/rentitease_logo_512x512.png', fit: BoxFit.cover),
+              child: SvgPicture.asset(
+                'assets/images/branding/rentitease_logo_512x512.svg',
+                fit: BoxFit.cover,
+              ),
             ),
           ),
         ),
