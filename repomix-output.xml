@@ -489,9 +489,14 @@ mobile_app/
                   MainActivity.kt
           res/
             drawable/
+              ic_launcher_background.png
+              ic_launcher_foreground.png
               launch_background.xml
+              rentitease_splash.png
             drawable-v21/
               launch_background.xml
+            mipmap-anydpi-v26/
+              ic_launcher.xml
             mipmap-hdpi/
               ic_launcher.png
             mipmap-mdpi/
@@ -1130,167 +1135,12 @@ rentitease_backup.dump
 <files>
 This section contains the contents of the repository's files.
 
-<file path="mobile_app/assets/images/ASSET_MANIFEST.txt">
-RentItEase – Updated Visual Asset Pack
-Generated to match the supplied RentItEase visual reference sheet.
-
-PATH | SIZE
-----------------------------------------------------------------------
-avatars/default_avatar_512x512.png | 512x512
-avatars/female_avatar_512x512.png | 512x512
-avatars/male_avatar_512x512.png | 512x512
-avatars/owner_avatar_512x512.png | 512x512
-avatars/tenant_avatar_512x512.png | 512x512
-banners/homepage_banner_1920x600.png | 1920x600
-banners/membership_offer_banner_1920x400.png | 1920x400
-banners/property_promo_banner_1920x400.png | 1920x400
-banners/web_ad_banner_1200x628.png | 1200x628
-branding/android_adaptive_background_1080x1080.png | 1080x1080
-branding/android_adaptive_foreground_432x432.png | 432x432
-branding/android_adaptive_full_icon_1080x1080.png | 1080x1080
-branding/app_icon_144x144.png | 144x144
-branding/app_icon_192x192.png | 192x192
-branding/app_icon_72x72.png | 72x72
-branding/app_icon_96x96.png | 96x96
-branding/app_icon_app_store_512x512.png | 512x512
-branding/app_icon_play_store_512x512.png | 512x512
-branding/ios_app_icon_120x120.png | 120x120
-branding/ios_app_icon_152x152.png | 152x152
-branding/ios_app_icon_167x167.png | 167x167
-branding/ios_app_icon_180x180.png | 180x180
-branding/ios_app_icon_20x20.png | 20x20
-branding/ios_app_icon_40x40.png | 40x40
-branding/ios_app_icon_60x60.png | 60x60
-branding/ios_app_icon_87x87.png | 87x87
-branding/rentitease_compact_logo_256x256.png | 256x256
-branding/rentitease_horizontal_logo_1200x400.png | 1200x400
-branding/rentitease_logo_512x512.png | 512x512
-branding/rentitease_primary_logo_1024x1024.png | 1024x1024
-icons/feature/add_property_512x512.png | 512x512
-icons/feature/bookings_512x512.png | 512x512
-icons/feature/chat_512x512.png | 512x512
-icons/feature/favorites_512x512.png | 512x512
-icons/feature/home_512x512.png | 512x512
-icons/feature/lease_512x512.png | 512x512
-icons/feature/logout_512x512.png | 512x512
-icons/feature/membership_512x512.png | 512x512
-icons/feature/my_properties_512x512.png | 512x512
-icons/feature/notifications_512x512.png | 512x512
-icons/feature/payments_512x512.png | 512x512
-icons/feature/profile_512x512.png | 512x512
-icons/feature/properties_512x512.png | 512x512
-icons/feature/reviews_512x512.png | 512x512
-icons/feature/search_512x512.png | 512x512
-icons/feature/visits_512x512.png | 512x512
-icons/utility/delete_512x512.png | 512x512
-icons/utility/edit_512x512.png | 512x512
-icons/utility/email_512x512.png | 512x512
-icons/utility/filter_512x512.png | 512x512
-icons/utility/info_512x512.png | 512x512
-icons/utility/location_512x512.png | 512x512
-icons/utility/map_512x512.png | 512x512
-icons/utility/phone_512x512.png | 512x512
-icons/utility/share_512x512.png | 512x512
-icons/utility/sort_512x512.png | 512x512
-icons/utility/success_512x512.png | 512x512
-icons/utility/warning_512x512.png | 512x512
-onboarding/easy_bookings_1080x1920.png | 1080x1920
-onboarding/find_your_property_1080x1920.png | 1080x1920
-onboarding/live_easy_1080x1920.png | 1080x1920
-onboarding/secure_payments_1080x1920.png | 1080x1920
-payments/google_pay_512x512.png | 512x512
-payments/mastercard_512x512.png | 512x512
-payments/paytm_512x512.png | 512x512
-payments/phonepe_512x512.png | 512x512
-payments/razorpay_512x512.png | 512x512
-payments/upi_512x512.png | 512x512
-payments/visa_512x512.png | 512x512
-properties/no_image_available_800x800.png | 800x800
-properties/property_placeholder_landscape_1280x853.png | 1280x853
-properties/property_placeholder_portrait_720x1280.png | 720x1280
-properties/property_placeholder_square_1080x1080.png | 1080x1080
-social/facebook_512x512.png | 512x512
-social/instagram_512x512.png | 512x512
-social/linkedin_512x512.png | 512x512
-social/x_512x512.png | 512x512
-social/youtube_512x512.png | 512x512
-splash/android_splash_1080x1920.png | 1080x1920
-splash/ios_splash_1125x2436.png | 1125x2436
-</file>
-
-<file path="mobile_app/fix_property_model.ps1">
-$p = "lib/features/property/data/models/property_model.dart"
-
-$s = [System.IO.File]::ReadAllText($p)
-
-$old = @"
-      imageUrls:
-          (json['imageUrls'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          const [],
-"@
-
-$new = @"
-      imageUrls: _parseImageUrls(json),
-"@
-
-if (-not $s.Contains($old)) {
-    Write-Host "ERROR: Original imageUrls block not found"
-    exit 1
-}
-
-$s = $s.Replace($old, $new)
-
-$marker = "  factory PropertyModel.fromJson(Map<String, dynamic> json) {"
-
-$helper = @"
-  static List<String> _parseImageUrls(Map<String, dynamic> json) {
-    final imageUrls = json['imageUrls'];
-
-    if (imageUrls is List) {
-      return imageUrls
-          .map((e) => e.toString().trim())
-          .where((url) => url.isNotEmpty)
-          .toList();
-    }
-
-    final images = json['images'];
-
-    if (images is List) {
-      return images
-          .whereType<Map>()
-          .map((image) => image['imageUrl']?.toString().trim() ?? '')
-          .where((url) => url.isNotEmpty)
-          .toList();
-    }
-
-    final imageUrl = json['imageUrl']?.toString().trim();
-
-    if (imageUrl != null && imageUrl.isNotEmpty) {
-      return [imageUrl];
-    }
-
-    return const [];
-  }
-
-"@
-
-if ($s.Contains("_parseImageUrls")) {
-    Write-Host "ERROR: Parser helper already exists"
-    exit 1
-}
-
-if (-not $s.Contains($marker)) {
-    Write-Host "ERROR: fromJson marker not found"
-    exit 1
-}
-
-$s = $s.Replace($marker, $helper + $marker)
-
-[System.IO.File]::WriteAllText($p, $s)
-
-Write-Host "SUCCESS: PropertyModel updated"
+<file path="mobile_app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>
 </file>
 
 <file path=".github/ISSUE_TEMPLATE/bug_report.md">
@@ -1334,252 +1184,6 @@ Describe the task or improvement to be completed.
 - [ ] Criterion 1
 - [ ] Criterion 2
 - [ ] Criterion 3
-</file>
-
-<file path=".github/workflows/e2e-test.yml">
-name: RentItEase - Release E2E / RC1
-
-on:
-  workflow_dispatch:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-concurrency:
-  group: rentitease-release-${{ github.ref }}
-  cancel-in-progress: true
-
-jobs:
-  backend-build:
-    name: Backend Build
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: backend
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Prisma generate
-        run: npx prisma generate
-
-      - name: Build backend
-        run: npm run build
-
-  remote-e2e:
-    name: Tenant / Owner / Admin Remote E2E
-    needs: backend-build
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: backend
-
-    env:
-      E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
-      E2E_API_PREFIX: /api/v1
-
-      E2E_TENANT_EMAIL: ${{ secrets.E2E_TENANT_EMAIL }}
-      E2E_TENANT_PASSWORD: ${{ secrets.E2E_TENANT_PASSWORD }}
-
-      E2E_OWNER_EMAIL: ${{ secrets.E2E_OWNER_EMAIL }}
-      E2E_OWNER_PASSWORD: ${{ secrets.E2E_OWNER_PASSWORD }}
-
-      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
-      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
-
-      E2E_PROPERTY_ID: ${{ vars.E2E_PROPERTY_ID }}
-
-      E2E_RAZORPAY_KEY_SECRET: ${{ secrets.E2E_RAZORPAY_KEY_SECRET }}
-      E2E_PUSH_TOKEN: ${{ secrets.E2E_PUSH_TOKEN }}
-
-      E2E_STRICT: "true"
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Prisma generate
-        run: npx prisma generate
-
-      - name: Release E2E suite
-        run: |
-          npx jest \
-            --config test/jest-release-e2e.json \
-            release/release-workflow.e2e-spec.ts \
-            --runInBand \
-            --verbose
-
-  security-audit:
-    name: Security / Configuration Audit
-    needs: backend-build
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run audit
-        run: |
-          chmod +x scripts/security-audit.sh
-          ./scripts/security-audit.sh
-
-  flutter:
-    name: Flutter Analyze + Integration
-    needs: remote-e2e
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: mobile_app
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.44.4"
-          channel: stable
-          cache: true
-
-      - name: Flutter pub get
-        run: flutter pub get
-
-      - name: Flutter analyze
-        run: flutter analyze
-
-      - name: Flutter tests
-        run: flutter test
-
-      - name: Tenant / Owner integration tests
-        run: flutter test integration_test
-        continue-on-error: true
-
-  flutter-web:
-    name: Flutter Web Release
-    needs: remote-e2e
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: mobile_app
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.44.4"
-          channel: stable
-          cache: true
-
-      - name: Flutter pub get
-        run: flutter pub get
-
-      - name: Build Web
-        run: |
-          flutter build web \
-            --release \
-            --dart-define=API_BASE_URL=${{ vars.E2E_BASE_URL }}/api/v1
-
-      - name: Upload Web artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: rentitease-web
-          path: mobile_app/build/web
-
-  android-release:
-    name: Android Release Candidate Build
-    needs: [remote-e2e, security-audit]
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: mobile_app
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.44.4"
-          channel: stable
-          cache: true
-
-      - name: Flutter pub get
-        run: flutter pub get
-
-      - name: Build Android APK
-        run: |
-          flutter build apk \
-            --release \
-            --dart-define=API_BASE_URL=${{ vars.E2E_BASE_URL }}/api/v1
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: rentitease-android-release
-          path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
-
-  rc1:
-    name: Release Candidate 1 Gate
-    needs:
-      [
-        backend-build,
-        remote-e2e,
-        security-audit,
-        flutter,
-        flutter-web,
-        android-release
-      ]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: RC1 passed
-        run: |
-          echo "=============================================="
-          echo " RentItEase Release Candidate 1"
-          echo "=============================================="
-          echo "Backend build: PASS"
-          echo "Tenant / Owner / Admin Remote E2E: PASS"
-          echo "Security audit: PASS"
-          echo "Flutter checks: PASS"
-          echo "Flutter Web build: PASS"
-          echo "Android release build: PASS"
-          echo "=============================================="
-          echo " RentItEase RC1 RELEASE GATE PASSED"
-          echo "=============================================="
 </file>
 
 <file path=".github/workflows/release.yml">
@@ -16928,31 +16532,23 @@ class MainActivity : FlutterActivity()
 
 <file path="mobile_app/android/app/src/main/res/drawable/launch_background.xml">
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
-
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <item>
         <bitmap
-            android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:gravity="fill"
+            android:src="@drawable/rentitease_splash" />
+    </item>
 </layer-list>
 </file>
 
 <file path="mobile_app/android/app/src/main/res/drawable-v21/launch_background.xml">
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="?android:colorBackground" />
-
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <item>
         <bitmap
-            android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:gravity="fill"
+            android:src="@drawable/rentitease_splash" />
+    </item>
 </layer-list>
 </file>
 
@@ -17063,6 +16659,94 @@ android.builtInKotlin=false
 
 <file path="mobile_app/assets/animations/empty.text">
 
+</file>
+
+<file path="mobile_app/assets/images/ASSET_MANIFEST.txt">
+RentItEase – Updated Visual Asset Pack
+Generated to match the supplied RentItEase visual reference sheet.
+
+PATH | SIZE
+----------------------------------------------------------------------
+avatars/default_avatar_512x512.png | 512x512
+avatars/female_avatar_512x512.png | 512x512
+avatars/male_avatar_512x512.png | 512x512
+avatars/owner_avatar_512x512.png | 512x512
+avatars/tenant_avatar_512x512.png | 512x512
+banners/homepage_banner_1920x600.png | 1920x600
+banners/membership_offer_banner_1920x400.png | 1920x400
+banners/property_promo_banner_1920x400.png | 1920x400
+banners/web_ad_banner_1200x628.png | 1200x628
+branding/android_adaptive_background_1080x1080.png | 1080x1080
+branding/android_adaptive_foreground_432x432.png | 432x432
+branding/android_adaptive_full_icon_1080x1080.png | 1080x1080
+branding/app_icon_144x144.png | 144x144
+branding/app_icon_192x192.png | 192x192
+branding/app_icon_72x72.png | 72x72
+branding/app_icon_96x96.png | 96x96
+branding/app_icon_app_store_512x512.png | 512x512
+branding/app_icon_play_store_512x512.png | 512x512
+branding/ios_app_icon_120x120.png | 120x120
+branding/ios_app_icon_152x152.png | 152x152
+branding/ios_app_icon_167x167.png | 167x167
+branding/ios_app_icon_180x180.png | 180x180
+branding/ios_app_icon_20x20.png | 20x20
+branding/ios_app_icon_40x40.png | 40x40
+branding/ios_app_icon_60x60.png | 60x60
+branding/ios_app_icon_87x87.png | 87x87
+branding/rentitease_compact_logo_256x256.png | 256x256
+branding/rentitease_horizontal_logo_1200x400.png | 1200x400
+branding/rentitease_logo_512x512.png | 512x512
+branding/rentitease_primary_logo_1024x1024.png | 1024x1024
+icons/feature/add_property_512x512.png | 512x512
+icons/feature/bookings_512x512.png | 512x512
+icons/feature/chat_512x512.png | 512x512
+icons/feature/favorites_512x512.png | 512x512
+icons/feature/home_512x512.png | 512x512
+icons/feature/lease_512x512.png | 512x512
+icons/feature/logout_512x512.png | 512x512
+icons/feature/membership_512x512.png | 512x512
+icons/feature/my_properties_512x512.png | 512x512
+icons/feature/notifications_512x512.png | 512x512
+icons/feature/payments_512x512.png | 512x512
+icons/feature/profile_512x512.png | 512x512
+icons/feature/properties_512x512.png | 512x512
+icons/feature/reviews_512x512.png | 512x512
+icons/feature/search_512x512.png | 512x512
+icons/feature/visits_512x512.png | 512x512
+icons/utility/delete_512x512.png | 512x512
+icons/utility/edit_512x512.png | 512x512
+icons/utility/email_512x512.png | 512x512
+icons/utility/filter_512x512.png | 512x512
+icons/utility/info_512x512.png | 512x512
+icons/utility/location_512x512.png | 512x512
+icons/utility/map_512x512.png | 512x512
+icons/utility/phone_512x512.png | 512x512
+icons/utility/share_512x512.png | 512x512
+icons/utility/sort_512x512.png | 512x512
+icons/utility/success_512x512.png | 512x512
+icons/utility/warning_512x512.png | 512x512
+onboarding/easy_bookings_1080x1920.png | 1080x1920
+onboarding/find_your_property_1080x1920.png | 1080x1920
+onboarding/live_easy_1080x1920.png | 1080x1920
+onboarding/secure_payments_1080x1920.png | 1080x1920
+payments/google_pay_512x512.png | 512x512
+payments/mastercard_512x512.png | 512x512
+payments/paytm_512x512.png | 512x512
+payments/phonepe_512x512.png | 512x512
+payments/razorpay_512x512.png | 512x512
+payments/upi_512x512.png | 512x512
+payments/visa_512x512.png | 512x512
+properties/no_image_available_800x800.png | 800x800
+properties/property_placeholder_landscape_1280x853.png | 1280x853
+properties/property_placeholder_portrait_720x1280.png | 720x1280
+properties/property_placeholder_square_1080x1080.png | 1080x1080
+social/facebook_512x512.png | 512x512
+social/instagram_512x512.png | 512x512
+social/linkedin_512x512.png | 512x512
+social/x_512x512.png | 512x512
+social/youtube_512x512.png | 512x512
+splash/android_splash_1080x1920.png | 1080x1920
+splash/ios_splash_1125x2436.png | 1125x2436
 </file>
 
 <file path="mobile_app/ios/Flutter/AppFrameworkInfo.plist">
@@ -18763,6 +18447,81 @@ linter:
   rules:
     avoid_print: false
     prefer_const_constructors: true
+</file>
+
+<file path="mobile_app/fix_property_model.ps1">
+$p = "lib/features/property/data/models/property_model.dart"
+
+$s = [System.IO.File]::ReadAllText($p)
+
+$old = @"
+      imageUrls:
+          (json['imageUrls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+"@
+
+$new = @"
+      imageUrls: _parseImageUrls(json),
+"@
+
+if (-not $s.Contains($old)) {
+    Write-Host "ERROR: Original imageUrls block not found"
+    exit 1
+}
+
+$s = $s.Replace($old, $new)
+
+$marker = "  factory PropertyModel.fromJson(Map<String, dynamic> json) {"
+
+$helper = @"
+  static List<String> _parseImageUrls(Map<String, dynamic> json) {
+    final imageUrls = json['imageUrls'];
+
+    if (imageUrls is List) {
+      return imageUrls
+          .map((e) => e.toString().trim())
+          .where((url) => url.isNotEmpty)
+          .toList();
+    }
+
+    final images = json['images'];
+
+    if (images is List) {
+      return images
+          .whereType<Map>()
+          .map((image) => image['imageUrl']?.toString().trim() ?? '')
+          .where((url) => url.isNotEmpty)
+          .toList();
+    }
+
+    final imageUrl = json['imageUrl']?.toString().trim();
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return [imageUrl];
+    }
+
+    return const [];
+  }
+
+"@
+
+if ($s.Contains("_parseImageUrls")) {
+    Write-Host "ERROR: Parser helper already exists"
+    exit 1
+}
+
+if (-not $s.Contains($marker)) {
+    Write-Host "ERROR: fromJson marker not found"
+    exit 1
+}
+
+$s = $s.Replace($marker, $helper + $marker)
+
+[System.IO.File]::WriteAllText($p, $s)
+
+Write-Host "SUCCESS: PropertyModel updated"
 </file>
 
 <file path="scripts/security-audit.sh">
@@ -24004,54 +23763,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 }
 </file>
 
-<file path="mobile_app/lib/features/authentication/presentation/widgets/auth_header.dart">
-import 'package:flutter/material.dart';
-
-class AuthHeader extends StatelessWidget {
-  final String title;
-  final String subtitle;
-
-  const AuthHeader({super.key, required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Hero(
-          tag: 'app_logo',
-          child: Image.asset('assets/images/branding/rentitease_logo_512x512.png', width: 90, height: 90),
-        ),
-
-        const SizedBox(height: 24),
-
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-
-        const SizedBox(height: 12),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30),
-          child: Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.grey.shade600,
-              height: 1.5,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-</file>
-
 <file path="mobile_app/lib/features/authentication/presentation/widgets/password_strength.dart">
 import 'package:flutter/material.dart';
 
@@ -28357,160 +28068,6 @@ class _FeatureItem extends StatelessWidget {
 }
 </file>
 
-<file path="mobile_app/lib/features/property/presentation/widgets/property_image_slider.dart">
-import 'package:flutter/material.dart';
-
-import '../../domain/entities/property_entity.dart';
-
-import 'favorite_button.dart';
-import 'featured_badge.dart';
-
-class PropertyImageSlider extends StatefulWidget {
-  const PropertyImageSlider({super.key, required this.property});
-
-  final PropertyEntity property;
-
-  @override
-  State<PropertyImageSlider> createState() => _PropertyImageSliderState();
-}
-
-class _PropertyImageSliderState extends State<PropertyImageSlider> {
-  final PageController _pageController = PageController();
-
-  int _currentPage = 0;
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final images = widget.property.imageUrls.where((url) => url.trim().isNotEmpty).toList();
-
-    return SizedBox(
-      height: 220,
-      child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-            child: images.isEmpty
-                ? Image.asset(
-                    "assets/images/properties/property_placeholder_landscape_1280x853.png",
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                  )
-                : PageView.builder(
-                    controller: _pageController,
-                    itemCount: images.length,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentPage = index;
-                      });
-                    },
-                    itemBuilder: (context, index) {
-                      return Image.network(
-                        images[index],
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) {
-                            return child;
-                          }
-
-                          return Image.asset(
-                            "assets/images/properties/property_placeholder_landscape_1280x853.png",
-                            width: double.infinity,
-                            height: double.infinity,
-                            fit: BoxFit.cover,
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Image.asset(
-                            "assets/images/properties/property_placeholder_landscape_1280x853.png",
-                            width: double.infinity,
-                            height: double.infinity,
-                            fit: BoxFit.cover,
-                          );
-                        },
-                      );
-                    },
-                  ),
-          ),
-
-          Positioned(
-            top: 12,
-            right: 12,
-            child: FavoriteButton(
-              isFavorite: false,
-              onPressed: () {
-                // TODO:
-                // Connect Favorites API
-              },
-            ),
-          ),
-
-          Positioned(
-            top: 12,
-            left: 12,
-            child: FeaturedBadge(isFeatured: widget.property.isFeatured),
-          ),
-
-          if (images.isNotEmpty)
-            Positioned(
-              bottom: 12,
-              right: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${_currentPage + 1}/${images.length}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-
-          if (images.length > 1)
-            Positioned(
-              bottom: 12,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  images.length,
-                  (index) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: _currentPage == index ? 18 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: _currentPage == index
-                          ? Colors.white
-                          : Colors.white54,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
 <file path="mobile_app/lib/features/property/presentation/widgets/property_price.dart">
 import 'package:flutter/material.dart';
 
@@ -29119,48 +28676,6 @@ class SplashService {
     }
 
     return SplashDestination.login;
-  }
-}
-</file>
-
-<file path="mobile_app/lib/features/splash/widgets/animated_logo.dart">
-import 'package:flutter/material.dart';
-
-class AnimatedLogo extends StatelessWidget {
-  final Animation<double> animation;
-
-  const AnimatedLogo({super.key, required this.animation});
-
-  @override
-  Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: animation,
-      child: FadeTransition(
-        opacity: animation,
-        child: Hero(
-          tag: 'app_logo',
-          child: Container(
-            width: 160,
-            height: 160,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(32),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blue.withValues(alpha: 0.15),
-                  blurRadius: 30,
-                  spreadRadius: 6,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(32),
-              child: Image.asset('assets/images/branding/rentitease_logo_512x512.png', fit: BoxFit.cover),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 </file>
@@ -30131,6 +29646,346 @@ If sign-in fails, verify that:
 
 - Follow the project contribution guidelines in CONTRIBUTING.md.
 - Review the architecture overview in ARCHITECTURE.md for module boundaries and conventions.
+</file>
+
+<file path=".github/workflows/e2e-test.yml">
+name: RentItEase - Release E2E / RC1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: rentitease-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ============================================================
+  # BACKEND BUILD
+  # ============================================================
+
+  backend-build:
+    name: Backend Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Build backend
+        run: npm run build
+
+
+  # ============================================================
+  # REMOTE BACKEND RELEASE E2E
+  # ============================================================
+
+  remote-e2e:
+    name: Tenant / Owner / Admin Remote E2E
+    needs: backend-build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      # Remote Railway backend
+      E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+      E2E_API_PREFIX: /api/v1
+
+      # Tenant
+      E2E_TENANT_EMAIL: ${{ secrets.E2E_TENANT_EMAIL }}
+      E2E_TENANT_PASSWORD: ${{ secrets.E2E_TENANT_PASSWORD }}
+
+      # Owner
+      E2E_OWNER_EMAIL: ${{ secrets.E2E_OWNER_EMAIL }}
+      E2E_OWNER_PASSWORD: ${{ secrets.E2E_OWNER_PASSWORD }}
+
+      # Admin
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+
+      # Release test property
+      E2E_PROPERTY_ID: ${{ secrets.E2E_PROPERTY_ID }}
+
+      # Optional integrations
+      E2E_RAZORPAY_KEY_SECRET: ${{ secrets.E2E_RAZORPAY_KEY_SECRET }}
+
+      # Strict release configuration validation
+      E2E_STRICT: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      # --------------------------------------------------------
+      # Safe configuration verification
+      # Does NOT print secret values.
+      # --------------------------------------------------------
+
+      - name: Verify release E2E configuration
+        run: |
+          test -n "$E2E_BASE_URL" \
+            && echo "E2E_BASE_URL: configured" \
+            || echo "E2E_BASE_URL: MISSING"
+
+          test -n "$E2E_API_PREFIX" \
+            && echo "E2E_API_PREFIX: configured" \
+            || echo "E2E_API_PREFIX: MISSING"
+
+          test -n "$E2E_TENANT_EMAIL" \
+            && echo "E2E_TENANT_EMAIL: configured" \
+            || echo "E2E_TENANT_EMAIL: MISSING"
+
+          test -n "$E2E_TENANT_PASSWORD" \
+            && echo "E2E_TENANT_PASSWORD: configured" \
+            || echo "E2E_TENANT_PASSWORD: MISSING"
+
+          test -n "$E2E_OWNER_EMAIL" \
+            && echo "E2E_OWNER_EMAIL: configured" \
+            || echo "E2E_OWNER_EMAIL: MISSING"
+
+          test -n "$E2E_OWNER_PASSWORD" \
+            && echo "E2E_OWNER_PASSWORD: configured" \
+            || echo "E2E_OWNER_PASSWORD: MISSING"
+
+          test -n "$E2E_ADMIN_EMAIL" \
+            && echo "E2E_ADMIN_EMAIL: configured" \
+            || echo "E2E_ADMIN_EMAIL: MISSING"
+
+          test -n "$E2E_ADMIN_PASSWORD" \
+            && echo "E2E_ADMIN_PASSWORD: configured" \
+            || echo "E2E_ADMIN_PASSWORD: MISSING"
+
+          test -n "$E2E_PROPERTY_ID" \
+            && echo "E2E_PROPERTY_ID: configured" \
+            || echo "E2E_PROPERTY_ID: MISSING"
+
+      # --------------------------------------------------------
+      # Release E2E
+      # --------------------------------------------------------
+
+      - name: Release E2E suite
+        run: |
+          npx jest \
+            --config test/jest-release-e2e.json \
+            release/release-workflow.e2e-spec.ts \
+            --runInBand \
+            --verbose
+
+
+  # ============================================================
+  # SECURITY AUDIT
+  # ============================================================
+
+  security-audit:
+    name: Security / Configuration Audit
+    needs: backend-build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run security audit
+        run: |
+          chmod +x scripts/security-audit.sh
+          ./scripts/security-audit.sh
+
+
+  # ============================================================
+  # FLUTTER ANALYZE + TEST
+  # ============================================================
+
+  flutter:
+    name: Flutter Analyze + Integration
+    needs: remote-e2e
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mobile_app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.4"
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Flutter analyze
+        run: flutter analyze
+
+      - name: Flutter tests
+        run: flutter test
+
+      - name: Tenant / Owner integration tests
+        run: flutter test integration_test
+        continue-on-error: true
+
+
+  # ============================================================
+  # FLUTTER WEB RELEASE BUILD
+  # ============================================================
+
+  flutter-web:
+    name: Flutter Web Release
+    needs: remote-e2e
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mobile_app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.4"
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build Web
+        run: |
+          flutter build web \
+            --release \
+            --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1
+
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rentitease-web
+          path: mobile_app/build/web
+
+
+  # ============================================================
+  # ANDROID RELEASE CANDIDATE
+  # ============================================================
+
+  android-release:
+    name: Android Release Candidate Build
+    needs: [remote-e2e, security-audit]
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mobile_app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.4"
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build Android APK
+        run: |
+          flutter build apk \
+            --release \
+            --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: rentitease-android-release
+          path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
+
+
+  # ============================================================
+  # RELEASE CANDIDATE 1 GATE
+  # ============================================================
+
+  rc1:
+    name: Release Candidate 1 Gate
+
+    needs:
+      [
+        backend-build,
+        remote-e2e,
+        security-audit,
+        flutter,
+        flutter-web,
+        android-release
+      ]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: RC1 passed
+        run: |
+          echo "=============================================="
+          echo " RentItEase Release Candidate 1"
+          echo "=============================================="
+          echo "Backend build: PASS"
+          echo "Tenant / Owner / Admin Remote E2E: PASS"
+          echo "Security audit: PASS"
+          echo "Flutter checks: PASS"
+          echo "Flutter Web build: PASS"
+          echo "Android release build: PASS"
+          echo "=============================================="
+          echo " RentItEase RC1 RELEASE GATE PASSED"
+          echo "=============================================="
 </file>
 
 <file path="backend/src/mail/mail.service.ts">
@@ -33096,7 +32951,7 @@ temp/
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
-        android:label="mobile_app"
+        android:label="RentItEase"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
@@ -33326,6 +33181,54 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
       child: _showLogin
           ? LoginPage(key: const ValueKey('login'), onRegister: _openRegister)
           : RegisterPage(key: const ValueKey('register'), onLogin: _openLogin),
+    );
+  }
+}
+</file>
+
+<file path="mobile_app/lib/features/authentication/presentation/widgets/auth_header.dart">
+import 'package:flutter/material.dart';
+
+class AuthHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const AuthHeader({super.key, required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Hero(
+          tag: 'app_logo',
+          child: Image.asset('assets/images/branding/rentitease_logo_512x512.png', width: 90, height: 90),
+        ),
+
+        const SizedBox(height: 24),
+
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 30),
+          child: Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Colors.grey.shade600,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -35458,41 +35361,6 @@ class LocationService {
 }
 </file>
 
-<file path="mobile_app/lib/features/onboarding/data/models/onboarding_model.dart">
-class OnboardingModel {
-  final String title;
-  final String description;
-  final String image;
-
-  const OnboardingModel({
-    required this.title,
-    required this.description,
-    required this.image,
-  });
-}
-
-const List<OnboardingModel> onboardingItems = [
-  OnboardingModel(
-    title: 'Find Your Perfect Home',
-    description:
-        'Browse thousands of verified rental properties with zero brokerage.',
-    image: 'assets/images/onboarding/find_your_property_1080x1920.png',
-  ),
-  OnboardingModel(
-    title: 'Book Property Visits',
-    description:
-        'Schedule property visits instantly and connect directly with owners.',
-    image: 'assets/images/onboarding/easy_bookings_1080x1920.png',
-  ),
-  OnboardingModel(
-    title: 'Rent with Confidence',
-    description:
-        'Secure payments, verified listings and hassle-free agreements all in one place.',
-    image: 'assets/images/onboarding/secure_payments_1080x1920.png',
-  ),
-];
-</file>
-
 <file path="mobile_app/lib/features/onboarding/providers/onboarding_provider.dart">
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37246,6 +37114,160 @@ class PropertyActionButtons extends StatelessWidget {
 }
 </file>
 
+<file path="mobile_app/lib/features/property/presentation/widgets/property_image_slider.dart">
+import 'package:flutter/material.dart';
+
+import '../../domain/entities/property_entity.dart';
+
+import 'favorite_button.dart';
+import 'featured_badge.dart';
+
+class PropertyImageSlider extends StatefulWidget {
+  const PropertyImageSlider({super.key, required this.property});
+
+  final PropertyEntity property;
+
+  @override
+  State<PropertyImageSlider> createState() => _PropertyImageSliderState();
+}
+
+class _PropertyImageSliderState extends State<PropertyImageSlider> {
+  final PageController _pageController = PageController();
+
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final images = widget.property.imageUrls.where((url) => url.trim().isNotEmpty).toList();
+
+    return SizedBox(
+      height: 220,
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+            child: images.isEmpty
+                ? Image.asset(
+                    "assets/images/properties/property_placeholder_landscape_1280x853.png",
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                  )
+                : PageView.builder(
+                    controller: _pageController,
+                    itemCount: images.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      return Image.network(
+                        images[index],
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) {
+                            return child;
+                          }
+
+                          return Image.asset(
+                            "assets/images/properties/property_placeholder_landscape_1280x853.png",
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Image.asset(
+                            "assets/images/properties/property_placeholder_landscape_1280x853.png",
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                          );
+                        },
+                      );
+                    },
+                  ),
+          ),
+
+          Positioned(
+            top: 12,
+            right: 12,
+            child: FavoriteButton(
+              isFavorite: false,
+              onPressed: () {
+                // TODO:
+                // Connect Favorites API
+              },
+            ),
+          ),
+
+          Positioned(
+            top: 12,
+            left: 12,
+            child: FeaturedBadge(isFeatured: widget.property.isFeatured),
+          ),
+
+          if (images.isNotEmpty)
+            Positioned(
+              bottom: 12,
+              right: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${_currentPage + 1}/${images.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
+          if (images.length > 1)
+            Positioned(
+              bottom: 12,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  images.length,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: _currentPage == index ? 18 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: _currentPage == index
+                          ? Colors.white
+                          : Colors.white54,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
 <file path="mobile_app/lib/features/property/presentation/widgets/property_location.dart">
 import 'package:flutter/material.dart';
 
@@ -37860,166 +37882,46 @@ final splashProvider = FutureProvider<SplashDestination>((ref) async {
 });
 </file>
 
-<file path="mobile_app/lib/features/uploads/providers/upload_provider.dart">
-import 'dart:io';
+<file path="mobile_app/lib/features/splash/widgets/animated_logo.dart">
+import 'package:flutter/material.dart';
 
-import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../config/environment.dart';
-import '../data/upload_api.dart';
-import '../data/upload_repository.dart';
-import '../models/uploaded_image_model.dart';
+class AnimatedLogo extends StatelessWidget {
+  final Animation<double> animation;
 
-// ======================================================
-// NOTE:
-// Remove this provider if you already have a global
-// dioProvider in your project.
-// ======================================================
+  const AnimatedLogo({super.key, required this.animation});
 
-final dioProvider = Provider<Dio>((ref) {
-  return Dio(
-    BaseOptions(
-      baseUrl: Environment.apiBaseUrl,
-      headers: {'Content-Type': 'application/json'},
-    ),
-  );
-});
-
-// ======================================================
-// Repository Provider
-// ======================================================
-
-final uploadRepositoryProvider = Provider<UploadRepository>((ref) {
-  final dio = ref.watch(dioProvider);
-
-  return UploadRepository(UploadApi(dio));
-});
-
-// ======================================================
-// Upload State
-// ======================================================
-
-class UploadState {
-  final bool isUploading;
-
-  final double progress;
-
-  final List<UploadedImageModel> uploadedImages;
-
-  final String? error;
-
-  const UploadState({
-    this.isUploading = false,
-    this.progress = 0,
-    this.uploadedImages = const [],
-    this.error,
-  });
-
-  UploadState copyWith({
-    bool? isUploading,
-    double? progress,
-    List<UploadedImageModel>? uploadedImages,
-    String? error,
-  }) {
-    return UploadState(
-      isUploading: isUploading ?? this.isUploading,
-      progress: progress ?? this.progress,
-      uploadedImages: uploadedImages ?? this.uploadedImages,
-      error: error,
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: animation,
+      child: FadeTransition(
+        opacity: animation,
+        child: Hero(
+          tag: 'app_logo',
+          child: Container(
+            width: 160,
+            height: 160,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(32),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blue.withValues(alpha: 0.15),
+                  blurRadius: 30,
+                  spreadRadius: 6,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(32),
+              child: Image.asset('assets/images/branding/rentitease_logo_512x512.png', fit: BoxFit.cover),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
-
-// ======================================================
-// Upload Notifier
-// ======================================================
-
-class UploadNotifier extends StateNotifier<UploadState> {
-  final UploadRepository repository;
-
-  UploadNotifier(this.repository) : super(const UploadState());
-
-  // ===========================================
-  // Upload Single Image
-  // ===========================================
-
-  Future<void> uploadImage(File image) async {
-    state = state.copyWith(isUploading: true, progress: 0, error: null);
-
-    try {
-      final uploaded = await repository.uploadImage(image);
-
-      state = state.copyWith(
-        isUploading: false,
-        progress: 1,
-        uploadedImages: [...state.uploadedImages, uploaded],
-      );
-    } catch (e) {
-      state = state.copyWith(isUploading: false, error: e.toString());
-    }
-  }
-
-  // ===========================================
-  // Upload Multiple Images
-  // ===========================================
-
-  Future<void> uploadImages(List<File> images) async {
-    state = state.copyWith(isUploading: true, progress: 0, error: null);
-
-    try {
-      final List<UploadedImageModel> uploaded = [];
-
-      for (int i = 0; i < images.length; i++) {
-        final image = await repository.uploadImage(images[i]);
-
-        uploaded.add(image);
-
-        state = state.copyWith(progress: (i + 1) / images.length);
-      }
-
-      state = state.copyWith(
-        isUploading: false,
-        uploadedImages: [...state.uploadedImages, ...uploaded],
-      );
-    } catch (e) {
-      state = state.copyWith(isUploading: false, error: e.toString());
-    }
-  }
-
-  // ===========================================
-  // Remove Uploaded Image
-  // ===========================================
-
-  Future<void> deleteImage(UploadedImageModel image) async {
-    await repository.deleteImage(image.id);
-
-    state = state.copyWith(
-      uploadedImages: state.uploadedImages
-          .where((e) => e.id != image.id)
-          .toList(),
-    );
-  }
-
-  // ===========================================
-  // Clear Upload List
-  // ===========================================
-
-  void clearUploads() {
-    state = state.copyWith(uploadedImages: [], progress: 0, error: null);
-  }
-}
-
-// ======================================================
-// Provider
-// ======================================================
-
-final uploadProvider = StateNotifierProvider<UploadNotifier, UploadState>((
-  ref,
-) {
-  final repository = ref.watch(uploadRepositoryProvider);
-
-  return UploadNotifier(repository);
-});
 </file>
 
 <file path="mobile_app/lib/shared/widgets/empty_state_widget.dart">
@@ -40462,615 +40364,6 @@ describe('Release E2E • Booking', () => {
 });
 </file>
 
-<file path="backend/test/release/release-workflow.e2e-spec.ts">
-import { describe, expect, it } from '@jest/globals';
-import request from 'supertest';
-import {
-  apiUrl,
-  auth,
-  clearActiveMemberships,
-  extractData,
-  login,
-  statusOk,
-  futureIso,
-} from './helpers';
-import { createHmac } from 'crypto';
-
-describe('RentItEase Release Workflow • sequential smoke', () => {
-  let tenantToken = '';
-  let ownerToken = '';
-  let tenantId = '';
-  let ownerId = '';
-  let propertyId = '';
-  let bookingId = '';
-  let paymentId = '';
-  let razorpayOrderId = '';
-  let membershipId = '';
-
-  // ============================================================
-  // 01 Authentication
-  // ============================================================
-
-  it('01 Authentication: tenant + owner login', async () => {
-    const tenant = await login(
-      process.env.E2E_TENANT_EMAIL!,
-      process.env.E2E_TENANT_PASSWORD!,
-    );
-
-    const owner = await login(
-      process.env.E2E_OWNER_EMAIL!,
-      process.env.E2E_OWNER_PASSWORD!,
-    );
-
-    tenantToken = tenant.token;
-    ownerToken = owner.token;
-
-    const tenantData = extractData(tenant.body);
-    const ownerData = extractData(owner.body);
-
-    tenantId = tenantData?.user?.id ?? tenantData?.id ?? '';
-    ownerId = ownerData?.user?.id ?? ownerData?.id ?? '';
-
-    expect(tenantToken).toBeTruthy();
-    expect(ownerToken).toBeTruthy();
-    expect(tenantId).toBeTruthy();
-    expect(ownerId).toBeTruthy();
-  });
-
-  // ============================================================
-  // 02 Owner → Property → Tenant Visit → Booking
-  // ============================================================
-
-  it('02 Tenant → Property → Visit → Booking', async () => {
-    expect(tenantToken).toBeTruthy();
-    expect(ownerToken).toBeTruthy();
-
-    const property = await request(apiUrl())
-      .post('/properties')
-      .set(auth(ownerToken))
-      .send({
-        title: `Release Test Property ${Date.now()}`,
-        description:
-          'Property created automatically by the RentItEase release E2E workflow.',
-        price: 25000,
-        address: '123 Release Test Road',
-        locality: 'HSR Layout',
-        landmark: 'Near Release Test Junction',
-        city: 'Bangalore',
-        state: 'Karnataka',
-        country: 'India',
-        pincode: '560102',
-        latitude: 12.9116,
-        longitude: 77.6474,
-        bedrooms: 2,
-        bathrooms: 2,
-        area: 1200,
-        propertyType: 'APARTMENT',
-        furnishing: 'SEMI_FURNISHED',
-        parking: true,
-        petFriendly: true,
-        securityDeposit: 50000,
-      });
-
-    statusOk(property);
-
-    const propertyData =
-      property.body?.property ??
-      extractData(property.body)?.property ??
-      extractData(property.body);
-
-    propertyId = propertyData?.id ?? '';
-
-    expect(propertyId).toBeTruthy();
-
-    console.log(`Release E2E property created: ${propertyId}`);
-
-    const visit = await request(apiUrl())
-      .post('/property-visits')
-      .set(auth(tenantToken))
-      .send({
-        propertyId,
-        visitDate: futureIso(45),
-        notes: 'Release workflow visit',
-      });
-
-    statusOk(visit);
-
-    const visitData = extractData(visit.body);
-    const visitId = visitData?.id ?? '';
-
-    expect(visitId).toBeTruthy();
-
-    const approveVisit = await request(apiUrl())
-      .patch(`/property-visits/${visitId}/approve`)
-      .set(auth(ownerToken));
-
-    statusOk(approveVisit);
-
-    expect(extractData(approveVisit.body)?.status).toBe('APPROVED');
-
-    const booking = await request(apiUrl())
-      .post('/bookings')
-      .set(auth(tenantToken))
-      .send({
-        visitId,
-        notes: 'Release workflow booking',
-      });
-
-    statusOk(booking);
-
-    bookingId = extractData(booking.body)?.id ?? '';
-
-    expect(bookingId).toBeTruthy();
-
-    const approveBooking = await request(apiUrl())
-      .patch(`/bookings/${bookingId}/approve`)
-      .set(auth(ownerToken));
-
-    statusOk(approveBooking);
-
-    expect(extractData(approveBooking.body)?.status).toBe('APPROVED');
-
-    const paymentPending = await request(apiUrl())
-      .patch(`/bookings/${bookingId}/payment-pending`)
-      .set(auth(tenantToken));
-
-    statusOk(paymentPending);
-
-    expect(extractData(paymentPending.body)?.status).toBe('PAYMENT_PENDING');
-  });
-
-  // ============================================================
-  // 03 Payment → verification → PAID
-  // ============================================================
-
-  it('03 Payment → verification → PAID', async () => {
-    expect(bookingId).toBeTruthy();
-    expect(tenantToken).toBeTruthy();
-
-    const order = await request(apiUrl())
-      .post('/payments/order')
-      .set(auth(tenantToken))
-      .send({
-        bookingId,
-      });
-
-    statusOk(order);
-
-    const d = extractData(order.body);
-
-    paymentId = d?.paymentId ?? '';
-    razorpayOrderId = d?.razorpayOrderId ?? '';
-
-    expect(paymentId).toBeTruthy();
-    expect(razorpayOrderId).toBeTruthy();
-
-    const secret = process.env.E2E_RAZORPAY_KEY_SECRET;
-
-    if (!secret) {
-      throw new Error('E2E_RAZORPAY_KEY_SECRET is required.');
-    }
-
-    const razorpayPaymentId = `pay_release_${Date.now()}`;
-
-    const signature = createHmac('sha256', secret)
-      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-      .digest('hex');
-
-    const verify = await request(apiUrl())
-      .post('/payments/verify')
-      .set(auth(tenantToken))
-      .send({
-        bookingId,
-        razorpayOrderId,
-        razorpayPaymentId,
-        razorpaySignature: signature,
-      });
-
-    statusOk(verify);
-
-    expect(extractData(verify.body)?.status).toBe('SUCCESS');
-
-    const booking = await request(apiUrl())
-      .get(`/bookings/${bookingId}`)
-      .set(auth(tenantToken))
-      .expect(200);
-
-    expect(extractData(booking.body)?.status).toBe('PAID');
-  });
-
-  // ============================================================
-  // 04 Invoice → history → PAID
-  // ============================================================
-
-  it('04 Invoice → history → PAID', async () => {
-    expect(paymentId).toBeTruthy();
-    expect(tenantId).toBeTruthy();
-
-    const create = await request(apiUrl()).post('/invoices').send({
-      userId: tenantId,
-      paymentId,
-      amount: 1000,
-      taxAmount: 0,
-      description: 'Release workflow invoice',
-      currency: 'INR',
-    });
-
-    statusOk(create);
-
-    const invoiceId = extractData(create.body)?.id ?? '';
-
-    expect(invoiceId).toBeTruthy();
-
-    await request(apiUrl()).get(`/invoices/${invoiceId}`).expect(200);
-
-    await request(apiUrl()).get(`/invoices/user/${tenantId}`).expect(200);
-
-    const paid = await request(apiUrl()).patch(`/invoices/${invoiceId}/paid`);
-
-    statusOk(paid);
-
-    expect(extractData(paid.body)?.status).toBe('PAID');
-  });
-
-  // ============================================================
-  // 05 Membership → activation → expiry → renewal
-  // ============================================================
-
-  it('05 Membership → activation → expiry → renewal', async () => {
-    expect(tenantId).toBeTruthy();
-    expect(ownerToken).toBeTruthy();
-
-    // ----------------------------------------------------------
-    // Find existing PREMIUM plan.
-    // ----------------------------------------------------------
-
-    const plans = await request(apiUrl()).get('/membership/plans').expect(200);
-
-    const plansData = extractData(plans.body);
-
-    const planList = Array.isArray(plansData)
-      ? plansData
-      : (plansData?.plans ?? plans.body?.data?.plans ?? []);
-
-    let premiumPlan = planList.find(
-      (plan: any) => plan?.code === 'PREMIUM' && plan?.isActive === true,
-    );
-
-    let planId = premiumPlan?.id ?? '';
-
-    // ----------------------------------------------------------
-    // Create PREMIUM plan only when one does not exist.
-    // ----------------------------------------------------------
-
-    if (!planId) {
-      const plan = await request(apiUrl())
-        .post('/membership/plans')
-        .send({
-          name: `RentItEase Release Premium ${Date.now()}`,
-          code: 'PREMIUM',
-          description:
-            'Premium membership plan used by the RentItEase release E2E workflow.',
-          price: 1,
-          durationDays: 1,
-          isActive: true,
-        });
-
-      statusOk(plan);
-
-      premiumPlan = extractData(plan.body);
-      planId = premiumPlan?.id ?? '';
-
-      expect(planId).toBeTruthy();
-    } else {
-      console.log(`Reusing existing PREMIUM membership plan: ${planId}`);
-    }
-
-    expect(planId).toBeTruthy();
-
-    // ----------------------------------------------------------
-    // IMPORTANT:
-    // Clean up ACTIVE memberships from previous E2E executions.
-    // The backend intentionally rejects creation when an ACTIVE
-    // membership already exists for the user.
-    // ----------------------------------------------------------
-
-    const cleared = await clearActiveMemberships(tenantId, ownerToken);
-
-    if (cleared > 0) {
-      console.log(
-        `Release workflow: expired ${cleared} existing active membership(s) for tenant ${tenantId}`,
-      );
-    }
-
-    // ----------------------------------------------------------
-    // Create membership.
-    // ----------------------------------------------------------
-
-    const membership = await request(apiUrl())
-      .post(`/membership/users/${tenantId}`)
-      .set(auth(ownerToken))
-      .send({
-        planId,
-        autoRenew: false,
-      });
-
-    statusOk(membership);
-
-    const membershipData = extractData(membership.body);
-
-    membershipId = membershipData?.id ?? '';
-
-    expect(membershipId).toBeTruthy();
-    expect(membershipData?.userId).toBe(tenantId);
-    expect(membershipData?.planId).toBe(planId);
-    expect(membershipData?.status).toBe('PENDING');
-
-    console.log(`Release workflow membership created: ${membershipId}`);
-
-    // ----------------------------------------------------------
-    // Activate membership.
-    // ----------------------------------------------------------
-
-    const activate = await request(apiUrl())
-      .patch(`/membership/${membershipId}/activate`)
-      .set(auth(ownerToken));
-
-    statusOk(activate);
-
-    const activatedMembership = extractData(activate.body);
-
-    expect(activatedMembership?.id).toBe(membershipId);
-    expect(activatedMembership?.status).toBe('ACTIVE');
-    expect(activatedMembership?.startDate).toBeTruthy();
-    expect(activatedMembership?.endDate).toBeTruthy();
-    expect(activatedMembership?.activatedAt).toBeTruthy();
-
-    // ----------------------------------------------------------
-    // Expire membership.
-    // ----------------------------------------------------------
-
-    const expire = await request(apiUrl())
-      .patch(`/membership/${membershipId}/expire`)
-      .set(auth(ownerToken));
-
-    statusOk(expire);
-
-    const expiredMembership = extractData(expire.body);
-
-    expect(expiredMembership?.id).toBe(membershipId);
-    expect(expiredMembership?.status).toBe('EXPIRED');
-    expect(expiredMembership?.expiredAt).toBeTruthy();
-
-    // ----------------------------------------------------------
-    // Renew expired membership.
-    // ----------------------------------------------------------
-
-    const renew = await request(apiUrl())
-      .patch(`/membership/${membershipId}/renew`)
-      .set(auth(ownerToken));
-
-    statusOk(renew);
-
-    const renewedMembership = extractData(renew.body);
-
-    expect(renewedMembership?.id).toBe(membershipId);
-    expect(renewedMembership?.status).toBe('ACTIVE');
-    expect(renewedMembership?.startDate).toBeTruthy();
-    expect(renewedMembership?.endDate).toBeTruthy();
-
-    console.log(`Release workflow membership renewed: ${membershipId}`);
-  });
-
-  // ============================================================
-  // 06 Premium Listing → activation → expiry
-  // ============================================================
-
-  it('06 Premium listing → activation → expiry', async () => {
-    expect(ownerId).toBeTruthy();
-    expect(propertyId).toBeTruthy();
-    expect(membershipId).toBeTruthy();
-
-    // ----------------------------------------------------------
-    // Create premium listing using the ACTIVE renewed membership.
-    // ----------------------------------------------------------
-
-    const create = await request(apiUrl())
-      .post(`/premium-listings/users/${ownerId}`)
-      .set(auth(ownerToken))
-      .send({
-        propertyId,
-        membershipId,
-        durationDays: 1,
-        amount: 1,
-        currency: 'INR',
-      });
-
-    statusOk(create);
-
-    const listingId = extractData(create.body)?.id ?? '';
-
-    expect(listingId).toBeTruthy();
-
-    console.log(`Release workflow premium listing created: ${listingId}`);
-
-    // ----------------------------------------------------------
-    // Activate listing.
-    // ----------------------------------------------------------
-
-    const activate = await request(apiUrl())
-      .patch(`/premium-listings/${listingId}/activate`)
-      .set(auth(ownerToken));
-
-    statusOk(activate);
-
-    expect(extractData(activate.body)?.status).toBe('ACTIVE');
-
-    // ----------------------------------------------------------
-    // Expire listing.
-    // ----------------------------------------------------------
-
-    const expire = await request(apiUrl())
-      .patch(`/premium-listings/${listingId}/expire`)
-      .set(auth(ownerToken));
-
-    statusOk(expire);
-
-    expect(extractData(expire.body)?.status).toBe('EXPIRED');
-
-    console.log(`Release workflow premium listing expired: ${listingId}`);
-
-    // ----------------------------------------------------------
-    // IMPORTANT CLEANUP:
-    // The membership was renewed in test 05 and is ACTIVE.
-    //
-    // Leave the release environment clean so that the dedicated
-    // membership.e2e-spec.ts suite can create its own membership.
-    // ----------------------------------------------------------
-
-    const cleanupMembership = await request(apiUrl())
-      .patch(`/membership/${membershipId}/expire`)
-      .set(auth(ownerToken));
-
-    statusOk(cleanupMembership);
-
-    expect(extractData(cleanupMembership.body)?.status).toBe('EXPIRED');
-
-    console.log(`Release workflow membership cleaned up: ${membershipId}`);
-  });
-
-  // ============================================================
-  // 07 Chat → send → read → edit → delete
-  // ============================================================
-
-  it('07 Chat → send → read → edit → delete', async () => {
-    expect(propertyId).toBeTruthy();
-    expect(tenantToken).toBeTruthy();
-
-    const conv = await request(apiUrl())
-      .post('/chat/conversations')
-      .set(auth(tenantToken))
-      .send({
-        propertyId,
-      });
-
-    statusOk(conv);
-
-    const conversationId = extractData(conv.body)?.id ?? '';
-
-    expect(conversationId).toBeTruthy();
-
-    const sent = await request(apiUrl())
-      .post(`/chat/conversations/${conversationId}/messages`)
-      .set(auth(tenantToken))
-      .send({
-        text: `Release workflow ${Date.now()}`,
-      });
-
-    statusOk(sent);
-
-    const messageId = extractData(sent.body)?.id ?? '';
-
-    expect(messageId).toBeTruthy();
-
-    statusOk(
-      await request(apiUrl())
-        .patch(`/chat/conversations/${conversationId}/read`)
-        .set(auth(tenantToken)),
-    );
-
-    statusOk(
-      await request(apiUrl())
-        .patch(`/chat/messages/${messageId}`)
-        .set(auth(tenantToken))
-        .send({
-          text: 'edited',
-        }),
-    );
-
-    statusOk(
-      await request(apiUrl())
-        .delete(`/chat/messages/${messageId}`)
-        .set(auth(tenantToken)),
-    );
-  });
-
-  // ============================================================
-  // 08 Push notification contract
-  // ============================================================
-
-  it('08 Push notification contract', async () => {
-    expect(tenantToken).toBeTruthy();
-
-    const res = await request(apiUrl())
-      .post('/push-notifications/test')
-      .set(auth(tenantToken));
-
-    statusOk(res);
-  });
-
-  // ============================================================
-  // 09 Admin
-  // ============================================================
-
-  it('09 Admin → users → properties → reviews → visits → billing', async () => {
-    const admin = await login(
-      process.env.E2E_ADMIN_LOGIN!,
-      process.env.E2E_ADMIN_PASSWORD!,
-    );
-
-    const token = admin.token;
-
-    for (const route of [
-      '/admin/dashboard',
-      '/admin/users',
-      '/admin/properties',
-      '/admin/reviews',
-      '/admin/visits',
-      '/admin/analytics',
-      '/admin/billing/memberships',
-      '/admin/billing/premium-listings',
-      '/admin/billing/payments',
-      '/admin/billing/invoices',
-    ]) {
-      await request(apiUrl()).get(route).set(auth(token)).expect(200);
-    }
-  });
-
-  // ============================================================
-  // 10 Lease API gate
-  // ============================================================
-
-  it('10 Lease API gate', async () => {
-    /*
-     * Lease functionality is covered by the dedicated release
-     * suites:
-     *
-     *   - lease.e2e-spec.ts
-     *   - lease-lifecycle.e2e-spec.ts
-     *
-     * Those suites verify:
-     *
-     *   PAID booking → ACTIVE lease → COMPLETED lease
-     *   tenant lease list
-     *   owner lease list
-     *   property availability restoration
-     *   duplicate completion rejection
-     *
-     * Therefore this sequential smoke test does not incorrectly
-     * classify GET /leases returning 404 as "Lease module missing".
-     */
-
-    expect(tenantToken).toBeTruthy();
-    expect(ownerToken).toBeTruthy();
-
-    console.log(
-      'Lease API gate: dedicated Lease release E2E suites are responsible for full Lease API verification.',
-    );
-  });
-});
-</file>
-
 <file path="backend/tsconfig.build.json">
 {
   "extends": "./tsconfig.json",
@@ -42886,6 +42179,41 @@ final notificationsProvider =
     StateNotifierProvider<NotificationsNotifier, NotificationsState>((ref) {
       return NotificationsNotifier(ref.watch(notificationsRepositoryProvider));
     });
+</file>
+
+<file path="mobile_app/lib/features/onboarding/data/models/onboarding_model.dart">
+class OnboardingModel {
+  final String title;
+  final String description;
+  final String image;
+
+  const OnboardingModel({
+    required this.title,
+    required this.description,
+    required this.image,
+  });
+}
+
+const List<OnboardingModel> onboardingItems = [
+  OnboardingModel(
+    title: 'Find Your Perfect Home',
+    description:
+        'Browse thousands of verified rental properties with zero brokerage.',
+    image: 'assets/images/onboarding/find_your_property_1080x1920.png',
+  ),
+  OnboardingModel(
+    title: 'Book Property Visits',
+    description:
+        'Schedule property visits instantly and connect directly with owners.',
+    image: 'assets/images/onboarding/easy_bookings_1080x1920.png',
+  ),
+  OnboardingModel(
+    title: 'Rent with Confidence',
+    description:
+        'Secure payments, verified listings and hassle-free agreements all in one place.',
+    image: 'assets/images/onboarding/secure_payments_1080x1920.png',
+  ),
+];
 </file>
 
 <file path="mobile_app/lib/features/onboarding/data/repositories/onboarding_repository_impl.dart">
@@ -46447,6 +45775,168 @@ class _UploadImagesPageState extends ConsumerState<UploadImagesPage> {
 }
 </file>
 
+<file path="mobile_app/lib/features/uploads/providers/upload_provider.dart">
+import 'dart:io';
+
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../config/environment.dart';
+import '../data/upload_api.dart';
+import '../data/upload_repository.dart';
+import '../models/uploaded_image_model.dart';
+
+// ======================================================
+// NOTE:
+// Remove this provider if you already have a global
+// dioProvider in your project.
+// ======================================================
+
+final dioProvider = Provider<Dio>((ref) {
+  return Dio(
+    BaseOptions(
+      baseUrl: Environment.apiBaseUrl,
+      headers: {'Content-Type': 'application/json'},
+    ),
+  );
+});
+
+// ======================================================
+// Repository Provider
+// ======================================================
+
+final uploadRepositoryProvider = Provider<UploadRepository>((ref) {
+  final dio = ref.watch(dioProvider);
+
+  return UploadRepository(UploadApi(dio));
+});
+
+// ======================================================
+// Upload State
+// ======================================================
+
+class UploadState {
+  final bool isUploading;
+
+  final double progress;
+
+  final List<UploadedImageModel> uploadedImages;
+
+  final String? error;
+
+  const UploadState({
+    this.isUploading = false,
+    this.progress = 0,
+    this.uploadedImages = const [],
+    this.error,
+  });
+
+  UploadState copyWith({
+    bool? isUploading,
+    double? progress,
+    List<UploadedImageModel>? uploadedImages,
+    String? error,
+  }) {
+    return UploadState(
+      isUploading: isUploading ?? this.isUploading,
+      progress: progress ?? this.progress,
+      uploadedImages: uploadedImages ?? this.uploadedImages,
+      error: error,
+    );
+  }
+}
+
+// ======================================================
+// Upload Notifier
+// ======================================================
+
+class UploadNotifier extends StateNotifier<UploadState> {
+  final UploadRepository repository;
+
+  UploadNotifier(this.repository) : super(const UploadState());
+
+  // ===========================================
+  // Upload Single Image
+  // ===========================================
+
+  Future<void> uploadImage(File image) async {
+    state = state.copyWith(isUploading: true, progress: 0, error: null);
+
+    try {
+      final uploaded = await repository.uploadImage(image);
+
+      state = state.copyWith(
+        isUploading: false,
+        progress: 1,
+        uploadedImages: [...state.uploadedImages, uploaded],
+      );
+    } catch (e) {
+      state = state.copyWith(isUploading: false, error: e.toString());
+    }
+  }
+
+  // ===========================================
+  // Upload Multiple Images
+  // ===========================================
+
+  Future<void> uploadImages(List<File> images) async {
+    state = state.copyWith(isUploading: true, progress: 0, error: null);
+
+    try {
+      final List<UploadedImageModel> uploaded = [];
+
+      for (int i = 0; i < images.length; i++) {
+        final image = await repository.uploadImage(images[i]);
+
+        uploaded.add(image);
+
+        state = state.copyWith(progress: (i + 1) / images.length);
+      }
+
+      state = state.copyWith(
+        isUploading: false,
+        uploadedImages: [...state.uploadedImages, ...uploaded],
+      );
+    } catch (e) {
+      state = state.copyWith(isUploading: false, error: e.toString());
+    }
+  }
+
+  // ===========================================
+  // Remove Uploaded Image
+  // ===========================================
+
+  Future<void> deleteImage(UploadedImageModel image) async {
+    await repository.deleteImage(image.id);
+
+    state = state.copyWith(
+      uploadedImages: state.uploadedImages
+          .where((e) => e.id != image.id)
+          .toList(),
+    );
+  }
+
+  // ===========================================
+  // Clear Upload List
+  // ===========================================
+
+  void clearUploads() {
+    state = state.copyWith(uploadedImages: [], progress: 0, error: null);
+  }
+}
+
+// ======================================================
+// Provider
+// ======================================================
+
+final uploadProvider = StateNotifierProvider<UploadNotifier, UploadState>((
+  ref,
+) {
+  final repository = ref.watch(uploadRepositoryProvider);
+
+  return UploadNotifier(repository);
+});
+</file>
+
 <file path="mobile_app/lib/firebase_options.dart">
 // File generated by FlutterFire CLI.
 // ignore_for_file: type=lint
@@ -47768,6 +47258,615 @@ describe('Release E2E • Membership', () => {
 });
 </file>
 
+<file path="backend/test/release/release-workflow.e2e-spec.ts">
+import { describe, expect, it } from '@jest/globals';
+import request from 'supertest';
+import {
+  apiUrl,
+  auth,
+  clearActiveMemberships,
+  extractData,
+  login,
+  statusOk,
+  futureIso,
+} from './helpers';
+import { createHmac } from 'crypto';
+
+describe('RentItEase Release Workflow • sequential smoke', () => {
+  let tenantToken = '';
+  let ownerToken = '';
+  let tenantId = '';
+  let ownerId = '';
+  let propertyId = '';
+  let bookingId = '';
+  let paymentId = '';
+  let razorpayOrderId = '';
+  let membershipId = '';
+
+  // ============================================================
+  // 01 Authentication
+  // ============================================================
+
+  it('01 Authentication: tenant + owner login', async () => {
+    const tenant = await login(
+      process.env.E2E_TENANT_EMAIL!,
+      process.env.E2E_TENANT_PASSWORD!,
+    );
+
+    const owner = await login(
+      process.env.E2E_OWNER_EMAIL!,
+      process.env.E2E_OWNER_PASSWORD!,
+    );
+
+    tenantToken = tenant.token;
+    ownerToken = owner.token;
+
+    const tenantData = extractData(tenant.body);
+    const ownerData = extractData(owner.body);
+
+    tenantId = tenantData?.user?.id ?? tenantData?.id ?? '';
+    ownerId = ownerData?.user?.id ?? ownerData?.id ?? '';
+
+    expect(tenantToken).toBeTruthy();
+    expect(ownerToken).toBeTruthy();
+    expect(tenantId).toBeTruthy();
+    expect(ownerId).toBeTruthy();
+  });
+
+  // ============================================================
+  // 02 Owner → Property → Tenant Visit → Booking
+  // ============================================================
+
+  it('02 Tenant → Property → Visit → Booking', async () => {
+    expect(tenantToken).toBeTruthy();
+    expect(ownerToken).toBeTruthy();
+
+    const property = await request(apiUrl())
+      .post('/properties')
+      .set(auth(ownerToken))
+      .send({
+        title: `Release Test Property ${Date.now()}`,
+        description:
+          'Property created automatically by the RentItEase release E2E workflow.',
+        price: 25000,
+        address: '123 Release Test Road',
+        locality: 'HSR Layout',
+        landmark: 'Near Release Test Junction',
+        city: 'Bangalore',
+        state: 'Karnataka',
+        country: 'India',
+        pincode: '560102',
+        latitude: 12.9116,
+        longitude: 77.6474,
+        bedrooms: 2,
+        bathrooms: 2,
+        area: 1200,
+        propertyType: 'APARTMENT',
+        furnishing: 'SEMI_FURNISHED',
+        parking: true,
+        petFriendly: true,
+        securityDeposit: 50000,
+      });
+
+    statusOk(property);
+
+    const propertyData =
+      property.body?.property ??
+      extractData(property.body)?.property ??
+      extractData(property.body);
+
+    propertyId = propertyData?.id ?? '';
+
+    expect(propertyId).toBeTruthy();
+
+    console.log(`Release E2E property created: ${propertyId}`);
+
+    const visit = await request(apiUrl())
+      .post('/property-visits')
+      .set(auth(tenantToken))
+      .send({
+        propertyId,
+        visitDate: futureIso(45),
+        notes: 'Release workflow visit',
+      });
+
+    statusOk(visit);
+
+    const visitData = extractData(visit.body);
+    const visitId = visitData?.id ?? '';
+
+    expect(visitId).toBeTruthy();
+
+    const approveVisit = await request(apiUrl())
+      .patch(`/property-visits/${visitId}/approve`)
+      .set(auth(ownerToken));
+
+    statusOk(approveVisit);
+
+    expect(extractData(approveVisit.body)?.status).toBe('APPROVED');
+
+    const booking = await request(apiUrl())
+      .post('/bookings')
+      .set(auth(tenantToken))
+      .send({
+        visitId,
+        notes: 'Release workflow booking',
+      });
+
+    statusOk(booking);
+
+    bookingId = extractData(booking.body)?.id ?? '';
+
+    expect(bookingId).toBeTruthy();
+
+    const approveBooking = await request(apiUrl())
+      .patch(`/bookings/${bookingId}/approve`)
+      .set(auth(ownerToken));
+
+    statusOk(approveBooking);
+
+    expect(extractData(approveBooking.body)?.status).toBe('APPROVED');
+
+    const paymentPending = await request(apiUrl())
+      .patch(`/bookings/${bookingId}/payment-pending`)
+      .set(auth(tenantToken));
+
+    statusOk(paymentPending);
+
+    expect(extractData(paymentPending.body)?.status).toBe('PAYMENT_PENDING');
+  });
+
+  // ============================================================
+  // 03 Payment → verification → PAID
+  // ============================================================
+
+  it('03 Payment → verification → PAID', async () => {
+    expect(bookingId).toBeTruthy();
+    expect(tenantToken).toBeTruthy();
+
+    const order = await request(apiUrl())
+      .post('/payments/order')
+      .set(auth(tenantToken))
+      .send({
+        bookingId,
+      });
+
+    statusOk(order);
+
+    const d = extractData(order.body);
+
+    paymentId = d?.paymentId ?? '';
+    razorpayOrderId = d?.razorpayOrderId ?? '';
+
+    expect(paymentId).toBeTruthy();
+    expect(razorpayOrderId).toBeTruthy();
+
+    const secret = process.env.E2E_RAZORPAY_KEY_SECRET;
+
+    if (!secret) {
+      throw new Error('E2E_RAZORPAY_KEY_SECRET is required.');
+    }
+
+    const razorpayPaymentId = `pay_release_${Date.now()}`;
+
+    const signature = createHmac('sha256', secret)
+      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+      .digest('hex');
+
+    const verify = await request(apiUrl())
+      .post('/payments/verify')
+      .set(auth(tenantToken))
+      .send({
+        bookingId,
+        razorpayOrderId,
+        razorpayPaymentId,
+        razorpaySignature: signature,
+      });
+
+    statusOk(verify);
+
+    expect(extractData(verify.body)?.status).toBe('SUCCESS');
+
+    const booking = await request(apiUrl())
+      .get(`/bookings/${bookingId}`)
+      .set(auth(tenantToken))
+      .expect(200);
+
+    expect(extractData(booking.body)?.status).toBe('PAID');
+  });
+
+  // ============================================================
+  // 04 Invoice → history → PAID
+  // ============================================================
+
+  it('04 Invoice → history → PAID', async () => {
+    expect(paymentId).toBeTruthy();
+    expect(tenantId).toBeTruthy();
+
+    const create = await request(apiUrl()).post('/invoices').send({
+      userId: tenantId,
+      paymentId,
+      amount: 1000,
+      taxAmount: 0,
+      description: 'Release workflow invoice',
+      currency: 'INR',
+    });
+
+    statusOk(create);
+
+    const invoiceId = extractData(create.body)?.id ?? '';
+
+    expect(invoiceId).toBeTruthy();
+
+    await request(apiUrl()).get(`/invoices/${invoiceId}`).expect(200);
+
+    await request(apiUrl()).get(`/invoices/user/${tenantId}`).expect(200);
+
+    const paid = await request(apiUrl()).patch(`/invoices/${invoiceId}/paid`);
+
+    statusOk(paid);
+
+    expect(extractData(paid.body)?.status).toBe('PAID');
+  });
+
+  // ============================================================
+  // 05 Membership → activation → expiry → renewal
+  // ============================================================
+
+  it('05 Membership → activation → expiry → renewal', async () => {
+    expect(tenantId).toBeTruthy();
+    expect(ownerToken).toBeTruthy();
+
+    // ----------------------------------------------------------
+    // Find existing PREMIUM plan.
+    // ----------------------------------------------------------
+
+    const plans = await request(apiUrl()).get('/membership/plans').expect(200);
+
+    const plansData = extractData(plans.body);
+
+    const planList = Array.isArray(plansData)
+      ? plansData
+      : (plansData?.plans ?? plans.body?.data?.plans ?? []);
+
+    let premiumPlan = planList.find(
+      (plan: any) => plan?.code === 'PREMIUM' && plan?.isActive === true,
+    );
+
+    let planId = premiumPlan?.id ?? '';
+
+    // ----------------------------------------------------------
+    // Create PREMIUM plan only when one does not exist.
+    // ----------------------------------------------------------
+
+    if (!planId) {
+      const plan = await request(apiUrl())
+        .post('/membership/plans')
+        .send({
+          name: `RentItEase Release Premium ${Date.now()}`,
+          code: 'PREMIUM',
+          description:
+            'Premium membership plan used by the RentItEase release E2E workflow.',
+          price: 1,
+          durationDays: 1,
+          isActive: true,
+        });
+
+      statusOk(plan);
+
+      premiumPlan = extractData(plan.body);
+      planId = premiumPlan?.id ?? '';
+
+      expect(planId).toBeTruthy();
+    } else {
+      console.log(`Reusing existing PREMIUM membership plan: ${planId}`);
+    }
+
+    expect(planId).toBeTruthy();
+
+    // ----------------------------------------------------------
+    // IMPORTANT:
+    // Clean up ACTIVE memberships from previous E2E executions.
+    // The backend intentionally rejects creation when an ACTIVE
+    // membership already exists for the user.
+    // ----------------------------------------------------------
+
+    const cleared = await clearActiveMemberships(tenantId, ownerToken);
+
+    if (cleared > 0) {
+      console.log(
+        `Release workflow: expired ${cleared} existing active membership(s) for tenant ${tenantId}`,
+      );
+    }
+
+    // ----------------------------------------------------------
+    // Create membership.
+    // ----------------------------------------------------------
+
+    const membership = await request(apiUrl())
+      .post(`/membership/users/${tenantId}`)
+      .set(auth(ownerToken))
+      .send({
+        planId,
+        autoRenew: false,
+      });
+
+    statusOk(membership);
+
+    const membershipData = extractData(membership.body);
+
+    membershipId = membershipData?.id ?? '';
+
+    expect(membershipId).toBeTruthy();
+    expect(membershipData?.userId).toBe(tenantId);
+    expect(membershipData?.planId).toBe(planId);
+    expect(membershipData?.status).toBe('PENDING');
+
+    console.log(`Release workflow membership created: ${membershipId}`);
+
+    // ----------------------------------------------------------
+    // Activate membership.
+    // ----------------------------------------------------------
+
+    const activate = await request(apiUrl())
+      .patch(`/membership/${membershipId}/activate`)
+      .set(auth(ownerToken));
+
+    statusOk(activate);
+
+    const activatedMembership = extractData(activate.body);
+
+    expect(activatedMembership?.id).toBe(membershipId);
+    expect(activatedMembership?.status).toBe('ACTIVE');
+    expect(activatedMembership?.startDate).toBeTruthy();
+    expect(activatedMembership?.endDate).toBeTruthy();
+    expect(activatedMembership?.activatedAt).toBeTruthy();
+
+    // ----------------------------------------------------------
+    // Expire membership.
+    // ----------------------------------------------------------
+
+    const expire = await request(apiUrl())
+      .patch(`/membership/${membershipId}/expire`)
+      .set(auth(ownerToken));
+
+    statusOk(expire);
+
+    const expiredMembership = extractData(expire.body);
+
+    expect(expiredMembership?.id).toBe(membershipId);
+    expect(expiredMembership?.status).toBe('EXPIRED');
+    expect(expiredMembership?.expiredAt).toBeTruthy();
+
+    // ----------------------------------------------------------
+    // Renew expired membership.
+    // ----------------------------------------------------------
+
+    const renew = await request(apiUrl())
+      .patch(`/membership/${membershipId}/renew`)
+      .set(auth(ownerToken));
+
+    statusOk(renew);
+
+    const renewedMembership = extractData(renew.body);
+
+    expect(renewedMembership?.id).toBe(membershipId);
+    expect(renewedMembership?.status).toBe('ACTIVE');
+    expect(renewedMembership?.startDate).toBeTruthy();
+    expect(renewedMembership?.endDate).toBeTruthy();
+
+    console.log(`Release workflow membership renewed: ${membershipId}`);
+  });
+
+  // ============================================================
+  // 06 Premium Listing → activation → expiry
+  // ============================================================
+
+  it('06 Premium listing → activation → expiry', async () => {
+    expect(ownerId).toBeTruthy();
+    expect(propertyId).toBeTruthy();
+    expect(membershipId).toBeTruthy();
+
+    // ----------------------------------------------------------
+    // Create premium listing using the ACTIVE renewed membership.
+    // ----------------------------------------------------------
+
+    const create = await request(apiUrl())
+      .post(`/premium-listings/users/${ownerId}`)
+      .set(auth(ownerToken))
+      .send({
+        propertyId,
+        membershipId,
+        durationDays: 1,
+        amount: 1,
+        currency: 'INR',
+      });
+
+    statusOk(create);
+
+    const listingId = extractData(create.body)?.id ?? '';
+
+    expect(listingId).toBeTruthy();
+
+    console.log(`Release workflow premium listing created: ${listingId}`);
+
+    // ----------------------------------------------------------
+    // Activate listing.
+    // ----------------------------------------------------------
+
+    const activate = await request(apiUrl())
+      .patch(`/premium-listings/${listingId}/activate`)
+      .set(auth(ownerToken));
+
+    statusOk(activate);
+
+    expect(extractData(activate.body)?.status).toBe('ACTIVE');
+
+    // ----------------------------------------------------------
+    // Expire listing.
+    // ----------------------------------------------------------
+
+    const expire = await request(apiUrl())
+      .patch(`/premium-listings/${listingId}/expire`)
+      .set(auth(ownerToken));
+
+    statusOk(expire);
+
+    expect(extractData(expire.body)?.status).toBe('EXPIRED');
+
+    console.log(`Release workflow premium listing expired: ${listingId}`);
+
+    // ----------------------------------------------------------
+    // IMPORTANT CLEANUP:
+    // The membership was renewed in test 05 and is ACTIVE.
+    //
+    // Leave the release environment clean so that the dedicated
+    // membership.e2e-spec.ts suite can create its own membership.
+    // ----------------------------------------------------------
+
+    const cleanupMembership = await request(apiUrl())
+      .patch(`/membership/${membershipId}/expire`)
+      .set(auth(ownerToken));
+
+    statusOk(cleanupMembership);
+
+    expect(extractData(cleanupMembership.body)?.status).toBe('EXPIRED');
+
+    console.log(`Release workflow membership cleaned up: ${membershipId}`);
+  });
+
+  // ============================================================
+  // 07 Chat → send → read → edit → delete
+  // ============================================================
+
+  it('07 Chat → send → read → edit → delete', async () => {
+    expect(propertyId).toBeTruthy();
+    expect(tenantToken).toBeTruthy();
+
+    const conv = await request(apiUrl())
+      .post('/chat/conversations')
+      .set(auth(tenantToken))
+      .send({
+        propertyId,
+      });
+
+    statusOk(conv);
+
+    const conversationId = extractData(conv.body)?.id ?? '';
+
+    expect(conversationId).toBeTruthy();
+
+    const sent = await request(apiUrl())
+      .post(`/chat/conversations/${conversationId}/messages`)
+      .set(auth(tenantToken))
+      .send({
+        text: `Release workflow ${Date.now()}`,
+      });
+
+    statusOk(sent);
+
+    const messageId = extractData(sent.body)?.id ?? '';
+
+    expect(messageId).toBeTruthy();
+
+    statusOk(
+      await request(apiUrl())
+        .patch(`/chat/conversations/${conversationId}/read`)
+        .set(auth(tenantToken)),
+    );
+
+    statusOk(
+      await request(apiUrl())
+        .patch(`/chat/messages/${messageId}`)
+        .set(auth(tenantToken))
+        .send({
+          text: 'edited',
+        }),
+    );
+
+    statusOk(
+      await request(apiUrl())
+        .delete(`/chat/messages/${messageId}`)
+        .set(auth(tenantToken)),
+    );
+  });
+
+  // ============================================================
+  // 08 Push notification contract
+  // ============================================================
+
+  it('08 Push notification contract', async () => {
+    expect(tenantToken).toBeTruthy();
+
+    const res = await request(apiUrl())
+      .post('/push-notifications/test')
+      .set(auth(tenantToken));
+
+    statusOk(res);
+  });
+
+  // ============================================================
+  // 09 Admin
+  // ============================================================
+
+  it('09 Admin → users → properties → reviews → visits → billing', async () => {
+    const admin = await login(
+      process.env.E2E_ADMIN_EMAIL!,
+      process.env.E2E_ADMIN_PASSWORD!,
+    );
+
+    const token = admin.token;
+
+    for (const route of [
+      '/admin/dashboard',
+      '/admin/users',
+      '/admin/properties',
+      '/admin/reviews',
+      '/admin/visits',
+      '/admin/analytics',
+      '/admin/billing/memberships',
+      '/admin/billing/premium-listings',
+      '/admin/billing/payments',
+      '/admin/billing/invoices',
+    ]) {
+      await request(apiUrl()).get(route).set(auth(token)).expect(200);
+    }
+  });
+
+  // ============================================================
+  // 10 Lease API gate
+  // ============================================================
+
+  it('10 Lease API gate', async () => {
+    /*
+     * Lease functionality is covered by the dedicated release
+     * suites:
+     *
+     *   - lease.e2e-spec.ts
+     *   - lease-lifecycle.e2e-spec.ts
+     *
+     * Those suites verify:
+     *
+     *   PAID booking → ACTIVE lease → COMPLETED lease
+     *   tenant lease list
+     *   owner lease list
+     *   property availability restoration
+     *   duplicate completion rejection
+     *
+     * Therefore this sequential smoke test does not incorrectly
+     * classify GET /leases returning 404 as "Lease module missing".
+     */
+
+    expect(tenantToken).toBeTruthy();
+    expect(ownerToken).toBeTruthy();
+
+    console.log(
+      'Lease API gate: dedicated Lease release E2E suites are responsible for full Lease API verification.',
+    );
+  });
+});
+</file>
+
 <file path="backend/tsconfig.json">
 {
   "compilerOptions": {
@@ -48785,186 +48884,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
             },
           );
         },
-      ),
-    );
-  }
-}
-</file>
-
-<file path="mobile_app/lib/features/favorites/presentation/widgets/favorite_property_card.dart">
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../models/favorite_property_model.dart';
-import '../../providers/favorites_provider.dart';
-
-class FavoritePropertyCard extends ConsumerWidget {
-  const FavoritePropertyCard({
-    super.key,
-    required this.property,
-    this.onTap,
-    this.onRemove,
-  });
-
-  final FavoritePropertyModel property;
-  final VoidCallback? onTap;
-  final VoidCallback? onRemove;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
-      elevation: 3,
-      clipBehavior: Clip.antiAlias,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildImage(),
-
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildTitleRow(context, ref),
-                  const SizedBox(height: 10),
-                  _buildLocation(),
-                  const SizedBox(height: 12),
-                  _buildRent(),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ======================================================
-  // Property Image
-  // ======================================================
-
-  Widget _buildImage() {
-    final imageUrl = property.imageUrl;
-
-    if (imageUrl == null || imageUrl.isEmpty) {
-      return _imagePlaceholder();
-    }
-
-    return SizedBox(
-      height: 180,
-      width: double.infinity,
-      child: Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) {
-            return child;
-          }
-
-          return _imagePlaceholder();
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return _imagePlaceholder();
-        },
-      ),
-    );
-  }
-
-  // ======================================================
-  // Image Placeholder
-  // ======================================================
-
-  Widget _imagePlaceholder() {
-    return Image.asset(
-      "assets/images/properties/property_placeholder_landscape_1280x853.png",
-      height: 180,
-      width: double.infinity,
-      fit: BoxFit.cover,
-    );
-  }
-
-  // ======================================================
-  // Title + Favorite Button
-  // ======================================================
-
-  Widget _buildTitleRow(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            property.title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-
-        IconButton(
-          tooltip: 'Remove from favorites',
-          icon: const Icon(Icons.favorite, color: Colors.red),
-          onPressed: () async {
-            if (onRemove != null) {
-              onRemove!();
-              return;
-            }
-
-            final success = await ref
-                .read(favoritesProvider.notifier)
-                .removeFavorite(property.propertyId);
-
-            if (!context.mounted) return;
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  success
-                      ? 'Removed from favorites'
-                      : 'Failed to remove favorite',
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  // ======================================================
-  // Location
-  // ======================================================
-
-  Widget _buildLocation() {
-    return Row(
-      children: [
-        const Icon(Icons.location_on, size: 18, color: Colors.red),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            property.location.isNotEmpty ? property.location : property.address,
-            style: const TextStyle(color: Colors.black87),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ======================================================
-  // Rent
-  // ======================================================
-
-  Widget _buildRent() {
-    return Text(
-      '₹${property.rent.toStringAsFixed(0)} / month',
-      style: const TextStyle(
-        fontSize: 18,
-        color: Colors.blue,
-        fontWeight: FontWeight.bold,
       ),
     );
   }
@@ -51845,84 +51764,6 @@ class SettingsNotifier extends AsyncNotifier<SettingsEntity> {
 }
 </file>
 
-<file path="mobile_app/lib/features/splash/presentation/pages/splash_page.dart">
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
-import '../../../onboarding/services/onboarding_service.dart';
-import '../../../authentication/providers/authentication_provider.dart';
-
-class SplashPage extends ConsumerStatefulWidget {
-  const SplashPage({super.key});
-
-  @override
-  ConsumerState<SplashPage> createState() => _SplashPageState();
-}
-
-class _SplashPageState extends ConsumerState<SplashPage> {
-  final OnboardingService _onboardingService = OnboardingService();
-
-  @override
-  void initState() {
-    super.initState();
-    _initialize();
-  }
-
-  Future<void> _initialize() async {
-    await Future.delayed(const Duration(seconds: 2));
-
-    final completed = await _onboardingService.isOnboardingCompleted();
-
-    if (!mounted) return;
-
-    if (!completed) {
-      context.go('/onboarding');
-      return;
-    }
-
-    await ref.read(authenticationProvider).loadSavedSession();
-    if (!mounted) return;
-    context.go(ref.read(authenticationProvider).isLoggedIn ? '/home' : '/auth');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset('assets/images/branding/rentitease_logo_512x512.png', width: 120, height: 120),
-
-            const SizedBox(height: 30),
-
-            Text(
-              'RentItEase',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 12),
-
-            Text(
-              'Find your perfect rental home',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-
-            const SizedBox(height: 60),
-
-            const CircularProgressIndicator(),
-          ],
-        ),
-      ),
-    );
-  }
-}
-</file>
-
 <file path="mobile_app/lib/shared/widgets/custom_text_field.dart">
 import 'package:flutter/material.dart';
 
@@ -52957,6 +52798,186 @@ async function bootstrap() {
 bootstrap();
 </file>
 
+<file path="mobile_app/lib/features/favorites/presentation/widgets/favorite_property_card.dart">
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../models/favorite_property_model.dart';
+import '../../providers/favorites_provider.dart';
+
+class FavoritePropertyCard extends ConsumerWidget {
+  const FavoritePropertyCard({
+    super.key,
+    required this.property,
+    this.onTap,
+    this.onRemove,
+  });
+
+  final FavoritePropertyModel property;
+  final VoidCallback? onTap;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Card(
+      elevation: 3,
+      clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildImage(),
+
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTitleRow(context, ref),
+                  const SizedBox(height: 10),
+                  _buildLocation(),
+                  const SizedBox(height: 12),
+                  _buildRent(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ======================================================
+  // Property Image
+  // ======================================================
+
+  Widget _buildImage() {
+    final imageUrl = property.imageUrl;
+
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return _imagePlaceholder();
+    }
+
+    return SizedBox(
+      height: 180,
+      width: double.infinity,
+      child: Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) {
+            return child;
+          }
+
+          return _imagePlaceholder();
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return _imagePlaceholder();
+        },
+      ),
+    );
+  }
+
+  // ======================================================
+  // Image Placeholder
+  // ======================================================
+
+  Widget _imagePlaceholder() {
+    return Image.asset(
+      "assets/images/properties/property_placeholder_landscape_1280x853.png",
+      height: 180,
+      width: double.infinity,
+      fit: BoxFit.cover,
+    );
+  }
+
+  // ======================================================
+  // Title + Favorite Button
+  // ======================================================
+
+  Widget _buildTitleRow(BuildContext context, WidgetRef ref) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            property.title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+
+        IconButton(
+          tooltip: 'Remove from favorites',
+          icon: const Icon(Icons.favorite, color: Colors.red),
+          onPressed: () async {
+            if (onRemove != null) {
+              onRemove!();
+              return;
+            }
+
+            final success = await ref
+                .read(favoritesProvider.notifier)
+                .removeFavorite(property.propertyId);
+
+            if (!context.mounted) return;
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  success
+                      ? 'Removed from favorites'
+                      : 'Failed to remove favorite',
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // ======================================================
+  // Location
+  // ======================================================
+
+  Widget _buildLocation() {
+    return Row(
+      children: [
+        const Icon(Icons.location_on, size: 18, color: Colors.red),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            property.location.isNotEmpty ? property.location : property.address,
+            style: const TextStyle(color: Colors.black87),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ======================================================
+  // Rent
+  // ======================================================
+
+  Widget _buildRent() {
+    return Text(
+      '₹${property.rent.toStringAsFixed(0)} / month',
+      style: const TextStyle(
+        fontSize: 18,
+        color: Colors.blue,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+}
+</file>
+
 <file path="mobile_app/lib/features/onboarding/presentation/pages/onboarding_page.dart">
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53504,6 +53525,84 @@ class PropertyModel {
       createdAt: entity.createdAt,
       latitude: entity.latitude,
       longitude: entity.longitude,
+    );
+  }
+}
+</file>
+
+<file path="mobile_app/lib/features/splash/presentation/pages/splash_page.dart">
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../onboarding/services/onboarding_service.dart';
+import '../../../authentication/providers/authentication_provider.dart';
+
+class SplashPage extends ConsumerStatefulWidget {
+  const SplashPage({super.key});
+
+  @override
+  ConsumerState<SplashPage> createState() => _SplashPageState();
+}
+
+class _SplashPageState extends ConsumerState<SplashPage> {
+  final OnboardingService _onboardingService = OnboardingService();
+
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await Future.delayed(const Duration(seconds: 2));
+
+    final completed = await _onboardingService.isOnboardingCompleted();
+
+    if (!mounted) return;
+
+    if (!completed) {
+      context.go('/onboarding');
+      return;
+    }
+
+    await ref.read(authenticationProvider).loadSavedSession();
+    if (!mounted) return;
+    context.go(ref.read(authenticationProvider).isLoggedIn ? '/home' : '/auth');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset('assets/images/branding/rentitease_logo_512x512.png', width: 120, height: 120),
+
+            const SizedBox(height: 30),
+
+            Text(
+              'RentItEase',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 12),
+
+            Text(
+              'Find your perfect rental home',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+
+            const SizedBox(height: 60),
+
+            const CircularProgressIndicator(),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -56687,6 +56786,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/branding/rentitease_logo_512x512.png
     - assets/animations/
 </file>
 

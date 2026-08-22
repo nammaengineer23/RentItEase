@@ -39,4 +39,5 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/branding/rentitease_logo_512x512.png
     - assets/animations/
