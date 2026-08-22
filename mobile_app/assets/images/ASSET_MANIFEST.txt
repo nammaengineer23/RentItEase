@@ -31,7 +31,7 @@ branding/ios_app_icon_60x60.png | 60x60
 branding/ios_app_icon_87x87.png | 87x87
 branding/rentitease_compact_logo_256x256.png | 256x256
 branding/rentitease_horizontal_logo_1200x400.png | 1200x400
-branding/rentitease_logo_512x512.png | 512x512
+branding/rentitease_logo_512x512.svg | 512x512
 branding/rentitease_primary_logo_1024x1024.png | 1024x1024
 icons/feature/add_property_512x512.png | 512x512
 icons/feature/bookings_512x512.png | 512x512

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/app_svg_icon.dart';
+
 class HomeBottomNavigation extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -12,35 +14,77 @@ class HomeBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return NavigationBar(
       selectedIndex: currentIndex,
       onDestinationSelected: onTap,
       height: 72,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      destinations: const [
+      destinations: [
         NavigationDestination(
-          icon: Icon(Icons.home_outlined),
-          selectedIcon: Icon(Icons.home),
+          icon: AppSvgIcon(
+            'assets/images/icons/feature/home.svg',
+            size: 24,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          selectedIcon: AppSvgIcon(
+            'assets/images/icons/feature/home.svg',
+            size: 26,
+            color: colorScheme.primary,
+          ),
           label: 'Home',
         ),
         NavigationDestination(
-          icon: Icon(Icons.search_outlined),
-          selectedIcon: Icon(Icons.search),
+          icon: AppSvgIcon(
+            'assets/images/icons/feature/search.svg',
+            size: 24,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          selectedIcon: AppSvgIcon(
+            'assets/images/icons/feature/search.svg',
+            size: 26,
+            color: colorScheme.primary,
+          ),
           label: 'Search',
         ),
         NavigationDestination(
-          icon: Icon(Icons.favorite_border),
-          selectedIcon: Icon(Icons.favorite),
+          icon: AppSvgIcon(
+            'assets/images/icons/feature/favorites.svg',
+            size: 24,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          selectedIcon: AppSvgIcon(
+            'assets/images/icons/feature/favorites.svg',
+            size: 26,
+            color: colorScheme.primary,
+          ),
           label: 'Favorites',
         ),
         NavigationDestination(
-          icon: Icon(Icons.calendar_month_outlined),
-          selectedIcon: Icon(Icons.calendar_month),
+          icon: AppSvgIcon(
+            'assets/images/icons/feature/bookings.svg',
+            size: 24,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          selectedIcon: AppSvgIcon(
+            'assets/images/icons/feature/bookings.svg',
+            size: 26,
+            color: colorScheme.primary,
+          ),
           label: 'Bookings',
         ),
         NavigationDestination(
-          icon: Icon(Icons.person_outline),
-          selectedIcon: Icon(Icons.person),
+          icon: AppSvgIcon(
+            'assets/images/icons/feature/profile.svg',
+            size: 24,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          selectedIcon: AppSvgIcon(
+            'assets/images/icons/feature/profile.svg',
+            size: 26,
+            color: colorScheme.primary,
+          ),
           label: 'Profile',
         ),
       ],
