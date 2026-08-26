@@ -83,9 +83,13 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
         data: {'refreshToken': refreshToken},
         options: Options(extra: {'skipAuthRefresh': true}),
       );
-      final data = response.data!;
-      final accessToken = data['accessToken'] as String?;
-      final nextRefreshToken = data['refreshToken'] as String?;
+      final responseData = response.data;
+      final wrappedData = responseData?['data'];
+      final data = wrappedData is Map<String, dynamic>
+          ? wrappedData
+          : responseData;
+      final accessToken = data?['accessToken'] as String?;
+      final nextRefreshToken = data?['refreshToken'] as String?;
       if (accessToken == null || nextRefreshToken == null) {
         throw const ApiException('The server returned invalid refresh tokens.');
       }
