@@ -28,6 +28,15 @@ class AuthenticationService {
   }
 
   return AuthResponse.fromJson(data);
+
+  Map<String, dynamic> _extractData(Map<String, dynamic>? responseData) {
+    if (responseData == null) {
+      throw Exception('Invalid API response: missing data');
+    }
+
+    final data = responseData['data'];
+    return data is Map<String, dynamic> ? data : responseData;
+  }
 }
 
   Future<AuthResponse> register(RegisterRequest request) async {
@@ -76,7 +85,7 @@ class AuthenticationService {
       return AuthResponse(
         accessToken: accessToken,
         refreshToken: refreshToken,
-        user: UserModel.fromJson(me.data!),
+        user: UserModel.fromJson(_extractData(me.data)),
       );
     } catch (_) {
       accessToken =
@@ -93,7 +102,7 @@ class AuthenticationService {
       return AuthResponse(
         accessToken: accessToken,
         refreshToken: refreshToken,
-        user: UserModel.fromJson(me.data!),
+        user: UserModel.fromJson(_extractData(me.data)),
       );
     }
   }
@@ -111,11 +120,17 @@ class AuthenticationService {
       data: {'refreshToken': refreshToken},
     );
 
-    final data = response.data!;
+    final data = _extractData(response.data);
+    final accessToken = data['accessToken'] as String?;
+    final nextRefreshToken = data['refreshToken'] as String?;
+
+    if (accessToken == null || nextRefreshToken == null) {
+      throw Exception('Invalid refresh response: missing tokens');
+    }
 
     await _storage.saveTokens(
-      accessToken: data['accessToken'] as String,
-      refreshToken: data['refreshToken'] as String,
+      accessToken: accessToken,
+      refreshToken: nextRefreshToken,
     );
   }
 
