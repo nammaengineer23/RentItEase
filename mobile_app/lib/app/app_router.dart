@@ -194,13 +194,16 @@ class AppRouter {
         path: '/chat',
         name: 'chat',
         builder: (context, state) {
+          final conversationId =
+              state.uri.queryParameters['conversationId'];
+          final propertyId = state.uri.queryParameters['propertyId'];
           final userName = state.uri.queryParameters['userName'] ?? 'Owner';
-
           final propertyTitle = state.uri.queryParameters['propertyTitle'];
-
           final propertyImage = state.uri.queryParameters['propertyImage'];
 
           return ChatPage(
+            conversationId: conversationId,
+            propertyId: propertyId,
             userName: userName,
             propertyTitle: propertyTitle,
             propertyImage: propertyImage,
