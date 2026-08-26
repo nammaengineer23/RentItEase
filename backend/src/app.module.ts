@@ -24,6 +24,7 @@ import { BookingModule } from './modules/booking/booking.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { PropertyVisitsModule } from './modules/property-visits/property-visits.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { OwnerDashboardModule } from './modules/owner-dashboard/owner-dashboard.module';
 import { ChatModule } from './modules/chat/chat.module';
@@ -93,6 +94,7 @@ import { SocialMediaModule } from './modules/social-media/social-media.module';
     PropertyVisitsModule,
     NotificationsModule,
     ReviewsModule,
+    SettingsModule,
     OwnerDashboardModule,
     ChatModule,
     LeaseModule,
