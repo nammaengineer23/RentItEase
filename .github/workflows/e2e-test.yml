@@ -8,8 +8,10 @@ on:
     branches: [main]
 
 concurrency:
-  group: rentitease-release-${{ github.ref }}
-  cancel-in-progress: true
+  # All refs share production E2E accounts and data. Serialize runs to avoid
+  # pull-request and main workflows mutating the same records concurrently.
+  group: rentitease-production-release-e2e
+  cancel-in-progress: false
 
 jobs:
 
@@ -153,7 +155,6 @@ jobs:
         run: |
           npx jest \
             --config test/jest-release-e2e.json \
-            release/release-workflow.e2e-spec.ts \
             --runInBand \
             --verbose
 
@@ -212,7 +213,6 @@ jobs:
 
       - name: Tenant / Owner integration tests
         run: flutter test integration_test
-        continue-on-error: true
 
 
   # ============================================================
