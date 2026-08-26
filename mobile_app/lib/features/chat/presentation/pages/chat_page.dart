@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../authentication/providers/authentication_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/message_input.dart';
@@ -8,11 +9,18 @@ import '../widgets/message_input.dart';
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({
     super.key,
+    this.conversationId,
+    this.propertyId,
     this.userName = 'Owner',
     this.propertyTitle,
     this.propertyImage,
-  });
+  }) : assert(
+         conversationId != null || propertyId != null,
+         'A conversationId or propertyId is required.',
+       );
 
+  final String? conversationId;
+  final String? propertyId;
   final String userName;
   final String? propertyTitle;
   final String? propertyImage;
@@ -27,10 +35,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   @override
   void initState() {
     super.initState();
+    Future.microtask(_openConversation);
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
-    });
+  Future<void> _openConversation() async {
+    final notifier = ref.read(chatProvider.notifier);
+
+    if (widget.conversationId != null) {
+      await notifier.openConversation(widget.conversationId!);
+    } else {
+      await notifier.createAndOpenConversation(widget.propertyId!);
+    }
+
+    _scrollToBottom();
   }
 
   @override
@@ -53,8 +70,22 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final messages = ref.watch(chatProvider);
-    final notifier = ref.read(chatProvider.notifier);
+    final state = ref.watch(chatProvider);
+    final currentUserId = ref
+            .watch(authenticationProvider)
+            .authResponse
+            ?.user
+            .id ??
+        '';
+
+    ref.listen(chatProvider.select((value) => value.messages.length), (
+      previous,
+      next,
+    ) {
+      if (previous != next) {
+        _scrollToBottom();
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -65,61 +96,27 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             CircleAvatar(
               radius: 22,
               backgroundColor: Colors.blue.shade100,
-              child: Text(
-                widget.userName.isEmpty
-                    ? '?'
-                    : widget.userName.substring(0, 1).toUpperCase(),
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+              backgroundImage: widget.propertyImage?.isNotEmpty == true
+                  ? NetworkImage(widget.propertyImage!)
+                  : null,
+              child: widget.propertyImage?.isNotEmpty == true
+                  ? null
+                  : Text(
+                      widget.userName.isEmpty
+                          ? '?'
+                          : widget.userName.substring(0, 1).toUpperCase(),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.userName, overflow: TextOverflow.ellipsis),
-                  Text(
-                    notifier.isTyping ? 'Typing...' : 'Online',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: notifier.isTyping ? Colors.green : Colors.grey,
-                    ),
-                  ),
-                ],
+              child: Text(
+                widget.userName,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.call),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Voice calling coming soon.')),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.videocam),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Video calling coming soon.')),
-              );
-            },
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'clear') {
-                notifier.clearChat();
-              }
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'clear', child: Text('Clear Chat')),
-              PopupMenuItem(value: 'report', child: Text('Report User')),
-              PopupMenuItem(value: 'block', child: Text('Block User')),
-            ],
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -141,39 +138,76 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 ],
               ),
             ),
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                return ChatBubble(message: messages[index]);
-              },
+          if (state.error != null)
+            MaterialBanner(
+              content: Text(state.error!),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    ref.read(chatProvider.notifier).clearError();
+                    _openConversation();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
             ),
+          Expanded(
+            child: _buildMessages(state, currentUserId),
           ),
           MessageInput(
             onSend: (text) async {
-              await notifier.sendMessage(text);
-              _scrollToBottom();
+              final sent = await ref
+                  .read(chatProvider.notifier)
+                  .sendMessage(text);
+              if (sent) {
+                _scrollToBottom();
+              }
             },
-            onTyping: notifier.setTyping,
+            onTyping: (_) {},
             onCamera: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Camera integration coming soon.'),
+                  content: Text('Image messages are not yet supported.'),
                 ),
               );
             },
             onGallery: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Gallery integration coming soon.'),
+                  content: Text('Image messages are not yet supported.'),
                 ),
               );
             },
           ),
+          if (state.isSending)
+            const LinearProgressIndicator(minHeight: 2),
         ],
       ),
+    );
+  }
+
+  Widget _buildMessages(ChatState state, String currentUserId) {
+    if (state.isLoadingMessages) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.messages.isEmpty) {
+      return const Center(
+        child: Text('No messages yet. Start the conversation.'),
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      itemCount: state.messages.length,
+      itemBuilder: (context, index) {
+        final message = state.messages[index];
+        return ChatBubble(
+          message: message,
+          isMine: message.senderId == currentUserId,
+        );
+      },
     );
   }
 }
