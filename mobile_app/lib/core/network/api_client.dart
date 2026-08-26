@@ -26,9 +26,18 @@ class ApiClient {
   static final ApiClient shared = ApiClient();
 
   late final Dio _dio;
+
   final StorageService _storage;
 
   Dio get dio => _dio;
+
+  void setAccessToken(String token) {
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+  }
+
+  void clearAccessToken() {
+    _dio.options.headers.remove('Authorization');
+  }
 }
 
 class _AuthenticationInterceptor extends QueuedInterceptor {

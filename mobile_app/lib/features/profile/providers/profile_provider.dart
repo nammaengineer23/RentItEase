@@ -25,13 +25,15 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
 // PROFILE PROVIDER
 // ============================================================
 
-final profileProvider =
-    StateNotifierProvider<ProfileNotifier, AsyncValue<ProfileEntity?>>((ref) {
-      return ProfileNotifier(
-        ref,
-        ref.read(profileRepositoryProvider),
-      );
-    });
+final profileProvider = StateNotifierProvider.autoDispose<
+    ProfileNotifier,
+    AsyncValue<ProfileEntity?>
+>((ref) {
+  return ProfileNotifier(
+    ref,
+    ref.read(profileRepositoryProvider),
+  );
+});
 
 // ============================================================
 // PROFILE NOTIFIER

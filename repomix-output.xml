@@ -548,6 +548,7 @@ mobile_app/
         app_icon_96x96.png
         app_icon_app_store_512x512.png
         app_icon_play_store_512x512.png
+        google_g.svg
         ios_app_icon_120x120.png
         ios_app_icon_152x152.png
         ios_app_icon_167x167.png
@@ -558,39 +559,39 @@ mobile_app/
         ios_app_icon_87x87.png
         rentitease_compact_logo_256x256.png
         rentitease_horizontal_logo_1200x400.png
-        rentitease_logo_512x512.png
+        rentitease_logo_512x512.svg
         rentitease_primary_logo_1024x1024.png
       icons/
         feature/
-          add_property_512x512.png
-          bookings_512x512.png
-          chat_512x512.png
-          favorites_512x512.png
-          home_512x512.png
-          lease_512x512.png
-          logout_512x512.png
-          membership_512x512.png
-          my_properties_512x512.png
-          notifications_512x512.png
-          payments_512x512.png
-          profile_512x512.png
-          properties_512x512.png
-          reviews_512x512.png
-          search_512x512.png
-          visits_512x512.png
+          add_property.svg
+          bookings.svg
+          chat.svg
+          favorites.svg
+          home.svg
+          lease.svg
+          logout.svg
+          membership.svg
+          my_properties.svg
+          notifications.svg
+          payments.svg
+          profile.svg
+          properties.svg
+          reviews.svg
+          search.svg
+          visits.svg
         utility/
-          delete_512x512.png
-          edit_512x512.png
-          email_512x512.png
-          filter_512x512.png
-          info_512x512.png
-          location_512x512.png
-          map_512x512.png
-          phone_512x512.png
-          share_512x512.png
-          sort_512x512.png
-          success_512x512.png
-          warning_512x512.png
+          delete.svg
+          edit.svg
+          email.svg
+          filter.svg
+          info.svg
+          location.svg
+          map.svg
+          phone.svg
+          share.svg
+          sort.svg
+          success.svg
+          warning.svg
       onboarding/
         easy_bookings_1080x1920.png
         find_your_property_1080x1920.png
@@ -1089,6 +1090,7 @@ mobile_app/
           upload_provider.dart
     shared/
       widgets/
+        app_svg_icon.dart
         custom_button.dart
         custom_text_field.dart
         empty_state_widget.dart
@@ -1112,6 +1114,7 @@ mobile_app/
   .gitignore
   .metadata
   analysis_options.yaml
+  create_svg_icons.sh
   firebase.json
   fix_property_model.ps1
   pubspec.lock
@@ -1125,6 +1128,7 @@ ARCHITECTURE.md
 CHANGELOG.md
 CODE_OF_CONDUCT.md
 CONTRIBUTING.md
+icon_usage.txt
 LICENSE
 melos.yaml
 PROJECT_SPEC.md
@@ -1134,14 +1138,6 @@ rentitease_backup.dump
 
 <files>
 This section contains the contents of the repository's files.
-
-<file path="mobile_app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml">
-<?xml version="1.0" encoding="utf-8"?>
-<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@drawable/ic_launcher_background" />
-    <foreground android:drawable="@drawable/ic_launcher_foreground" />
-</adaptive-icon>
-</file>
 
 <file path=".github/ISSUE_TEMPLATE/bug_report.md">
 ## Bug Report
@@ -16530,26 +16526,12 @@ import io.flutter.embedding.android.FlutterActivity
 class MainActivity : FlutterActivity()
 </file>
 
-<file path="mobile_app/android/app/src/main/res/drawable/launch_background.xml">
+<file path="mobile_app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml">
 <?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item>
-        <bitmap
-            android:gravity="fill"
-            android:src="@drawable/rentitease_splash" />
-    </item>
-</layer-list>
-</file>
-
-<file path="mobile_app/android/app/src/main/res/drawable-v21/launch_background.xml">
-<?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item>
-        <bitmap
-            android:gravity="fill"
-            android:src="@drawable/rentitease_splash" />
-    </item>
-</layer-list>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>
 </file>
 
 <file path="mobile_app/android/app/src/main/res/values/styles.xml">
@@ -16661,92 +16643,279 @@ android.builtInKotlin=false
 
 </file>
 
-<file path="mobile_app/assets/images/ASSET_MANIFEST.txt">
-RentItEase – Updated Visual Asset Pack
-Generated to match the supplied RentItEase visual reference sheet.
+<file path="mobile_app/assets/images/branding/google_g.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <path fill="#EA4335" d="M24 9.5c3.54 0 6.72 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.61 0 6.52 5.38 2.56 13.22l7.98 6.19C12.45 13.05 17.74 9.5 24 9.5z"/>
+  <path fill="#4285F4" d="M46.98 24.55c0-1.64-.15-3.22-.43-4.73H24v9.03h12.88c-.55 2.96-2.22 5.47-4.74 7.16l7.66 5.95c4.48-4.13 7.18-10.21 7.18-17.41z"/>
+  <path fill="#FBBC05" d="M10.54 28.59A14.5 14.5 0 0 1 9.77 24c0-1.59.27-3.13.77-4.59l-7.98-6.19A23.98 23.98 0 0 0 0 24c0 3.87.93 7.54 2.56 10.78l7.98-6.19z"/>
+  <path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.79l-7.66-5.95c-2.13 1.43-4.86 2.27-8.23 2.27-6.26 0-11.55-3.55-13.46-9.91l-7.98 6.19C6.52 42.62 14.61 48 24 48z"/>
+</svg>
+</file>
 
-PATH | SIZE
-----------------------------------------------------------------------
-avatars/default_avatar_512x512.png | 512x512
-avatars/female_avatar_512x512.png | 512x512
-avatars/male_avatar_512x512.png | 512x512
-avatars/owner_avatar_512x512.png | 512x512
-avatars/tenant_avatar_512x512.png | 512x512
-banners/homepage_banner_1920x600.png | 1920x600
-banners/membership_offer_banner_1920x400.png | 1920x400
-banners/property_promo_banner_1920x400.png | 1920x400
-banners/web_ad_banner_1200x628.png | 1200x628
-branding/android_adaptive_background_1080x1080.png | 1080x1080
-branding/android_adaptive_foreground_432x432.png | 432x432
-branding/android_adaptive_full_icon_1080x1080.png | 1080x1080
-branding/app_icon_144x144.png | 144x144
-branding/app_icon_192x192.png | 192x192
-branding/app_icon_72x72.png | 72x72
-branding/app_icon_96x96.png | 96x96
-branding/app_icon_app_store_512x512.png | 512x512
-branding/app_icon_play_store_512x512.png | 512x512
-branding/ios_app_icon_120x120.png | 120x120
-branding/ios_app_icon_152x152.png | 152x152
-branding/ios_app_icon_167x167.png | 167x167
-branding/ios_app_icon_180x180.png | 180x180
-branding/ios_app_icon_20x20.png | 20x20
-branding/ios_app_icon_40x40.png | 40x40
-branding/ios_app_icon_60x60.png | 60x60
-branding/ios_app_icon_87x87.png | 87x87
-branding/rentitease_compact_logo_256x256.png | 256x256
-branding/rentitease_horizontal_logo_1200x400.png | 1200x400
-branding/rentitease_logo_512x512.png | 512x512
-branding/rentitease_primary_logo_1024x1024.png | 1024x1024
-icons/feature/add_property_512x512.png | 512x512
-icons/feature/bookings_512x512.png | 512x512
-icons/feature/chat_512x512.png | 512x512
-icons/feature/favorites_512x512.png | 512x512
-icons/feature/home_512x512.png | 512x512
-icons/feature/lease_512x512.png | 512x512
-icons/feature/logout_512x512.png | 512x512
-icons/feature/membership_512x512.png | 512x512
-icons/feature/my_properties_512x512.png | 512x512
-icons/feature/notifications_512x512.png | 512x512
-icons/feature/payments_512x512.png | 512x512
-icons/feature/profile_512x512.png | 512x512
-icons/feature/properties_512x512.png | 512x512
-icons/feature/reviews_512x512.png | 512x512
-icons/feature/search_512x512.png | 512x512
-icons/feature/visits_512x512.png | 512x512
-icons/utility/delete_512x512.png | 512x512
-icons/utility/edit_512x512.png | 512x512
-icons/utility/email_512x512.png | 512x512
-icons/utility/filter_512x512.png | 512x512
-icons/utility/info_512x512.png | 512x512
-icons/utility/location_512x512.png | 512x512
-icons/utility/map_512x512.png | 512x512
-icons/utility/phone_512x512.png | 512x512
-icons/utility/share_512x512.png | 512x512
-icons/utility/sort_512x512.png | 512x512
-icons/utility/success_512x512.png | 512x512
-icons/utility/warning_512x512.png | 512x512
-onboarding/easy_bookings_1080x1920.png | 1080x1920
-onboarding/find_your_property_1080x1920.png | 1080x1920
-onboarding/live_easy_1080x1920.png | 1080x1920
-onboarding/secure_payments_1080x1920.png | 1080x1920
-payments/google_pay_512x512.png | 512x512
-payments/mastercard_512x512.png | 512x512
-payments/paytm_512x512.png | 512x512
-payments/phonepe_512x512.png | 512x512
-payments/razorpay_512x512.png | 512x512
-payments/upi_512x512.png | 512x512
-payments/visa_512x512.png | 512x512
-properties/no_image_available_800x800.png | 800x800
-properties/property_placeholder_landscape_1280x853.png | 1280x853
-properties/property_placeholder_portrait_720x1280.png | 720x1280
-properties/property_placeholder_square_1080x1080.png | 1080x1080
-social/facebook_512x512.png | 512x512
-social/instagram_512x512.png | 512x512
-social/linkedin_512x512.png | 512x512
-social/x_512x512.png | 512x512
-social/youtube_512x512.png | 512x512
-splash/android_splash_1080x1920.png | 1080x1920
-splash/ios_splash_1125x2436.png | 1125x2436
+<file path="mobile_app/assets/images/branding/rentitease_logo_512x512.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect x="20" y="20" width="472" height="472" rx="55"
+        fill="#FFFFFF" stroke="#E0E4E8" stroke-width="4"/>
+
+  <!-- House roof -->
+  <path d="M125 205 L256 85 L387 205"
+        fill="none"
+        stroke="#082B66"
+        stroke-width="28"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- House sides -->
+  <path d="M155 195 V290"
+        fill="none"
+        stroke="#082B66"
+        stroke-width="28"
+        stroke-linecap="round"/>
+  <path d="M357 195 V290"
+        fill="none"
+        stroke="#082B66"
+        stroke-width="28"
+        stroke-linecap="round"/>
+
+  <!-- Window -->
+  <rect x="224" y="170" width="27" height="27" rx="2" fill="#082B66"/>
+  <rect x="261" y="170" width="27" height="27" rx="2" fill="#082B66"/>
+  <rect x="224" y="207" width="27" height="27" rx="2" fill="#082B66"/>
+  <rect x="261" y="207" width="27" height="27" rx="2" fill="#082B66"/>
+
+  <!-- Leaf -->
+  <path d="M211 308
+           C226 260 274 243 316 225
+           C319 273 297 316 247 327
+           C231 330 218 325 211 308 Z"
+        fill="#67C900"/>
+
+  <!-- Leaf vein -->
+  <path d="M211 315
+           C238 292 267 270 304 239"
+        fill="none"
+        stroke="#158A32"
+        stroke-width="6"
+        stroke-linecap="round"/>
+
+  <!-- Brand -->
+  <text x="256" y="395"
+        text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="58"
+        font-weight="700">
+    <tspan fill="#082B66">RentIt</tspan><tspan fill="#18A12A">Ease</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="256" y="430"
+        text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="17"
+        font-weight="700"
+        letter-spacing="3"
+        fill="#082B66">
+    RENTING MADE EASY
+  </text>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/add_property.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M3 21V8l9-5 9 5v13"/>
+<path d="M12 10v7M8.5 13.5h7"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/bookings.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<rect x="3" y="4" width="18" height="17" rx="2"/>
+<path d="M16 2v4M8 2v4M3 10h18"/>
+<path d="m8 15 2 2 5-5"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/chat.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 3v-10a7.5 7.5 0 1 1 17 0Z"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/favorites.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M20.8 8.6c0 5.5-8.8 10.4-8.8 10.4S3.2 14.1 3.2 8.6A5.1 5.1 0 0 1 12 5.5a5.1 5.1 0 0 1 8.8 3.1Z"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/home.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="m3 10 9-7 9 7"/>
+<path d="M5 9v11h14V9"/>
+<path d="M9 20v-6h6v6"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/lease.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M6 3h12v18H6z"/>
+<path d="M9 7h6M9 11h6M9 15h4"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/logout.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5"/>
+<path d="M14 8l5 4-5 4"/>
+<path d="M19 12H9"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/membership.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/my_properties.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+<path d="m3 10 9-7 9 7v11H3Z"/>
+<path d="M8 21v-6h8v6"/>
+<path d="M9 11h6"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/notifications.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+<path d="M10 21h4"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/payments.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<rect x="3" y="5" width="18" height="14" rx="2"/>
+<path d="M3 10h18"/>
+<path d="M7 15h4"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/profile.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<circle cx="12" cy="8" r="4"/>
+<path d="M4 21a8 8 0 0 1 16 0"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/properties.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+<path d="M3 21V8l9-5 9 5v13"/>
+<path d="M7 21v-6h10v6"/>
+<path d="M8 10h2M14 10h2M8 13h2M14 13h2"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/reviews.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/search.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+<circle cx="11" cy="11" r="7"/>
+<path d="m20 20-4-4"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/feature/visits.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<rect x="3" y="4" width="18" height="17" rx="2"/>
+<path d="M16 2v4M8 2v4M3 10h18"/>
+<circle cx="12" cy="15" r="3"/>
+<path d="M12 13v2l1.5 1"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/utility/delete.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+<path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/utility/edit.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 20h9"/>
+<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/utility/email.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+<rect x="3" y="5" width="18" height="14" rx="2"/>
+<path d="m3 7 9 6 9-6"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/utility/filter.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+<path d="M4 6h16M7 12h10M10 18h4"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/utility/info.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<circle cx="12" cy="12" r="9"/>
+<path d="M12 11v6M12 7h.01"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/utility/location.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/>
+<circle cx="12" cy="10" r="2.5"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/utility/map.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+<path d="m9 18-6 3V6l6-3 6 3 6-3v15l-6 3Z"/>
+<path d="M9 3v15M15 6v15"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/utility/phone.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+<path d="M5 4h4l2 5-2.5 1.5a15 15 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2C9 20 4 15 3 6a2 2 0 0 1 2-2Z"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/utility/share.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="18" cy="5" r="2.5"/>
+<circle cx="6" cy="12" r="2.5"/>
+<circle cx="18" cy="19" r="2.5"/>
+<path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/utility/sort.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+<path d="M8 5v14M5 8l3-3 3 3M16 19V5M13 16l3 3 3-3"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/utility/success.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="12" cy="12" r="9"/>
+<path d="m8 12 3 3 5-6"/>
+</svg>
+</file>
+
+<file path="mobile_app/assets/images/icons/utility/warning.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="m12 3 10 18H2Z"/>
+<path d="M12 9v5M12 17h.01"/>
+</svg>
 </file>
 
 <file path="mobile_app/ios/Flutter/AppFrameworkInfo.plist">
@@ -18353,6 +18522,31 @@ class SplashCard extends StatelessWidget {
 }
 </file>
 
+<file path="mobile_app/lib/shared/widgets/app_svg_icon.dart">
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+class AppSvgIcon extends StatelessWidget {
+  const AppSvgIcon(this.assetPath, {super.key, this.size = 24, this.color});
+
+  final String assetPath;
+  final double size;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SvgPicture.asset(
+      assetPath,
+      width: size,
+      height: size,
+      colorFilter: color == null
+          ? null
+          : ColorFilter.mode(color!, BlendMode.srcIn),
+    );
+  }
+}
+</file>
+
 <file path="mobile_app/.gitignore">
 # Miscellaneous
 *.class
@@ -18447,6 +18641,218 @@ linter:
   rules:
     avoid_print: false
     prefer_const_constructors: true
+</file>
+
+<file path="mobile_app/create_svg_icons.sh">
+#!/usr/bin/env bash
+set -e
+
+mkdir -p assets/images/icons/feature
+mkdir -p assets/images/icons/utility
+
+cat > assets/images/icons/feature/home.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="m3 10 9-7 9 7"/>
+<path d="M5 9v11h14V9"/>
+<path d="M9 20v-6h6v6"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/search.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+<circle cx="11" cy="11" r="7"/>
+<path d="m20 20-4-4"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/favorites.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M20.8 8.6c0 5.5-8.8 10.4-8.8 10.4S3.2 14.1 3.2 8.6A5.1 5.1 0 0 1 12 5.5a5.1 5.1 0 0 1 8.8 3.1Z"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/bookings.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<rect x="3" y="4" width="18" height="17" rx="2"/>
+<path d="M16 2v4M8 2v4M3 10h18"/>
+<path d="m8 15 2 2 5-5"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/chat.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 3v-10a7.5 7.5 0 1 1 17 0Z"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/profile.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<circle cx="12" cy="8" r="4"/>
+<path d="M4 21a8 8 0 0 1 16 0"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/notifications.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+<path d="M10 21h4"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/properties.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+<path d="M3 21V8l9-5 9 5v13"/>
+<path d="M7 21v-6h10v6"/>
+<path d="M8 10h2M14 10h2M8 13h2M14 13h2"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/my_properties.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+<path d="m3 10 9-7 9 7v11H3Z"/>
+<path d="M8 21v-6h8v6"/>
+<path d="M9 11h6"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/add_property.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M3 21V8l9-5 9 5v13"/>
+<path d="M12 10v7M8.5 13.5h7"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/lease.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M6 3h12v18H6z"/>
+<path d="M9 7h6M9 11h6M9 15h4"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/payments.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<rect x="3" y="5" width="18" height="14" rx="2"/>
+<path d="M3 10h18"/>
+<path d="M7 15h4"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/membership.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/reviews.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/visits.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<rect x="3" y="4" width="18" height="17" rx="2"/>
+<path d="M16 2v4M8 2v4M3 10h18"/>
+<circle cx="12" cy="15" r="3"/>
+<path d="M12 13v2l1.5 1"/>
+</svg>
+SVG
+
+cat > assets/images/icons/feature/logout.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5"/>
+<path d="M14 8l5 4-5 4"/>
+<path d="M19 12H9"/>
+</svg>
+SVG
+
+cat > assets/images/icons/utility/delete.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+<path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"/>
+</svg>
+SVG
+
+cat > assets/images/icons/utility/edit.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 20h9"/>
+<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/>
+</svg>
+SVG
+
+cat > assets/images/icons/utility/email.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+<rect x="3" y="5" width="18" height="14" rx="2"/>
+<path d="m3 7 9 6 9-6"/>
+</svg>
+SVG
+
+cat > assets/images/icons/utility/filter.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+<path d="M4 6h16M7 12h10M10 18h4"/>
+</svg>
+SVG
+
+cat > assets/images/icons/utility/info.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<circle cx="12" cy="12" r="9"/>
+<path d="M12 11v6M12 7h.01"/>
+</svg>
+SVG
+
+cat > assets/images/icons/utility/location.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/>
+<circle cx="12" cy="10" r="2.5"/>
+</svg>
+SVG
+
+cat > assets/images/icons/utility/map.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+<path d="m9 18-6 3V6l6-3 6 3 6-3v15l-6 3Z"/>
+<path d="M9 3v15M15 6v15"/>
+</svg>
+SVG
+
+cat > assets/images/icons/utility/phone.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+<path d="M5 4h4l2 5-2.5 1.5a15 15 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2C9 20 4 15 3 6a2 2 0 0 1 2-2Z"/>
+</svg>
+SVG
+
+cat > assets/images/icons/utility/share.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="18" cy="5" r="2.5"/>
+<circle cx="6" cy="12" r="2.5"/>
+<circle cx="18" cy="19" r="2.5"/>
+<path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/>
+</svg>
+SVG
+
+cat > assets/images/icons/utility/sort.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+<path d="M8 5v14M5 8l3-3 3 3M16 19V5M13 16l3 3 3-3"/>
+</svg>
+SVG
+
+cat > assets/images/icons/utility/success.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="12" cy="12" r="9"/>
+<path d="m8 12 3 3 5-6"/>
+</svg>
+SVG
+
+cat > assets/images/icons/utility/warning.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="m12 3 10 18H2Z"/>
+<path d="M12 9v5M12 17h.01"/>
+</svg>
+SVG
+
+# Remove the old blurry generated icon PNGs.
+rm -f assets/images/icons/feature/*_512x512.png
+rm -f assets/images/icons/utility/*_512x512.png
+
+echo "SVG icon set created successfully."
 </file>
 
 <file path="mobile_app/fix_property_model.ps1">
@@ -18599,6 +19005,10 @@ coverage/
 - Initial monorepo structure for mobile, backend, admin, docs, and infrastructure.
 - Project documentation and contribution guidance.
 - CI workflow scaffolding and Docker starter files.
+</file>
+
+<file path="icon_usage.txt">
+
 </file>
 
 <file path=".github/workflows/backend_ci.yml">
@@ -22225,6 +22635,116 @@ RentItEase uses PostgreSQL as the primary relational database and Redis for cach
 - Design indexes around common query patterns.
 </file>
 
+<file path="mobile_app/android/app/src/main/res/drawable/launch_background.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <bitmap
+            android:gravity="fill"
+            android:src="@drawable/rentitease_splash" />
+    </item>
+</layer-list>
+</file>
+
+<file path="mobile_app/android/app/src/main/res/drawable-v21/launch_background.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <bitmap
+            android:gravity="fill"
+            android:src="@drawable/rentitease_splash" />
+    </item>
+</layer-list>
+</file>
+
+<file path="mobile_app/assets/images/ASSET_MANIFEST.txt">
+RentItEase – Updated Visual Asset Pack
+Generated to match the supplied RentItEase visual reference sheet.
+
+PATH | SIZE
+----------------------------------------------------------------------
+avatars/default_avatar_512x512.png | 512x512
+avatars/female_avatar_512x512.png | 512x512
+avatars/male_avatar_512x512.png | 512x512
+avatars/owner_avatar_512x512.png | 512x512
+avatars/tenant_avatar_512x512.png | 512x512
+banners/homepage_banner_1920x600.png | 1920x600
+banners/membership_offer_banner_1920x400.png | 1920x400
+banners/property_promo_banner_1920x400.png | 1920x400
+banners/web_ad_banner_1200x628.png | 1200x628
+branding/android_adaptive_background_1080x1080.png | 1080x1080
+branding/android_adaptive_foreground_432x432.png | 432x432
+branding/android_adaptive_full_icon_1080x1080.png | 1080x1080
+branding/app_icon_144x144.png | 144x144
+branding/app_icon_192x192.png | 192x192
+branding/app_icon_72x72.png | 72x72
+branding/app_icon_96x96.png | 96x96
+branding/app_icon_app_store_512x512.png | 512x512
+branding/app_icon_play_store_512x512.png | 512x512
+branding/ios_app_icon_120x120.png | 120x120
+branding/ios_app_icon_152x152.png | 152x152
+branding/ios_app_icon_167x167.png | 167x167
+branding/ios_app_icon_180x180.png | 180x180
+branding/ios_app_icon_20x20.png | 20x20
+branding/ios_app_icon_40x40.png | 40x40
+branding/ios_app_icon_60x60.png | 60x60
+branding/ios_app_icon_87x87.png | 87x87
+branding/rentitease_compact_logo_256x256.png | 256x256
+branding/rentitease_horizontal_logo_1200x400.png | 1200x400
+branding/rentitease_logo_512x512.svg | 512x512
+branding/rentitease_primary_logo_1024x1024.png | 1024x1024
+icons/feature/add_property_512x512.png | 512x512
+icons/feature/bookings_512x512.png | 512x512
+icons/feature/chat_512x512.png | 512x512
+icons/feature/favorites_512x512.png | 512x512
+icons/feature/home_512x512.png | 512x512
+icons/feature/lease_512x512.png | 512x512
+icons/feature/logout_512x512.png | 512x512
+icons/feature/membership_512x512.png | 512x512
+icons/feature/my_properties_512x512.png | 512x512
+icons/feature/notifications_512x512.png | 512x512
+icons/feature/payments_512x512.png | 512x512
+icons/feature/profile_512x512.png | 512x512
+icons/feature/properties_512x512.png | 512x512
+icons/feature/reviews_512x512.png | 512x512
+icons/feature/search_512x512.png | 512x512
+icons/feature/visits_512x512.png | 512x512
+icons/utility/delete_512x512.png | 512x512
+icons/utility/edit_512x512.png | 512x512
+icons/utility/email_512x512.png | 512x512
+icons/utility/filter_512x512.png | 512x512
+icons/utility/info_512x512.png | 512x512
+icons/utility/location_512x512.png | 512x512
+icons/utility/map_512x512.png | 512x512
+icons/utility/phone_512x512.png | 512x512
+icons/utility/share_512x512.png | 512x512
+icons/utility/sort_512x512.png | 512x512
+icons/utility/success_512x512.png | 512x512
+icons/utility/warning_512x512.png | 512x512
+onboarding/easy_bookings_1080x1920.png | 1080x1920
+onboarding/find_your_property_1080x1920.png | 1080x1920
+onboarding/live_easy_1080x1920.png | 1080x1920
+onboarding/secure_payments_1080x1920.png | 1080x1920
+payments/google_pay_512x512.png | 512x512
+payments/mastercard_512x512.png | 512x512
+payments/paytm_512x512.png | 512x512
+payments/phonepe_512x512.png | 512x512
+payments/razorpay_512x512.png | 512x512
+payments/upi_512x512.png | 512x512
+payments/visa_512x512.png | 512x512
+properties/no_image_available_800x800.png | 800x800
+properties/property_placeholder_landscape_1280x853.png | 1280x853
+properties/property_placeholder_portrait_720x1280.png | 720x1280
+properties/property_placeholder_square_1080x1080.png | 1080x1080
+social/facebook_512x512.png | 512x512
+social/instagram_512x512.png | 512x512
+social/linkedin_512x512.png | 512x512
+social/x_512x512.png | 512x512
+social/youtube_512x512.png | 512x512
+splash/android_splash_1080x1920.png | 1080x1920
+splash/ios_splash_1125x2436.png | 1125x2436
+</file>
+
 <file path="mobile_app/ios/Runner.xcodeproj/project.pbxproj">
 // !$*UTF8*$!
 {
@@ -22958,9 +23478,18 @@ class ApiClient {
   static final ApiClient shared = ApiClient();
 
   late final Dio _dio;
+
   final StorageService _storage;
 
   Dio get dio => _dio;
+
+  void setAccessToken(String token) {
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+  }
+
+  void clearAccessToken() {
+    _dio.options.headers.remove('Authorization');
+  }
 }
 
 class _AuthenticationInterceptor extends QueuedInterceptor {
@@ -23344,84 +23873,6 @@ class TokenStorage {
 }
 </file>
 
-<file path="mobile_app/lib/features/authentication/data/models/auth_response.dart">
-class UserModel {
-  final String id;
-  final String fullName;
-  final String email;
-  final String? phone;
-  final String? photoUrl;
-  final String role;
-  final bool isVerified;
-  final bool isActive;
-
-  const UserModel({
-    required this.id,
-    required this.fullName,
-    required this.email,
-    this.phone,
-    this.photoUrl,
-    required this.role,
-    required this.isVerified,
-    required this.isActive,
-  });
-
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      id: json['id'] as String,
-      fullName: json['fullName'] as String? ?? '',
-      email: json['email'] as String,
-      phone: json['phone'] as String?,
-      photoUrl: json['photoUrl'] as String?,
-      role: json['role'] as String? ?? 'TENANT',
-      isVerified: json['isVerified'] as bool? ?? false,
-      isActive: json['isActive'] as bool? ?? true,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'fullName': fullName,
-      'email': email,
-      'phone': phone,
-      'photoUrl': photoUrl,
-      'role': role,
-      'isVerified': isVerified,
-      'isActive': isActive,
-    };
-  }
-}
-
-class AuthResponse {
-  final String accessToken;
-  final String refreshToken;
-  final UserModel user;
-
-  const AuthResponse({
-    required this.accessToken,
-    required this.refreshToken,
-    required this.user,
-  });
-
-  factory AuthResponse.fromJson(Map<String, dynamic> json) {
-    return AuthResponse(
-      accessToken: json['accessToken'] as String,
-      refreshToken: json['refreshToken'] as String,
-      user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'accessToken': accessToken,
-      'refreshToken': refreshToken,
-      'user': user.toJson(),
-    };
-  }
-}
-</file>
-
 <file path="mobile_app/lib/features/authentication/data/models/login_request.dart">
 class LoginRequest {
   final String email;
@@ -23593,165 +24044,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     Navigator.pop(context);
                   },
                   child: const Text('Back to Login'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-</file>
-
-<file path="mobile_app/lib/features/authentication/presentation/pages/login_page.dart">
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../../shared/widgets/custom_button.dart';
-import '../../../../shared/widgets/custom_text_field.dart';
-import '../../providers/authentication_provider.dart';
-import '../widgets/auth_header.dart';
-import '../widgets/remember_me.dart';
-import '../widgets/social_login_button.dart';
-
-class LoginPage extends ConsumerStatefulWidget {
-  final VoidCallback onRegister;
-
-  const LoginPage({super.key, required this.onRegister});
-
-  @override
-  ConsumerState<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends ConsumerState<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
-
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    final provider = ref.read(authenticationProvider);
-
-    final success = await provider.login(
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-    );
-
-    if (!mounted) return;
-
-    if (success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Login Successful')));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(provider.errorMessage ?? 'Login Failed')),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = ref.watch(authenticationProvider);
-
-    return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                const SizedBox(height: 30),
-
-                const AuthHeader(
-                  title: 'Welcome Back',
-                  subtitle: 'Login to continue your rental journey.',
-                ),
-
-                const SizedBox(height: 40),
-
-                CustomTextField(
-                  controller: _emailController,
-                  hintText: 'Email Address',
-                  prefixIcon: Icons.email_outlined,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter email';
-                    }
-
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                CustomTextField(
-                  controller: _passwordController,
-                  hintText: 'Password',
-                  prefixIcon: Icons.lock_outline,
-                  obscureText: provider.obscurePassword,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      provider.obscurePassword
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      ref
-                          .read(authenticationProvider)
-                          .togglePasswordVisibility();
-                    },
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter password';
-                    }
-
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 8),
-
-                RememberMe(onForgotPassword: () {}),
-
-                const SizedBox(height: 24),
-
-                CustomButton(
-                  text: 'Login',
-                  isLoading: provider.isLoading,
-                  onPressed: _login,
-                ),
-
-                const SizedBox(height: 24),
-
-                SocialLoginButton(onPressed: () {}),
-
-                const SizedBox(height: 30),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text("Don't have an account?"),
-                    TextButton(
-                      onPressed: widget.onRegister,
-                      child: const Text('Sign Up'),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -25085,58 +25377,6 @@ class ChatCard extends StatelessWidget {
 }
 </file>
 
-<file path="mobile_app/lib/features/home/presentation/widgets/bottom_navigation.dart">
-import 'package:flutter/material.dart';
-
-class HomeBottomNavigation extends StatelessWidget {
-  final int currentIndex;
-  final ValueChanged<int> onTap;
-
-  const HomeBottomNavigation({
-    super.key,
-    required this.currentIndex,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return NavigationBar(
-      selectedIndex: currentIndex,
-      onDestinationSelected: onTap,
-      height: 72,
-      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.home_outlined),
-          selectedIcon: Icon(Icons.home),
-          label: 'Home',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.search_outlined),
-          selectedIcon: Icon(Icons.search),
-          label: 'Search',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.favorite_border),
-          selectedIcon: Icon(Icons.favorite),
-          label: 'Favorites',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.calendar_month_outlined),
-          selectedIcon: Icon(Icons.calendar_month),
-          label: 'Bookings',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.person_outline),
-          selectedIcon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-      ],
-    );
-  }
-}
-</file>
-
 <file path="mobile_app/lib/features/home/presentation/widgets/nearby_properties.dart">
 import 'package:flutter/material.dart';
 
@@ -26354,9 +26594,9 @@ import 'package:dio/dio.dart';
 
 import '../models/activity_model.dart';
 import '../models/analytics_model.dart';
+import '../models/dashboard_summary_model.dart';
 import '../models/owner_property_model.dart';
 import '../models/visit_request_model.dart';
-import '../models/dashboard_summary_model.dart';
 
 class OwnerApi {
   OwnerApi(this._dio);
@@ -26370,9 +26610,9 @@ class OwnerApi {
   Future<DashboardSummaryModel> getDashboardSummary() async {
     final response = await _dio.get('/owner/dashboard');
 
-    return DashboardSummaryModel.fromJson(
-      Map<String, dynamic>.from(response.data as Map),
-    );
+    final data = _extractMap(response.data);
+
+    return DashboardSummaryModel.fromJson(data);
   }
 
   // ==========================================================
@@ -26382,9 +26622,9 @@ class OwnerApi {
   Future<AnalyticsModel> getAnalytics() async {
     final response = await _dio.get('/owner/dashboard/analytics');
 
-    return AnalyticsModel.fromJson(
-      Map<String, dynamic>.from(response.data as Map),
-    );
+    final data = _extractMap(response.data);
+
+    return AnalyticsModel.fromJson(data);
   }
 
   // ==========================================================
@@ -26394,11 +26634,7 @@ class OwnerApi {
   Future<List<ActivityModel>> getRecentActivities() async {
     final response = await _dio.get('/owner/dashboard/activity');
 
-    final data = response.data;
-
-    if (data is! List) {
-      return const [];
-    }
+    final data = _extractList(response.data);
 
     return data
         .whereType<Map>()
@@ -26413,11 +26649,7 @@ class OwnerApi {
   Future<List<OwnerPropertyModel>> getMyProperties() async {
     final response = await _dio.get('/owner/dashboard/properties');
 
-    final data = response.data;
-
-    if (data is! List) {
-      return const [];
-    }
+    final data = _extractList(response.data);
 
     return data
         .whereType<Map>()
@@ -26431,11 +26663,9 @@ class OwnerApi {
   Future<OwnerPropertyModel> getProperty(String propertyId) async {
     final response = await _dio.get('/properties/$propertyId');
 
-    final raw = response.data;
+    final data = _extractMap(response.data);
 
-    final data = raw is Map && raw['property'] is Map ? raw['property'] : raw;
-
-    return OwnerPropertyModel.fromJson(Map<String, dynamic>.from(data as Map));
+    return OwnerPropertyModel.fromJson(data);
   }
 
   // ==========================================================
@@ -26445,11 +26675,9 @@ class OwnerApi {
   Future<OwnerPropertyModel> addProperty(Map<String, dynamic> body) async {
     final response = await _dio.post('/properties', data: body);
 
-    final raw = response.data;
+    final data = _extractMap(response.data);
 
-    final data = raw is Map && raw['property'] is Map ? raw['property'] : raw;
-
-    return OwnerPropertyModel.fromJson(Map<String, dynamic>.from(data as Map));
+    return OwnerPropertyModel.fromJson(data);
   }
 
   Future<OwnerPropertyModel> updateProperty(
@@ -26458,11 +26686,9 @@ class OwnerApi {
   ) async {
     final response = await _dio.patch('/properties/$propertyId', data: body);
 
-    final raw = response.data;
+    final data = _extractMap(response.data);
 
-    final data = raw is Map && raw['property'] is Map ? raw['property'] : raw;
-
-    return OwnerPropertyModel.fromJson(Map<String, dynamic>.from(data as Map));
+    return OwnerPropertyModel.fromJson(data);
   }
 
   Future<void> deleteProperty(String propertyId) async {
@@ -26476,11 +26702,7 @@ class OwnerApi {
   Future<List<VisitRequestModel>> getVisitRequests() async {
     final response = await _dio.get('/property-visits/owner');
 
-    final data = response.data;
-
-    if (data is! List) {
-      return const [];
-    }
+    final data = _extractList(response.data);
 
     return data
         .whereType<Map>()
@@ -26500,6 +26722,87 @@ class OwnerApi {
 
   Future<void> completeVisit(String visitId) async {
     await _dio.patch('/property-visits/$visitId/complete');
+  }
+
+  // ==========================================================
+  // RESPONSE HELPERS
+  // ==========================================================
+
+  Map<String, dynamic> _extractMap(dynamic raw) {
+    if (raw is Map) {
+      final map = Map<String, dynamic>.from(raw);
+
+      // Standard API wrapper:
+      //
+      // {
+      //   "success": true,
+      //   "timestamp": "...",
+      //   "data": {...}
+      // }
+      final data = map['data'];
+
+      if (data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+
+      // Compatibility:
+      // {
+      //   "property": {...}
+      // }
+      final property = map['property'];
+
+      if (property is Map) {
+        return Map<String, dynamic>.from(property);
+      }
+
+      return map;
+    }
+
+    return <String, dynamic>{};
+  }
+
+  List<dynamic> _extractList(dynamic raw) {
+    if (raw is List) {
+      return List<dynamic>.from(raw);
+    }
+
+    if (raw is Map) {
+      final map = Map<String, dynamic>.from(raw);
+
+      // Standard API wrapper:
+      //
+      // {
+      //   "success": true,
+      //   "timestamp": "...",
+      //   "data": [...]
+      // }
+      final data = map['data'];
+
+      if (data is List) {
+        return List<dynamic>.from(data);
+      }
+
+      // Compatibility with possible named list payloads.
+      final properties = map['properties'];
+
+      if (properties is List) {
+        return List<dynamic>.from(properties);
+      }
+
+      final visits = map['visits'];
+
+      if (visits is List) {
+        return List<dynamic>.from(visits);
+      }
+
+      final activities = map['activities'];
+
+      if (activities is List) {
+        return List<dynamic>.from(activities);
+      }
+    }
+
+    return const [];
   }
 }
 </file>
@@ -28653,7 +28956,7 @@ class SearchApi {
 <file path="mobile_app/lib/features/splash/services/splash_service.dart">
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../core/utils/token_storage.dart';
+import '../../../core/services/storage_service.dart';
 
 enum SplashDestination { onboarding, login, home }
 
@@ -28669,7 +28972,8 @@ class SplashService {
     }
 
     // Check login token
-    final accessToken = await TokenStorage.getAccessToken();
+    final storage = StorageService();
+    final accessToken = await storage.getString(StorageService.accessTokenKey);
 
     if (accessToken != null && accessToken.isNotEmpty) {
       return SplashDestination.home;
@@ -32940,68 +33244,6 @@ temp/
 *.tsbuildinfo
 </file>
 
-<file path="mobile_app/android/app/src/main/AndroidManifest.xml">
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <!-- Internet -->
-    <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- Location Permissions -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-    <application
-        android:label="RentItEase"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
-
-        <!-- Google Maps API Key -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyBcxiUP0WV6W7K3E0bbcPu6vrDMPnc5mXo" />
-
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:taskAffinity=""
-            android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
-
-            <!-- Flutter Launch Theme -->
-            <meta-data
-                android:name="io.flutter.embedding.android.NormalTheme"
-                android:resource="@style/NormalTheme" />
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-        </activity>
-
-        <!-- Flutter Embedding -->
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2" />
-
-    </application>
-
-    <!-- Required by Flutter -->
-    <queries>
-
-        <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT" />
-            <data android:mimeType="text/plain" />
-        </intent>
-
-    </queries>
-
-</manifest>
-</file>
-
 <file path="mobile_app/android/app/google-services.json">
 {
   "project_info": {
@@ -33109,11 +33351,19 @@ import 'app_colors.dart';
 class AppTheme {
   AppTheme._();
 
+  // ============================================================
+  // LIGHT THEME
+  // ============================================================
+
   static ThemeData get light {
     return ThemeData(
       useMaterial3: true,
+      brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.background,
-      colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.primary,
+        brightness: Brightness.light,
+      ),
       appBarTheme: const AppBarTheme(
         elevation: 0,
         centerTitle: true,
@@ -33139,6 +33389,130 @@ class AppTheme {
         ),
       ),
     );
+  }
+
+  // ============================================================
+  // DARK THEME
+  // ============================================================
+
+  static ThemeData get dark {
+    const darkBackground = Color(0xFF121212);
+    const darkSurface = Color(0xFF1E1E1E);
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: darkBackground,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.primary,
+        brightness: Brightness.dark,
+      ),
+      appBarTheme: const AppBarTheme(
+        elevation: 0,
+        centerTitle: true,
+        backgroundColor: darkSurface,
+        foregroundColor: Colors.white,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: darkSurface,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(55),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+    );
+  }
+}
+</file>
+
+<file path="mobile_app/lib/features/authentication/data/models/auth_response.dart">
+class UserModel {
+  final String id;
+  final String fullName;
+  final String email;
+  final String? phone;
+  final String? photoUrl;
+  final String role;
+  final bool isVerified;
+  final bool isActive;
+
+  const UserModel({
+    required this.id,
+    required this.fullName,
+    required this.email,
+    this.phone,
+    this.photoUrl,
+    required this.role,
+    required this.isVerified,
+    required this.isActive,
+  });
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['id'] as String,
+      fullName: json['fullName'] as String? ?? '',
+      email: json['email'] as String,
+      phone: json['phone'] as String?,
+      photoUrl: json['photoUrl'] as String?,
+      role: json['role'] as String? ?? 'TENANT',
+      isVerified: json['isVerified'] as bool? ?? false,
+      isActive: json['isActive'] as bool? ?? true,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'fullName': fullName,
+      'email': email,
+      'phone': phone,
+      'photoUrl': photoUrl,
+      'role': role,
+      'isVerified': isVerified,
+      'isActive': isActive,
+    };
+  }
+}
+
+class AuthResponse {
+  final String accessToken;
+  final String refreshToken;
+  final UserModel user;
+
+  const AuthResponse({
+    required this.accessToken,
+    required this.refreshToken,
+    required this.user,
+  });
+
+  factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] is Map<String, dynamic>
+        ? json['data'] as Map<String, dynamic>
+        : json;
+
+    return AuthResponse(
+      accessToken: data['accessToken'] as String,
+      refreshToken: data['refreshToken'] as String,
+      user: UserModel.fromJson(
+        data['user'] as Map<String, dynamic>,
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'accessToken': accessToken,
+      'refreshToken': refreshToken,
+      'user': user.toJson(),
+    };
   }
 }
 </file>
@@ -33186,272 +33560,164 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
 }
 </file>
 
-<file path="mobile_app/lib/features/authentication/presentation/widgets/auth_header.dart">
+<file path="mobile_app/lib/features/authentication/presentation/pages/login_page.dart">
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AuthHeader extends StatelessWidget {
-  final String title;
-  final String subtitle;
+import 'package:go_router/go_router.dart';
+import '../../../../shared/widgets/custom_button.dart';
+import '../../../../shared/widgets/custom_text_field.dart';
+import '../../providers/authentication_provider.dart';
+import '../widgets/auth_header.dart';
+import '../widgets/remember_me.dart';
+import '../widgets/social_login_button.dart';
 
-  const AuthHeader({super.key, required this.title, required this.subtitle});
+class LoginPage extends ConsumerStatefulWidget {
+  final VoidCallback onRegister;
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Hero(
-          tag: 'app_logo',
-          child: Image.asset('assets/images/branding/rentitease_logo_512x512.png', width: 90, height: 90),
-        ),
-
-        const SizedBox(height: 24),
-
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-
-        const SizedBox(height: 12),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30),
-          child: Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.grey.shade600,
-              height: 1.5,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-</file>
-
-<file path="mobile_app/lib/features/authentication/presentation/widgets/social_login_button.dart">
-import 'package:flutter/material.dart';
-
-class SocialLoginButton extends StatelessWidget {
-  const SocialLoginButton({
-    super.key,
-    required this.onPressed,
-    this.isLoading = false,
-  });
-
-  final VoidCallback onPressed;
-  final bool isLoading;
+  const LoginPage({super.key, required this.onRegister});
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: OutlinedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: Colors.grey.shade300),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          backgroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-        ),
-        child: isLoading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.5),
-              )
-            : const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _GoogleIcon(),
-
-                  SizedBox(width: 12),
-
-                  Flexible(
-                    child: Text(
-                      'Continue with Google',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-/// Local Google-style "G" icon.
-///
-/// This deliberately does not use Image.network so widget tests,
-/// Flutter Web and offline rendering do not depend on Google's
-/// external image URL.
-class _GoogleIcon extends StatelessWidget {
-  const _GoogleIcon();
+class _LoginPageState extends ConsumerState<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      width: 24,
-      height: 24,
-      child: Center(
-        child: Text(
-          'G',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF4285F4),
-          ),
-        ),
-      ),
-    );
-  }
-}
-</file>
-
-<file path="mobile_app/lib/features/authentication/services/authentication_service.dart">
-import '../../../config/environment.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/services/storage_service.dart';
-import '../data/models/auth_response.dart';
-import '../data/models/login_request.dart';
-import '../data/models/register_request.dart';
-
-class AuthenticationService {
-  AuthenticationService({
-    ApiClient? client,
-    StorageService? storage,
-  })  : _client = client ?? ApiClient.shared,
-        _storage = storage ?? StorageService();
-
-  final ApiClient _client;
-  final StorageService _storage;
-
-  Future<AuthResponse> login(LoginRequest request) async {
-    final response = await _client.dio.post<Map<String, dynamic>>(
-      ApiPaths.login,
-      data: request.toJson(),
-    );
-
-    return AuthResponse.fromJson(response.data!);
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
-  Future<AuthResponse> register(RegisterRequest request) async {
-    final response = await _client.dio.post<Map<String, dynamic>>(
-      ApiPaths.register,
-      data: request.toJson(),
-    );
-
-    return AuthResponse.fromJson(response.data!);
-  }
-
-  Future<void> logout() async {
-    try {
-      await _client.dio.post<void>(ApiPaths.logout);
-    } finally {
-      await _storage.clearTokens();
-    }
-  }
-
-  Future<void> saveSession(AuthResponse response) {
-    return _storage.saveTokens(
-      accessToken: response.accessToken,
-      refreshToken: response.refreshToken,
-    );
-  }
-
-  Future<AuthResponse?> restoreSession() async {
-    var accessToken =
-        await _storage.getString(StorageService.accessTokenKey);
-    var refreshToken =
-        await _storage.getString(StorageService.refreshTokenKey);
-
-    if (accessToken == null || refreshToken == null) {
-      return null;
-    }
-
-    try {
-      final me = await _client.dio.get<Map<String, dynamic>>(ApiPaths.me);
-
-      return AuthResponse(
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        user: UserModel.fromJson(me.data!),
-      );
-    } catch (_) {
-      accessToken =
-          await _storage.getString(StorageService.accessTokenKey);
-      refreshToken =
-          await _storage.getString(StorageService.refreshTokenKey);
-
-      if (accessToken == null || refreshToken == null) {
-        rethrow;
-      }
-
-      final me = await _client.dio.get<Map<String, dynamic>>(ApiPaths.me);
-
-      return AuthResponse(
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        user: UserModel.fromJson(me.data!),
-      );
-    }
-  }
-
-  Future<void> refreshToken() async {
-    final refreshToken =
-        await _storage.getString(StorageService.refreshTokenKey);
-
-    if (refreshToken == null) {
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final response = await _client.dio.post<Map<String, dynamic>>(
-      ApiPaths.refresh,
-      data: {'refreshToken': refreshToken},
+    final provider = ref.read(authenticationProvider);
+
+    final success = await provider.login(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
     );
 
-    final data = response.data!;
+    if (!mounted) return;
 
-    await _storage.saveTokens(
-      accessToken: data['accessToken'] as String,
-      refreshToken: data['refreshToken'] as String,
-    );
+ if (success) {
+  if (!mounted) return;
+
+  context.go('/home');
+  return;
+}
+    else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(provider.errorMessage ?? 'Login Failed')),
+      );
+    }
   }
 
-  // ============================================================
-  // FIREBASE PHONE LOGIN
-  // Backend returns:
-  // accessToken
-  // refreshToken
-  // user
-  // ============================================================
+  @override
+  Widget build(BuildContext context) {
+    final provider = ref.watch(authenticationProvider);
 
-  Future<AuthResponse> firebaseLogin(String idToken) async {
-    final response = await _client.dio.post<Map<String, dynamic>>(
-      '/auth/firebase-login',
-      data: {'idToken': idToken},
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                const SizedBox(height: 30),
+
+                const AuthHeader(
+                  title: 'Welcome Back',
+                  subtitle: 'Login to continue your rental journey.',
+                ),
+
+                const SizedBox(height: 40),
+
+                CustomTextField(
+                  controller: _emailController,
+                  hintText: 'Email Address',
+                  prefixIcon: Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter email';
+                    }
+
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 20),
+
+                CustomTextField(
+                  controller: _passwordController,
+                  hintText: 'Password',
+                  prefixIcon: Icons.lock_outline,
+                  obscureText: provider.obscurePassword,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      provider.obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      ref
+                          .read(authenticationProvider)
+                          .togglePasswordVisibility();
+                    },
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter password';
+                    }
+
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 8),
+
+                RememberMe(onForgotPassword: () {}),
+
+                const SizedBox(height: 24),
+
+                CustomButton(
+                  text: 'Login',
+                  isLoading: provider.isLoading,
+                  onPressed: _login,
+                ),
+
+                const SizedBox(height: 24),
+
+                SocialLoginButton(onPressed: () {}),
+
+                const SizedBox(height: 30),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Don't have an account?"),
+                    TextButton(
+                      onPressed: widget.onRegister,
+                      child: const Text('Sign Up'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
-
-    final auth = AuthResponse.fromJson(response.data!);
-
-    await saveSession(auth);
-
-    return auth;
   }
 }
 </file>
@@ -34510,6 +34776,102 @@ class ChatNotifier extends StateNotifier<List<ChatMessage>> {
 final chatProvider = StateNotifierProvider<ChatNotifier, List<ChatMessage>>(
   (ref) => ChatNotifier(),
 );
+</file>
+
+<file path="mobile_app/lib/features/home/presentation/widgets/bottom_navigation.dart">
+import 'package:flutter/material.dart';
+
+import '../../../../shared/widgets/app_svg_icon.dart';
+
+class HomeBottomNavigation extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const HomeBottomNavigation({
+    super.key,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return NavigationBar(
+      selectedIndex: currentIndex,
+      onDestinationSelected: onTap,
+      height: 72,
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      destinations: [
+        NavigationDestination(
+          icon: AppSvgIcon(
+            'assets/images/icons/feature/home.svg',
+            size: 24,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          selectedIcon: AppSvgIcon(
+            'assets/images/icons/feature/home.svg',
+            size: 26,
+            color: colorScheme.primary,
+          ),
+          label: 'Home',
+        ),
+        NavigationDestination(
+          icon: AppSvgIcon(
+            'assets/images/icons/feature/search.svg',
+            size: 24,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          selectedIcon: AppSvgIcon(
+            'assets/images/icons/feature/search.svg',
+            size: 26,
+            color: colorScheme.primary,
+          ),
+          label: 'Search',
+        ),
+        NavigationDestination(
+          icon: AppSvgIcon(
+            'assets/images/icons/feature/favorites.svg',
+            size: 24,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          selectedIcon: AppSvgIcon(
+            'assets/images/icons/feature/favorites.svg',
+            size: 26,
+            color: colorScheme.primary,
+          ),
+          label: 'Favorites',
+        ),
+        NavigationDestination(
+          icon: AppSvgIcon(
+            'assets/images/icons/feature/bookings.svg',
+            size: 24,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          selectedIcon: AppSvgIcon(
+            'assets/images/icons/feature/bookings.svg',
+            size: 26,
+            color: colorScheme.primary,
+          ),
+          label: 'Bookings',
+        ),
+        NavigationDestination(
+          icon: AppSvgIcon(
+            'assets/images/icons/feature/profile.svg',
+            size: 24,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          selectedIcon: AppSvgIcon(
+            'assets/images/icons/feature/profile.svg',
+            size: 26,
+            color: colorScheme.primary,
+          ),
+          label: 'Profile',
+        ),
+      ],
+    );
+  }
+}
 </file>
 
 <file path="mobile_app/lib/features/home/presentation/widgets/featured_properties.dart">
@@ -37882,48 +38244,6 @@ final splashProvider = FutureProvider<SplashDestination>((ref) async {
 });
 </file>
 
-<file path="mobile_app/lib/features/splash/widgets/animated_logo.dart">
-import 'package:flutter/material.dart';
-
-class AnimatedLogo extends StatelessWidget {
-  final Animation<double> animation;
-
-  const AnimatedLogo({super.key, required this.animation});
-
-  @override
-  Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: animation,
-      child: FadeTransition(
-        opacity: animation,
-        child: Hero(
-          tag: 'app_logo',
-          child: Container(
-            width: 160,
-            height: 160,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(32),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blue.withValues(alpha: 0.15),
-                  blurRadius: 30,
-                  spreadRadius: 6,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(32),
-              child: Image.asset('assets/images/branding/rentitease_logo_512x512.png', fit: BoxFit.cover),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-</file>
-
 <file path="mobile_app/lib/shared/widgets/empty_state_widget.dart">
 import 'package:flutter/material.dart';
 import '../../app/app_colors.dart';
@@ -38037,19 +38357,29 @@ class PrimaryButton extends StatelessWidget {
 
 <file path="mobile_app/lib/app.dart">
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app_router.dart';
 import 'app/app_theme.dart';
+import 'features/settings/providers/settings_provider.dart';
 
-class RentItEaseApp extends StatelessWidget {
+class RentItEaseApp extends ConsumerWidget {
   const RentItEaseApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingsAsync = ref.watch(settingsProvider);
+
+    final darkMode = settingsAsync.valueOrNull?.darkMode ?? false;
+
     return MaterialApp.router(
       title: 'RentItEase',
       debugShowCheckedModeBanner: false,
+
       theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: darkMode ? ThemeMode.dark : ThemeMode.light,
+
       routerConfig: AppRouter.router,
     );
   }
@@ -40380,6 +40710,68 @@ describe('Release E2E • Booking', () => {
 }
 </file>
 
+<file path="mobile_app/android/app/src/main/AndroidManifest.xml">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Internet -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Location Permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <application
+        android:label="RentItEase"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
+
+        <!-- Google Maps API Key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyBcxiUP0WV6W7K3E0bbcPu6vrDMPnc5mXo" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+
+            <!-- Flutter Launch Theme -->
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+        <!-- Flutter Embedding -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
+    </application>
+
+    <!-- Required by Flutter -->
+    <queries>
+
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
+        </intent>
+
+    </queries>
+
+</manifest>
+</file>
+
 <file path="mobile_app/android/app/build.gradle.kts">
 plugins {
     id("com.android.application")
@@ -40501,6 +40893,141 @@ class GoogleAuthService {
       default:
         return error.message ?? 'Authentication failed.';
     }
+  }
+}
+</file>
+
+<file path="mobile_app/lib/features/authentication/presentation/widgets/auth_header.dart">
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+class AuthHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const AuthHeader({
+    super.key,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Hero(
+          tag: 'app_logo',
+          child: SvgPicture.asset(
+            'assets/images/branding/rentitease_logo_512x512.svg',
+            width: 90,
+            height: 90,
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+        ),
+
+        const SizedBox(height: 12),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 30),
+          child: Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Colors.grey.shade600,
+                  height: 1.5,
+                ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+</file>
+
+<file path="mobile_app/lib/features/authentication/presentation/widgets/social_login_button.dart">
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+class SocialLoginButton extends StatelessWidget {
+  const SocialLoginButton({
+    super.key,
+    required this.onPressed,
+    this.isLoading = false,
+  });
+
+  final VoidCallback onPressed;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: OutlinedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: Colors.grey.shade300),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              )
+            : const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _GoogleIcon(),
+                  SizedBox(width: 12),
+                  Flexible(
+                    child: Text(
+                      'Continue with Google',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+/// Official Google G logo loaded from the local SVG asset.
+///
+/// Using SVG keeps the logo sharp on Android, Web, and high-density
+/// displays without depending on an external network image.
+class _GoogleIcon extends StatelessWidget {
+  const _GoogleIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return SvgPicture.asset(
+      'assets/images/branding/google_g.svg',
+      width: 22,
+      height: 22,
+    );
   }
 }
 </file>
@@ -40653,6 +41180,180 @@ class AuthenticationProvider extends ChangeNotifier {
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+}
+</file>
+
+<file path="mobile_app/lib/features/authentication/services/authentication_service.dart">
+import '../../../config/environment.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/services/storage_service.dart';
+import '../data/models/auth_response.dart';
+import '../data/models/login_request.dart';
+import '../data/models/register_request.dart';
+
+class AuthenticationService {
+  AuthenticationService({ApiClient? client, StorageService? storage})
+    : _client = client ?? ApiClient.shared,
+      _storage = storage ?? StorageService();
+
+  final ApiClient _client;
+  final StorageService _storage;
+
+  Future<AuthResponse> login(LoginRequest request) async {
+    final response = await _client.dio.post<Map<String, dynamic>>(
+      ApiPaths.login,
+      data: request.toJson(),
+    );
+
+    final data = response.data?['data'] as Map<String, dynamic>?;
+
+    if (data == null) {
+      throw Exception('Invalid login response: missing data');
+    }
+
+    return AuthResponse.fromJson(data);
+  }
+
+  Future<AuthResponse> register(RegisterRequest request) async {
+    final response = await _client.dio.post<Map<String, dynamic>>(
+      ApiPaths.register,
+      data: request.toJson(),
+    );
+
+    final data = response.data?['data'] as Map<String, dynamic>?;
+
+    if (data == null) {
+      throw Exception('Invalid registration response: missing data');
+    }
+
+    return AuthResponse.fromJson(data);
+  }
+
+  Future<void> logout() async {
+    try {
+      await _client.dio.post<void>(ApiPaths.logout);
+    } finally {
+      _client.clearAccessToken();
+      await _storage.clearTokens();
+    }
+  }
+
+  Future<void> saveSession(AuthResponse response) async {
+    await _storage.saveTokens(
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+    );
+
+    _client.setAccessToken(response.accessToken);
+  }
+
+Future<AuthResponse?> restoreSession() async {
+  var accessToken =
+      await _storage.getString(StorageService.accessTokenKey);
+  var refreshToken =
+      await _storage.getString(StorageService.refreshTokenKey);
+
+  if (accessToken == null || refreshToken == null) {
+    return null;
+  }
+
+  _client.setAccessToken(accessToken);
+
+  try {
+    final response =
+        await _client.dio.get<Map<String, dynamic>>(ApiPaths.me);
+
+    final responseData = response.data;
+
+    if (responseData == null) {
+      throw Exception('Invalid /auth/me response');
+    }
+
+    final userData = responseData['data'] is Map<String, dynamic>
+        ? responseData['data'] as Map<String, dynamic>
+        : responseData;
+
+    return AuthResponse(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      user: UserModel.fromJson(userData),
+    );
+  } catch (_) {
+    // The Dio interceptor may have refreshed the access token.
+    accessToken =
+        await _storage.getString(StorageService.accessTokenKey);
+    refreshToken =
+        await _storage.getString(StorageService.refreshTokenKey);
+
+    if (accessToken == null || refreshToken == null) {
+      rethrow;
+    }
+
+    _client.setAccessToken(accessToken);
+
+    final response =
+        await _client.dio.get<Map<String, dynamic>>(ApiPaths.me);
+
+    final responseData = response.data;
+
+    if (responseData == null) {
+      throw Exception('Invalid /auth/me response');
+    }
+
+    final userData = responseData['data'] is Map<String, dynamic>
+        ? responseData['data'] as Map<String, dynamic>
+        : responseData;
+
+    return AuthResponse(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      user: UserModel.fromJson(userData),
+    );
+  }
+}
+
+  Future<void> refreshToken() async {
+    final refreshToken = await _storage.getString(
+      StorageService.refreshTokenKey,
+    );
+
+    if (refreshToken == null) {
+      return;
+    }
+
+    final response = await _client.dio.post<Map<String, dynamic>>(
+      ApiPaths.refresh,
+      data: {'refreshToken': refreshToken},
+    );
+
+    final data = response.data!;
+
+    await _storage.saveTokens(
+      accessToken: data['accessToken'] as String,
+      refreshToken: data['refreshToken'] as String,
+    );
+  }
+
+  // ============================================================
+  // FIREBASE PHONE LOGIN
+  // Backend returns:
+  // accessToken
+  // refreshToken
+  // user
+  // ============================================================
+
+  Future<AuthResponse> firebaseLogin(String idToken) async {
+    final response = await _client.dio.post<Map<String, dynamic>>(
+      '/auth/firebase-login',
+      data: {'idToken': idToken},
+    );
+
+    final auth = AuthResponse.fromJson(response.data!);
+
+    await saveSession(auth);
+
+    return auth;
   }
 }
 </file>
@@ -45629,6 +46330,55 @@ class SplashRepositoryImpl implements SplashRepository {
 }
 </file>
 
+<file path="mobile_app/lib/features/splash/widgets/animated_logo.dart">
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+class AnimatedLogo extends StatelessWidget {
+  final Animation<double> animation;
+
+  const AnimatedLogo({
+    super.key,
+    required this.animation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: animation,
+      child: FadeTransition(
+        opacity: animation,
+        child: Hero(
+          tag: 'app_logo',
+          child: Container(
+            width: 160,
+            height: 160,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(32),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blue.withValues(alpha: 0.15),
+                  blurRadius: 30,
+                  spreadRadius: 6,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(32),
+              child: SvgPicture.asset(
+                'assets/images/branding/rentitease_logo_512x512.svg',
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+</file>
+
 <file path="mobile_app/lib/features/uploads/presentation/pages/upload_images_page.dart">
 import 'dart:io';
 
@@ -49238,7 +49988,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               break;
 
             case 3:
-              context.push('/notifications');
+              context.push('/my-bookings');
               break;
 
             case 4:
@@ -50251,7 +51001,6 @@ import 'package:go_router/go_router.dart';
 import '../../providers/profile_provider.dart';
 
 import '../../../favorites/presentation/pages/favorites_page.dart';
-import '../../../owner/presentation/pages/my_properties_page.dart';
 import '../../../property_visits/presentation/pages/my_visits_page.dart';
 import '../widgets/logout_dialog.dart';
 import '../widgets/profile_header.dart';
@@ -50310,19 +51059,15 @@ class ProfilePage extends ConsumerWidget {
 
                 const SizedBox(height: 12),
 
-                ProfileMenuTile(
-                  icon: Icons.home_work,
-                  title: 'My Properties',
-                  subtitle: 'Manage your listed properties',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const MyPropertiesPage(),
-                      ),
-                    );
-                  },
-                ),
+                if (profile.role.trim().toUpperCase() == 'OWNER')
+  ProfileMenuTile(
+    icon: Icons.home_work,
+    title: 'My Properties',
+    subtitle: 'Manage your listed properties',
+    onTap: () {
+      context.push('/owner/properties');
+    },
+  ),
 
                 ProfileMenuTile(
                   icon: Icons.event,
@@ -51357,14 +52102,7 @@ class SearchPage extends ConsumerStatefulWidget {
 class _SearchPageState extends ConsumerState<SearchPage> {
   final TextEditingController searchController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-
-    Future.microtask(() {
-      ref.read(searchProvider.notifier).loadRecentSearches();
-    });
-  }
+  bool _hasSearched = false;
 
   @override
   void dispose() {
@@ -51373,9 +52111,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   Future<void> _search() async {
-    await ref
-        .read(searchProvider.notifier)
-        .search(SearchEntity(query: searchController.text.trim()));
+    final query = searchController.text.trim();
+
+    if (query.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _hasSearched = true;
+    });
+
+    await ref.read(searchProvider.notifier).search(SearchEntity(query: query));
   }
 
   @override
@@ -51405,6 +52151,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               ),
             ),
           ),
+
           Expanded(
             child: state.isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -51412,21 +52159,80 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 ? Center(
                     child: Padding(
                       padding: const EdgeInsets.all(20),
-                      child: Text(state.error!, textAlign: TextAlign.center),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 60,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(state.error!, textAlign: TextAlign.center),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _search,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : !_hasSearched
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.manage_search,
+                            size: 80,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Search for your perfect property',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Enter a city, locality or property name above.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : state.results.isEmpty
                 ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.search_off, size: 80, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
-                          'No properties found',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                      ],
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.search_off, size: 80, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text(
+                            'No properties found',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Try a different city, locality or property name.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : RefreshIndicator(
@@ -51434,6 +52240,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       await ref.read(searchProvider.notifier).refresh();
                     },
                     child: ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(16),
                       itemCount: state.results.length,
                       itemBuilder: (_, index) {
@@ -52732,72 +53539,6 @@ export class PropertyImagesService {
 }
 </file>
 
-<file path="backend/src/main.ts">
-import { ValidationPipe } from '@nestjs/common';
-import { NestFactory, Reflector } from '@nestjs/core';
-import { ClassSerializerInterceptor } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-
-import { AppModule } from './app.module';
-import helmet from 'helmet';
-import { GlobalExceptionFilter } from './common/filters/global-exception/global-exception.filter';
-import { LoggingInterceptor } from './common/interceptors/logging/logging.interceptor';
-import { TransformInterceptor } from './common/interceptors/transform/transform.interceptor';
-
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.use(helmet());
-
-  app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'http://localhost:8080',
-    ],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  });
-  app.setGlobalPrefix('api/v1');
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
-
-  // Global Exception Filter
-  app.useGlobalFilters(new GlobalExceptionFilter());
-
-  // Global Interceptors
-  app.useGlobalInterceptors(
-    new LoggingInterceptor(),
-    new TransformInterceptor(),
-    new ClassSerializerInterceptor(app.get(Reflector)),
-  );
-
-  const config = new DocumentBuilder()
-    .setTitle('RentItEase API')
-    .setDescription('Production-ready Rental Property Management System')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
-
-  SwaggerModule.setup('api', app, document);
-
-  await app.listen(process.env.PORT || 3000, '0.0.0.0');
-  console.log('🚀 RentItEase Backend Running');
-  console.log('🌐 API: http://localhost:3000/api/v1');
-  console.log('📘 Swagger: http://localhost:3000/api');
-}
-
-bootstrap();
-</file>
-
 <file path="mobile_app/lib/features/favorites/presentation/widgets/favorite_property_card.dart">
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53120,13 +53861,15 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
 // PROFILE PROVIDER
 // ============================================================
 
-final profileProvider =
-    StateNotifierProvider<ProfileNotifier, AsyncValue<ProfileEntity?>>((ref) {
-      return ProfileNotifier(
-        ref,
-        ref.read(profileRepositoryProvider),
-      );
-    });
+final profileProvider = StateNotifierProvider.autoDispose<
+    ProfileNotifier,
+    AsyncValue<ProfileEntity?>
+>((ref) {
+  return ProfileNotifier(
+    ref,
+    ref.read(profileRepositoryProvider),
+  );
+});
 
 // ============================================================
 // PROFILE NOTIFIER
@@ -53530,84 +54273,6 @@ class PropertyModel {
 }
 </file>
 
-<file path="mobile_app/lib/features/splash/presentation/pages/splash_page.dart">
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
-import '../../../onboarding/services/onboarding_service.dart';
-import '../../../authentication/providers/authentication_provider.dart';
-
-class SplashPage extends ConsumerStatefulWidget {
-  const SplashPage({super.key});
-
-  @override
-  ConsumerState<SplashPage> createState() => _SplashPageState();
-}
-
-class _SplashPageState extends ConsumerState<SplashPage> {
-  final OnboardingService _onboardingService = OnboardingService();
-
-  @override
-  void initState() {
-    super.initState();
-    _initialize();
-  }
-
-  Future<void> _initialize() async {
-    await Future.delayed(const Duration(seconds: 2));
-
-    final completed = await _onboardingService.isOnboardingCompleted();
-
-    if (!mounted) return;
-
-    if (!completed) {
-      context.go('/onboarding');
-      return;
-    }
-
-    await ref.read(authenticationProvider).loadSavedSession();
-    if (!mounted) return;
-    context.go(ref.read(authenticationProvider).isLoggedIn ? '/home' : '/auth');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset('assets/images/branding/rentitease_logo_512x512.png', width: 120, height: 120),
-
-            const SizedBox(height: 30),
-
-            Text(
-              'RentItEase',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 12),
-
-            Text(
-              'Find your perfect rental home',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-
-            const SizedBox(height: 60),
-
-            const CircularProgressIndicator(),
-          ],
-        ),
-      ),
-    );
-  }
-}
-</file>
-
 <file path="mobile_app/test/widget_test.dart">
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53644,6 +54309,1011 @@ void main() {
       expect(find.byType(AuthenticationPage), findsOneWidget);
     });
   });
+}
+</file>
+
+<file path="backend/src/modules/auth/auth.module.ts">
+import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtSignOptions } from '@nestjs/jwt';
+import { FirebaseModule } from '../../firebase/firebase.module';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { MailModule } from '../../mail/mail.module';
+import { OtpModule } from '../../common/otp/otp.module';
+
+
+@Module({
+  imports: [
+    ConfigModule,
+    FirebaseModule,
+    MailModule,
+    OtpModule,
+    PassportModule.register({
+      defaultStrategy: 'jwt',
+    }),
+
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_ACCESS_SECRET'),
+
+        signOptions: {
+          expiresIn:
+            (configService.get(
+              'JWT_ACCESS_EXPIRES_IN',
+            ) ?? '15m') as JwtSignOptions['expiresIn'],
+        },
+      }),
+    }),
+  ],
+
+  controllers: [AuthController],
+
+  providers: [
+    AuthService,
+    JwtStrategy,
+  ],
+
+  exports: [
+    AuthService,
+    JwtModule,
+    PassportModule,
+  ],
+})
+export class AuthModule {}
+</file>
+
+<file path="backend/src/main.ts">
+import { ValidationPipe } from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
+import { ClassSerializerInterceptor } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+
+import { AppModule } from './app.module';
+import helmet from 'helmet';
+import { GlobalExceptionFilter } from './common/filters/global-exception/global-exception.filter';
+import { LoggingInterceptor } from './common/interceptors/logging/logging.interceptor';
+import { TransformInterceptor } from './common/interceptors/transform/transform.interceptor';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.use(helmet());
+
+  app.enableCors({
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://localhost:8080',
+      'http://localhost:8081',
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+  app.setGlobalPrefix('api/v1');
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+
+  // Global Exception Filter
+  app.useGlobalFilters(new GlobalExceptionFilter());
+
+  // Global Interceptors
+  app.useGlobalInterceptors(
+    new LoggingInterceptor(),
+    new TransformInterceptor(),
+    new ClassSerializerInterceptor(app.get(Reflector)),
+  );
+
+  const config = new DocumentBuilder()
+    .setTitle('RentItEase API')
+    .setDescription('Production-ready Rental Property Management System')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+
+  SwaggerModule.setup('api', app, document);
+
+  await app.listen(process.env.PORT || 3000, '0.0.0.0');
+  console.log('🚀 RentItEase Backend Running');
+  console.log('🌐 API: http://localhost:3000/api/v1');
+  console.log('📘 Swagger: http://localhost:3000/api');
+}
+
+bootstrap();
+</file>
+
+<file path="mobile_app/lib/app/app_router.dart">
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../features/authentication/presentation/pages/authentication_page.dart';
+import '../features/authentication/presentation/pages/forgot_password_page.dart';
+import '../features/authentication/presentation/pages/login_page.dart';
+import '../features/authentication/presentation/pages/register_page.dart';
+import '../features/authentication/providers/authentication_provider.dart';
+
+import '../features/booking/presentation/pages/my_bookings_page.dart';
+
+import '../features/chat/presentation/pages/chat_list_page.dart';
+import '../features/chat/presentation/pages/chat_page.dart';
+
+import '../features/favorites/presentation/pages/favorites_page.dart';
+
+import '../features/home/presentation/pages/home_page.dart';
+
+import '../features/maps/presentation/pages/map_page.dart';
+import '../features/maps/presentation/pages/map_picker_page.dart';
+import '../features/maps/presentation/pages/property_map_page.dart';
+
+import '../features/notifications/presentation/pages/notifications_page.dart';
+
+import '../features/onboarding/presentation/pages/onboarding_page.dart';
+
+import '../features/owner/data/models/owner_property_model.dart';
+import '../features/owner/presentation/pages/add_property_page.dart';
+import '../features/owner/presentation/pages/edit_property_page.dart';
+import '../features/owner/presentation/pages/my_properties_page.dart';
+import '../features/owner/presentation/pages/owner_analytics_page.dart';
+import '../features/owner/presentation/pages/owner_dashboard_page.dart';
+import '../features/owner/presentation/pages/owner_visits_page.dart';
+import '../features/owner/presentation/pages/property_details_page.dart';
+
+import '../features/payment/presentation/pages/payment_page.dart';
+
+import '../features/profile/presentation/pages/edit_profile_page.dart';
+import '../features/profile/presentation/pages/profile_page.dart';
+
+import '../features/property/domain/entities/property_entity.dart';
+import '../features/property/presentation/pages/property_details_page.dart';
+import '../features/property/presentation/pages/property_listing_page.dart';
+import '../features/property/presentation/pages/property_page.dart';
+
+import '../features/property_visits/presentation/pages/book_visit_page.dart';
+import '../features/property_visits/presentation/pages/my_visits_page.dart';
+import '../features/property_visits/presentation/pages/owner_visit_requests_page.dart';
+
+import '../features/reviews/presentation/pages/reviews_page.dart';
+
+import '../features/search/presentation/pages/search_page.dart';
+
+import '../features/settings/presentation/pages/settings_page.dart';
+
+import '../features/splash/presentation/pages/splash_page.dart';
+
+import '../features/uploads/presentation/pages/upload_images_page.dart';
+
+class AppRouter {
+  AppRouter._();
+
+  static final GoRouter router = GoRouter(
+    initialLocation: '/splash',
+    debugLogDiagnostics: true,
+
+    // ============================================================
+    // Global route protection
+    // ============================================================
+    redirect: (context, state) {
+      final container = ProviderScope.containerOf(
+        context,
+        listen: false,
+      );
+
+      final auth = container.read(authenticationProvider);
+
+      final location = state.matchedLocation;
+
+      // ----------------------------------------------------------
+      // OWNER-only routes
+      //
+      // USER / tenant accounts must not access any /owner/*
+      // screen even by manually entering the URL.
+      // ----------------------------------------------------------
+      if (location.startsWith('/owner/')) {
+        final role = auth.authResponse?.user.role.trim().toUpperCase();
+
+        if (role != 'OWNER') {
+          return '/home';
+        }
+      }
+
+      return null;
+    },
+
+    routes: [
+      // ============================================================
+      // Splash
+      // ============================================================
+      GoRoute(
+        path: '/splash',
+        name: 'splash',
+        builder: (context, state) => const SplashPage(),
+      ),
+
+      // ============================================================
+      // Onboarding
+      // ============================================================
+      GoRoute(
+        path: '/onboarding',
+        name: 'onboarding',
+        builder: (context, state) => const OnboardingPage(),
+      ),
+
+      // ============================================================
+      // Authentication
+      // ============================================================
+      GoRoute(
+        path: '/auth',
+        name: 'auth',
+        builder: (context, state) => const AuthenticationPage(),
+      ),
+
+      GoRoute(
+        path: '/sign-in',
+        name: 'sign-in',
+        builder: (context, state) => LoginPage(
+          onRegister: () {
+            context.go('/register');
+          },
+        ),
+      ),
+
+      GoRoute(
+        path: '/register',
+        name: 'register',
+        builder: (context, state) => RegisterPage(
+          onLogin: () {
+            context.go('/sign-in');
+          },
+        ),
+      ),
+
+      GoRoute(
+        path: '/forgot-password',
+        name: 'forgot-password',
+        builder: (context, state) => const ForgotPasswordPage(),
+      ),
+
+      // ============================================================
+      // Home
+      // ============================================================
+      GoRoute(
+        path: '/home',
+        name: 'home',
+        builder: (context, state) => const HomePage(),
+      ),
+
+      // ============================================================
+      // Properties
+      // ============================================================
+      GoRoute(
+        path: '/property',
+        name: 'property-list',
+        builder: (context, state) => const PropertyPage(),
+      ),
+
+      GoRoute(
+        path: '/property-listing',
+        name: 'property-listing',
+        builder: (context, state) => const PropertyListingPage(),
+      ),
+
+      GoRoute(
+        path: '/property/:id',
+        name: 'property-details',
+        builder: (context, state) {
+          final propertyId = state.pathParameters['id'];
+
+          if (propertyId == null || propertyId.isEmpty) {
+            return const _RouteErrorPage(
+              message: 'Property ID is missing.',
+            );
+          }
+
+          return PropertyDetailsPage(
+            propertyId: propertyId,
+          );
+        },
+      ),
+
+      // Compatibility route.
+      //
+      // context.push(
+      //   '/property-details',
+      //   extra: property,
+      // );
+      GoRoute(
+        path: '/property-details',
+        name: 'property-details-extra',
+        builder: (context, state) {
+          final property = state.extra;
+
+          if (property is! PropertyEntity) {
+            return const _RouteErrorPage(
+              message: 'Property not found.',
+            );
+          }
+
+          return PropertyDetailsPage(
+            propertyId: property.id,
+          );
+        },
+      ),
+
+      // ============================================================
+      // Search
+      // ============================================================
+      GoRoute(
+        path: '/search',
+        name: 'search',
+        builder: (context, state) => const SearchPage(),
+      ),
+
+      // ============================================================
+      // Favorites
+      // ============================================================
+      GoRoute(
+        path: '/favorites',
+        name: 'favorites',
+        builder: (context, state) => const FavoritesPage(),
+      ),
+
+      // ============================================================
+      // Chat
+      // ============================================================
+      GoRoute(
+        path: '/chat',
+        name: 'chat',
+        builder: (context, state) {
+          final userName =
+              state.uri.queryParameters['userName'] ?? 'Owner';
+
+          final propertyTitle =
+              state.uri.queryParameters['propertyTitle'];
+
+          final propertyImage =
+              state.uri.queryParameters['propertyImage'];
+
+          return ChatPage(
+            userName: userName,
+            propertyTitle: propertyTitle,
+            propertyImage: propertyImage,
+          );
+        },
+      ),
+
+      GoRoute(
+        path: '/chat-list',
+        name: 'chat-list',
+        builder: (context, state) => const ChatListPage(),
+      ),
+
+      // ============================================================
+      // Book Property Visit
+      // ============================================================
+      GoRoute(
+        path: '/book-visit/:propertyId',
+        name: 'book-visit',
+        builder: (context, state) {
+          final propertyId =
+              state.pathParameters['propertyId'] ?? '';
+
+          final extra = state.extra;
+
+          String propertyTitle = '';
+          String propertyImage = '';
+          String ownerName = '';
+
+          if (extra is Map<String, dynamic>) {
+            propertyTitle =
+                extra['propertyTitle']?.toString() ?? '';
+
+            propertyImage =
+                extra['propertyImage']?.toString() ?? '';
+
+            ownerName =
+                extra['ownerName']?.toString() ?? '';
+          }
+
+          return BookVisitPage(
+            propertyId: propertyId,
+            propertyTitle: propertyTitle,
+            propertyImage: propertyImage,
+            ownerName: ownerName,
+          );
+        },
+      ),
+
+      // ============================================================
+      // Bookings
+      //
+      // IMPORTANT:
+      // The valid route is /my-bookings.
+      // Do not use /bookings.
+      // ============================================================
+      GoRoute(
+        path: '/my-bookings',
+        name: 'my-bookings',
+        builder: (context, state) => const MyBookingsPage(),
+      ),
+
+      // ============================================================
+      // Payment
+      // ============================================================
+      GoRoute(
+        path: '/payment/:bookingId',
+        name: 'payment',
+        builder: (context, state) {
+          final bookingId =
+              state.pathParameters['bookingId'];
+
+          if (bookingId == null || bookingId.isEmpty) {
+            return const _RouteErrorPage(
+              message: 'Booking ID is missing.',
+            );
+          }
+
+          return PaymentPage(
+            bookingId: bookingId,
+          );
+        },
+      ),
+
+      // ============================================================
+      // Tenant Property Visits
+      // ============================================================
+      GoRoute(
+        path: '/my-visits',
+        name: 'my-visits',
+        builder: (context, state) => const MyVisitsPage(),
+      ),
+
+      // ============================================================
+      // Owner Visits
+      // Automatically protected by /owner/* redirect.
+      // ============================================================
+      GoRoute(
+        path: '/owner/visits',
+        name: 'owner-visits',
+        builder: (context, state) => const OwnerVisitsPage(),
+      ),
+
+      GoRoute(
+        path: '/owner/visit-requests',
+        name: 'owner-visit-requests',
+        builder: (context, state) =>
+            const OwnerVisitRequestsPage(),
+      ),
+
+      // ============================================================
+      // Notifications
+      // ============================================================
+      GoRoute(
+        path: '/notifications',
+        name: 'notifications',
+        builder: (context, state) =>
+            const NotificationsPage(),
+      ),
+
+      // ============================================================
+      // Reviews
+      // ============================================================
+      GoRoute(
+        path: '/reviews/:propertyId',
+        name: 'reviews',
+        builder: (context, state) {
+          final propertyId =
+              state.pathParameters['propertyId'];
+
+          if (propertyId == null || propertyId.isEmpty) {
+            return const _RouteErrorPage(
+              message: 'Property ID is missing.',
+            );
+          }
+
+          return ReviewsPage(
+            propertyId: propertyId,
+          );
+        },
+      ),
+
+      // ============================================================
+      // Profile
+      // ============================================================
+      GoRoute(
+        path: '/profile',
+        name: 'profile',
+        builder: (context, state) =>
+            const ProfilePage(),
+      ),
+
+      GoRoute(
+        path: '/profile/edit',
+        name: 'edit-profile',
+        builder: (context, state) =>
+            const EditProfilePage(),
+      ),
+
+      GoRoute(
+        path: '/profile/settings',
+        name: 'profile-settings',
+        builder: (context, state) =>
+            const SettingsPage(),
+      ),
+
+      // Compatibility route.
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        builder: (context, state) =>
+            const SettingsPage(),
+      ),
+
+      // ============================================================
+      // OWNER-ONLY ROUTES
+      //
+      // All routes beginning with /owner/ are protected by the
+      // global redirect above.
+      // ============================================================
+
+      // Owner Dashboard
+      GoRoute(
+        path: '/owner/dashboard',
+        name: 'owner-dashboard',
+        builder: (context, state) =>
+            const OwnerDashboardPage(),
+      ),
+
+      // Owner Properties
+      GoRoute(
+        path: '/owner/properties',
+        name: 'owner-properties',
+        builder: (context, state) =>
+            const MyPropertiesPage(),
+      ),
+
+      // Add Property
+      GoRoute(
+        path: '/owner/add-property',
+        name: 'owner-add-property',
+        builder: (context, state) =>
+            const AddPropertyPage(),
+      ),
+
+      // Owner Analytics
+      GoRoute(
+        path: '/owner/analytics',
+        name: 'owner-analytics',
+        builder: (context, state) =>
+            const OwnerAnalyticsPage(),
+      ),
+
+      // ============================================================
+      // Owner Property Details
+      //
+      // Usage:
+      //
+      // context.push(
+      //   '/owner/property-details',
+      //   extra: property,
+      // );
+      // ============================================================
+      GoRoute(
+        path: '/owner/property-details',
+        name: 'owner-property-details',
+        builder: (context, state) {
+          final property = state.extra;
+
+          if (property is! OwnerPropertyModel) {
+            return const _RouteErrorPage(
+              message: 'Owner property not found.',
+            );
+          }
+
+          return OwnerPropertyDetailsPage(
+            property: property,
+          );
+        },
+      ),
+
+      // ============================================================
+      // Owner Edit Property
+      //
+      // Usage:
+      //
+      // context.push(
+      //   '/owner/edit-property',
+      //   extra: property,
+      // );
+      // ============================================================
+      GoRoute(
+        path: '/owner/edit-property',
+        name: 'owner-edit-property',
+        builder: (context, state) {
+          final property = state.extra;
+
+          if (property is! OwnerPropertyModel) {
+            return const _RouteErrorPage(
+              message: 'Owner property not found.',
+            );
+          }
+
+          return EditPropertyPage(
+            property: property,
+          );
+        },
+      ),
+
+      // ============================================================
+      // Maps
+      // ============================================================
+      GoRoute(
+        path: '/map',
+        name: 'map',
+        builder: (context, state) =>
+            const MapPage(),
+      ),
+
+      GoRoute(
+        path: '/map-picker',
+        name: 'map-picker',
+        builder: (context, state) =>
+            const MapPickerPage(),
+      ),
+
+      GoRoute(
+        path: '/property-map',
+        name: 'property-map',
+        builder: (context, state) =>
+            const PropertyMapPage(),
+      ),
+
+      // ============================================================
+      // Upload Images
+      // ============================================================
+      GoRoute(
+        path: '/upload-images',
+        name: 'upload-images',
+        builder: (context, state) =>
+            const UploadImagesPage(),
+      ),
+    ],
+
+    // ============================================================
+    // Global Route Error
+    // ============================================================
+    errorBuilder: (context, state) {
+      return _RouteErrorPage(
+        message:
+            state.error?.toString() ??
+            'No route defined for ${state.uri}',
+      );
+    },
+  );
+}
+
+// ================================================================
+// Route Error Page
+// ================================================================
+
+class _RouteErrorPage extends StatelessWidget {
+  const _RouteErrorPage({
+    required this.message,
+  });
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Page Not Found'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 64,
+              ),
+
+              const SizedBox(height: 16),
+
+              Text(
+                message,
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 24),
+
+              ElevatedButton(
+                onPressed: () {
+                  context.go('/home');
+                },
+                child: const Text('Go to Home'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+</file>
+
+<file path="mobile_app/lib/config/environment.dart">
+class Environment {
+  static const String appName = 'RentItEase';
+
+  /// Override with `--dart-define=API_BASE_URL=https://your-host/api/v1`.
+  /// The Android emulator reaches a backend on the development machine through
+  /// 10.0.2.2; physical devices and release builds must supply their API URL.
+  static const String apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:3000/api/v1',
+  );
+}
+
+abstract final class ApiPaths {
+  static const login = '/auth/login';
+  static const register = '/auth/register';
+  static const refresh = '/auth/refresh';
+  static const me = '/auth/me';
+  static const logout = '/auth/logout';
+
+  //=============================
+  // Properties
+  //=============================
+
+  static const properties = '/properties';
+
+  static const homeProperties = '/properties/home';
+
+  static const nearbyProperties = '/properties/nearby';
+
+  static const myProperties = '/properties/my-properties';
+}
+</file>
+
+<file path="mobile_app/lib/features/profile/data/models/profile_model.dart">
+import '../../domain/entities/profile_entity.dart';
+
+class ProfileModel extends ProfileEntity {
+  const ProfileModel({
+    required super.id,
+    required super.fullName,
+    required super.email,
+    required super.phone,
+    super.profileImage,
+    required super.role,
+    required super.isVerified,
+    required super.isActive,
+    required super.createdAt,
+  });
+
+  factory ProfileModel.fromJson(Map<String, dynamic> json) {
+    return ProfileModel(
+      id: json['id']?.toString() ?? '',
+      fullName: json['fullName']?.toString() ??
+          json['name']?.toString() ??
+          '',
+      email: json['email']?.toString() ?? '',
+      phone: json['phone']?.toString() ?? '',
+      profileImage: _stringValue(
+        json['photoUrl'] ?? json['profileImage'],
+      ),
+      role: json['role']?.toString() ?? 'USER',
+      isVerified: json['isVerified'] == true,
+      isActive: json['isActive'] != false,
+      createdAt: _parseDate(json['createdAt']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'fullName': fullName,
+      'email': email,
+      'phone': phone,
+      'photoUrl': profileImage,
+      'role': role,
+      'isVerified': isVerified,
+      'isActive': isActive,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
+
+  factory ProfileModel.fromEntity(ProfileEntity entity) {
+    return ProfileModel(
+      id: entity.id,
+      fullName: entity.fullName,
+      email: entity.email,
+      phone: entity.phone,
+      profileImage: entity.profileImage,
+      role: entity.role,
+      isVerified: entity.isVerified,
+      isActive: entity.isActive,
+      createdAt: entity.createdAt,
+    );
+  }
+
+  ProfileEntity toEntity() {
+    return ProfileEntity(
+      id: id,
+      fullName: fullName,
+      email: email,
+      phone: phone,
+      profileImage: profileImage,
+      role: role,
+      isVerified: isVerified,
+      isActive: isActive,
+      createdAt: createdAt,
+    );
+  }
+
+  @override
+  ProfileModel copyWith({
+    String? id,
+    String? fullName,
+    String? email,
+    String? phone,
+    String? profileImage,
+    String? role,
+    bool? isVerified,
+    bool? isActive,
+    DateTime? createdAt,
+  }) {
+    return ProfileModel(
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      profileImage: profileImage ?? this.profileImage,
+      role: role ?? this.role,
+      isVerified: isVerified ?? this.isVerified,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  static String? _stringValue(dynamic value) {
+    if (value == null) return null;
+
+    final result = value.toString().trim();
+
+    return result.isEmpty ? null : result;
+  }
+
+  static DateTime _parseDate(dynamic value) {
+    if (value == null) {
+      return DateTime.now();
+    }
+
+    final parsed = DateTime.tryParse(value.toString());
+
+    return parsed ?? DateTime.now();
+  }
+}
+</file>
+
+<file path="mobile_app/lib/features/splash/presentation/pages/splash_page.dart">
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../onboarding/services/onboarding_service.dart';
+import '../../../authentication/providers/authentication_provider.dart';
+
+class SplashPage extends ConsumerStatefulWidget {
+  const SplashPage({super.key});
+
+  @override
+  ConsumerState<SplashPage> createState() => _SplashPageState();
+}
+
+class _SplashPageState extends ConsumerState<SplashPage> {
+  final OnboardingService _onboardingService = OnboardingService();
+
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await Future.delayed(const Duration(seconds: 2));
+
+    final completed = await _onboardingService.isOnboardingCompleted();
+
+    if (!mounted) return;
+
+    if (!completed) {
+      context.go('/onboarding');
+      return;
+    }
+
+    await ref.read(authenticationProvider).loadSavedSession();
+
+    if (!mounted) return;
+
+    context.go(
+      ref.read(authenticationProvider).isLoggedIn ? '/home' : '/auth',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(
+              'assets/images/branding/rentitease_logo_512x512.svg',
+              width: 120,
+              height: 120,
+            ),
+
+            const SizedBox(height: 30),
+
+            Text(
+              'RentItEase',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+
+            const SizedBox(height: 12),
+
+            Text(
+              'Find your perfect rental home',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+
+            const SizedBox(height: 60),
+
+            const CircularProgressIndicator(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</file>
+
+<file path="mobile_app/lib/main.dart">
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'app.dart';
+import 'firebase_options.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  runApp(const ProviderScope(child: RentItEaseApp()));
 }
 </file>
 
@@ -53984,6 +55654,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.6.1"
+  flutter_svg:
+    dependency: "direct main"
+    description:
+      name: flutter_svg
+      sha256: "35882981abcbfb8c15b286f0cd690ff25bac12d95eff3e25ee207f37d4c42e7f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -54434,6 +56112,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.1"
+  path_parsing:
+    dependency: transitive
+    description:
+      name: path_parsing
+      sha256: "883402936929eac138ee0a45da5b0f2c80f89913e6dc3bf77eb65b84b409c6ca"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   path_provider:
     dependency: "direct main"
     description:
@@ -54799,6 +56485,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.6.0"
+  vector_graphics:
+    dependency: transitive
+    description:
+      name: vector_graphics
+      sha256: "9d0e3b9cb16542ad660daee871e726a10d13a93b7b5391677c3160e8f5e83935"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.3"
+  vector_graphics_codec:
+    dependency: transitive
+    description:
+      name: vector_graphics_codec
+      sha256: "99fd9fbd34d9f9a32efd7b6a6aae14125d8237b10403b422a6a6dfeac2806146"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.13"
+  vector_graphics_compiler:
+    dependency: transitive
+    description:
+      name: vector_graphics_compiler
+      sha256: "4dca4feb77dc3ec7f6e27e49c53241eb8217f55e4f9b12599a27f8903bca5682"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.0"
   vector_math:
     dependency: transitive
     description:
@@ -54858,733 +56568,6 @@ packages:
 sdks:
   dart: ">=3.12.2 <4.0.0"
   flutter: ">=3.44.0"
-</file>
-
-<file path="backend/src/modules/auth/auth.module.ts">
-import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtSignOptions } from '@nestjs/jwt';
-import { FirebaseModule } from '../../firebase/firebase.module';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { MailModule } from '../../mail/mail.module';
-import { OtpModule } from '../../common/otp/otp.module';
-
-
-@Module({
-  imports: [
-    ConfigModule,
-    FirebaseModule,
-    MailModule,
-    OtpModule,
-    PassportModule.register({
-      defaultStrategy: 'jwt',
-    }),
-
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_ACCESS_SECRET'),
-
-        signOptions: {
-          expiresIn:
-            (configService.get(
-              'JWT_ACCESS_EXPIRES_IN',
-            ) ?? '15m') as JwtSignOptions['expiresIn'],
-        },
-      }),
-    }),
-  ],
-
-  controllers: [AuthController],
-
-  providers: [
-    AuthService,
-    JwtStrategy,
-  ],
-
-  exports: [
-    AuthService,
-    JwtModule,
-    PassportModule,
-  ],
-})
-export class AuthModule {}
-</file>
-
-<file path="mobile_app/lib/app/app_router.dart">
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-
-import '../features/authentication/presentation/pages/authentication_page.dart';
-import '../features/authentication/presentation/pages/forgot_password_page.dart';
-import '../features/authentication/presentation/pages/login_page.dart';
-import '../features/authentication/presentation/pages/register_page.dart';
-
-import '../features/property_visits/presentation/pages/book_visit_page.dart';
-import '../features/booking/presentation/pages/my_bookings_page.dart';
-
-import '../features/chat/presentation/pages/chat_list_page.dart';
-import '../features/chat/presentation/pages/chat_page.dart';
-
-import '../features/favorites/presentation/pages/favorites_page.dart';
-
-import '../features/home/presentation/pages/home_page.dart';
-
-import '../features/maps/presentation/pages/map_page.dart';
-import '../features/maps/presentation/pages/map_picker_page.dart';
-import '../features/maps/presentation/pages/property_map_page.dart';
-
-import '../features/notifications/presentation/pages/notifications_page.dart';
-
-import '../features/onboarding/presentation/pages/onboarding_page.dart';
-
-import '../features/owner/presentation/pages/add_property_page.dart';
-import '../features/owner/presentation/pages/edit_property_page.dart';
-import '../features/owner/presentation/pages/my_properties_page.dart';
-import '../features/owner/presentation/pages/owner_analytics_page.dart';
-import '../features/owner/presentation/pages/owner_dashboard_page.dart';
-import '../features/owner/presentation/pages/property_details_page.dart';
-import '../features/owner/data/models/owner_property_model.dart';
-import '../features/owner/presentation/pages/owner_visits_page.dart';
-
-import '../features/profile/presentation/pages/edit_profile_page.dart';
-import '../features/profile/presentation/pages/profile_page.dart';
-import '../features/profile/presentation/pages/settings_page.dart';
-
-import '../features/property/domain/entities/property_entity.dart';
-import '../features/property/presentation/pages/property_details_page.dart';
-import '../features/property/presentation/pages/property_listing_page.dart';
-import '../features/property/presentation/pages/property_page.dart';
-import '../features/property_visits/presentation/pages/my_visits_page.dart';
-import '../features/property_visits/presentation/pages/owner_visit_requests_page.dart';
-
-import '../features/payment/presentation/pages/payment_page.dart';
-
-import '../features/reviews/presentation/pages/reviews_page.dart';
-
-import '../features/search/presentation/pages/search_page.dart';
-
-import '../features/splash/presentation/pages/splash_page.dart';
-
-import '../features/uploads/presentation/pages/upload_images_page.dart';
-
-class AppRouter {
-  AppRouter._();
-
-  static final GoRouter router = GoRouter(
-    initialLocation: '/splash',
-    debugLogDiagnostics: true,
-
-    routes: [
-      // ============================================================
-      // Splash
-      // ============================================================
-      GoRoute(
-        path: '/splash',
-        name: 'splash',
-        builder: (context, state) => const SplashPage(),
-      ),
-
-      // ============================================================
-      // Onboarding
-      // ============================================================
-      GoRoute(
-        path: '/onboarding',
-        name: 'onboarding',
-        builder: (context, state) => const OnboardingPage(),
-      ),
-
-      // ============================================================
-      // Authentication
-      // ============================================================
-      GoRoute(
-        path: '/auth',
-        name: 'auth',
-        builder: (context, state) => const AuthenticationPage(),
-      ),
-
-      GoRoute(
-        path: '/sign-in',
-        name: 'sign-in',
-        builder: (context, state) => LoginPage(
-          onRegister: () {
-            context.go('/register');
-          },
-        ),
-      ),
-
-      GoRoute(
-        path: '/register',
-        name: 'register',
-        builder: (context, state) => RegisterPage(
-          onLogin: () {
-            context.go('/sign-in');
-          },
-        ),
-      ),
-
-      GoRoute(
-        path: '/forgot-password',
-        name: 'forgot-password',
-        builder: (context, state) => const ForgotPasswordPage(),
-      ),
-
-      // ============================================================
-      // Home
-      // ============================================================
-      GoRoute(
-        path: '/home',
-        name: 'home',
-        builder: (context, state) => const HomePage(),
-      ),
-
-      // ============================================================
-      // Properties
-      // ============================================================
-      GoRoute(
-        path: '/property',
-        name: 'property-list',
-        builder: (context, state) => const PropertyPage(),
-      ),
-
-      GoRoute(
-        path: '/property-listing',
-        name: 'property-listing',
-        builder: (context, state) => const PropertyListingPage(),
-      ),
-
-      GoRoute(
-        path: '/property/:id',
-        name: 'property-details',
-        builder: (context, state) {
-          final propertyId = state.pathParameters['id'];
-
-          if (propertyId == null || propertyId.isEmpty) {
-            return const _RouteErrorPage(message: 'Property ID is missing.');
-          }
-
-          return PropertyDetailsPage(propertyId: propertyId);
-        },
-      ),
-
-      // Compatibility route:
-      // context.push('/property-details', extra: property)
-      GoRoute(
-        path: '/property-details',
-        name: 'property-details-extra',
-        builder: (context, state) {
-          final property = state.extra;
-
-          if (property is! PropertyEntity) {
-            return const _RouteErrorPage(message: 'Property not found.');
-          }
-
-          return PropertyDetailsPage(propertyId: property.id);
-        },
-      ),
-
-      // ============================================================
-      // Search
-      // ============================================================
-      GoRoute(
-        path: '/search',
-        name: 'search',
-        builder: (context, state) => const SearchPage(),
-      ),
-
-      // ============================================================
-      // Favorites
-      // ============================================================
-      GoRoute(
-        path: '/favorites',
-        name: 'favorites',
-        builder: (context, state) => const FavoritesPage(),
-      ),
-
-      // ============================================================
-      // Chat
-      // ============================================================
-      GoRoute(
-        path: '/chat',
-        name: 'chat',
-        builder: (context, state) {
-          final userName = state.uri.queryParameters['userName'] ?? 'Owner';
-
-          final propertyTitle = state.uri.queryParameters['propertyTitle'];
-
-          final propertyImage = state.uri.queryParameters['propertyImage'];
-
-          return ChatPage(
-            userName: userName,
-            propertyTitle: propertyTitle,
-            propertyImage: propertyImage,
-          );
-        },
-      ),
-
-      GoRoute(
-        path: '/chat-list',
-        name: 'chat-list',
-        builder: (context, state) => const ChatListPage(),
-      ),
-
-      // ============================================================
-// Property Visit
-// ============================================================
-GoRoute(
-  path: '/book-visit/:propertyId',
-  name: 'book-visit',
-  builder: (context, state) {
-    final propertyId = state.pathParameters['propertyId'] ?? '';
-
-    final extra = state.extra;
-
-    String propertyTitle = '';
-    String propertyImage = '';
-    String ownerName = '';
-
-    if (extra is Map<String, dynamic>) {
-      propertyTitle = extra['propertyTitle']?.toString() ?? '';
-      propertyImage = extra['propertyImage']?.toString() ?? '';
-      ownerName = extra['ownerName']?.toString() ?? '';
-    }
-
-    return BookVisitPage(
-      propertyId: propertyId,
-      propertyTitle: propertyTitle,
-      propertyImage: propertyImage,
-      ownerName: ownerName,
-    );
-  },
-),
-
-      // ============================================================
-      // Booking
-      // ============================================================
-      
-      GoRoute(
-        path: '/my-bookings',
-        name: 'my-bookings',
-        builder: (context, state) => const MyBookingsPage(),
-      ),
-
-      // ============================================================
-      // Payment
-      // ============================================================
-      GoRoute(
-        path: '/payment/:bookingId',
-        name: 'payment',
-        builder: (context, state) {
-          final bookingId = state.pathParameters['bookingId']!;
-
-          return PaymentPage(bookingId: bookingId);
-        },
-      ),
-
-      // ============================================================
-      // Property Visits
-      // ============================================================
-      GoRoute(
-        path: '/my-visits',
-        name: 'my-visits',
-        builder: (context, state) => const MyVisitsPage(),
-      ),
-
-      GoRoute(
-        path: '/owner/visits',
-        name: 'owner-visits',
-        builder: (context, state) => const OwnerVisitsPage(),
-      ),
-
-      GoRoute(
-        path: '/owner/visit-requests',
-        name: 'owner-visit-requests',
-        builder: (context, state) => const OwnerVisitRequestsPage(),
-      ),
-
-      // ============================================================
-      // Notifications
-      // ============================================================
-      GoRoute(
-        path: '/notifications',
-        name: 'notifications',
-        builder: (context, state) => const NotificationsPage(),
-      ),
-
-      // ============================================================
-      // Reviews
-      // ============================================================
-      GoRoute(
-        path: '/reviews/:propertyId',
-        name: 'reviews',
-        builder: (context, state) {
-          final propertyId = state.pathParameters['propertyId'];
-
-          if (propertyId == null || propertyId.isEmpty) {
-            return const _RouteErrorPage(message: 'Property ID is missing.');
-          }
-
-          return ReviewsPage(propertyId: propertyId);
-        },
-      ),
-
-      // ============================================================
-      // Profile
-      // ============================================================
-      GoRoute(
-        path: '/profile',
-        name: 'profile',
-        builder: (context, state) => const ProfilePage(),
-      ),
-
-      GoRoute(
-        path: '/profile/edit',
-        name: 'edit-profile',
-        builder: (context, state) => const EditProfilePage(),
-      ),
-
-      GoRoute(
-        path: '/profile/settings',
-        name: 'profile-settings',
-        builder: (context, state) => const SettingsPage(),
-      ),
-
-      // Compatibility route.
-      GoRoute(
-        path: '/settings',
-        name: 'settings',
-        builder: (context, state) => const SettingsPage(),
-      ),
-
-      // ============================================================
-      // Owner Dashboard
-      // ============================================================
-      GoRoute(
-        path: '/owner/dashboard',
-        name: 'owner-dashboard',
-        builder: (context, state) => const OwnerDashboardPage(),
-      ),
-
-      GoRoute(
-        path: '/owner/properties',
-        name: 'owner-properties',
-        builder: (context, state) => const MyPropertiesPage(),
-      ),
-
-      GoRoute(
-        path: '/owner/add-property',
-        name: 'owner-add-property',
-        builder: (context, state) => const AddPropertyPage(),
-      ),
-
-      GoRoute(
-        path: '/owner/analytics',
-        name: 'owner-analytics',
-        builder: (context, state) => const OwnerAnalyticsPage(),
-      ),
-
-      // ============================================================
-      // Owner Property Details
-      //
-      // Requires:
-      // context.push(
-      //   '/owner/property-details',
-      //   extra: property,
-      // );
-      // ============================================================
-      GoRoute(
-        path: '/owner/property-details',
-        name: 'owner-property-details',
-        builder: (context, state) {
-          final property = state.extra;
-
-          if (property is! OwnerPropertyModel) {
-            return const _RouteErrorPage(message: 'Owner property not found.');
-          }
-
-          return OwnerPropertyDetailsPage(property: property);
-        },
-      ),
-
-      // ============================================================
-      // Owner Edit Property
-      //
-      // Requires:
-      // context.push(
-      //   '/owner/edit-property',
-      //   extra: property,
-      // );
-      // ============================================================
-      GoRoute(
-        path: '/owner/edit-property',
-        name: 'owner-edit-property',
-        builder: (context, state) {
-          final property = state.extra;
-
-          if (property is! OwnerPropertyModel) {
-            return const _RouteErrorPage(message: 'Owner property not found.');
-          }
-
-          return EditPropertyPage(property: property);
-        },
-      ),
-
-      // ============================================================
-      // Maps
-      // ============================================================
-      GoRoute(
-        path: '/map',
-        name: 'map',
-        builder: (context, state) => const MapPage(),
-      ),
-
-      GoRoute(
-        path: '/map-picker',
-        name: 'map-picker',
-        builder: (context, state) => const MapPickerPage(),
-      ),
-
-      GoRoute(
-        path: '/property-map',
-        name: 'property-map',
-        builder: (context, state) => const PropertyMapPage(),
-      ),
-
-      // ============================================================
-      // Upload Images
-      // ============================================================
-      GoRoute(
-        path: '/upload-images',
-        name: 'upload-images',
-        builder: (context, state) => const UploadImagesPage(),
-      ),
-    ],
-
-    // ==============================================================
-    // Global Route Error
-    // ==============================================================
-    errorBuilder: (context, state) {
-      return _RouteErrorPage(
-        message: state.error?.toString() ?? 'No route defined for ${state.uri}',
-      );
-    },
-  );
-}
-
-// ================================================================
-// Route Error Page
-// ================================================================
-
-class _RouteErrorPage extends StatelessWidget {
-  const _RouteErrorPage({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Page Not Found')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 64),
-              const SizedBox(height: 16),
-              Text(message, textAlign: TextAlign.center),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  context.go('/home');
-                },
-                child: const Text('Go to Home'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-</file>
-
-<file path="mobile_app/lib/config/environment.dart">
-class Environment {
-  static const String appName = 'RentItEase';
-
-  /// Override with `--dart-define=API_BASE_URL=https://your-host/api/v1`.
-  /// The Android emulator reaches a backend on the development machine through
-  /// 10.0.2.2; physical devices and release builds must supply their API URL.
-  static const String apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:3000/api/v1',
-  );
-}
-
-abstract final class ApiPaths {
-  static const login = '/auth/login';
-  static const register = '/auth/register';
-  static const refresh = '/auth/refresh';
-  static const me = '/auth/me';
-  static const logout = '/auth/logout';
-
-  //=============================
-  // Properties
-  //=============================
-
-  static const properties = '/properties';
-
-  static const homeProperties = '/properties/home';
-
-  static const nearbyProperties = '/properties/nearby';
-
-  static const myProperties = '/properties/my-properties';
-}
-</file>
-
-<file path="mobile_app/lib/features/profile/data/models/profile_model.dart">
-import '../../domain/entities/profile_entity.dart';
-
-class ProfileModel extends ProfileEntity {
-  const ProfileModel({
-    required super.id,
-    required super.fullName,
-    required super.email,
-    required super.phone,
-    super.profileImage,
-    required super.role,
-    required super.isVerified,
-    required super.isActive,
-    required super.createdAt,
-  });
-
-  factory ProfileModel.fromJson(Map<String, dynamic> json) {
-    return ProfileModel(
-      id: json['id']?.toString() ?? '',
-      fullName: json['fullName']?.toString() ??
-          json['name']?.toString() ??
-          '',
-      email: json['email']?.toString() ?? '',
-      phone: json['phone']?.toString() ?? '',
-      profileImage: _stringValue(
-        json['photoUrl'] ?? json['profileImage'],
-      ),
-      role: json['role']?.toString() ?? 'USER',
-      isVerified: json['isVerified'] == true,
-      isActive: json['isActive'] != false,
-      createdAt: _parseDate(json['createdAt']),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'fullName': fullName,
-      'email': email,
-      'phone': phone,
-      'photoUrl': profileImage,
-      'role': role,
-      'isVerified': isVerified,
-      'isActive': isActive,
-      'createdAt': createdAt.toIso8601String(),
-    };
-  }
-
-  factory ProfileModel.fromEntity(ProfileEntity entity) {
-    return ProfileModel(
-      id: entity.id,
-      fullName: entity.fullName,
-      email: entity.email,
-      phone: entity.phone,
-      profileImage: entity.profileImage,
-      role: entity.role,
-      isVerified: entity.isVerified,
-      isActive: entity.isActive,
-      createdAt: entity.createdAt,
-    );
-  }
-
-  ProfileEntity toEntity() {
-    return ProfileEntity(
-      id: id,
-      fullName: fullName,
-      email: email,
-      phone: phone,
-      profileImage: profileImage,
-      role: role,
-      isVerified: isVerified,
-      isActive: isActive,
-      createdAt: createdAt,
-    );
-  }
-
-  @override
-  ProfileModel copyWith({
-    String? id,
-    String? fullName,
-    String? email,
-    String? phone,
-    String? profileImage,
-    String? role,
-    bool? isVerified,
-    bool? isActive,
-    DateTime? createdAt,
-  }) {
-    return ProfileModel(
-      id: id ?? this.id,
-      fullName: fullName ?? this.fullName,
-      email: email ?? this.email,
-      phone: phone ?? this.phone,
-      profileImage: profileImage ?? this.profileImage,
-      role: role ?? this.role,
-      isVerified: isVerified ?? this.isVerified,
-      isActive: isActive ?? this.isActive,
-      createdAt: createdAt ?? this.createdAt,
-    );
-  }
-
-  static String? _stringValue(dynamic value) {
-    if (value == null) return null;
-
-    final result = value.toString().trim();
-
-    return result.isEmpty ? null : result;
-  }
-
-  static DateTime _parseDate(dynamic value) {
-    if (value == null) {
-      return DateTime.now();
-    }
-
-    final parsed = DateTime.tryParse(value.toString());
-
-    return parsed ?? DateTime.now();
-  }
-}
-</file>
-
-<file path="mobile_app/lib/main.dart">
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'app.dart';
-import 'firebase_options.dart';
-
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  runApp(const ProviderScope(child: RentItEaseApp()));
-}
 </file>
 
 <file path="backend/src/modules/auth/auth.controller.ts">
@@ -56744,52 +57727,6 @@ private toRadians(value: number): number {
 }
 </file>
 
-<file path="mobile_app/pubspec.yaml">
-name: mobile_app
-description: Production-ready RentItEase mobile application.
-publish_to: "none"
-version: 1.0.0+1
-
-environment:
-  sdk: ^3.12.2
-
-dependencies:
-  flutter:
-    sdk: flutter
-  cupertino_icons: ^1.0.8
-  dio: ^5.9.0
-  firebase_auth: ^6.5.6
-  firebase_core: ^4.12.1
-  flutter_riverpod: ^2.6.1
-  go_router: ^17.3.0
-  google_sign_in: ^7.2.0
-  shared_preferences: ^2.5.5
-  google_maps_flutter: ^2.18.0
-  geolocator: ^14.0.3
-  flutter_polyline_points: ^3.1.0
-  flutter_image_compress: ^2.4.0
-  path_provider: ^2.1.5
-  mime: ^2.0.0
-  image_picker: ^1.1.2
-  permission_handler: ^12.0.3
-  url_launcher: ^6.3.2
-  geocoding: ^4.0.0
-  razorpay_flutter: ^1.4.5
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^6.0.0
-
-flutter:
-  uses-material-design: true
-
-  assets:
-    - assets/images/
-    - assets/images/branding/rentitease_logo_512x512.png
-    - assets/animations/
-</file>
-
 <file path="mobile_app/lib/features/property/presentation/pages/property_details_page.dart">
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57168,6 +58105,61 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
     );
   }
 }
+</file>
+
+<file path="mobile_app/pubspec.yaml">
+name: mobile_app
+description: Production-ready RentItEase mobile application.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  dio: ^5.9.0
+  firebase_auth: ^6.5.6
+  firebase_core: ^4.12.1
+  flutter_riverpod: ^2.6.1
+  go_router: ^17.3.0
+  google_sign_in: ^7.2.0
+  shared_preferences: ^2.5.5
+  google_maps_flutter: ^2.18.0
+  geolocator: ^14.0.3
+  flutter_polyline_points: ^3.1.0
+  flutter_image_compress: ^2.4.0
+  path_provider: ^2.1.5
+  mime: ^2.0.0
+  image_picker: ^1.1.2
+  permission_handler: ^12.0.3
+  url_launcher: ^6.3.2
+  geocoding: ^4.0.0
+  razorpay_flutter: ^1.4.5
+  flutter_svg: ^2.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/images/avatars/
+    - assets/images/banners/
+    - assets/images/branding/
+    - assets/images/icons/
+    - assets/images/icons/feature/
+    - assets/images/icons/utility/
+    - assets/images/onboarding/
+    - assets/images/properties/
+    - assets/images/splash/
+    - assets/animations/
 </file>
 
 <file path="backend/src/modules/property-visits/property-visits.service.ts">
@@ -58730,6 +59722,7 @@ import { BookingModule } from './modules/booking/booking.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { PropertyVisitsModule } from './modules/property-visits/property-visits.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { OwnerDashboardModule } from './modules/owner-dashboard/owner-dashboard.module';
 import { ChatModule } from './modules/chat/chat.module';
@@ -58799,6 +59792,7 @@ import { SocialMediaModule } from './modules/social-media/social-media.module';
     PropertyVisitsModule,
     NotificationsModule,
     ReviewsModule,
+    SettingsModule,
     OwnerDashboardModule,
     ChatModule,
     LeaseModule,

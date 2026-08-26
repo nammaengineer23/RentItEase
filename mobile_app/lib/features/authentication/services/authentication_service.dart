@@ -6,14 +6,16 @@ import '../data/models/login_request.dart';
 import '../data/models/register_request.dart';
 
 class AuthenticationService {
-  AuthenticationService({
-    ApiClient? client,
-    StorageService? storage,
-  }) : _client = client ?? ApiClient.shared,
-       _storage = storage ?? StorageService();
+  AuthenticationService({ApiClient? client, StorageService? storage})
+    : _client = client ?? ApiClient.shared,
+      _storage = storage ?? StorageService();
 
   final ApiClient _client;
   final StorageService _storage;
+
+  // ============================================================
+  // LOGIN
+  // ============================================================
 
   Future<AuthResponse> login(LoginRequest request) async {
     final response = await _client.dio.post<Map<String, dynamic>>(
@@ -24,6 +26,10 @@ class AuthenticationService {
     return AuthResponse.fromJson(_extractData(response.data));
   }
 
+  // ============================================================
+  // REGISTER
+  // ============================================================
+
   Future<AuthResponse> register(RegisterRequest request) async {
     final response = await _client.dio.post<Map<String, dynamic>>(
       ApiPaths.register,
@@ -33,28 +39,51 @@ class AuthenticationService {
     return AuthResponse.fromJson(_extractData(response.data));
   }
 
+  // ============================================================
+  // LOGOUT
+  // ============================================================
+
   Future<void> logout() async {
     try {
       await _client.dio.post<void>(ApiPaths.logout);
     } finally {
+      _client.clearAccessToken();
       await _storage.clearTokens();
     }
   }
 
-  Future<void> saveSession(AuthResponse response) {
-    return _storage.saveTokens(
+  // ============================================================
+  // SAVE SESSION
+  // ============================================================
+
+  Future<void> saveSession(AuthResponse response) async {
+    await _storage.saveTokens(
       accessToken: response.accessToken,
       refreshToken: response.refreshToken,
     );
+
+    _client.setAccessToken(response.accessToken);
   }
+
+  // ============================================================
+  // RESTORE SESSION
+  // ============================================================
 
   Future<AuthResponse?> restoreSession() async {
     var accessToken = await _storage.getString(StorageService.accessTokenKey);
+
     var refreshToken = await _storage.getString(StorageService.refreshTokenKey);
 
-    if (accessToken == null || refreshToken == null) {
+    if (accessToken == null ||
+        accessToken.isEmpty ||
+        refreshToken == null ||
+        refreshToken.isEmpty) {
+      _client.clearAccessToken();
       return null;
     }
+
+    // The access token must be attached before /auth/me is called.
+    _client.setAccessToken(accessToken);
 
     try {
       final me = await _client.dio.get<Map<String, dynamic>>(ApiPaths.me);
@@ -65,12 +94,21 @@ class AuthenticationService {
         user: UserModel.fromJson(_extractData(me.data)),
       );
     } catch (_) {
+      // The ApiClient interceptor may have refreshed the tokens after
+      // the first /auth/me request failed with an expired access token.
       accessToken = await _storage.getString(StorageService.accessTokenKey);
+
       refreshToken = await _storage.getString(StorageService.refreshTokenKey);
 
-      if (accessToken == null || refreshToken == null) {
+      if (accessToken == null ||
+          accessToken.isEmpty ||
+          refreshToken == null ||
+          refreshToken.isEmpty) {
+        _client.clearAccessToken();
         rethrow;
       }
+
+      _client.setAccessToken(accessToken);
 
       final me = await _client.dio.get<Map<String, dynamic>>(ApiPaths.me);
 
@@ -81,6 +119,10 @@ class AuthenticationService {
       );
     }
   }
+
+  // ============================================================
+  // REFRESH TOKEN
+  // ============================================================
 
   Future<void> refreshToken() async {
     final refreshToken = await _storage.getString(
@@ -97,10 +139,14 @@ class AuthenticationService {
     );
 
     final data = _extractData(response.data);
+
     final accessToken = data['accessToken'] as String?;
     final nextRefreshToken = data['refreshToken'] as String?;
 
-    if (accessToken == null || nextRefreshToken == null) {
+    if (accessToken == null ||
+        accessToken.isEmpty ||
+        nextRefreshToken == null ||
+        nextRefreshToken.isEmpty) {
       throw Exception('Invalid refresh response: missing tokens');
     }
 
@@ -108,7 +154,13 @@ class AuthenticationService {
       accessToken: accessToken,
       refreshToken: nextRefreshToken,
     );
+
+    _client.setAccessToken(accessToken);
   }
+
+  // ============================================================
+  // FIREBASE LOGIN
+  // ============================================================
 
   Future<AuthResponse> firebaseLogin(String idToken) async {
     final response = await _client.dio.post<Map<String, dynamic>>(
@@ -117,9 +169,15 @@ class AuthenticationService {
     );
 
     final auth = AuthResponse.fromJson(_extractData(response.data));
+
     await saveSession(auth);
+
     return auth;
   }
+
+  // ============================================================
+  // RESPONSE HELPER
+  // ============================================================
 
   Map<String, dynamic> _extractData(Map<String, dynamic>? responseData) {
     if (responseData == null) {
@@ -127,6 +185,11 @@ class AuthenticationService {
     }
 
     final data = responseData['data'];
-    return data is Map<String, dynamic> ? data : responseData;
+
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+
+    return responseData;
   }
 }
