@@ -10,7 +10,9 @@ void main() {
     testWidgets('RentItEase app renders successfully', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const RentItEaseApp());
+      await tester.pumpWidget(
+        const ProviderScope(child: RentItEaseApp()),
+      );
 
       // Allow the splash page's delayed initialization to progress.
       await tester.pump(const Duration(seconds: 2));

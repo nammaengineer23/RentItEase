@@ -9,41 +9,29 @@ class AuthenticationService {
   AuthenticationService({
     ApiClient? client,
     StorageService? storage,
-  })  : _client = client ?? ApiClient.shared,
-        _storage = storage ?? StorageService();
+  }) : _client = client ?? ApiClient.shared,
+       _storage = storage ?? StorageService();
 
   final ApiClient _client;
   final StorageService _storage;
 
   Future<AuthResponse> login(LoginRequest request) async {
-  final response = await _client.dio.post<Map<String, dynamic>>(
-    ApiPaths.login,
-    data: request.toJson(),
-  );
+    final response = await _client.dio.post<Map<String, dynamic>>(
+      ApiPaths.login,
+      data: request.toJson(),
+    );
 
-  final data = response.data?['data'] as Map<String, dynamic>?;
-
-  if (data == null) {
-    throw Exception('Invalid login response: missing data');
+    return AuthResponse.fromJson(_extractData(response.data));
   }
-
-  return AuthResponse.fromJson(data);
-}
 
   Future<AuthResponse> register(RegisterRequest request) async {
-  final response = await _client.dio.post<Map<String, dynamic>>(
-    ApiPaths.register,
-    data: request.toJson(),
-  );
+    final response = await _client.dio.post<Map<String, dynamic>>(
+      ApiPaths.register,
+      data: request.toJson(),
+    );
 
-  final data = response.data?['data'] as Map<String, dynamic>?;
-
-  if (data == null) {
-    throw Exception('Invalid registration response: missing data');
+    return AuthResponse.fromJson(_extractData(response.data));
   }
-
-  return AuthResponse.fromJson(data);
-}
 
   Future<void> logout() async {
     try {
@@ -61,10 +49,8 @@ class AuthenticationService {
   }
 
   Future<AuthResponse?> restoreSession() async {
-    var accessToken =
-        await _storage.getString(StorageService.accessTokenKey);
-    var refreshToken =
-        await _storage.getString(StorageService.refreshTokenKey);
+    var accessToken = await _storage.getString(StorageService.accessTokenKey);
+    var refreshToken = await _storage.getString(StorageService.refreshTokenKey);
 
     if (accessToken == null || refreshToken == null) {
       return null;
@@ -76,13 +62,11 @@ class AuthenticationService {
       return AuthResponse(
         accessToken: accessToken,
         refreshToken: refreshToken,
-        user: UserModel.fromJson(me.data!),
+        user: UserModel.fromJson(_extractData(me.data)),
       );
     } catch (_) {
-      accessToken =
-          await _storage.getString(StorageService.accessTokenKey);
-      refreshToken =
-          await _storage.getString(StorageService.refreshTokenKey);
+      accessToken = await _storage.getString(StorageService.accessTokenKey);
+      refreshToken = await _storage.getString(StorageService.refreshTokenKey);
 
       if (accessToken == null || refreshToken == null) {
         rethrow;
@@ -93,16 +77,17 @@ class AuthenticationService {
       return AuthResponse(
         accessToken: accessToken,
         refreshToken: refreshToken,
-        user: UserModel.fromJson(me.data!),
+        user: UserModel.fromJson(_extractData(me.data)),
       );
     }
   }
 
   Future<void> refreshToken() async {
-    final refreshToken =
-        await _storage.getString(StorageService.refreshTokenKey);
+    final refreshToken = await _storage.getString(
+      StorageService.refreshTokenKey,
+    );
 
-    if (refreshToken == null) {
+    if (refreshToken == null || refreshToken.isEmpty) {
       return;
     }
 
@@ -111,21 +96,19 @@ class AuthenticationService {
       data: {'refreshToken': refreshToken},
     );
 
-    final data = response.data!;
+    final data = _extractData(response.data);
+    final accessToken = data['accessToken'] as String?;
+    final nextRefreshToken = data['refreshToken'] as String?;
+
+    if (accessToken == null || nextRefreshToken == null) {
+      throw Exception('Invalid refresh response: missing tokens');
+    }
 
     await _storage.saveTokens(
-      accessToken: data['accessToken'] as String,
-      refreshToken: data['refreshToken'] as String,
+      accessToken: accessToken,
+      refreshToken: nextRefreshToken,
     );
   }
-
-  // ============================================================
-  // FIREBASE PHONE LOGIN
-  // Backend returns:
-  // accessToken
-  // refreshToken
-  // user
-  // ============================================================
 
   Future<AuthResponse> firebaseLogin(String idToken) async {
     final response = await _client.dio.post<Map<String, dynamic>>(
@@ -133,10 +116,17 @@ class AuthenticationService {
       data: {'idToken': idToken},
     );
 
-    final auth = AuthResponse.fromJson(response.data!);
-
+    final auth = AuthResponse.fromJson(_extractData(response.data));
     await saveSession(auth);
-
     return auth;
+  }
+
+  Map<String, dynamic> _extractData(Map<String, dynamic>? responseData) {
+    if (responseData == null) {
+      throw Exception('Invalid API response: missing data');
+    }
+
+    final data = responseData['data'];
+    return data is Map<String, dynamic> ? data : responseData;
   }
 }
