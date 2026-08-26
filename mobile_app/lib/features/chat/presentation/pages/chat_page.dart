@@ -14,10 +14,7 @@ class ChatPage extends ConsumerStatefulWidget {
     this.userName = 'Owner',
     this.propertyTitle,
     this.propertyImage,
-  }) : assert(
-         conversationId != null || propertyId != null,
-         'A conversationId or propertyId is required.',
-       );
+  });
 
   final String? conversationId;
   final String? propertyId;
@@ -43,7 +40,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
     if (widget.conversationId != null) {
       await notifier.openConversation(widget.conversationId!);
-    } else {
+    } else if (widget.propertyId != null) {
       await notifier.createAndOpenConversation(widget.propertyId!);
     }
 
