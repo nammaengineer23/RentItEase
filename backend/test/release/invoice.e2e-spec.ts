@@ -411,8 +411,7 @@ describe('Release E2E • Invoice', () => {
     // Try creating invoice
     // ----------------------------------------------------------
 
-    const create = await request(apiUrl()).post('/invoices').send({
-      .set(auth(tenantToken))
+    const create = await request(apiUrl()).post('/invoices').set(auth(tenantToken)).send({
       userId: tenantId,
       paymentId,
       amount: 1000,
@@ -440,7 +439,7 @@ describe('Release E2E • Invoice', () => {
 
       const existing = await request(apiUrl())
         .get(`/invoices/payment/${paymentId}`)
-      .set(auth(tenantToken))
+        .set(auth(tenantToken))
         .expect(200);
 
       const existingInvoice = extractData(existing.body);
@@ -505,7 +504,7 @@ describe('Release E2E • Invoice', () => {
     // ----------------------------------------------------------
 
     const paid = await request(apiUrl()).patch(`/invoices/${invoiceId}/paid`);
-      .set(auth(tenantToken))
+    .set(auth(tenantToken))
 
     statusOk(paid);
 
