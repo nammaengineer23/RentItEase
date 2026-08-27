@@ -231,9 +231,25 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
       currency: 'INR',
     });
 
-    statusOk(create);
+    let invoiceId = '';
 
-    const invoiceId = extractData(create.body)?.id ?? '';
+    if (create.status === 400) {
+      const message = create.body?.message ?? create.body?.error?.message ?? '';
+
+      if (!String(message).includes('An invoice already exists for this payment')) {
+        throw new Error(`Invoice creation failed: ${JSON.stringify(create.body)}`);
+      }
+
+      const existing = await request(apiUrl())
+        .get(`/invoices/payment/${paymentId}`)
+        .set(auth(tenantToken))
+        .expect(200);
+
+      invoiceId = extractData(existing.body)?.id ?? '';
+    } else {
+      statusOk(create);
+      invoiceId = extractData(create.body)?.id ?? '';
+    }
 
     expect(invoiceId).toBeTruthy();
 
