@@ -4,6 +4,7 @@ class PropertyStatus extends StatelessWidget {
   final bool isVerified;
   final bool isAvailable;
   final double rating;
+  final int reviewCount;
   final int views;
 
   const PropertyStatus({
@@ -11,6 +12,7 @@ class PropertyStatus extends StatelessWidget {
     required this.isVerified,
     required this.isAvailable,
     required this.rating,
+    required this.reviewCount,
     required this.views,
   });
 
@@ -41,7 +43,9 @@ class PropertyStatus extends StatelessWidget {
 
         _StatusChip(
           icon: Icons.star,
-          label: rating.toStringAsFixed(1),
+          label: reviewCount == 0
+              ? 'No reviews'
+              : '${rating.toStringAsFixed(1)} ($reviewCount reviews)',
           backgroundColor: Colors.amber.shade50,
           iconColor: Colors.amber.shade800,
           textColor: Colors.amber.shade900,

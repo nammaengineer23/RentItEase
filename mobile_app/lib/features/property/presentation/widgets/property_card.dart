@@ -91,6 +91,7 @@ class PropertyCard extends StatelessWidget {
                     isVerified: property.isVerified,
                     isAvailable: property.isAvailable,
                     rating: property.rating,
+                    reviewCount: property.reviewCount,
                     views: property.views,
                   ),
 

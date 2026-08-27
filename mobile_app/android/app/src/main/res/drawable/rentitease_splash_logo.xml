@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Scalable native launch artwork derived from rentitease_logo_512x512.svg. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="220dp"
+    android:height="220dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M75,20 H437 A55,55 0,0 1,492 75 V437 A55,55 0,0 1,437 492 H75 A55,55 0,0 1,20 437 V75 A55,55 0,0 1,75 20 Z"
+        android:strokeColor="#E0E4E8"
+        android:strokeWidth="4" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M125,205 L256,85 L387,205"
+        android:strokeColor="#082B66"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="28" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M155,195 L155,290 M357,195 L357,290"
+        android:strokeColor="#082B66"
+        android:strokeLineCap="round"
+        android:strokeWidth="28" />
+    <path
+        android:fillColor="#082B66"
+        android:pathData="M224,170 H251 V197 H224 Z M261,170 H288 V197 H261 Z M224,207 H251 V234 H224 Z M261,207 H288 V234 H261 Z" />
+    <path
+        android:fillColor="#67C900"
+        android:pathData="M211,308 C226,260 274,243 316,225 C319,273 297,316 247,327 C231,330 218,325 211,308 Z" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M211,315 C238,292 267,270 304,239"
+        android:strokeColor="#158A32"
+        android:strokeLineCap="round"
+        android:strokeWidth="6" />
+</vector>

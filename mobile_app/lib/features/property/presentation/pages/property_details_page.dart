@@ -269,6 +269,7 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                     isVerified: property.isVerified,
                     isAvailable: property.isAvailable,
                     rating: property.rating,
+                    reviewCount: property.reviewCount,
                     views: property.views,
                   ),
 

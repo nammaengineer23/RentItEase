@@ -20,6 +20,7 @@ class PropertyEntity {
     required this.isFeatured,
     required this.isVerified,
     required this.rating,
+    required this.reviewCount,
     required this.views,
     required this.imageUrls,
     required this.ownerId,
@@ -50,6 +51,7 @@ class PropertyEntity {
   final bool isFeatured;
   final bool isVerified;
   final double rating;
+  final int reviewCount;
   final int views;
   final List<String> imageUrls;
   final String ownerId;
