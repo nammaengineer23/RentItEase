@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 
 import 'package:mobile_app/features/chat/domain/entities/conversation_entity.dart';
 import 'package:mobile_app/features/chat/domain/entities/message_entity.dart';
@@ -10,8 +9,6 @@ import 'package:mobile_app/features/chat/presentation/pages/chat_list_page.dart'
 import 'package:mobile_app/features/chat/providers/chat_provider.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   testWidgets('conversation loads, opens, marks read, and sends a message', (
     tester,
   ) async {

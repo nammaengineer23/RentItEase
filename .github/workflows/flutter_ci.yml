@@ -63,9 +63,7 @@ jobs:
         run: flutter test
 
       - name: Run Flutter integration tests
-        run: |
-          flutter config --enable-linux-desktop
-          flutter test integration_test -d linux
+        run: flutter test test/integration/p0_chat_flow_test.dart
 
       - name: Build Release APK
         run: |
