@@ -39,7 +39,9 @@ class _HomePageState extends ConsumerState<HomePage> {
         permission = await Geolocator.requestPermission();
       }
       if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) return;
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
 
       final position = await Geolocator.getCurrentPosition();
       final nearby = await ref

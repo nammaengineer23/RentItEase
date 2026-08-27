@@ -305,6 +305,7 @@ class _UsersView extends ConsumerWidget {
                         'Delete user?',
                         'This permanently removes the user and related data.',
                       )) {
+                    if (!context.mounted) return;
                     await _runAction(
                       context,
                       () => notifier.deleteUser(_text(user, 'id')),
@@ -398,6 +399,7 @@ class _PropertiesView extends ConsumerWidget {
                         'Delete property?',
                         'This permanently removes the property.',
                       )) {
+                    if (!context.mounted) return;
                     await _runAction(
                       context,
                       () => notifier.deleteProperty(_text(property, 'id')),
@@ -474,6 +476,7 @@ class _ActivityView extends ConsumerWidget {
                                 'Delete review?',
                                 'This review will be permanently removed.',
                               )) {
+                                if (!context.mounted) return;
                                 await _runAction(
                                   context,
                                   () => notifier.deleteReview(

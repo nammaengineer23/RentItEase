@@ -53,7 +53,7 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     if (!_showNavigation) return widget.child;
 
     final role = ref
