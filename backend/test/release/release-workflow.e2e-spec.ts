@@ -241,8 +241,9 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
 
     await request(apiUrl()).get(`/invoices/user/${tenantId}`).set(auth(tenantToken)).expect(200);
 
-    const paid = await request(apiUrl()).patch(`/invoices/${invoiceId}/paid`);
-    .set(auth(tenantToken))
+    const paid = await request(apiUrl())
+      .patch(`/invoices/${invoiceId}/paid`)
+      .set(auth(tenantToken));
 
     statusOk(paid);
 

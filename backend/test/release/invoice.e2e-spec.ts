@@ -503,8 +503,9 @@ describe('Release E2E • Invoice', () => {
     // If already PAID, the endpoint is still safe to call.
     // ----------------------------------------------------------
 
-    const paid = await request(apiUrl()).patch(`/invoices/${invoiceId}/paid`);
-    .set(auth(tenantToken))
+    const paid = await request(apiUrl())
+      .patch(`/invoices/${invoiceId}/paid`)
+      .set(auth(tenantToken));
 
     statusOk(paid);
 
