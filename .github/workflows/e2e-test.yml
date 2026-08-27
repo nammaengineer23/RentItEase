@@ -158,7 +158,7 @@ jobs:
             --retry 24 \\
             --retry-delay 5 \\
             --retry-all-errors \\
-            "${E2E_BASE_URL}${E2E_API_PREFIX}/health"
+            "https://api.rentitease.com/api/v1/health"
 
       - name: Release E2E suite
         run: |
