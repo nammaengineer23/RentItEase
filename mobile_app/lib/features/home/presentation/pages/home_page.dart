@@ -175,7 +175,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               break;
 
             case 3:
-              context.push('/notifications');
+              context.push('/my-bookings');
               break;
 
             case 4:

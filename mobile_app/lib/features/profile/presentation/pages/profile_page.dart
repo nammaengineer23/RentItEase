@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../providers/profile_provider.dart';
 
 import '../../../favorites/presentation/pages/favorites_page.dart';
-import '../../../owner/presentation/pages/my_properties_page.dart';
 import '../../../property_visits/presentation/pages/my_visits_page.dart';
 import '../widgets/logout_dialog.dart';
 import '../widgets/profile_header.dart';
@@ -64,19 +63,15 @@ class ProfilePage extends ConsumerWidget {
 
                 const SizedBox(height: 12),
 
-                ProfileMenuTile(
-                  icon: Icons.home_work,
-                  title: 'My Properties',
-                  subtitle: 'Manage your listed properties',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const MyPropertiesPage(),
-                      ),
-                    );
-                  },
-                ),
+                if (profile.role.trim().toUpperCase() == 'OWNER')
+  ProfileMenuTile(
+    icon: Icons.home_work,
+    title: 'My Properties',
+    subtitle: 'Manage your listed properties',
+    onTap: () {
+      context.push('/owner/properties');
+    },
+  ),
 
                 ProfileMenuTile(
                   icon: Icons.event,

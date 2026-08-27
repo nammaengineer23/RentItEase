@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/authentication/presentation/pages/authentication_page.dart';
 import '../features/authentication/presentation/pages/forgot_password_page.dart';
 import '../features/authentication/presentation/pages/login_page.dart';
 import '../features/authentication/presentation/pages/register_page.dart';
+import '../features/authentication/providers/authentication_provider.dart';
 
-import '../features/property_visits/presentation/pages/book_visit_page.dart';
 import '../features/booking/presentation/pages/my_bookings_page.dart';
 
 import '../features/chat/presentation/pages/chat_list_page.dart';
@@ -24,31 +25,34 @@ import '../features/notifications/presentation/pages/notifications_page.dart';
 
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 
+import '../features/owner/data/models/owner_property_model.dart';
 import '../features/owner/presentation/pages/add_property_page.dart';
 import '../features/owner/presentation/pages/edit_property_page.dart';
 import '../features/owner/presentation/pages/my_properties_page.dart';
 import '../features/owner/presentation/pages/owner_analytics_page.dart';
 import '../features/owner/presentation/pages/owner_dashboard_page.dart';
-import '../features/owner/presentation/pages/property_details_page.dart';
-import '../features/owner/data/models/owner_property_model.dart';
 import '../features/owner/presentation/pages/owner_visits_page.dart';
+import '../features/owner/presentation/pages/property_details_page.dart';
+
+import '../features/payment/presentation/pages/payment_page.dart';
 
 import '../features/profile/presentation/pages/edit_profile_page.dart';
 import '../features/profile/presentation/pages/profile_page.dart';
-import '../features/profile/presentation/pages/settings_page.dart';
 
 import '../features/property/domain/entities/property_entity.dart';
 import '../features/property/presentation/pages/property_details_page.dart';
 import '../features/property/presentation/pages/property_listing_page.dart';
 import '../features/property/presentation/pages/property_page.dart';
+
+import '../features/property_visits/presentation/pages/book_visit_page.dart';
 import '../features/property_visits/presentation/pages/my_visits_page.dart';
 import '../features/property_visits/presentation/pages/owner_visit_requests_page.dart';
-
-import '../features/payment/presentation/pages/payment_page.dart';
 
 import '../features/reviews/presentation/pages/reviews_page.dart';
 
 import '../features/search/presentation/pages/search_page.dart';
+
+import '../features/settings/presentation/pages/settings_page.dart';
 
 import '../features/splash/presentation/pages/splash_page.dart';
 
@@ -60,6 +64,36 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/splash',
     debugLogDiagnostics: true,
+
+    // ============================================================
+    // Global route protection
+    // ============================================================
+    redirect: (context, state) {
+      final container = ProviderScope.containerOf(
+        context,
+        listen: false,
+      );
+
+      final auth = container.read(authenticationProvider);
+
+      final location = state.matchedLocation;
+
+      // ----------------------------------------------------------
+      // OWNER-only routes
+      //
+      // USER / tenant accounts must not access any /owner/*
+      // screen even by manually entering the URL.
+      // ----------------------------------------------------------
+      if (location.startsWith('/owner/')) {
+        final role = auth.authResponse?.user.role.trim().toUpperCase();
+
+        if (role != 'OWNER') {
+          return '/home';
+        }
+      }
+
+      return null;
+    },
 
     routes: [
       // ============================================================
@@ -146,15 +180,23 @@ class AppRouter {
           final propertyId = state.pathParameters['id'];
 
           if (propertyId == null || propertyId.isEmpty) {
-            return const _RouteErrorPage(message: 'Property ID is missing.');
+            return const _RouteErrorPage(
+              message: 'Property ID is missing.',
+            );
           }
 
-          return PropertyDetailsPage(propertyId: propertyId);
+          return PropertyDetailsPage(
+            propertyId: propertyId,
+          );
         },
       ),
 
-      // Compatibility route:
-      // context.push('/property-details', extra: property)
+      // Compatibility route.
+      //
+      // context.push(
+      //   '/property-details',
+      //   extra: property,
+      // );
       GoRoute(
         path: '/property-details',
         name: 'property-details-extra',
@@ -162,10 +204,14 @@ class AppRouter {
           final property = state.extra;
 
           if (property is! PropertyEntity) {
-            return const _RouteErrorPage(message: 'Property not found.');
+            return const _RouteErrorPage(
+              message: 'Property not found.',
+            );
           }
 
-          return PropertyDetailsPage(propertyId: property.id);
+          return PropertyDetailsPage(
+            propertyId: property.id,
+          );
         },
       ),
 
@@ -197,9 +243,14 @@ class AppRouter {
           final conversationId =
               state.uri.queryParameters['conversationId'];
           final propertyId = state.uri.queryParameters['propertyId'];
-          final userName = state.uri.queryParameters['userName'] ?? 'Owner';
-          final propertyTitle = state.uri.queryParameters['propertyTitle'];
-          final propertyImage = state.uri.queryParameters['propertyImage'];
+          final userName =
+              state.uri.queryParameters['userName'] ?? 'Owner';
+
+          final propertyTitle =
+              state.uri.queryParameters['propertyTitle'];
+
+          final propertyImage =
+              state.uri.queryParameters['propertyImage'];
 
           return ChatPage(
             conversationId: conversationId,
@@ -218,39 +269,48 @@ class AppRouter {
       ),
 
       // ============================================================
-// Property Visit
-// ============================================================
-GoRoute(
-  path: '/book-visit/:propertyId',
-  name: 'book-visit',
-  builder: (context, state) {
-    final propertyId = state.pathParameters['propertyId'] ?? '';
+      // Book Property Visit
+      // ============================================================
+      GoRoute(
+        path: '/book-visit/:propertyId',
+        name: 'book-visit',
+        builder: (context, state) {
+          final propertyId =
+              state.pathParameters['propertyId'] ?? '';
 
-    final extra = state.extra;
+          final extra = state.extra;
 
-    String propertyTitle = '';
-    String propertyImage = '';
-    String ownerName = '';
+          String propertyTitle = '';
+          String propertyImage = '';
+          String ownerName = '';
 
-    if (extra is Map<String, dynamic>) {
-      propertyTitle = extra['propertyTitle']?.toString() ?? '';
-      propertyImage = extra['propertyImage']?.toString() ?? '';
-      ownerName = extra['ownerName']?.toString() ?? '';
-    }
+          if (extra is Map<String, dynamic>) {
+            propertyTitle =
+                extra['propertyTitle']?.toString() ?? '';
 
-    return BookVisitPage(
-      propertyId: propertyId,
-      propertyTitle: propertyTitle,
-      propertyImage: propertyImage,
-      ownerName: ownerName,
-    );
-  },
-),
+            propertyImage =
+                extra['propertyImage']?.toString() ?? '';
+
+            ownerName =
+                extra['ownerName']?.toString() ?? '';
+          }
+
+          return BookVisitPage(
+            propertyId: propertyId,
+            propertyTitle: propertyTitle,
+            propertyImage: propertyImage,
+            ownerName: ownerName,
+          );
+        },
+      ),
 
       // ============================================================
-      // Booking
+      // Bookings
+      //
+      // IMPORTANT:
+      // The valid route is /my-bookings.
+      // Do not use /bookings.
       // ============================================================
-      
       GoRoute(
         path: '/my-bookings',
         name: 'my-bookings',
@@ -264,14 +324,23 @@ GoRoute(
         path: '/payment/:bookingId',
         name: 'payment',
         builder: (context, state) {
-          final bookingId = state.pathParameters['bookingId']!;
+          final bookingId =
+              state.pathParameters['bookingId'];
 
-          return PaymentPage(bookingId: bookingId);
+          if (bookingId == null || bookingId.isEmpty) {
+            return const _RouteErrorPage(
+              message: 'Booking ID is missing.',
+            );
+          }
+
+          return PaymentPage(
+            bookingId: bookingId,
+          );
         },
       ),
 
       // ============================================================
-      // Property Visits
+      // Tenant Property Visits
       // ============================================================
       GoRoute(
         path: '/my-visits',
@@ -279,6 +348,10 @@ GoRoute(
         builder: (context, state) => const MyVisitsPage(),
       ),
 
+      // ============================================================
+      // Owner Visits
+      // Automatically protected by /owner/* redirect.
+      // ============================================================
       GoRoute(
         path: '/owner/visits',
         name: 'owner-visits',
@@ -288,7 +361,8 @@ GoRoute(
       GoRoute(
         path: '/owner/visit-requests',
         name: 'owner-visit-requests',
-        builder: (context, state) => const OwnerVisitRequestsPage(),
+        builder: (context, state) =>
+            const OwnerVisitRequestsPage(),
       ),
 
       // ============================================================
@@ -297,7 +371,8 @@ GoRoute(
       GoRoute(
         path: '/notifications',
         name: 'notifications',
-        builder: (context, state) => const NotificationsPage(),
+        builder: (context, state) =>
+            const NotificationsPage(),
       ),
 
       // ============================================================
@@ -307,13 +382,18 @@ GoRoute(
         path: '/reviews/:propertyId',
         name: 'reviews',
         builder: (context, state) {
-          final propertyId = state.pathParameters['propertyId'];
+          final propertyId =
+              state.pathParameters['propertyId'];
 
           if (propertyId == null || propertyId.isEmpty) {
-            return const _RouteErrorPage(message: 'Property ID is missing.');
+            return const _RouteErrorPage(
+              message: 'Property ID is missing.',
+            );
           }
 
-          return ReviewsPage(propertyId: propertyId);
+          return ReviewsPage(
+            propertyId: propertyId,
+          );
         },
       ),
 
@@ -323,59 +403,76 @@ GoRoute(
       GoRoute(
         path: '/profile',
         name: 'profile',
-        builder: (context, state) => const ProfilePage(),
+        builder: (context, state) =>
+            const ProfilePage(),
       ),
 
       GoRoute(
         path: '/profile/edit',
         name: 'edit-profile',
-        builder: (context, state) => const EditProfilePage(),
+        builder: (context, state) =>
+            const EditProfilePage(),
       ),
 
       GoRoute(
         path: '/profile/settings',
         name: 'profile-settings',
-        builder: (context, state) => const SettingsPage(),
+        builder: (context, state) =>
+            const SettingsPage(),
       ),
 
       // Compatibility route.
       GoRoute(
         path: '/settings',
         name: 'settings',
-        builder: (context, state) => const SettingsPage(),
+        builder: (context, state) =>
+            const SettingsPage(),
       ),
 
       // ============================================================
-      // Owner Dashboard
+      // OWNER-ONLY ROUTES
+      //
+      // All routes beginning with /owner/ are protected by the
+      // global redirect above.
       // ============================================================
+
+      // Owner Dashboard
       GoRoute(
         path: '/owner/dashboard',
         name: 'owner-dashboard',
-        builder: (context, state) => const OwnerDashboardPage(),
+        builder: (context, state) =>
+            const OwnerDashboardPage(),
       ),
 
+      // Owner Properties
       GoRoute(
         path: '/owner/properties',
         name: 'owner-properties',
-        builder: (context, state) => const MyPropertiesPage(),
+        builder: (context, state) =>
+            const MyPropertiesPage(),
       ),
 
+      // Add Property
       GoRoute(
         path: '/owner/add-property',
         name: 'owner-add-property',
-        builder: (context, state) => const AddPropertyPage(),
+        builder: (context, state) =>
+            const AddPropertyPage(),
       ),
 
+      // Owner Analytics
       GoRoute(
         path: '/owner/analytics',
         name: 'owner-analytics',
-        builder: (context, state) => const OwnerAnalyticsPage(),
+        builder: (context, state) =>
+            const OwnerAnalyticsPage(),
       ),
 
       // ============================================================
       // Owner Property Details
       //
-      // Requires:
+      // Usage:
+      //
       // context.push(
       //   '/owner/property-details',
       //   extra: property,
@@ -388,17 +485,22 @@ GoRoute(
           final property = state.extra;
 
           if (property is! OwnerPropertyModel) {
-            return const _RouteErrorPage(message: 'Owner property not found.');
+            return const _RouteErrorPage(
+              message: 'Owner property not found.',
+            );
           }
 
-          return OwnerPropertyDetailsPage(property: property);
+          return OwnerPropertyDetailsPage(
+            property: property,
+          );
         },
       ),
 
       // ============================================================
       // Owner Edit Property
       //
-      // Requires:
+      // Usage:
+      //
       // context.push(
       //   '/owner/edit-property',
       //   extra: property,
@@ -411,10 +513,14 @@ GoRoute(
           final property = state.extra;
 
           if (property is! OwnerPropertyModel) {
-            return const _RouteErrorPage(message: 'Owner property not found.');
+            return const _RouteErrorPage(
+              message: 'Owner property not found.',
+            );
           }
 
-          return EditPropertyPage(property: property);
+          return EditPropertyPage(
+            property: property,
+          );
         },
       ),
 
@@ -424,19 +530,22 @@ GoRoute(
       GoRoute(
         path: '/map',
         name: 'map',
-        builder: (context, state) => const MapPage(),
+        builder: (context, state) =>
+            const MapPage(),
       ),
 
       GoRoute(
         path: '/map-picker',
         name: 'map-picker',
-        builder: (context, state) => const MapPickerPage(),
+        builder: (context, state) =>
+            const MapPickerPage(),
       ),
 
       GoRoute(
         path: '/property-map',
         name: 'property-map',
-        builder: (context, state) => const PropertyMapPage(),
+        builder: (context, state) =>
+            const PropertyMapPage(),
       ),
 
       // ============================================================
@@ -445,16 +554,19 @@ GoRoute(
       GoRoute(
         path: '/upload-images',
         name: 'upload-images',
-        builder: (context, state) => const UploadImagesPage(),
+        builder: (context, state) =>
+            const UploadImagesPage(),
       ),
     ],
 
-    // ==============================================================
+    // ============================================================
     // Global Route Error
-    // ==============================================================
+    // ============================================================
     errorBuilder: (context, state) {
       return _RouteErrorPage(
-        message: state.error?.toString() ?? 'No route defined for ${state.uri}',
+        message:
+            state.error?.toString() ??
+            'No route defined for ${state.uri}',
       );
     },
   );
@@ -465,24 +577,38 @@ GoRoute(
 // ================================================================
 
 class _RouteErrorPage extends StatelessWidget {
-  const _RouteErrorPage({required this.message});
+  const _RouteErrorPage({
+    required this.message,
+  });
 
   final String message;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Page Not Found')),
+      appBar: AppBar(
+        title: const Text('Page Not Found'),
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 64),
+              const Icon(
+                Icons.error_outline,
+                size: 64,
+              ),
+
               const SizedBox(height: 16),
-              Text(message, textAlign: TextAlign.center),
+
+              Text(
+                message,
+                textAlign: TextAlign.center,
+              ),
+
               const SizedBox(height: 24),
+
               ElevatedButton(
                 onPressed: () {
                   context.go('/home');

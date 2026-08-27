@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../core/utils/token_storage.dart';
+import '../../../core/services/storage_service.dart';
 
 enum SplashDestination { onboarding, login, home }
 
@@ -16,7 +16,8 @@ class SplashService {
     }
 
     // Check login token
-    final accessToken = await TokenStorage.getAccessToken();
+    final storage = StorageService();
+    final accessToken = await storage.getString(StorageService.accessTokenKey);
 
     if (accessToken != null && accessToken.isNotEmpty) {
       return SplashDestination.home;

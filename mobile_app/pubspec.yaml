@@ -33,8 +33,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  integration_test:
-    sdk: flutter
   flutter_lints: ^6.0.0
 
 flutter:
@@ -42,8 +40,13 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/animations/
+    - assets/images/avatars/
+    - assets/images/banners/
     - assets/images/branding/
     - assets/images/icons/
     - assets/images/icons/feature/
     - assets/images/icons/utility/
+    - assets/images/onboarding/
+    - assets/images/properties/
+    - assets/images/splash/
+    - assets/animations/

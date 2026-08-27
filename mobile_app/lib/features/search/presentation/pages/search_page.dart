@@ -15,14 +15,7 @@ class SearchPage extends ConsumerStatefulWidget {
 class _SearchPageState extends ConsumerState<SearchPage> {
   final TextEditingController searchController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-
-    Future.microtask(() {
-      ref.read(searchProvider.notifier).loadRecentSearches();
-    });
-  }
+  bool _hasSearched = false;
 
   @override
   void dispose() {
@@ -31,9 +24,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   Future<void> _search() async {
-    await ref
-        .read(searchProvider.notifier)
-        .search(SearchEntity(query: searchController.text.trim()));
+    final query = searchController.text.trim();
+
+    if (query.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _hasSearched = true;
+    });
+
+    await ref.read(searchProvider.notifier).search(SearchEntity(query: query));
   }
 
   @override
@@ -63,6 +64,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               ),
             ),
           ),
+
           Expanded(
             child: state.isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -70,21 +72,80 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 ? Center(
                     child: Padding(
                       padding: const EdgeInsets.all(20),
-                      child: Text(state.error!, textAlign: TextAlign.center),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 60,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(state.error!, textAlign: TextAlign.center),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _search,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : !_hasSearched
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.manage_search,
+                            size: 80,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Search for your perfect property',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Enter a city, locality or property name above.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : state.results.isEmpty
                 ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.search_off, size: 80, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
-                          'No properties found',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                      ],
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.search_off, size: 80, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text(
+                            'No properties found',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Try a different city, locality or property name.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : RefreshIndicator(
@@ -92,6 +153,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       await ref.read(searchProvider.notifier).refresh();
                     },
                     child: ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(16),
                       itemCount: state.results.length,
                       itemBuilder: (_, index) {

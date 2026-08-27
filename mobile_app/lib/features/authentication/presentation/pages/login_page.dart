@@ -46,15 +46,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (!mounted) return;
 
  if (success) {
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(
-    const SnackBar(
-      content: Text('Login Successful'),
-    ),
-  );
+  if (!mounted) return;
 
   context.go('/home');
+  return;
 }
     else {
       ScaffoldMessenger.of(context).showSnackBar(
