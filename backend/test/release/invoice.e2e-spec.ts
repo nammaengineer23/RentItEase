@@ -412,6 +412,7 @@ describe('Release E2E • Invoice', () => {
     // ----------------------------------------------------------
 
     const create = await request(apiUrl()).post('/invoices').send({
+      .set(auth(tenantToken))
       userId: tenantId,
       paymentId,
       amount: 1000,
@@ -439,6 +440,7 @@ describe('Release E2E • Invoice', () => {
 
       const existing = await request(apiUrl())
         .get(`/invoices/payment/${paymentId}`)
+      .set(auth(tenantToken))
         .expect(200);
 
       const existingInvoice = extractData(existing.body);
@@ -465,6 +467,7 @@ describe('Release E2E • Invoice', () => {
 
     const view = await request(apiUrl())
       .get(`/invoices/${invoiceId}`)
+      .set(auth(tenantToken))
       .expect(200);
 
     const viewedInvoice = extractData(view.body);
@@ -477,6 +480,7 @@ describe('Release E2E • Invoice', () => {
 
     const history = await request(apiUrl())
       .get(`/invoices/user/${tenantId}`)
+      .set(auth(tenantToken))
       .expect(200);
 
     expect(JSON.stringify(history.body)).toContain(invoiceId);
@@ -487,6 +491,7 @@ describe('Release E2E • Invoice', () => {
 
     const byPayment = await request(apiUrl())
       .get(`/invoices/payment/${paymentId}`)
+      .set(auth(tenantToken))
       .expect(200);
 
     const paymentInvoice = extractData(byPayment.body);
@@ -500,6 +505,7 @@ describe('Release E2E • Invoice', () => {
     // ----------------------------------------------------------
 
     const paid = await request(apiUrl()).patch(`/invoices/${invoiceId}/paid`);
+      .set(auth(tenantToken))
 
     statusOk(paid);
 

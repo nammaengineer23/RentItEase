@@ -223,6 +223,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
     expect(tenantId).toBeTruthy();
 
     const create = await request(apiUrl()).post('/invoices').send({
+      .set(auth(tenantToken))
       userId: tenantId,
       paymentId,
       amount: 1000,
@@ -238,10 +239,13 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
     expect(invoiceId).toBeTruthy();
 
     await request(apiUrl()).get(`/invoices/${invoiceId}`).expect(200);
+      .set(auth(tenantToken))
 
     await request(apiUrl()).get(`/invoices/user/${tenantId}`).expect(200);
+      .set(auth(tenantToken))
 
     const paid = await request(apiUrl()).patch(`/invoices/${invoiceId}/paid`);
+      .set(auth(tenantToken))
 
     statusOk(paid);
 

@@ -225,6 +225,24 @@ describe('Release E2E • Premium Listing', () => {
     // 8. CREATE / PURCHASE PREMIUM LISTING
     // ============================================================
 
+    // Persistent release environments may contain a listing left ACTIVE
+    // by an interrupted earlier run. Expire it before creating this run's
+    // listing so the suite remains deterministic and self-cleaning.
+    const existingListing = await request(apiUrl())
+      .get(`/premium-listings/property/${propertyId}/active`)
+      .set(auth(ownerToken));
+
+    if (existingListing.status === 200) {
+      const existingListingId = extractData(existingListing.body)?.id ?? '';
+      if (existingListingId) {
+        statusOk(
+          await request(apiUrl())
+            .patch(`/premium-listings/${existingListingId}/expire`)
+            .set(auth(ownerToken)),
+        );
+      }
+    }
+
     const create = await request(apiUrl())
       .post(`/premium-listings/users/${ownerId}`)
       .set(auth(ownerToken))
