@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../data/models/onboarding_model.dart';
 
@@ -19,7 +20,7 @@ class OnboardingItem extends StatelessWidget {
 
           SizedBox(
             height: size.height * 0.38,
-            child: Image.asset(item.image, fit: BoxFit.contain),
+            child: SvgPicture.asset(item.image, fit: BoxFit.contain),
           ),
 
           const SizedBox(height: 50),

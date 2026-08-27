@@ -38,6 +38,7 @@ import { MailModule } from './mail/mail.module';
 import { UserDevicesModule } from './modules/user-devices/user-devices.module';
 import { AdminBillingModule } from "./modules/admin-billing/admin-billing.module";
 import { SocialMediaModule } from './modules/social-media/social-media.module';
+import { AppFeedbackModule } from './modules/app-feedback/app-feedback.module';
 
 
 
@@ -110,6 +111,7 @@ import { SocialMediaModule } from './modules/social-media/social-media.module';
     BookingModule,
     AdminBillingModule,
     SocialMediaModule,
+    AppFeedbackModule,
   ],
 
   controllers: [AppController],

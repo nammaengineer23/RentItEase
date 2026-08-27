@@ -13,6 +13,8 @@ class MyPropertiesPage extends ConsumerStatefulWidget {
 }
 
 class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
+  String _status = 'all';
+
   @override
   void initState() {
     super.initState();
@@ -25,6 +27,15 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ownerProvider);
+    final properties = state.properties.where((property) {
+      if (_status == 'available') return property.isAvailable;
+      if (_status == 'occupied') return !property.isAvailable;
+      if (_status == 'visited') return property.visitRequests > 0;
+      if (_status == 'completed') {
+        return property.visitRequests > 0 && !property.isAvailable;
+      }
+      return true;
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text('My Properties')),
@@ -64,11 +75,43 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
                   ),
                 ],
               )
-            : ListView.builder(
+            : Column(
+                children: [
+                  SizedBox(
+                    height: 58,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      children: [
+                        for (final entry in const {
+                          'all': 'All',
+                          'available': 'Available',
+                          'occupied': 'Occupied',
+                          'visited': 'Visited',
+                          'completed': 'Completed',
+                        }.entries)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: ChoiceChip(
+                              label: Text(entry.value),
+                              selected: _status == entry.key,
+                              onSelected: (_) =>
+                                  setState(() => _status = entry.key),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: properties.isEmpty
+                        ? const Center(
+                            child: Text('No properties match this status.'),
+                          )
+                        : ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: state.properties.length,
+                itemCount: properties.length,
                 itemBuilder: (context, index) {
-                  final property = state.properties[index];
+                  final property = properties[index];
 
                   return PropertyOwnerCard(
                     property: property,
@@ -119,6 +162,9 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
                     },
                   );
                 },
+              ),
+                  ),
+                ],
               ),
       ),
     );

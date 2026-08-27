@@ -13,6 +13,8 @@ class OwnerPropertyEntity {
     required this.latitude,
     required this.longitude,
     required this.rent,
+    this.dailyRentEnabled = false,
+    this.dailyRent,
     required this.securityDeposit,
     required this.bedrooms,
     required this.bathrooms,
@@ -49,6 +51,8 @@ class OwnerPropertyEntity {
   final double? longitude;
 
   final double rent;
+  final bool dailyRentEnabled;
+  final double? dailyRent;
   final double securityDeposit;
 
   final int bedrooms;

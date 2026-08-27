@@ -61,16 +61,13 @@ class PropertyListingPage extends ConsumerWidget {
                   onTap: () => _openDetails(context, property),
 
                   onBookVisit: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Book visit for ${property.title}'),
-                      ),
-                    );
+                    context.push('/book-visit/${property.id}');
                   },
 
                   onContactOwner: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Contact ${property.ownerName}')),
+                    context.push(
+                      '/chat',
+                      extra: {'propertyId': property.id},
                     );
                   },
                 );

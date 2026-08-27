@@ -15,7 +15,11 @@ class FavoritesApi {
     try {
       final response = await dio.get('/favorites');
 
-      final data = response.data;
+      dynamic data = response.data;
+
+      if (data is Map && data['data'] is Map) {
+        data = data['data'];
+      }
 
       List<dynamic> list = [];
 
@@ -73,7 +77,11 @@ class FavoritesApi {
     try {
       final response = await dio.get('/favorites/check/$propertyId');
 
-      final data = response.data;
+      dynamic data = response.data;
+
+      if (data is Map && data['data'] is Map) {
+        data = data['data'];
+      }
 
       if (data is Map<String, dynamic>) {
         return data['isFavorite'] == true;

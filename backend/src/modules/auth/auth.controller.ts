@@ -12,7 +12,6 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { FirebaseLoginDto } from './dto/firebase-login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -20,6 +19,10 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { RequestEmailOtpDto } from './dto/request-email-otp.dto';
+import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
+import { VerifiedRegisterDto } from './dto/verified-register.dto';
+import { PhoneOtpLoginDto } from './dto/phone-otp-login.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -28,10 +31,42 @@ export class AuthController {
     private readonly authService: AuthService,
   ) {}
 
+  @Post('register/email-otp/request')
+  @ApiOperation({ summary: 'Send signup email verification OTP' })
+  requestSignupEmailOtp(@Body() dto: RequestEmailOtpDto) {
+    return this.authService.requestSignupEmailOtp(dto);
+  }
+
+  @Post('register/email-otp/verify')
+  @ApiOperation({ summary: 'Verify signup email OTP' })
+  verifySignupEmailOtp(@Body() dto: VerifyEmailOtpDto) {
+    return this.authService.verifySignupEmailOtp(dto);
+  }
+
+  @Post('login/email-otp/request')
+  @ApiOperation({ summary: 'Send email login OTP' })
+  requestLoginEmailOtp(@Body() dto: RequestEmailOtpDto) {
+    return this.authService.requestLoginEmailOtp(dto);
+  }
+
+  @Post('login/email-otp/verify')
+  @ApiOperation({ summary: 'Login with email OTP' })
+  loginWithEmailOtp(@Body() dto: VerifyEmailOtpDto) {
+    return this.authService.loginWithEmailOtp(dto);
+  }
+
+  @Post('login/phone-otp')
+  @ApiOperation({ summary: 'Login with Firebase phone OTP proof' })
+  loginWithPhoneOtp(@Body() dto: PhoneOtpLoginDto) {
+    return this.authService.loginWithPhoneOtp(dto.idToken);
+  }
+
   @Post('register')
-  @ApiOperation({ summary: 'Register a new user' })
-  register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  @ApiOperation({
+    summary: 'Create account after email and phone OTP verification',
+  })
+  register(@Body() dto: VerifiedRegisterDto) {
+    return this.authService.registerVerified(dto);
   }
 
   @Post('login')

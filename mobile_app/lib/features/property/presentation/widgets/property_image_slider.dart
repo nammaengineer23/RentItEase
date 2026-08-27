@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../domain/entities/property_entity.dart';
 
@@ -35,8 +36,8 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
             child: images.isEmpty
-                ? Image.asset(
-                    "assets/images/properties/property_placeholder_landscape_1280x853.png",
+                ? SvgPicture.asset(
+                    'assets/images/properties/property_placeholder.svg',
                     width: double.infinity,
                     height: double.infinity,
                     fit: BoxFit.cover,
@@ -58,16 +59,16 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
                             return child;
                           }
 
-                          return Image.asset(
-                            "assets/images/properties/property_placeholder_landscape_1280x853.png",
+                          return SvgPicture.asset(
+                            'assets/images/properties/property_placeholder.svg',
                             width: double.infinity,
                             height: double.infinity,
                             fit: BoxFit.cover,
                           );
                         },
                         errorBuilder: (context, error, stackTrace) {
-                          return Image.asset(
-                            "assets/images/properties/property_placeholder_landscape_1280x853.png",
+                          return SvgPicture.asset(
+                            'assets/images/properties/property_placeholder.svg',
                             width: double.infinity,
                             height: double.infinity,
                             fit: BoxFit.cover,
@@ -136,4 +137,3 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
     );
   }
 }
-

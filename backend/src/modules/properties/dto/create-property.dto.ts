@@ -5,6 +5,8 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsPositive,
+  ValidateIf,
 } from 'class-validator';
 
 import { ApiProperty } from '@nestjs/swagger';
@@ -144,6 +146,25 @@ export class CreatePropertyDto {
   })
   @IsNumber()
   securityDeposit!: number;
+
+  @ApiProperty({
+    required: false,
+    default: false,
+    description: 'Allow short stays charged per day',
+  })
+  @IsOptional()
+  @IsBoolean()
+  dailyRentEnabled?: boolean;
+
+  @ApiProperty({
+    required: false,
+    example: 1800,
+    description: 'Owner-defined daily rent in INR',
+  })
+  @ValidateIf((dto: CreatePropertyDto) => dto.dailyRentEnabled === true)
+  @IsNumber()
+  @IsPositive()
+  dailyRent?: number;
 
   @ApiProperty({
     required: false,

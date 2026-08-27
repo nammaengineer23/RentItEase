@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../../notifications/providers/notifications_provider.dart';
+import '../../../authentication/providers/authentication_provider.dart';
 import '../../../property/domain/entities/property_entity.dart';
 import '../../../property/providers/property_provider.dart';
 
-import '../widgets/bottom_navigation.dart';
-import '../widgets/category_grid.dart';
-import '../widgets/featured_properties.dart';
-import '../widgets/nearby_properties.dart';
-import '../widgets/recent_search_widget.dart';
-import '../widgets/search_section.dart';
+import '../../../property/presentation/widgets/property_card.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -21,9 +18,7 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  int _currentIndex = 0;
-
-  final List<String> _recentSearches = ['Whitefield', '2 BHK', 'Under ₹20,000'];
+  List<PropertyEntity>? _nearbyProperties;
 
   @override
   void initState() {
@@ -33,7 +28,31 @@ class _HomePageState extends ConsumerState<HomePage> {
       ref.read(notificationsProvider.notifier).loadNotifications();
 
       ref.read(propertyProvider.notifier).loadProperties();
+      _loadNearbyProperties();
     });
+  }
+
+  Future<void> _loadNearbyProperties() async {
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) return;
+
+      final position = await Geolocator.getCurrentPosition();
+      final nearby = await ref
+          .read(propertyProvider.notifier)
+          .getNearbyProperties(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            radius: 25,
+          );
+      if (mounted) setState(() => _nearbyProperties = nearby);
+    } catch (_) {
+      // The all-properties feed remains available when location is unavailable.
+    }
   }
 
   @override
@@ -82,6 +101,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
             ],
           ),
+          IconButton(
+            tooltip: 'Logout',
+            onPressed: () async {
+              await ref.read(authenticationProvider).logout();
+              if (context.mounted) context.go('/auth');
+            },
+            icon: const Icon(Icons.logout),
+          ),
         ],
       ),
       body: propertyState.when(
@@ -104,84 +131,34 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ),
         data: (properties) {
-          final featured = properties.where((e) => e.isFeatured).toList();
+          final feed = (_nearbyProperties?.isNotEmpty == true)
+              ? _nearbyProperties!
+              : properties.where((property) => property.isAvailable).toList();
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              await ref.read(propertyProvider.notifier).refresh();
-            },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SearchSection(onChanged: (value) {}),
-
-                  const SizedBox(height: 10),
-
-                  const CategoryGrid(),
-
-                  const SizedBox(height: 28),
-
-                  FeaturedProperties(
-                    properties: featured,
-                    onTap: _openProperty,
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  RecentSearchWidget(
-                    recentSearches: _recentSearches,
-                    onSearchSelected: (search) {},
-                    onDeleteSearch: (search) {
-                      setState(() {
-                        _recentSearches.remove(search);
-                      });
-                    },
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  NearbyProperties(
-                    properties: properties,
-                    onTap: _openProperty,
-                  ),
-
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-      bottomNavigationBar: HomeBottomNavigation(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-
-          switch (index) {
-            case 0:
-              context.go('/home');
-              break;
-
-            case 1:
-              context.push('/search');
-              break;
-
-            case 2:
-              context.push('/favorites');
-              break;
-
-            case 3:
-              context.push('/my-bookings');
-              break;
-
-            case 4:
-              context.push('/profile');
-              break;
+          if (feed.isEmpty) {
+            return const Center(child: Text('No nearby properties available.'));
           }
+
+          return PageView.builder(
+            scrollDirection: Axis.vertical,
+            itemCount: feed.length,
+            itemBuilder: (context, index) {
+              final property = feed[index];
+              return SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: PropertyCard(
+                  property: property,
+                  onTap: () => _openProperty(property),
+                  onBookVisit: () =>
+                      context.push('/book-visit/${property.id}'),
+                  onContactOwner: () => context.push(
+                    '/chat',
+                    extra: {'propertyId': property.id},
+                  ),
+                ),
+              );
+            },
+          );
         },
       ),
     );

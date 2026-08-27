@@ -1,6 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/network/dio_provider.dart';
+import '../../../maps/models/location_model.dart';
+import '../../../maps/presentation/pages/map_picker_page.dart';
+import '../../../maps/providers/maps_provider.dart';
+import '../widgets/sectioned_property_image_picker.dart';
+import '../../data/api/property_image_api.dart';
 import '../../domain/entities/owner_property_entity.dart';
 import '../../providers/owner_provider.dart';
 
@@ -17,6 +25,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
   final rentController = TextEditingController();
+  final dailyRentController = TextEditingController();
   final securityDepositController = TextEditingController();
   final addressController = TextEditingController();
   final localityController = TextEditingController();
@@ -29,12 +38,54 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   final bathroomsController = TextEditingController(text: '2');
   final areaController = TextEditingController(text: '1000');
 
-  String propertyType = 'Apartment';
+  String propertyType = 'House';
   String furnishing = 'Semi Furnished';
 
   bool parking = false;
   bool petFriendly = false;
+  bool dailyRentEnabled = false;
   bool loading = false;
+  LocationModel? selectedLocation;
+  Map<String, List<File>> selectedImagesBySection = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCurrentLocation();
+    });
+  }
+
+  void _applyLocation(LocationModel location) {
+    setState(() {
+      selectedLocation = location;
+      if (location.address.isNotEmpty) addressController.text = location.address;
+      if (location.city.isNotEmpty) cityController.text = location.city;
+      if (location.state.isNotEmpty) stateController.text = location.state;
+      if (location.country.isNotEmpty) countryController.text = location.country;
+      if (location.postalCode.isNotEmpty) {
+        pincodeController.text = location.postalCode;
+      }
+    });
+  }
+
+  Future<void> _loadCurrentLocation() async {
+    final provider = ref.read(mapsProvider);
+    await provider.fetchCurrentLocation();
+
+    if (!mounted || provider.selectedLocation == null) return;
+    _applyLocation(provider.selectedLocation!);
+  }
+
+  Future<void> _pickLocation() async {
+    final location = await Navigator.of(context).push<LocationModel>(
+      MaterialPageRoute(builder: (_) => const MapPickerPage()),
+    );
+
+    if (location == null || !mounted) return;
+
+    _applyLocation(location);
+  }
 
   Future<void> _saveProperty() async {
     if (!_formKey.currentState!.validate()) {
@@ -42,6 +93,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     }
 
     final rent = double.tryParse(rentController.text.trim());
+    final dailyRent = double.tryParse(dailyRentController.text.trim());
 
     final securityDeposit = double.tryParse(
       securityDepositController.text.trim(),
@@ -54,6 +106,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     final area = double.tryParse(areaController.text.trim());
 
     if (rent == null ||
+        (dailyRentEnabled && dailyRent == null) ||
         securityDeposit == null ||
         bedrooms == null ||
         bathrooms == null ||
@@ -78,8 +131,8 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
         pincode: pincodeController.text.trim(),
         locality: localityController.text.trim(),
         landmark: landmarkController.text.trim(),
-        latitude: null,
-        longitude: null,
+        latitude: selectedLocation?.latitude,
+        longitude: selectedLocation?.longitude,
         rent: rent,
         securityDeposit: securityDeposit,
         bedrooms: bedrooms,
@@ -100,7 +153,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
         visitRequests: 0,
       );
 
-      await ref
+      final createdProperty = await ref
           .read(ownerProvider.notifier)
           .addProperty(
             property,
@@ -112,14 +165,23 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
             landmark: landmarkController.text.trim().isEmpty
                 ? null
                 : landmarkController.text.trim(),
-            latitude: null,
-            longitude: null,
+            latitude: selectedLocation?.latitude,
+            longitude: selectedLocation?.longitude,
             parking: parking,
             petFriendly: petFriendly,
             pincode: pincodeController.text.trim(),
             securityDeposit: securityDeposit,
             stateName: stateController.text.trim(),
+            dailyRentEnabled: dailyRentEnabled,
+            dailyRent: dailyRent,
           );
+
+      if (selectedImagesBySection.isNotEmpty) {
+        await PropertyImageApi(ref.read(dioProvider)).uploadSectionImages(
+          propertyId: createdProperty.id,
+          imagesBySection: selectedImagesBySection,
+        );
+      }
 
       if (!mounted) {
         return;
@@ -188,6 +250,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     titleController.dispose();
     descriptionController.dispose();
     rentController.dispose();
+    dailyRentController.dispose();
     securityDepositController.dispose();
     addressController.dispose();
     localityController.dispose();
@@ -248,6 +311,35 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
             ),
 
             const SizedBox(height: 16),
+
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Available for per-day rent'),
+              subtitle: const Text(
+                'Enable short stays with an owner-defined daily price',
+              ),
+              value: dailyRentEnabled,
+              onChanged: loading
+                  ? null
+                  : (value) => setState(() => dailyRentEnabled = value),
+            ),
+
+            if (dailyRentEnabled) ...[
+              TextFormField(
+                controller: dailyRentController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Rent Per Day',
+                  helperText: 'Set a competitive amount based on demand',
+                  prefixText: '₹ ',
+                  border: OutlineInputBorder(),
+                ),
+                validator: dailyRentEnabled ? _number : null,
+              ),
+              const SizedBox(height: 16),
+            ],
 
             TextFormField(
               controller: securityDepositController,
@@ -364,6 +456,35 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             const SizedBox(height: 16),
 
+            const Text(
+              'Property Location',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 8),
+
+            OutlinedButton.icon(
+              onPressed: loading ? null : _pickLocation,
+              icon: const Icon(Icons.location_on_outlined),
+              label: Text(
+                selectedLocation == null
+                    ? 'Getting Current Location…'
+                    : 'Change Location on Map',
+              ),
+            ),
+
+            if (selectedLocation != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'Coordinates: '
+                  '${selectedLocation!.latitude.toStringAsFixed(6)}, '
+                  '${selectedLocation!.longitude.toStringAsFixed(6)}',
+                ),
+              ),
+
+            const SizedBox(height: 16),
+
             TextFormField(
               controller: addressController,
               decoration: const InputDecoration(
@@ -461,6 +582,29 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
                   petFriendly = value;
                 });
               },
+            ),
+
+            const SizedBox(height: 16),
+
+            const Text(
+              'Property Photos',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 8),
+
+            SectionedPropertyImagePicker(
+              onImagesChanged: (imagesBySection) {
+                selectedImagesBySection = imagesBySection;
+              },
+            ),
+
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                'Select up to 2 photos in each section. '
+                'The first selected photo will be the primary cover.',
+              ),
             ),
 
             const SizedBox(height: 24),

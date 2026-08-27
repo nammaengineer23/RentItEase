@@ -7,12 +7,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model AuthOtpChallenge {
+  id        String   @id @default(cuid())
+  target    String
+  purpose   String
+  otpHash   String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([target, purpose])
+  @@index([expiresAt])
+}
+
 model User {
   id                      String                   @id @default(uuid())
   fullName                String
   email                   String                   @unique
   phone                   String                   @unique
   role                    UserRole                 @default(USER)
+  ownerRequestStatus      OwnerRequestStatus       @default(NONE)
+  ownerRequestedAt        DateTime?
+  ownerReviewedAt         DateTime?
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   passwordHash            String
@@ -37,6 +53,24 @@ model User {
   socialMarketingConsents SocialMarketingConsent[]
   devices                 UserDevice[]
   settings                UserSettings?
+  appFeedback             AppFeedback[]
+
+  @@index([ownerRequestStatus])
+}
+
+model AppFeedback {
+  id        String   @id @default(cuid())
+  userId    String
+  rating    Int
+  comment   String?
+  platform String?
+  appVersion String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([rating])
+  @@index([createdAt])
 }
 
 model UserSettings {
@@ -69,6 +103,8 @@ model Property {
   title                  String
   description            String
   price                  Decimal                 @db.Decimal(10, 2)
+  dailyRentEnabled       Boolean                 @default(false)
+  dailyRent              Decimal?                @db.Decimal(10, 2)
   address                String
   city                   String
   state                  String
@@ -103,6 +139,8 @@ model Property {
   reviews                Review[]
   socialMarketingConsent SocialMarketingConsent?
   socialMediaPosts       SocialMediaPost[]
+
+  @@index([dailyRentEnabled])
 }
 
 model Amenity {
@@ -263,6 +301,7 @@ model Invoice {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment       Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([paymentId])
@@ -384,6 +423,7 @@ model Payment {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   booking           Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  invoices          Invoice[]
 
   @@index([status])
   @@index([createdAt])
@@ -575,6 +615,13 @@ enum UserRole {
   USER
   OWNER
   ADMIN
+}
+
+enum OwnerRequestStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum PropertyType {

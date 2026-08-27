@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'authenticated_shell.dart';
+
+import '../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../features/authentication/presentation/pages/authentication_page.dart';
 import '../features/authentication/presentation/pages/forgot_password_page.dart';
 import '../features/authentication/presentation/pages/login_page.dart';
@@ -77,6 +80,27 @@ class AppRouter {
       final auth = container.read(authenticationProvider);
 
       final location = state.matchedLocation;
+      final role = auth.authResponse?.user.role.trim().toUpperCase();
+      final publicPath = const {
+        '/splash',
+        '/onboarding',
+        '/auth',
+        '/sign-in',
+        '/register',
+        '/forgot-password',
+      }.contains(location);
+
+      if (location.startsWith('/admin/') && role != 'ADMIN') {
+        return auth.isLoggedIn ? '/home' : '/auth';
+      }
+
+      if (role == 'ADMIN' &&
+          !publicPath &&
+          !location.startsWith('/admin/') &&
+          !location.startsWith('/profile') &&
+          !location.startsWith('/settings')) {
+        return '/admin/dashboard';
+      }
 
       // ----------------------------------------------------------
       // OWNER-only routes
@@ -85,8 +109,6 @@ class AppRouter {
       // screen even by manually entering the URL.
       // ----------------------------------------------------------
       if (location.startsWith('/owner/')) {
-        final role = auth.authResponse?.user.role.trim().toUpperCase();
-
         if (role != 'OWNER') {
           return '/home';
         }
@@ -96,6 +118,12 @@ class AppRouter {
     },
 
     routes: [
+      ShellRoute(
+        builder: (context, state, child) => AuthenticatedShell(
+          location: state.uri.path,
+          child: child,
+        ),
+        routes: [
       // ============================================================
       // Splash
       // ============================================================
@@ -147,6 +175,15 @@ class AppRouter {
         path: '/forgot-password',
         name: 'forgot-password',
         builder: (context, state) => const ForgotPasswordPage(),
+      ),
+
+      // ============================================================
+      // Mobile Admin Console
+      // ============================================================
+      GoRoute(
+        path: '/admin/dashboard',
+        name: 'admin-dashboard',
+        builder: (context, state) => const AdminDashboardPage(),
       ),
 
       // ============================================================
@@ -221,7 +258,9 @@ class AppRouter {
       GoRoute(
         path: '/search',
         name: 'search',
-        builder: (context, state) => const SearchPage(),
+        builder: (context, state) => SearchPage(
+          openFilters: state.uri.queryParameters['filters'] == '1',
+        ),
       ),
 
       // ============================================================
@@ -556,6 +595,8 @@ class AppRouter {
         name: 'upload-images',
         builder: (context, state) =>
             const UploadImagesPage(),
+      ),
+        ],
       ),
     ],
 

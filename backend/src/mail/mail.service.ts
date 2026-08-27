@@ -19,6 +19,29 @@ export class MailService {
   }
 
   // ==========================================
+  // Authentication OTP
+  // ==========================================
+
+  async sendAuthenticationOtp(email: string, otp: string) {
+    await this.transporter.sendMail({
+      from: this.configService.get<string>('MAIL_FROM'),
+      to: email,
+      subject: 'Your RentItEase verification code',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto">
+          <h2>Verify your RentItEase account</h2>
+          <p>Enter this one-time code in the RentItEase app:</p>
+          <p style="font-size:32px;font-weight:700;letter-spacing:8px">
+            ${otp}
+          </p>
+          <p>This code expires in 10 minutes.</p>
+          <p>If you did not request it, you can ignore this email.</p>
+        </div>
+      `,
+    });
+  }
+
+  // ==========================================
   // Welcome Email
   // ==========================================
 

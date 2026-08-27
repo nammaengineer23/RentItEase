@@ -230,6 +230,24 @@ export class FilterPropertiesDto {
   @IsBoolean()
   isAvailable?:boolean;
 
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  dailyRentEnabled?: boolean;
+
+  @ApiPropertyOptional({ example: 1000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  minDailyRent?: number;
+
+  @ApiPropertyOptional({ example: 5000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  maxDailyRent?: number;
+
 
 
   @ApiPropertyOptional({

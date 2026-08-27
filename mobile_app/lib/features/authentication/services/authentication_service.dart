@@ -26,6 +26,67 @@ class AuthenticationService {
     return AuthResponse.fromJson(_extractData(response.data));
   }
 
+  Future<void> requestSignupEmailOtp(String email) async {
+    await _client.dio.post<Map<String, dynamic>>(
+      '/auth/register/email-otp/request',
+      data: {'email': email},
+    );
+  }
+
+  Future<String> verifySignupEmailOtp(String email, String otp) async {
+    final response = await _client.dio.post<Map<String, dynamic>>(
+      '/auth/register/email-otp/verify',
+      data: {'email': email, 'otp': otp},
+    );
+    final data = _extractData(response.data);
+    final token = data['verificationToken']?.toString();
+
+    if (token == null || token.isEmpty) {
+      throw Exception('Email verification proof was not returned.');
+    }
+    return token;
+  }
+
+  Future<AuthResponse> registerVerified(
+    RegisterRequest request, {
+    required String emailVerificationToken,
+    required String phoneIdToken,
+  }) async {
+    final response = await _client.dio.post<Map<String, dynamic>>(
+      ApiPaths.register,
+      data: {
+        ...request.toJson(),
+        'emailVerificationToken': emailVerificationToken,
+        'phoneIdToken': phoneIdToken,
+      },
+    );
+
+    return AuthResponse.fromJson(_extractData(response.data));
+  }
+
+  Future<void> requestLoginEmailOtp(String email) async {
+    await _client.dio.post<Map<String, dynamic>>(
+      '/auth/login/email-otp/request',
+      data: {'email': email},
+    );
+  }
+
+  Future<AuthResponse> loginWithEmailOtp(String email, String otp) async {
+    final response = await _client.dio.post<Map<String, dynamic>>(
+      '/auth/login/email-otp/verify',
+      data: {'email': email, 'otp': otp},
+    );
+    return AuthResponse.fromJson(_extractData(response.data));
+  }
+
+  Future<AuthResponse> loginWithPhoneOtp(String idToken) async {
+    final response = await _client.dio.post<Map<String, dynamic>>(
+      '/auth/login/phone-otp',
+      data: {'idToken': idToken},
+    );
+    return AuthResponse.fromJson(_extractData(response.data));
+  }
+
   // ============================================================
   // REGISTER
   // ============================================================
@@ -37,6 +98,13 @@ class AuthenticationService {
     );
 
     return AuthResponse.fromJson(_extractData(response.data));
+  }
+
+  Future<void> forgotPassword(String email) async {
+    await _client.dio.post<Map<String, dynamic>>(
+      '/auth/forgot-password',
+      data: {'email': email},
+    );
   }
 
   // ============================================================

@@ -26,7 +26,7 @@ abstract class OwnerRepository {
 
   Future<OwnerPropertyEntity> getProperty(String propertyId);
 
-  Future<void> addProperty(
+  Future<OwnerPropertyEntity> addProperty(
     OwnerPropertyEntity property, {
     required double area,
     required int bathrooms,
@@ -41,6 +41,8 @@ abstract class OwnerRepository {
     required String pincode,
     required double securityDeposit,
     required String stateName,
+    bool dailyRentEnabled = false,
+    double? dailyRent,
   });
 
   Future<void> updateProperty(
@@ -58,6 +60,8 @@ abstract class OwnerRepository {
     required String pincode,
     required double securityDeposit,
     required String stateName,
+    bool dailyRentEnabled = false,
+    double? dailyRent,
   });
 
   Future<void> deleteProperty(String propertyId);

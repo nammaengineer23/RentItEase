@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/entities/settings_entity.dart';
 import '../../providers/settings_provider.dart';
@@ -465,16 +466,26 @@ class _SettingsContent extends ConsumerWidget {
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
-                          ListTile(
-                            leading: const Icon(Icons.language),
-                            title: const Text('English'),
-                            trailing: settings.language == 'en'
-                                ? const Icon(Icons.check)
-                                : null,
-                            onTap: () {
-                              Navigator.pop(context, 'en');
-                            },
-                          ),
+                          for (final entry in const {
+                            'en': 'English',
+                            'kn': 'ಕನ್ನಡ (Kannada)',
+                            'hi': 'हिन्दी (Hindi)',
+                            'ta': 'தமிழ் (Tamil)',
+                            'te': 'తెలుగు (Telugu)',
+                            'ml': 'മലയാളം (Malayalam)',
+                            'mr': 'मराठी (Marathi)',
+                            'bn': 'বাংলা (Bengali)',
+                            'gu': 'ગુજરાતી (Gujarati)',
+                          }.entries)
+                            ListTile(
+                              leading: const Icon(Icons.language),
+                              title: Text(entry.value),
+                              trailing: settings.language == entry.key
+                                  ? const Icon(Icons.check)
+                                  : null,
+                              onTap: () =>
+                                  Navigator.pop(context, entry.key),
+                            ),
                         ],
                       ),
                     );
@@ -487,6 +498,63 @@ class _SettingsContent extends ConsumerWidget {
 
                 await _updateSetting(context, ref, language: language);
               },
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          const _SectionTitle(
+            icon: Icons.support_agent,
+            title: 'Contact Us',
+          ),
+
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.business_outlined),
+                  title: const Text('General enquiries'),
+                  subtitle: const Text('contact@rentitease.com'),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: () => _openContact(
+                    context,
+                    Uri.parse('mailto:contact@rentitease.com'),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.support_outlined),
+                  title: const Text('Customer support'),
+                  subtitle: const Text('support@rentitease.com'),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: () => _openContact(
+                    context,
+                    Uri.parse('mailto:support@rentitease.com'),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.phone_outlined),
+                  title: const Text('Call RentItEase'),
+                  subtitle: const Text('+91 99863 85925'),
+                  trailing: const Icon(Icons.call),
+                  onTap: () => _openContact(
+                    context,
+                    Uri.parse('tel:+919986385925'),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.language_outlined),
+                  title: const Text('Website'),
+                  subtitle: const Text('rentitease.com'),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: () => _openContact(
+                    context,
+                    Uri.parse('https://rentitease.com'),
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -551,6 +619,14 @@ class _SettingsContent extends ConsumerWidget {
           const SizedBox(height: 20),
         ],
       ),
+    );
+  }
+
+  Future<void> _openContact(BuildContext context, Uri uri) async {
+    if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Unable to open this contact option.')),
     );
   }
 }

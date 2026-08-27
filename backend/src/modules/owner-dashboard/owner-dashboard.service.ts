@@ -4,7 +4,9 @@ import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
 export class OwnerDashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+  ) {}
 
   // ==========================
   // Dashboard Summary
@@ -23,9 +25,12 @@ export class OwnerDashboardService {
 
     const totalProperties = properties.length;
 
-    const availableProperties = properties.filter((p) => p.isAvailable).length;
+    const availableProperties = properties.filter(
+      (p) => p.isAvailable,
+    ).length;
 
-    const rentedProperties = totalProperties - availableProperties;
+    const rentedProperties =
+      totalProperties - availableProperties;
 
     const totalFavorites = properties.reduce(
       (sum, property) => sum + property.favorites.length,
@@ -39,17 +44,25 @@ export class OwnerDashboardService {
 
     const pendingVisits = properties.reduce(
       (sum, property) =>
-        sum + property.visits.filter((v) => v.status === 'PENDING').length,
+        sum +
+        property.visits.filter(
+          (v) => v.status === 'PENDING',
+        ).length,
       0,
     );
 
     const completedVisits = properties.reduce(
       (sum, property) =>
-        sum + property.visits.filter((v) => v.status === 'COMPLETED').length,
+        sum +
+        property.visits.filter(
+          (v) => v.status === 'COMPLETED',
+        ).length,
       0,
     );
 
-    const allReviews = properties.flatMap((property) => property.reviews);
+    const allReviews = properties.flatMap(
+      (property) => property.reviews,
+    );
 
     const totalReviews = allReviews.length;
 
@@ -58,8 +71,10 @@ export class OwnerDashboardService {
         ? 0
         : Number(
             (
-              allReviews.reduce((sum, review) => sum + review.rating, 0) /
-              totalReviews
+              allReviews.reduce(
+                (sum, review) => sum + review.rating,
+                0,
+              ) / totalReviews
             ).toFixed(1),
           );
 
@@ -138,7 +153,10 @@ export class OwnerDashboardService {
     }
 
     return activities
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .sort(
+        (a, b) =>
+          b.createdAt.getTime() - a.createdAt.getTime(),
+      )
       .slice(0, 10);
   }
 
@@ -202,7 +220,9 @@ export class OwnerDashboardService {
         pendingVisits,
         completedVisits,
         primaryImage:
-          property.images.length > 0 ? property.images[0].imageUrl : null,
+          property.images.length > 0
+            ? property.images[0].imageUrl
+            : null,
         createdAt: property.createdAt,
       };
     });
@@ -231,15 +251,21 @@ export class OwnerDashboardService {
 
     for (const property of properties) {
       property.visits.forEach((visit) => {
-        monthlyVisits[new Date(visit.createdAt).getMonth()]++;
+        monthlyVisits[
+          new Date(visit.createdAt).getMonth()
+        ]++;
       });
 
       property.favorites.forEach((favorite) => {
-        monthlyFavorites[new Date(favorite.createdAt).getMonth()]++;
+        monthlyFavorites[
+          new Date(favorite.createdAt).getMonth()
+        ]++;
       });
 
       property.reviews.forEach((review) => {
-        monthlyReviews[new Date(review.createdAt).getMonth()]++;
+        monthlyReviews[
+          new Date(review.createdAt).getMonth()
+        ]++;
       });
     }
 
@@ -266,15 +292,19 @@ export class OwnerDashboardService {
         count: monthlyVisits[index],
       })),
 
-      monthlyFavorites: months.map((month, index) => ({
-        month,
-        count: monthlyFavorites[index],
-      })),
+      monthlyFavorites: months.map(
+        (month, index) => ({
+          month,
+          count: monthlyFavorites[index],
+        }),
+      ),
 
-      monthlyReviews: months.map((month, index) => ({
-        month,
-        count: monthlyReviews[index],
-      })),
+      monthlyReviews: months.map(
+        (month, index) => ({
+          month,
+          count: monthlyReviews[index],
+        }),
+      ),
     };
   }
 }

@@ -50,7 +50,7 @@ class OwnerRepositoryImpl implements OwnerRepository {
   }
 
   @override
-  Future<void> addProperty(
+  Future<OwnerPropertyEntity> addProperty(
     OwnerPropertyEntity property, {
     required double area,
     required int bathrooms,
@@ -65,6 +65,8 @@ class OwnerRepositoryImpl implements OwnerRepository {
     required String pincode,
     required double securityDeposit,
     required String stateName,
+    bool dailyRentEnabled = false,
+    double? dailyRent,
   }) {
     return _api.addProperty({
       'title': property.title,
@@ -87,6 +89,8 @@ class OwnerRepositoryImpl implements OwnerRepository {
       'parking': parking,
       'petFriendly': petFriendly,
       'securityDeposit': securityDeposit,
+      'dailyRentEnabled': dailyRentEnabled,
+      if (dailyRentEnabled) 'dailyRent': dailyRent,
     });
   }
 
@@ -106,6 +110,8 @@ class OwnerRepositoryImpl implements OwnerRepository {
     required String pincode,
     required double securityDeposit,
     required String stateName,
+    bool dailyRentEnabled = false,
+    double? dailyRent,
   }) {
     return _api.updateProperty(property.id, {
       'title': property.title,
@@ -128,6 +134,9 @@ class OwnerRepositoryImpl implements OwnerRepository {
       'parking': parking,
       'petFriendly': petFriendly,
       'securityDeposit': securityDeposit,
+      'isAvailable': property.isAvailable,
+      'dailyRentEnabled': dailyRentEnabled,
+      'dailyRent': dailyRentEnabled ? dailyRent : null,
     });
   }
 

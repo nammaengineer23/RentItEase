@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../domain/entities/property_entity.dart';
 
@@ -91,8 +92,10 @@ class PropertyCard extends StatelessWidget {
                     isVerified: property.isVerified,
                     isAvailable: property.isAvailable,
                     rating: property.rating,
-                    reviewCount: property.reviewCount,
+                    totalReviews: property.totalReviews,
                     views: property.views,
+                    onReviewsTap: () =>
+                        context.push('/reviews/${property.id}'),
                   ),
 
                   const SizedBox(height: 18),

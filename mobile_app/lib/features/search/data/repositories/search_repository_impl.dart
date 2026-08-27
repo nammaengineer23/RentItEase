@@ -1,6 +1,6 @@
+import '../../../property/domain/entities/property_entity.dart';
 import '../../domain/entities/search_entity.dart';
 import '../../domain/repositories/search_repository.dart';
-import '../models/search_model.dart';
 import '../search_api.dart';
 
 class SearchRepositoryImpl implements SearchRepository {
@@ -9,12 +9,12 @@ class SearchRepositoryImpl implements SearchRepository {
   final SearchApi _api;
 
   @override
-  Future<List<SearchModel>> search(SearchEntity filters) async {
-    return await _api.searchProperties(filters.query);
+  Future<List<PropertyEntity>> search(SearchEntity filters) {
+    return _api.searchProperties(filters);
   }
 
   @override
-  Future<List<SearchModel>> recentSearches() async {
-    return await _api.recentSearches();
+  Future<List<PropertyEntity>> recentSearches() {
+    return _api.recentSearches();
   }
 }

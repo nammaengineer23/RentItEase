@@ -9,11 +9,13 @@ class ImagePickerCard extends StatefulWidget {
   final Function(List<File>) onImagesChanged;
 
   final int maxImages;
+  final String title;
 
   const ImagePickerCard({
     super.key,
     required this.onImagesChanged,
     this.maxImages = 10,
+    this.title = 'Property Images',
   });
 
   @override
@@ -202,9 +204,12 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Property Images",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Text(
+              widget.title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
 
             const SizedBox(height: 6),

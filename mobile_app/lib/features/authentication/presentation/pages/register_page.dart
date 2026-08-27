@@ -5,8 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 import '../../providers/authentication_provider.dart';
+import '../../services/firebase_phone_otp_service.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/password_strength.dart';
+import '../widgets/otp_code_dialog.dart';
+import '../widgets/social_login_button.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   final VoidCallback onLogin;
@@ -47,19 +50,55 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   Future<void> _register() async {
     FocusScope.of(context).unfocus();
 
-    if (!_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!.validate()) return;
+
+    final provider = ref.read(authenticationProvider);
+    final email = _emailController.text.trim().toLowerCase();
+    final phone = _phoneController.text.trim();
+
+    final emailSent = await provider.requestSignupEmailOtp(email);
+    if (!mounted) return;
+    if (!emailSent) {
+      _showError(provider.errorMessage ?? 'Unable to send email OTP.');
       return;
     }
 
-    final provider = ref.read(authenticationProvider);
+    final emailOtp = await showOtpCodeDialog(
+      context,
+      title: 'Verify Email',
+      destination: email,
+    );
+    if (emailOtp == null || !mounted) return;
 
-    provider.clearError();
+    final emailProof = await provider.verifySignupEmailOtp(email, emailOtp);
+    if (!mounted) return;
+    if (emailProof == null) {
+      _showError(provider.errorMessage ?? 'Email verification failed.');
+      return;
+    }
 
-    final success = await provider.register(
+    String phoneProof;
+    try {
+      phoneProof = await FirebasePhoneOtpService().verifyPhone(
+        phoneNumber: '+91$phone',
+        requestCode: () => showOtpCodeDialog(
+          context,
+          title: 'Verify Phone Number',
+          destination: '+91 $phone',
+        ),
+      );
+    } catch (error) {
+      if (mounted) _showError('Phone verification failed: $error');
+      return;
+    }
+
+    final success = await provider.registerVerified(
       fullName: _nameController.text.trim(),
-      email: _emailController.text.trim(),
-      phone: _phoneController.text.trim(),
+      email: email,
+      phone: phone,
       password: _passwordController.text,
+      emailVerificationToken: emailProof,
+      phoneIdToken: phoneProof,
     );
 
     if (!mounted) return;
@@ -67,20 +106,41 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Registration Successful'),
+          content: Text('Email and phone verified. Account created.'),
           backgroundColor: Colors.green,
         ),
       );
-
       context.go('/home');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(provider.errorMessage ?? 'Registration Failed'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      return;
     }
+
+    _showError(provider.errorMessage ?? 'Registration failed.');
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  Future<void> _googleRegister() async {
+    final provider = ref.read(authenticationProvider);
+    final success = await provider.signInWithGoogle();
+
+    if (!mounted) return;
+
+    if (success) {
+      final role = provider.authResponse?.user.role.trim().toUpperCase();
+      context.go(role == 'OWNER' ? '/owner/dashboard' : '/home');
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(provider.errorMessage ?? 'Google signup failed'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   @override
@@ -91,7 +151,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Form(
+          child: AutofillGroup(
+            child: Form(
             key: _formKey,
             child: Column(
               children: [
@@ -110,6 +171,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   hintText: 'Full Name',
                   prefixIcon: Icons.person_outline,
                   textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.name],
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Enter your full name';
@@ -131,6 +193,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   prefixIcon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.email],
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Enter your email';
@@ -156,6 +219,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   prefixIcon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
                   textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.telephoneNumber],
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Enter mobile number';
@@ -177,6 +241,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   prefixIcon: Icons.lock_outline,
                   obscureText: provider.obscurePassword,
                   textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.newPassword],
                   onFieldSubmitted: (_) => _register(),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -217,6 +282,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
                 const SizedBox(height: 20),
 
+                SocialLoginButton(
+                  isLoading: provider.isLoading,
+                  onPressed: _googleRegister,
+                ),
+
+                const SizedBox(height: 20),
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -228,6 +300,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   ],
                 ),
               ],
+            ),
             ),
           ),
         ),

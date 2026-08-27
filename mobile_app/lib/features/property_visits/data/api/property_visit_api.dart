@@ -22,7 +22,10 @@ class PropertyVisitApi {
       throw Exception('Empty property visits response.');
     }
 
-    final visits = data['visits'];
+    final payload = data['data'] is Map
+        ? Map<String, dynamic>.from(data['data'] as Map)
+        : data;
+    final visits = payload['visits'] ?? payload['data'];
 
     if (visits is! List) {
       throw Exception('Invalid property visits response.');
@@ -53,7 +56,10 @@ class PropertyVisitApi {
       throw Exception('Empty owner visits response.');
     }
 
-    final visits = data['visits'];
+    final payload = data['data'] is Map
+        ? Map<String, dynamic>.from(data['data'] as Map)
+        : data;
+    final visits = payload['visits'] ?? payload['data'];
 
     if (visits is! List) {
       throw Exception('Invalid owner visits response.');
@@ -102,9 +108,13 @@ class PropertyVisitApi {
       throw Exception('Empty visit booking response.');
     }
 
-    if (data['success'] != true) {
+    final payload = data['data'] is Map
+        ? Map<String, dynamic>.from(data['data'] as Map)
+        : data;
+
+    if (payload['success'] == false) {
       throw Exception(
-        data['message']?.toString() ??
+        payload['message']?.toString() ??
             'Unable to book property visit.',
       );
     }

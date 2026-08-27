@@ -1,11 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import '../../../../shared/widgets/primary_button.dart';
 import '../../domain/entities/payment_entity.dart';
 import '../../providers/payment_provider.dart';
 import '../../widgets/payment_card.dart';
+import '../../../../core/network/dio_provider.dart';
 
 class PaymentPage extends ConsumerStatefulWidget {
   const PaymentPage({super.key, required this.bookingId});
@@ -224,6 +228,43 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _downloadInvoice() async {
+    try {
+      final response = await ref
+          .read(dioProvider)
+          .get('/invoices/booking/${widget.bookingId}');
+      dynamic payload = response.data;
+      if (payload is Map && payload['data'] is Map) payload = payload['data'];
+      if (payload is! Map) throw Exception('Invalid invoice response.');
+
+      final invoice = Map<String, dynamic>.from(payload);
+      final directory = await getDownloadsDirectory() ??
+          await getApplicationDocumentsDirectory();
+      final number = invoice['invoiceNumber']?.toString() ?? widget.bookingId;
+      final file = File('${directory.path}/$number.html');
+      final amount = invoice['totalAmount']?.toString() ?? '0';
+      final date = invoice['invoiceDate']?.toString() ?? '';
+      await file.writeAsString('''<!doctype html>
+<html><head><meta charset="utf-8"><title>RentItEase Invoice</title></head>
+<body style="font-family:Arial;padding:32px">
+<h1>RentItEase</h1><h2>Payment Invoice</h2>
+<p><strong>Invoice:</strong> $number</p>
+<p><strong>Booking:</strong> ${widget.bookingId}</p>
+<p><strong>Date:</strong> $date</p>
+<p><strong>Status:</strong> ${invoice['status']}</p>
+<p><strong>Total:</strong> INR $amount</p>
+<p>${invoice['description'] ?? ''}</p>
+</body></html>''');
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Invoice downloaded to ${file.path}')),
+      );
+    } catch (error) {
+      _showError('Invoice is available only after completed payment: $error');
+    }
+  }
+
   String _errorMessageFrom(Object error) {
     final text = error.toString();
 
@@ -315,6 +356,28 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             ),
             const SizedBox(height: 24),
             PaymentCard(payment: payment),
+            if (!isPaid) ...[
+              const SizedBox(height: 20),
+              Text(
+                'Payment options',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              const Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  Chip(avatar: Icon(Icons.account_balance, size: 18), label: Text('UPI')),
+                  Chip(avatar: Icon(Icons.credit_card, size: 18), label: Text('Cards')),
+                  Chip(avatar: Icon(Icons.account_balance_wallet, size: 18), label: Text('Wallets')),
+                  Chip(avatar: Icon(Icons.business, size: 18), label: Text('Netbanking')),
+                ],
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'The secure Razorpay checkout will show the payment methods available for your bank and device.',
+              ),
+            ],
             const Spacer(),
             if (_errorMessage != null)
               Padding(
@@ -331,6 +394,11 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                     ? 'Verifying Payment...'
                     : 'Pay ₹${payment.amount.toStringAsFixed(2)}',
                 onPressed: _isVerifying ? null : _openCheckout,
+              ),
+            if (isPaid)
+              PrimaryButton(
+                label: 'Download Invoice',
+                onPressed: _downloadInvoice,
               ),
           ],
         ),

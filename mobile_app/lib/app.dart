@@ -13,6 +13,7 @@ class RentItEaseApp extends ConsumerWidget {
     final settingsAsync = ref.watch(settingsProvider);
 
     final darkMode = settingsAsync.valueOrNull?.darkMode ?? false;
+    final language = settingsAsync.valueOrNull?.language ?? 'en';
 
     return MaterialApp.router(
       title: 'RentItEase',
@@ -21,6 +22,18 @@ class RentItEaseApp extends ConsumerWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: darkMode ? ThemeMode.dark : ThemeMode.light,
+      locale: Locale(language),
+      supportedLocales: const [
+        Locale('en'),
+        Locale('kn'),
+        Locale('hi'),
+        Locale('ta'),
+        Locale('te'),
+        Locale('ml'),
+        Locale('mr'),
+        Locale('bn'),
+        Locale('gu'),
+      ],
 
       routerConfig: AppRouter.router,
     );
