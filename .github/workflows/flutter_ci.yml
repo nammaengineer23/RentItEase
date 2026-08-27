@@ -63,7 +63,9 @@ jobs:
         run: flutter test
 
       - name: Run Flutter integration tests
-        run: flutter test integration_test -d chrome
+        run: |
+          flutter config --enable-linux-desktop
+          flutter test integration_test -d linux
 
       - name: Build Release APK
         run: |
