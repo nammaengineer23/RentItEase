@@ -154,11 +154,7 @@ jobs:
       - name: Wait for production deployment to stabilize
         run: |
           sleep 60
-          curl --fail --silent --show-error \\
-            --retry 24 \\
-            --retry-delay 5 \\
-            --retry-all-errors \\
-            "https://api.rentitease.com/api/v1/health"
+          curl --fail --silent --show-error --retry 24 --retry-delay 5 --retry-all-errors "https://api.rentitease.com/api/v1/health"
 
       - name: Release E2E suite
         run: |
