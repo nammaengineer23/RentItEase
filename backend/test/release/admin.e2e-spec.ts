@@ -5,7 +5,7 @@ import { apiUrl, auth, extractData, login, statusOk } from './helpers';
 describe('Release E2E • Admin', () => {
   it('users → properties → reviews → visits → billing', async () => {
     const admin = await login(
-      process.env.E2E_ADMIN_LOGIN!,
+      process.env.E2E_ADMIN_EMAIL ?? process.env.E2E_ADMIN_LOGIN!,
       process.env.E2E_ADMIN_PASSWORD!,
     );
     const token = admin.token;

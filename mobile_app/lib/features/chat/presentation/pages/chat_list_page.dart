@@ -1,183 +1,175 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/entities/conversation_entity.dart';
+import '../../providers/chat_provider.dart';
 import '../widgets/conversation_tile.dart';
 import 'chat_page.dart';
 
-class ChatListPage extends StatefulWidget {
+class ChatListPage extends ConsumerStatefulWidget {
   const ChatListPage({super.key});
 
   @override
-  State<ChatListPage> createState() => _ChatListPageState();
+  ConsumerState<ChatListPage> createState() => _ChatListPageState();
 }
 
-class _ChatListPageState extends State<ChatListPage> {
-  final TextEditingController searchController = TextEditingController();
+class _ChatListPageState extends ConsumerState<ChatListPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _search = '';
 
-  final List<Map<String, dynamic>> conversations = [
-    {
-      "name": "Rahul Sharma",
-      "property": "2 BHK Apartment, Whitefield",
-      "message": "Yes, tomorrow at 10:30 AM works.",
-      "time": "10:30 AM",
-      "unread": 2,
-      "online": true,
-    },
-    {
-      "name": "Priya Verma",
-      "property": "1 BHK Studio, Indiranagar",
-      "message": "Thank you.",
-      "time": "Yesterday",
-      "unread": 0,
-      "online": false,
-    },
-    {
-      "name": "Amit Kumar",
-      "property": "3 BHK Villa, Sarjapur",
-      "message": "Can you share more photos?",
-      "time": "Mon",
-      "unread": 1,
-      "online": true,
-    },
-  ];
-
-  String search = '';
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => ref.read(chatProvider.notifier).loadConversations());
+  }
 
   @override
   void dispose() {
-    searchController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final local = dateTime.toLocal();
+    final now = DateTime.now();
+
+    if (local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day) {
+      final hour = local.hour > 12
+          ? local.hour - 12
+          : (local.hour == 0 ? 12 : local.hour);
+      final minute = local.minute.toString().padLeft(2, '0');
+      final period = local.hour >= 12 ? 'PM' : 'AM';
+      return '$hour:$minute $period';
+    }
+
+    return '${local.day}/${local.month}/${local.year}';
+  }
+
+  bool _matches(ConversationEntity conversation) {
+    final query = _search.trim().toLowerCase();
+    if (query.isEmpty) {
+      return true;
+    }
+
+    return conversation.otherUserName.toLowerCase().contains(query) ||
+        conversation.propertyTitle.toLowerCase().contains(query) ||
+        (conversation.lastMessage?.toLowerCase().contains(query) ?? false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = conversations.where((chat) {
-      return chat["name"].toString().toLowerCase().contains(
-        search.toLowerCase(),
-      );
-    }).toList();
+    final state = ref.watch(chatProvider);
+    final conversations = state.conversations.where(_matches).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Chats"),
+        title: const Text('Chats'),
         centerTitle: true,
         actions: [
           IconButton(
+            tooltip: 'Refresh conversations',
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              setState(() {});
-            },
+            onPressed: state.isLoadingConversations
+                ? null
+                : () => ref.read(chatProvider.notifier).loadConversations(),
           ),
         ],
       ),
-
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
-              controller: searchController,
+              controller: _searchController,
               decoration: InputDecoration(
-                hintText: "Search conversations...",
+                hintText: 'Search conversations...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              onChanged: (value) {
-                setState(() {
-                  search = value;
-                });
-              },
+              onChanged: (value) => setState(() => _search = value),
             ),
           ),
-
+          if (state.error != null)
+            MaterialBanner(
+              content: Text(state.error!),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    ref.read(chatProvider.notifier)
+                      ..clearError()
+                      ..loadConversations();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
           Expanded(
-            child: filtered.isEmpty
-                ? const Center(child: Text("No conversations found"))
-                : RefreshIndicator(
-                    onRefresh: () async {
-                      await Future.delayed(const Duration(seconds: 1));
-                    },
-                    child: ListView.separated(
-                      itemCount: filtered.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final chat = filtered[index];
-
-                        return Dismissible(
-                          key: Key(chat["name"]),
-                          background: Container(
-                            color: Colors.red,
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.only(right: 20),
-                            child: const Icon(
-                              Icons.delete,
-                              color: Colors.white,
-                            ),
-                          ),
-                          direction: DismissDirection.endToStart,
-                          confirmDismiss: (_) async {
-                            return await showDialog(
-                              context: context,
-                              builder: (_) => AlertDialog(
-                                title: const Text('Delete Chat'),
-                                content: const Text(
-                                  'Delete this conversation?',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context, false);
-                                    },
-                                    child: const Text('Cancel'),
-                                  ),
-
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pop(context, true);
-                                    },
-                                    child: const Text('Delete'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          onDismissed: (_) {
-                            setState(() {
-                              conversations.remove(chat);
-                            });
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Conversation deleted'),
-                              ),
-                            );
-                          },
-                          child: ConversationTile(
-                            name: chat["name"],
-                            propertyTitle: chat["property"],
-                            lastMessage: chat["message"],
-                            time: chat["time"],
-                            unreadCount: chat["unread"],
-                            isOnline: chat["online"],
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ChatPage(
-                                    userName: chat["name"],
-                                    propertyTitle: chat["property"],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+            child: _buildBody(state, conversations),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBody(
+    ChatState state,
+    List<ConversationEntity> conversations,
+  ) {
+    if (state.isLoadingConversations && state.conversations.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (conversations.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: ref.read(chatProvider.notifier).loadConversations,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 180),
+            Center(child: Text('No conversations found')),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: ref.read(chatProvider.notifier).loadConversations,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: conversations.length,
+        separatorBuilder: (_, _) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          final conversation = conversations[index];
+
+          return ConversationTile(
+            name: conversation.otherUserName,
+            propertyTitle: conversation.propertyTitle,
+            lastMessage: conversation.lastMessage ?? 'Start a conversation',
+            time: _formatTime(conversation.updatedAt),
+            imageUrl: conversation.propertyImage,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChatPage(
+                    conversationId: conversation.conversationId,
+                    userName: conversation.otherUserName,
+                    propertyTitle: conversation.propertyTitle,
+                    propertyImage: conversation.propertyImage,
+                  ),
+                ),
+              ).then((_) {
+                if (mounted) {
+                  ref.read(chatProvider.notifier).loadConversations();
+                }
+              });
+            },
+          );
+        },
       ),
     );
   }

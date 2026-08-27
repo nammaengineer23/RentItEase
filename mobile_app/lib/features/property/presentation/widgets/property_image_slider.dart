@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/property_entity.dart';
 
-import 'favorite_button.dart';
 import 'featured_badge.dart';
 
 class PropertyImageSlider extends StatefulWidget {
@@ -77,18 +76,6 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
                       );
                     },
                   ),
-          ),
-
-          Positioned(
-            top: 12,
-            right: 12,
-            child: FavoriteButton(
-              isFavorite: false,
-              onPressed: () {
-                // TODO:
-                // Connect Favorites API
-              },
-            ),
           ),
 
           Positioned(
