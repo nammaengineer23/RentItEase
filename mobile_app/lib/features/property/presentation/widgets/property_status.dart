@@ -4,16 +4,18 @@ class PropertyStatus extends StatelessWidget {
   final bool isVerified;
   final bool isAvailable;
   final double rating;
-  final int reviewCount;
+  final int totalReviews;
   final int views;
+  final VoidCallback? onReviewsTap;
 
   const PropertyStatus({
     super.key,
     required this.isVerified,
     required this.isAvailable,
     required this.rating,
-    required this.reviewCount,
+    this.totalReviews = 0,
     required this.views,
+    this.onReviewsTap,
   });
 
   @override
@@ -41,14 +43,16 @@ class PropertyStatus extends StatelessWidget {
           textColor: isAvailable ? Colors.blue.shade700 : Colors.red.shade700,
         ),
 
-        _StatusChip(
-          icon: Icons.star,
-          label: reviewCount == 0
-              ? 'No reviews'
-              : '${rating.toStringAsFixed(1)} ($reviewCount reviews)',
-          backgroundColor: Colors.amber.shade50,
-          iconColor: Colors.amber.shade800,
-          textColor: Colors.amber.shade900,
+        InkWell(
+          borderRadius: BorderRadius.circular(30),
+          onTap: onReviewsTap,
+          child: _StatusChip(
+            icon: Icons.star,
+            label: '${rating.toStringAsFixed(1)} ($totalReviews)',
+            backgroundColor: Colors.amber.shade50,
+            iconColor: Colors.amber.shade800,
+            textColor: Colors.amber.shade900,
+          ),
         ),
 
         _StatusChip(

@@ -17,8 +17,8 @@ class PropertyActionButtons extends StatelessWidget {
         Expanded(
           child: OutlinedButton.icon(
             onPressed: onContactOwner,
-            icon: const Icon(Icons.call_outlined),
-            label: const Text('Contact'),
+            icon: const Icon(Icons.chat_bubble_outline),
+            label: const Text('Chat'),
           ),
         ),
 

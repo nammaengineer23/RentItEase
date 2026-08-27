@@ -1,21 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../domain/entities/search_entity.dart';
 import '../../providers/search_provider.dart';
-import '../../widgets/search_card.dart';
+import '../../../property/providers/property_provider.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
-  const SearchPage({super.key});
+  const SearchPage({super.key, this.openFilters = false});
+
+  final bool openFilters;
 
   @override
   ConsumerState<SearchPage> createState() => _SearchPageState();
 }
 
 class _SearchPageState extends ConsumerState<SearchPage> {
-  final TextEditingController searchController = TextEditingController();
-
+  final searchController = TextEditingController();
+  SearchEntity _filters = const SearchEntity();
   bool _hasSearched = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadNearest());
+    if (widget.openFilters) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showFilters());
+    }
+  }
+
+  Future<void> _loadNearest() async {
+    setState(() => _hasSearched = true);
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        await ref.read(searchProvider.notifier).search(const SearchEntity());
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition();
+      final properties = await ref
+          .read(propertyProvider.notifier)
+          .getNearbyProperties(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            radius: 25,
+          );
+      ref.read(searchProvider.notifier).showNearby(properties);
+    } catch (_) {
+      await ref.read(searchProvider.notifier).search(const SearchEntity());
+    }
+  }
 
   @override
   void dispose() {
@@ -24,17 +64,231 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   Future<void> _search() async {
-    final query = searchController.text.trim();
-
-    if (query.isEmpty) {
-      return;
-    }
-
+    final filters = _filters.copyWith(
+      query: searchController.text.trim(),
+      page: 1,
+    );
     setState(() {
+      _filters = filters;
       _hasSearched = true;
     });
+    await ref.read(searchProvider.notifier).search(filters);
+  }
 
-    await ref.read(searchProvider.notifier).search(SearchEntity(query: query));
+  Future<void> _showFilters() async {
+    final city = TextEditingController(text: _filters.city);
+    final locality = TextEditingController(text: _filters.locality);
+    final minRent = TextEditingController(text: _filters.minRent?.toString());
+    final maxRent = TextEditingController(text: _filters.maxRent?.toString());
+    final minDailyRent = TextEditingController(
+      text: _filters.minDailyRent?.toString(),
+    );
+    final maxDailyRent = TextEditingController(
+      text: _filters.maxDailyRent?.toString(),
+    );
+    String? propertyType = _filters.propertyType;
+    int? bedrooms = _filters.bedrooms;
+    bool availableOnly = _filters.availableOnly;
+    bool parking = _filters.parking;
+    bool dailyRentEnabled = _filters.dailyRentEnabled;
+
+    final applied = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            20,
+            20,
+            MediaQuery.viewInsetsOf(context).bottom + 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Filter properties',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: city,
+                  decoration: const InputDecoration(
+                    labelText: 'City',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: locality,
+                  decoration: const InputDecoration(
+                    labelText: 'Locality',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: propertyType,
+                  decoration: const InputDecoration(
+                    labelText: 'Property type',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const ['Apartment', 'House', 'Villa', 'PG', 'Hostel', 'Office']
+                      .map((value) => DropdownMenuItem(
+                            value: value.toUpperCase(),
+                            child: Text(value),
+                          ))
+                      .toList(),
+                  onChanged: (value) => setSheetState(() => propertyType = value),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<int>(
+                  initialValue: bedrooms,
+                  decoration: const InputDecoration(
+                    labelText: 'Bedrooms',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: List.generate(
+                    5,
+                    (index) => DropdownMenuItem(
+                      value: index + 1,
+                      child: Text('${index + 1} BHK'),
+                    ),
+                  ),
+                  onChanged: (value) => setSheetState(() => bedrooms = value),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: minRent,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Minimum rent',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: maxRent,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Maximum rent',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Available for daily rent'),
+                  value: dailyRentEnabled,
+                  onChanged: (value) =>
+                      setSheetState(() => dailyRentEnabled = value),
+                ),
+                if (dailyRentEnabled)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: minDailyRent,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Min daily rent',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: maxDailyRent,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Max daily rent',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Available properties only'),
+                  value: availableOnly,
+                  onChanged: (value) =>
+                      setSheetState(() => availableOnly = value),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Parking required'),
+                  value: parking,
+                  onChanged: (value) => setSheetState(() => parking = value),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          setState(() => _filters = const SearchEntity());
+                          Navigator.pop(sheetContext, false);
+                        },
+                        child: const Text('Clear'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          setState(() {
+                            _filters = SearchEntity(
+                              query: searchController.text.trim(),
+                              city: city.text.trim().isEmpty ? null : city.text.trim(),
+                              locality: locality.text.trim().isEmpty
+                                  ? null
+                                  : locality.text.trim(),
+                              propertyType: propertyType,
+                              bedrooms: bedrooms,
+                              minRent: double.tryParse(minRent.text.trim()),
+                              maxRent: double.tryParse(maxRent.text.trim()),
+                              dailyRentEnabled: dailyRentEnabled,
+                              minDailyRent: dailyRentEnabled
+                                  ? double.tryParse(minDailyRent.text.trim())
+                                  : null,
+                              maxDailyRent: dailyRentEnabled
+                                  ? double.tryParse(maxDailyRent.text.trim())
+                                  : null,
+                              availableOnly: availableOnly,
+                              parking: parking,
+                            );
+                          });
+                          Navigator.pop(sheetContext, true);
+                        },
+                        child: const Text('Apply'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    city.dispose();
+    locality.dispose();
+    minRent.dispose();
+    maxRent.dispose();
+    minDailyRent.dispose();
+    maxDailyRent.dispose();
+
+    if (applied == true && mounted) await _search();
   }
 
   @override
@@ -42,7 +296,16 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     final state = ref.watch(searchProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Search Properties')),
+      appBar: AppBar(
+        title: const Text('Search Properties'),
+        actions: [
+          IconButton(
+            tooltip: 'Filters',
+            onPressed: _showFilters,
+            icon: const Icon(Icons.tune),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
@@ -64,105 +327,109 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               ),
             ),
           ),
-
           Expanded(
             child: state.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : state.error != null
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 60,
-                            color: Colors.red,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(state.error!, textAlign: TextAlign.center),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _search,
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : !_hasSearched
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.manage_search,
-                            size: 80,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Search for your perfect property',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Enter a city, locality or property name above.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : state.results.isEmpty
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.search_off, size: 80, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text(
-                            'No properties found',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Try a different city, locality or property name.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : RefreshIndicator(
-                    onRefresh: () async {
-                      await ref.read(searchProvider.notifier).refresh();
-                    },
-                    child: ListView.builder(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(16),
-                      itemCount: state.results.length,
-                      itemBuilder: (_, index) {
-                        return SearchCard(entity: state.results[index]);
-                      },
-                    ),
-                  ),
+                    ? _SearchMessage(
+                        icon: Icons.error_outline,
+                        message: state.error!,
+                        action: _search,
+                      )
+                    : !_hasSearched
+                        ? const _SearchMessage(
+                            icon: Icons.manage_search,
+                            message: 'Search or apply filters to find properties.',
+                          )
+                        : state.results.isEmpty
+                            ? const _SearchMessage(
+                                icon: Icons.search_off,
+                                message: 'No properties found.',
+                              )
+                            : RefreshIndicator(
+                                onRefresh: ref.read(searchProvider.notifier).refresh,
+                                child: ListView.builder(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount: state.results.length + 1,
+                                  itemBuilder: (context, index) {
+                                    if (index == state.results.length) {
+                                      if (!state.hasMore) {
+                                        return const Padding(
+                                          padding: EdgeInsets.all(20),
+                                          child: Center(
+                                            child: Text('All properties loaded'),
+                                          ),
+                                        );
+                                      }
+                                      return Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: FilledButton.icon(
+                                          onPressed: ref
+                                              .read(searchProvider.notifier)
+                                              .loadMore,
+                                          icon: const Icon(Icons.expand_more),
+                                          label: const Text('Load next properties'),
+                                        ),
+                                      );
+                                    }
+                                    final property = state.results[index];
+                                    return Card(
+                                      child: ListTile(
+                                        leading: const Icon(Icons.home_work),
+                                        title: Text(
+                                          property.title,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        subtitle: Text(
+                                          '${property.locality}, ${property.city}\n'
+                                          '₹${property.rent.toStringAsFixed(0)} / month',
+                                        ),
+                                        isThreeLine: true,
+                                        trailing: const Icon(Icons.chevron_right),
+                                        onTap: () =>
+                                            context.push('/property/${property.id}'),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SearchMessage extends StatelessWidget {
+  const _SearchMessage({
+    required this.icon,
+    required this.message,
+    this.action,
+  });
+
+  final IconData icon;
+  final String message;
+  final VoidCallback? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 72, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(message, textAlign: TextAlign.center),
+            if (action != null) ...[
+              const SizedBox(height: 16),
+              FilledButton(onPressed: action, child: const Text('Retry')),
+            ],
+          ],
+        ),
       ),
     );
   }

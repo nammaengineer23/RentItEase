@@ -7,12 +7,14 @@ class DashboardCard extends StatelessWidget {
     required this.value,
     required this.icon,
     this.color,
+    this.onTap,
   });
 
   final String title;
   final String value;
   final IconData icon;
   final Color? color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -21,9 +23,12 @@ class DashboardCard extends StatelessWidget {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
           children: [
             CircleAvatar(
               radius: 28,
@@ -51,6 +56,7 @@ class DashboardCard extends StatelessWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

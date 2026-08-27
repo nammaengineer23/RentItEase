@@ -13,39 +13,41 @@ class AuthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return Column(
       children: [
-        Hero(
-          tag: 'app_logo',
-          child: SvgPicture.asset(
-            'assets/images/branding/rentitease_logo_512x512.svg',
-            width: 90,
-            height: 90,
+        Container(
+          width: 112,
+          height: 112,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: scheme.primaryContainer.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Hero(
+            tag: 'app_logo',
+            child: SvgPicture.asset(
+              'assets/images/branding/rentitease_logo_512x512.svg',
+            ),
           ),
         ),
-
-        const SizedBox(height: 24),
-
+        const SizedBox(height: 26),
         Text(
           title,
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+          style: theme.textTheme.headlineMedium,
         ),
-
-        const SizedBox(height: 12),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30),
+        const SizedBox(height: 10),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 380),
           child: Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey.shade600,
-                  height: 1.5,
-                ),
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
           ),
         ),
       ],

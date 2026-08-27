@@ -136,8 +136,11 @@ import {
       return invoice;
     }
   
-    async findByPayment(paymentId: string) {
-      return this.prisma.invoice.findFirst({
+    async findByPayment(
+      paymentId: string,
+      user: { id: string; role: string },
+    ) {
+      const invoice = await this.prisma.invoice.findFirst({
         where: { paymentId },
         include: {
           user: {
@@ -148,8 +151,51 @@ import {
               phone: true,
             },
           },
+          payment: {
+            include: {
+              booking: {
+                include: { property: true },
+              },
+            },
+          },
         },
       });
+
+      return this.ensureInvoiceAccess(invoice, user);
+    }
+
+    async findByBooking(
+      bookingId: string,
+      user: { id: string; role: string },
+    ) {
+      const invoice = await this.prisma.invoice.findFirst({
+        where: {
+          payment: { bookingId, status: 'SUCCESS' },
+        },
+        include: {
+          user: { select: { id: true, fullName: true, email: true, phone: true } },
+          payment: {
+            include: {
+              booking: { include: { property: true } },
+            },
+          },
+        },
+      });
+
+      return this.ensureInvoiceAccess(invoice, user);
+    }
+
+    private ensureInvoiceAccess(
+      invoice: any,
+      user: { id: string; role: string },
+    ) {
+      if (!invoice) throw new NotFoundException('Completed invoice not found');
+      const booking = invoice.payment?.booking;
+      const allowed = user.role === 'ADMIN' ||
+        invoice.userId === user.id ||
+        booking?.property?.ownerId === user.id;
+      if (!allowed) throw new BadRequestException('Invoice access denied');
+      return invoice;
     }
   
     async markPaid(id: string) {

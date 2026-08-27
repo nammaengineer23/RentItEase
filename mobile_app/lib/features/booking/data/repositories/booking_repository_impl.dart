@@ -21,7 +21,10 @@ class BookingRepositoryImpl implements BookingRepository {
       throw Exception('Empty bookings response.');
     }
 
-    final bookingsData = responseData['bookings'];
+    final payload = responseData['data'] is Map
+        ? Map<String, dynamic>.from(responseData['data'] as Map)
+        : responseData;
+    final bookingsData = payload['bookings'] ?? payload['data'];
 
     if (bookingsData is! List) {
       throw Exception('Invalid bookings response.');
@@ -45,7 +48,11 @@ class BookingRepositoryImpl implements BookingRepository {
       throw Exception('Empty booking response.');
     }
 
-    final data = responseData['data'];
+    final outerData = responseData['data'];
+    final data = outerData is Map &&
+            outerData['data'] is Map
+        ? outerData['data']
+        : outerData;
 
     if (data is! Map) {
       throw Exception('Invalid booking response.');
@@ -73,7 +80,11 @@ class BookingRepositoryImpl implements BookingRepository {
       throw Exception('Empty booking creation response.');
     }
 
-    final data = responseData['data'];
+    final outerData = responseData['data'];
+    final data = outerData is Map &&
+            outerData['data'] is Map
+        ? outerData['data']
+        : outerData;
 
     if (data is! Map) {
       throw Exception('Invalid booking creation response.');
@@ -94,7 +105,11 @@ class BookingRepositoryImpl implements BookingRepository {
       throw Exception('Empty booking cancellation response.');
     }
 
-    final data = responseData['data'];
+    final outerData = responseData['data'];
+    final data = outerData is Map &&
+            outerData['data'] is Map
+        ? outerData['data']
+        : outerData;
 
     if (data is! Map) {
       throw Exception('Invalid booking cancellation response.');

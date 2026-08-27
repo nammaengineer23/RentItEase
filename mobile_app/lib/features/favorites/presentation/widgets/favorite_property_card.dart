@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../models/favorite_property_model.dart';
 import '../../providers/favorites_provider.dart';
@@ -85,8 +86,8 @@ class FavoritePropertyCard extends ConsumerWidget {
   // ======================================================
 
   Widget _imagePlaceholder() {
-    return Image.asset(
-      "assets/images/properties/property_placeholder_landscape_1280x853.png",
+    return SvgPicture.asset(
+      'assets/images/properties/property_placeholder.svg',
       height: 180,
       width: double.infinity,
       fit: BoxFit.cover,
@@ -175,4 +176,3 @@ class FavoritePropertyCard extends ConsumerWidget {
     );
   }
 }
-

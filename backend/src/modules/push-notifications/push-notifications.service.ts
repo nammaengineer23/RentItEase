@@ -34,12 +34,24 @@ export class PushNotificationsService {
   // ==========================
   // Send Notification To User
   // ==========================
- async sendToUser(
+  async sendToUser(
   userId: string,
   title: string,
   body: string,
   data?: Record<string, string>,
 ) {
+  const settings = await this.prisma.userSettings.findUnique({
+    where: { userId },
+    select: { pushNotifications: true },
+  });
+
+  if (settings?.pushNotifications === false) {
+    return {
+      success: false,
+      message: 'Push notifications disabled by user',
+    };
+  }
+
   console.log('==============================');
   console.log('📨 sendToUser() called');
   console.log('User ID:', userId);

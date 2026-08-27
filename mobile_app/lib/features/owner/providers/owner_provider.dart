@@ -96,7 +96,7 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
   // Add Property
   // ==========================================================
 
-  Future<void> addProperty(
+  Future<OwnerPropertyEntity> addProperty(
     OwnerPropertyEntity property, {
     required double area,
     required int bathrooms,
@@ -111,11 +111,13 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
     required String pincode,
     required double securityDeposit,
     required String stateName,
+    bool dailyRentEnabled = false,
+    double? dailyRent,
   }) async {
     try {
       state = state.copyWith(loading: true, error: null);
 
-      await repository.addProperty(
+      final createdProperty = await repository.addProperty(
         property,
         area: area,
         bathrooms: bathrooms,
@@ -130,11 +132,14 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
         pincode: pincode,
         securityDeposit: securityDeposit,
         stateName: stateName,
+        dailyRentEnabled: dailyRentEnabled,
+        dailyRent: dailyRent,
       );
 
       await loadMyProperties();
 
       state = state.copyWith(error: null);
+      return createdProperty;
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
 
@@ -161,6 +166,8 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
     required String pincode,
     required double securityDeposit,
     required String stateName,
+    bool dailyRentEnabled = false,
+    double? dailyRent,
   }) async {
     try {
       state = state.copyWith(loading: true, error: null);
@@ -180,6 +187,8 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
         pincode: pincode,
         securityDeposit: securityDeposit,
         stateName: stateName,
+        dailyRentEnabled: dailyRentEnabled,
+        dailyRent: dailyRent,
       );
 
       await loadMyProperties();

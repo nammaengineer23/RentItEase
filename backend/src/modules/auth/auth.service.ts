@@ -18,6 +18,9 @@ import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { RequestEmailOtpDto } from './dto/request-email-otp.dto';
+import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
+import { VerifiedRegisterDto } from './dto/verified-register.dto';
 
 @Injectable()
 export class AuthService {
@@ -30,6 +33,230 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly otpService: OtpService,
   ) {}
+
+  private readonly signupEmailPurpose = 'SIGNUP_EMAIL';
+  private readonly loginEmailPurpose = 'LOGIN_EMAIL';
+
+  async requestSignupEmailOtp(dto: RequestEmailOtpDto) {
+    const email = dto.email.trim().toLowerCase();
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+
+    if (existing) {
+      throw new ConflictException('Email already exists.');
+    }
+
+    await this.createEmailOtpChallenge(email, this.signupEmailPurpose);
+
+    return {
+      success: true,
+      message: 'Verification code sent to your email.',
+    };
+  }
+
+  async verifySignupEmailOtp(dto: VerifyEmailOtpDto) {
+    const email = dto.email.trim().toLowerCase();
+    await this.consumeEmailOtpChallenge(
+      email,
+      this.signupEmailPurpose,
+      dto.otp,
+    );
+
+    const verificationToken = await this.jwtService.signAsync(
+      { type: this.signupEmailPurpose, email },
+      {
+        secret: process.env.JWT_ACCESS_SECRET,
+        expiresIn: '10m',
+      },
+    );
+
+    return {
+      success: true,
+      message: 'Email verified.',
+      verificationToken,
+    };
+  }
+
+  async registerVerified(dto: VerifiedRegisterDto) {
+    const email = dto.email.trim().toLowerCase();
+    const proof = await this.jwtService.verifyAsync<{
+      type: string;
+      email: string;
+    }>(dto.emailVerificationToken, {
+      secret: process.env.JWT_ACCESS_SECRET,
+    });
+
+    if (proof.type !== this.signupEmailPurpose || proof.email !== email) {
+      throw new UnauthorizedException('Invalid email verification proof.');
+    }
+
+    const decodedPhone = await this.firebaseService.verifyToken(
+      dto.phoneIdToken,
+    );
+    const verifiedPhone = decodedPhone.phone_number;
+
+    if (!verifiedPhone) {
+      throw new UnauthorizedException(
+        'Verified phone number not found in Firebase token.',
+      );
+    }
+
+    if (this.normalizePhone(verifiedPhone) !== this.normalizePhone(dto.phone)) {
+      throw new UnauthorizedException(
+        'Verified phone number does not match registration phone.',
+      );
+    }
+
+    const phoneOwner = await this.prisma.user.findUnique({
+      where: { phone: dto.phone },
+    });
+
+    if (phoneOwner) {
+      throw new ConflictException('Phone number already exists.');
+    }
+
+    return this.register({
+      fullName: dto.fullName,
+      email,
+      phone: dto.phone,
+      password: dto.password,
+    });
+  }
+
+  async requestLoginEmailOtp(dto: RequestEmailOtpDto) {
+    const email = dto.email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (user?.isActive) {
+      await this.createEmailOtpChallenge(email, this.loginEmailPurpose);
+    }
+
+    return {
+      success: true,
+      message: 'If the account exists, a login code has been sent.',
+    };
+  }
+
+  async loginWithEmailOtp(dto: VerifyEmailOtpDto) {
+    const email = dto.email.trim().toLowerCase();
+    await this.consumeEmailOtpChallenge(email, this.loginEmailPurpose, dto.otp);
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Invalid or inactive account.');
+    }
+
+    return this.createSession(user);
+  }
+
+  async loginWithPhoneOtp(idToken: string) {
+    const decoded = await this.firebaseService.verifyToken(idToken);
+    const phone = decoded.phone_number;
+
+    if (!phone) {
+      throw new UnauthorizedException(
+        'Verified phone number not found in Firebase token.',
+      );
+    }
+
+    const normalized = this.normalizePhone(phone);
+    const digits = normalized.replace(/\D/g, '');
+    const user = await this.prisma.user.findFirst({
+      where: {
+        isActive: true,
+        phone: {
+          in: [normalized, digits, digits.substring(digits.length - 10)],
+        },
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('No account exists for this phone.');
+    }
+
+    return this.createSession(user);
+  }
+
+  private async createEmailOtpChallenge(target: string, purpose: string) {
+    const otp = this.otpService.generateOtp();
+    const otpHash = await this.otpService.hashOtp(otp);
+
+    await this.prisma.authOtpChallenge.deleteMany({
+      where: { target, purpose },
+    });
+    await this.prisma.authOtpChallenge.create({
+      data: {
+        target,
+        purpose,
+        otpHash,
+        expiresAt: this.otpService.getExpiryDate(),
+      },
+    });
+
+    await this.mailService.sendAuthenticationOtp(target, otp);
+  }
+
+  private async consumeEmailOtpChallenge(
+    target: string,
+    purpose: string,
+    otp: string,
+  ) {
+    const challenge = await this.prisma.authOtpChallenge.findFirst({
+      where: { target, purpose },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!challenge ||
+        challenge.expiresAt < new Date() ||
+        challenge.attempts >= 5) {
+      throw new UnauthorizedException('Invalid or expired verification code.');
+    }
+
+    const matches = await this.otpService.verifyOtp(otp, challenge.otpHash);
+    if (!matches) {
+      await this.prisma.authOtpChallenge.update({
+        where: { id: challenge.id },
+        data: { attempts: { increment: 1 } },
+      });
+      throw new UnauthorizedException('Invalid or expired verification code.');
+    }
+
+    await this.prisma.authOtpChallenge.delete({
+      where: { id: challenge.id },
+    });
+  }
+
+  private normalizePhone(phone: string) {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length === 10) return `+91${digits}`;
+    if (digits.length === 12 && digits.startsWith('91')) return `+${digits}`;
+    return phone.startsWith('+') ? phone : `+${digits}`;
+  }
+
+  private async createSession(user: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    role: string;
+    photoUrl: string | null;
+  }) {
+    const tokens = await this.generateTokens(user.id, user.email);
+    await this.saveRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      success: true,
+      message: 'Login successful.',
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        photoUrl: user.photoUrl,
+      },
+      ...tokens,
+    };
+  }
 
   // ==========================================
   // Register
@@ -137,29 +364,36 @@ export class AuthService {
   async firebaseLogin(idToken: string) {
     const decoded = await this.firebaseService.verifyToken(idToken);
 
-    const phone = decoded.phone_number;
+    const phone = decoded.phone_number?.trim();
+    const email = decoded.email?.trim().toLowerCase();
 
-    if (!phone) {
+    if (!phone && !email) {
       throw new UnauthorizedException(
-        'Phone number not found in Firebase token.',
+        'Phone number or verified email not found in Firebase token.',
       );
     }
 
-    let user = await this.prisma.user.findUnique({
-      where: {
-        phone,
-      },
-    });
+    let user = phone
+      ? await this.prisma.user.findUnique({ where: { phone } })
+      : null;
+
+    if (!user && email) {
+      user = await this.prisma.user.findUnique({ where: { email } });
+    }
 
     if (!user) {
+      const fallbackPhone = `firebase:${decoded.uid}`;
+      const fallbackEmail =
+        email ??
+        `${(phone ?? decoded.uid).replace('+', '')}@firebase.rentitease.local`;
+
       user = await this.prisma.user.create({
         data: {
           fullName: decoded.name ?? 'RentItEase User',
-          phone,
-          email:
-            decoded.email ??
-            `${phone.replace('+', '')}@firebase.RentItEase.local`,
+          phone: phone ?? fallbackPhone,
+          email: fallbackEmail,
           passwordHash: '',
+          photoUrl: decoded.picture,
         },
       });
     }
@@ -181,6 +415,7 @@ export class AuthService {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        photoUrl: user.photoUrl,
       },
       ...tokens,
     };
@@ -347,11 +582,17 @@ export class AuthService {
       },
     });
 
-    // Send email
+    const resetBaseUrl =
+      process.env.PASSWORD_RESET_URL ??
+      'https://rentitease.com/reset-password';
+    const separator = resetBaseUrl.includes('?') ? '&' : '?';
+    const resetLink =
+      `${resetBaseUrl}${separator}token=${encodeURIComponent(token)}`;
+
     await this.mailService.sendPasswordResetEmail(
       user.email,
       user.fullName,
-      token,
+      resetLink,
     );
 
     return {

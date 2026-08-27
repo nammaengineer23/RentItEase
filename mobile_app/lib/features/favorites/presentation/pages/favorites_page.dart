@@ -13,6 +13,9 @@ class FavoritesPage extends ConsumerStatefulWidget {
 }
 
 class _FavoritesPageState extends ConsumerState<FavoritesPage> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
   @override
   void initState() {
     super.initState();
@@ -27,12 +30,43 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = ref.watch(favoritesProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('My Favorites ❤️'), centerTitle: true),
-      body: _buildBody(context, state),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) => setState(() => _query = value.trim()),
+              decoration: InputDecoration(
+                hintText: 'Search favorite properties',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _query = '');
+                        },
+                        icon: const Icon(Icons.clear),
+                      ),
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ),
+          Expanded(child: _buildBody(context, state)),
+        ],
+      ),
     );
   }
 
@@ -90,15 +124,27 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
       );
     }
 
+    final query = _query.toLowerCase();
+    final favorites = state.favorites.where((property) {
+      if (query.isEmpty) return true;
+      return property.title.toLowerCase().contains(query) ||
+          property.location.toLowerCase().contains(query) ||
+          property.propertyType.toLowerCase().contains(query);
+    }).toList();
+
+    if (favorites.isEmpty) {
+      return const Center(child: Text('No matching favorite properties.'));
+    }
+
     return RefreshIndicator(
       onRefresh: _refresh,
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
-        itemCount: state.favorites.length,
+        itemCount: favorites.length,
         separatorBuilder: (_, _) => const SizedBox(height: 16),
         itemBuilder: (context, index) {
-          final property = state.favorites[index];
+          final property = favorites[index];
 
           return FavoritePropertyCard(
             property: property,

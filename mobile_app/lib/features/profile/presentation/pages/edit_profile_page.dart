@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../providers/profile_provider.dart';
 
@@ -18,6 +21,45 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   late TextEditingController emailController;
 
   bool isSaving = false;
+  File? selectedProfileImage;
+  final ImagePicker imagePicker = ImagePicker();
+
+  Future<void> pickProfileImage() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    final image = await imagePicker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1200,
+      maxHeight: 1200,
+    );
+
+    if (image == null || !mounted) return;
+
+    setState(() {
+      selectedProfileImage = File(image.path);
+    });
+  }
 
   @override
   void initState() {
@@ -66,11 +108,20 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     });
 
     try {
+      if (selectedProfileImage != null) {
+        await ref
+            .read(profileProvider.notifier)
+            .uploadImage(selectedProfileImage!.path);
+      }
+
+      final photoUrl = ref.read(profileProvider).valueOrNull?.profileImage;
+
       await ref
           .read(profileProvider.notifier)
           .updateProfile(
             fullName: nameController.text.trim(),
             phone: phoneController.text.trim(),
+            photoUrl: photoUrl,
           );
 
       await ref.read(profileProvider.notifier).loadProfile();
@@ -117,18 +168,41 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           key: _formKey,
           child: Column(
             children: [
-              CircleAvatar(
-                radius: 55,
-                backgroundImage:
-                    profile?.profileImage != null &&
-                        profile!.profileImage!.isNotEmpty
-                    ? NetworkImage(profile.profileImage!)
-                    : null,
-                child:
-                    profile?.profileImage == null ||
-                        profile!.profileImage!.isEmpty
-                    ? const Icon(Icons.person, size: 55)
-                    : null,
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    radius: 55,
+                    backgroundImage: selectedProfileImage != null
+                        ? FileImage(selectedProfileImage!)
+                        : profile?.profileImage != null &&
+                                profile!.profileImage!.isNotEmpty
+                            ? NetworkImage(profile.profileImage!)
+                            : null,
+                    child: selectedProfileImage == null &&
+                            (profile?.profileImage == null ||
+                                profile!.profileImage!.isEmpty)
+                        ? const Icon(Icons.person, size: 55)
+                        : null,
+                  ),
+                  Positioned(
+                    right: -4,
+                    bottom: -4,
+                    child: IconButton.filled(
+                      tooltip: 'Change profile image',
+                      onPressed: isSaving ? null : pickProfileImage,
+                      icon: const Icon(Icons.camera_alt),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              TextButton.icon(
+                onPressed: isSaving ? null : pickProfileImage,
+                icon: const Icon(Icons.image_outlined),
+                label: const Text('Change Profile Image'),
               ),
 
               const SizedBox(height: 30),

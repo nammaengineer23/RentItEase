@@ -1,9 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { InvoicesService } from './invoices.service';
 
 @Controller('invoices')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
@@ -18,8 +23,19 @@ export class InvoicesController {
   }
 
   @Get('payment/:paymentId')
-  findByPayment(@Param('paymentId') paymentId: string) {
-    return this.invoicesService.findByPayment(paymentId);
+  findByPayment(
+    @Param('paymentId') paymentId: string,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.invoicesService.findByPayment(paymentId, user);
+  }
+
+  @Get('booking/:bookingId')
+  findByBooking(
+    @Param('bookingId') bookingId: string,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.invoicesService.findByBooking(bookingId, user);
   }
 
   @Get('number/:invoiceNumber')

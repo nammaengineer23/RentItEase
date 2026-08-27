@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/owner_provider.dart';
+import '../../../authentication/providers/authentication_provider.dart';
 
 import '../widgets/dashboard_card.dart';
 
@@ -27,7 +29,19 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
     final state = ref.watch(ownerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Owner Dashboard')),
+      appBar: AppBar(
+        title: const Text('Owner Dashboard'),
+        actions: [
+          IconButton(
+            tooltip: 'Logout',
+            onPressed: () async {
+              await ref.read(authenticationProvider).logout();
+              if (context.mounted) context.go('/auth');
+            },
+            icon: const Icon(Icons.logout),
+          ),
+        ],
+      ),
 
       body: RefreshIndicator(
         onRefresh: () => ref.read(ownerProvider.notifier).refreshDashboard(),
@@ -56,6 +70,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                     title: 'Properties',
                     value: '${state.summary?.totalProperties ?? 0}',
                     icon: Icons.home_work,
+                    onTap: () => context.push('/owner/properties'),
                   ),
 
                   const SizedBox(height: 16),
@@ -64,6 +79,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                     title: 'Active Properties',
                     value: '${state.summary?.activeProperties ?? 0}',
                     icon: Icons.verified,
+                    onTap: () => context.push('/owner/properties'),
                   ),
 
                   const SizedBox(height: 16),
@@ -72,6 +88,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                     title: 'Pending Visits',
                     value: '${state.summary?.pendingVisits ?? 0}',
                     icon: Icons.event,
+                    onTap: () => context.push('/owner/visit-requests'),
                   ),
 
                   const SizedBox(height: 16),
@@ -80,6 +97,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                     title: 'Completed Visits',
                     value: '${state.summary?.completedVisits ?? 0}',
                     icon: Icons.task_alt,
+                    onTap: () => context.push('/owner/visits'),
                   ),
 
                   const SizedBox(height: 16),
@@ -88,6 +106,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                     title: 'Property Views',
                     value: '${state.summary?.totalViews ?? 0}',
                     icon: Icons.visibility,
+                    onTap: () => context.push('/owner/analytics'),
                   ),
 
                   const SizedBox(height: 16),
@@ -96,6 +115,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                     title: 'Favorites',
                     value: '${state.summary?.totalFavorites ?? 0}',
                     icon: Icons.favorite,
+                    onTap: () => context.push('/owner/analytics'),
                   ),
 
                   const SizedBox(height: 30),
@@ -118,6 +138,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                   ...state.activities.map(
                     (activity) => Card(
                       child: ListTile(
+                        onTap: () => _openActivity(context, activity.type),
                         leading: const CircleAvatar(child: Icon(Icons.history)),
                         title: Text(activity.title),
                         subtitle: Text(activity.description),
@@ -132,5 +153,16 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
               ),
       ),
     );
+  }
+
+  void _openActivity(BuildContext context, String type) {
+    final value = type.trim().toUpperCase();
+    if (value.contains('VISIT')) {
+      context.push('/owner/visit-requests');
+    } else if (value.contains('PROPERTY')) {
+      context.push('/owner/properties');
+    } else {
+      context.push('/owner/analytics');
+    }
   }
 }

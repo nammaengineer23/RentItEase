@@ -13,7 +13,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<SettingsEntity> getSettings() async {
     final response = await _dio.get('/settings');
 
-    return SettingsModel.fromJson(response.data as Map<String, dynamic>);
+    return SettingsModel.fromJson(_unwrapSettings(response.data));
   }
 
   @override
@@ -48,7 +48,20 @@ class SettingsRepositoryImpl implements SettingsRepository {
 
     final response = await _dio.patch('/settings', data: data);
 
-    return SettingsModel.fromJson(response.data as Map<String, dynamic>);
+    return SettingsModel.fromJson(_unwrapSettings(response.data));
+  }
+
+  Map<String, dynamic> _unwrapSettings(dynamic responseData) {
+    if (responseData is! Map) {
+      throw const FormatException('Invalid settings response.');
+    }
+
+    final outer = Map<String, dynamic>.from(responseData);
+    final data = outer['data'];
+
+    return data is Map
+        ? Map<String, dynamic>.from(data)
+        : outer;
   }
 
   @override

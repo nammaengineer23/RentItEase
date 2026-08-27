@@ -335,6 +335,29 @@ import {
               status: BookingStatus.PAID,
             },
           });
+
+          await tx.invoice.upsert({
+            where: {
+              invoiceNumber: `RIE-${payment.bookingId}`,
+            },
+            update: {
+              status: 'PAID',
+              amount: payment.amount,
+              totalAmount: payment.amount,
+              paymentId: updated.id,
+            },
+            create: {
+              invoiceNumber: `RIE-${payment.bookingId}`,
+              userId: payment.booking.tenantId,
+              paymentId: updated.id,
+              amount: payment.amount,
+              taxAmount: 0,
+              totalAmount: payment.amount,
+              currency: payment.currency,
+              status: 'PAID',
+              description: `Payment invoice for ${payment.booking.property.title}`,
+            },
+          });
   
           return updated;
         },

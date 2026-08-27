@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../domain/entities/property_entity.dart';
 import '../../providers/property_provider.dart';
@@ -269,8 +270,10 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                     isVerified: property.isVerified,
                     isAvailable: property.isAvailable,
                     rating: property.rating,
-                    reviewCount: property.reviewCount,
+                    totalReviews: property.totalReviews,
                     views: property.views,
+                    onReviewsTap: () =>
+                        context.push('/reviews/${property.id}'),
                   ),
 
                   const SizedBox(height: 28),
@@ -312,6 +315,19 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                       ),
                       title: Text(property.ownerName),
                       subtitle: Text(property.ownerPhone),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.push(
+                        '/chat',
+                        extra: {'propertyId': property.id},
+                      ),
+                      icon: const Icon(Icons.chat_bubble_outline),
+                      label: const Text('Chat with property owner'),
                     ),
                   ),
 
@@ -366,8 +382,9 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
               );
             },
             onContactOwner: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Calling ${property.ownerName}')),
+              context.push(
+                '/chat',
+                extra: {'propertyId': property.id},
               );
             },
           ),

@@ -5,11 +5,13 @@ import '../../../../shared/widgets/app_svg_icon.dart';
 class HomeBottomNavigation extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final bool ownerMode;
 
   const HomeBottomNavigation({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.ownerMode = false,
   });
 
   @override
@@ -59,7 +61,7 @@ class HomeBottomNavigation extends StatelessWidget {
             size: 26,
             color: colorScheme.primary,
           ),
-          label: 'Favorites',
+          label: ownerMode ? 'Engagement' : 'Favorites',
         ),
         NavigationDestination(
           icon: AppSvgIcon(
@@ -72,7 +74,7 @@ class HomeBottomNavigation extends StatelessWidget {
             size: 26,
             color: colorScheme.primary,
           ),
-          label: 'Bookings',
+          label: ownerMode ? 'Visits' : 'Bookings',
         ),
         NavigationDestination(
           icon: AppSvgIcon(

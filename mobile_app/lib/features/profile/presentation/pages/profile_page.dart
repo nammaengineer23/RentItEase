@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/network/dio_provider.dart';
 
 import '../../providers/profile_provider.dart';
 
@@ -73,11 +74,27 @@ class ProfilePage extends ConsumerWidget {
     },
   ),
 
+                if (profile.role.trim().toUpperCase() == 'USER')
+                  ProfileMenuTile(
+                    icon: Icons.storefront_outlined,
+                    title: 'Become an Owner',
+                    subtitle: 'Request admin approval to list properties',
+                    onTap: () => _requestOwnerAccess(context, ref),
+                  ),
+
                 ProfileMenuTile(
                   icon: Icons.event,
-                  title: 'My Visits',
-                  subtitle: 'View booked property visits',
+                  title: profile.role.trim().toUpperCase() == 'OWNER'
+                      ? 'Property Visits'
+                      : 'My Visits',
+                  subtitle: profile.role.trim().toUpperCase() == 'OWNER'
+                      ? 'Manage visits requested for your properties'
+                      : 'View booked property visits',
                   onTap: () {
+                    if (profile.role.trim().toUpperCase() == 'OWNER') {
+                      context.push('/owner/visit-requests');
+                      return;
+                    }
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const MyVisitsPage()),
@@ -87,9 +104,17 @@ class ProfilePage extends ConsumerWidget {
 
                 ProfileMenuTile(
                   icon: Icons.favorite,
-                  title: 'Favorites',
-                  subtitle: 'Saved properties',
+                  title: profile.role.trim().toUpperCase() == 'OWNER'
+                      ? 'Property Favorites'
+                      : 'Favorites',
+                  subtitle: profile.role.trim().toUpperCase() == 'OWNER'
+                      ? 'See engagement with your properties'
+                      : 'Saved properties',
                   onTap: () {
+                    if (profile.role.trim().toUpperCase() == 'OWNER') {
+                      context.push('/owner/analytics');
+                      return;
+                    }
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const FavoritesPage()),
@@ -131,5 +156,25 @@ class ProfilePage extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  Future<void> _requestOwnerAccess(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    try {
+      await ref.read(dioProvider).patch('/users/request-owner');
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Owner request sent for admin approval.'),
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to submit request: $error')),
+      );
+    }
   }
 }

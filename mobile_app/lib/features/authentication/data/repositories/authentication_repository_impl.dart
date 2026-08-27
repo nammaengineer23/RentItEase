@@ -18,6 +18,42 @@ class AuthenticationRepositoryImpl {
     return _service.register(request);
   }
 
+  Future<void> requestSignupEmailOtp(String email) {
+    return _service.requestSignupEmailOtp(email);
+  }
+
+  Future<String> verifySignupEmailOtp(String email, String otp) {
+    return _service.verifySignupEmailOtp(email, otp);
+  }
+
+  Future<AuthResponse> registerVerified(
+    RegisterRequest request, {
+    required String emailVerificationToken,
+    required String phoneIdToken,
+  }) {
+    return _service.registerVerified(
+      request,
+      emailVerificationToken: emailVerificationToken,
+      phoneIdToken: phoneIdToken,
+    );
+  }
+
+  Future<void> requestLoginEmailOtp(String email) {
+    return _service.requestLoginEmailOtp(email);
+  }
+
+  Future<AuthResponse> loginWithEmailOtp(String email, String otp) {
+    return _service.loginWithEmailOtp(email, otp);
+  }
+
+  Future<AuthResponse> loginWithPhoneOtp(String idToken) {
+    return _service.loginWithPhoneOtp(idToken);
+  }
+
+  Future<void> forgotPassword(String email) {
+    return _service.forgotPassword(email);
+  }
+
   Future<void> logout() {
     return _service.logout();
   }

@@ -22,7 +22,7 @@ class PropertyModel {
     required this.isFeatured,
     required this.isVerified,
     required this.rating,
-    required this.reviewCount,
+    this.totalReviews = 0,
     required this.views,
     required this.imageUrls,
     required this.ownerId,
@@ -53,7 +53,7 @@ class PropertyModel {
   final bool isFeatured;
   final bool isVerified;
   final double rating;
-  final int reviewCount;
+  final int totalReviews;
   final int views;
   final List<String> imageUrls;
   final String ownerId;
@@ -85,8 +85,10 @@ class PropertyModel {
       isAvailable: json['isAvailable'] == true,
       isFeatured: json['isFeatured'] == true,
       isVerified: json['isVerified'] == true,
-      rating: _toDouble(json['rating'] ?? json['averageRating']),
-      reviewCount: _toInt(json['reviewCount'] ?? json['totalReviews']),
+      rating: (json['averageRating'] as num?)?.toDouble() ??
+          (json['rating'] as num?)?.toDouble() ??
+          0.0,
+      totalReviews: (json['totalReviews'] as num?)?.toInt() ?? 0,
       views: (json['views'] as num?)?.toInt() ?? 0,
       imageUrls:
           (json['imageUrls'] as List<dynamic>?)
@@ -128,7 +130,8 @@ class PropertyModel {
       'isFeatured': isFeatured,
       'isVerified': isVerified,
       'rating': rating,
-      'reviewCount': reviewCount,
+      'averageRating': rating,
+      'totalReviews': totalReviews,
       'views': views,
       'imageUrls': imageUrls,
       'ownerId': ownerId,
@@ -162,7 +165,7 @@ class PropertyModel {
     bool? isFeatured,
     bool? isVerified,
     double? rating,
-    int? reviewCount,
+    int? totalReviews,
     int? views,
     List<String>? imageUrls,
     String? ownerId,
@@ -193,7 +196,7 @@ class PropertyModel {
       isFeatured: isFeatured ?? this.isFeatured,
       isVerified: isVerified ?? this.isVerified,
       rating: rating ?? this.rating,
-      reviewCount: reviewCount ?? this.reviewCount,
+      totalReviews: totalReviews ?? this.totalReviews,
       views: views ?? this.views,
       imageUrls: imageUrls ?? this.imageUrls,
       ownerId: ownerId ?? this.ownerId,
@@ -227,7 +230,7 @@ class PropertyModel {
       isFeatured: isFeatured,
       isVerified: isVerified,
       rating: rating,
-      reviewCount: reviewCount,
+      totalReviews: totalReviews,
       views: views,
       imageUrls: imageUrls,
       ownerId: ownerId,
@@ -261,7 +264,7 @@ class PropertyModel {
       isFeatured: entity.isFeatured,
       isVerified: entity.isVerified,
       rating: entity.rating,
-      reviewCount: entity.reviewCount,
+      totalReviews: entity.totalReviews,
       views: entity.views,
       imageUrls: entity.imageUrls,
       ownerId: entity.ownerId,
@@ -271,15 +274,5 @@ class PropertyModel {
       latitude: entity.latitude,
       longitude: entity.longitude,
     );
-  }
-
-  static double _toDouble(dynamic value) {
-    if (value is num) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '') ?? 0.0;
-  }
-
-  static int _toInt(dynamic value) {
-    if (value is num) return value.toInt();
-    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 }

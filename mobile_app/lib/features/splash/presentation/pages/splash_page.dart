@@ -38,9 +38,24 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
     if (!mounted) return;
 
-    context.go(
-      ref.read(authenticationProvider).isLoggedIn ? '/home' : '/auth',
-    );
+    final auth = ref.read(authenticationProvider);
+
+    if (!auth.isLoggedIn) {
+      context.go('/auth');
+      return;
+    }
+
+    final role = auth.authResponse?.user.role.trim().toUpperCase();
+    switch (role) {
+      case 'ADMIN':
+        context.go('/admin/dashboard');
+        break;
+      case 'OWNER':
+        context.go('/owner/dashboard');
+        break;
+      default:
+        context.go('/home');
+    }
   }
 
   @override

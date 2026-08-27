@@ -1,85 +1,28 @@
-RentItEase – Updated Visual Asset Pack
-Generated to match the supplied RentItEase visual reference sheet.
+RentItEase visual asset manifest
 
-PATH | SIZE
+Runtime Flutter assets use SVG for logos, icons, onboarding illustrations,
+and empty/property-placeholder artwork.
+
+SVG ASSETS
 ----------------------------------------------------------------------
-avatars/default_avatar_512x512.png | 512x512
-avatars/female_avatar_512x512.png | 512x512
-avatars/male_avatar_512x512.png | 512x512
-avatars/owner_avatar_512x512.png | 512x512
-avatars/tenant_avatar_512x512.png | 512x512
-banners/homepage_banner_1920x600.png | 1920x600
-banners/membership_offer_banner_1920x400.png | 1920x400
-banners/property_promo_banner_1920x400.png | 1920x400
-banners/web_ad_banner_1200x628.png | 1200x628
-branding/android_adaptive_background_1080x1080.png | 1080x1080
-branding/android_adaptive_foreground_432x432.png | 432x432
-branding/android_adaptive_full_icon_1080x1080.png | 1080x1080
-branding/app_icon_144x144.png | 144x144
-branding/app_icon_192x192.png | 192x192
-branding/app_icon_72x72.png | 72x72
-branding/app_icon_96x96.png | 96x96
-branding/app_icon_app_store_512x512.png | 512x512
-branding/app_icon_play_store_512x512.png | 512x512
-branding/ios_app_icon_120x120.png | 120x120
-branding/ios_app_icon_152x152.png | 152x152
-branding/ios_app_icon_167x167.png | 167x167
-branding/ios_app_icon_180x180.png | 180x180
-branding/ios_app_icon_20x20.png | 20x20
-branding/ios_app_icon_40x40.png | 40x40
-branding/ios_app_icon_60x60.png | 60x60
-branding/ios_app_icon_87x87.png | 87x87
-branding/rentitease_compact_logo_256x256.png | 256x256
-branding/rentitease_horizontal_logo_1200x400.png | 1200x400
-branding/rentitease_logo_512x512.svg | 512x512
-branding/rentitease_primary_logo_1024x1024.png | 1024x1024
-icons/feature/add_property_512x512.png | 512x512
-icons/feature/bookings_512x512.png | 512x512
-icons/feature/chat_512x512.png | 512x512
-icons/feature/favorites_512x512.png | 512x512
-icons/feature/home_512x512.png | 512x512
-icons/feature/lease_512x512.png | 512x512
-icons/feature/logout_512x512.png | 512x512
-icons/feature/membership_512x512.png | 512x512
-icons/feature/my_properties_512x512.png | 512x512
-icons/feature/notifications_512x512.png | 512x512
-icons/feature/payments_512x512.png | 512x512
-icons/feature/profile_512x512.png | 512x512
-icons/feature/properties_512x512.png | 512x512
-icons/feature/reviews_512x512.png | 512x512
-icons/feature/search_512x512.png | 512x512
-icons/feature/visits_512x512.png | 512x512
-icons/utility/delete_512x512.png | 512x512
-icons/utility/edit_512x512.png | 512x512
-icons/utility/email_512x512.png | 512x512
-icons/utility/filter_512x512.png | 512x512
-icons/utility/info_512x512.png | 512x512
-icons/utility/location_512x512.png | 512x512
-icons/utility/map_512x512.png | 512x512
-icons/utility/phone_512x512.png | 512x512
-icons/utility/share_512x512.png | 512x512
-icons/utility/sort_512x512.png | 512x512
-icons/utility/success_512x512.png | 512x512
-icons/utility/warning_512x512.png | 512x512
-onboarding/easy_bookings_1080x1920.png | 1080x1920
-onboarding/find_your_property_1080x1920.png | 1080x1920
-onboarding/live_easy_1080x1920.png | 1080x1920
-onboarding/secure_payments_1080x1920.png | 1080x1920
-payments/google_pay_512x512.png | 512x512
-payments/mastercard_512x512.png | 512x512
-payments/paytm_512x512.png | 512x512
-payments/phonepe_512x512.png | 512x512
-payments/razorpay_512x512.png | 512x512
-payments/upi_512x512.png | 512x512
-payments/visa_512x512.png | 512x512
-properties/no_image_available_800x800.png | 800x800
-properties/property_placeholder_landscape_1280x853.png | 1280x853
-properties/property_placeholder_portrait_720x1280.png | 720x1280
-properties/property_placeholder_square_1080x1080.png | 1080x1080
-social/facebook_512x512.png | 512x512
-social/instagram_512x512.png | 512x512
-social/linkedin_512x512.png | 512x512
-social/x_512x512.png | 512x512
-social/youtube_512x512.png | 512x512
-splash/android_splash_1080x1920.png | 1080x1920
-splash/ios_splash_1125x2436.png | 1125x2436
+branding/google_g.svg
+branding/rentitease_logo_512x512.svg
+icons/feature/*.svg
+icons/utility/*.svg
+onboarding/find_your_property.svg
+onboarding/easy_bookings.svg
+onboarding/secure_payments.svg
+properties/property_placeholder.svg
+
+PROPERTY PHOTOS
+----------------------------------------------------------------------
+Listing photographs are genuine user/owner uploads delivered by the API.
+The app does not bundle fake property photography. If a listing has no valid
+photo, properties/property_placeholder.svg is displayed.
+
+PLATFORM EXCEPTIONS
+----------------------------------------------------------------------
+Android launcher resources, iOS AppIcon/LaunchImage resources, and web/PWA
+icons remain PNG in their platform directories. Those operating-system asset
+catalogs require raster outputs; their editable branding source is the
+RentItEase SVG logo above.

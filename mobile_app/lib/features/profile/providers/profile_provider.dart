@@ -124,6 +124,7 @@ class ProfileNotifier extends StateNotifier<AsyncValue<ProfileEntity?>> {
       state = AsyncData(persisted);
     } catch (e, stackTrace) {
       state = AsyncError(e, stackTrace);
+      rethrow;
     }
   }
 

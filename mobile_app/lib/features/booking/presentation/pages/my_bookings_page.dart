@@ -5,16 +5,44 @@ import '../../providers/booking_provider.dart';
 import '../widgets/booking_card.dart';
 import 'package:go_router/go_router.dart';
 
-class MyBookingsPage extends ConsumerWidget {
+class MyBookingsPage extends ConsumerStatefulWidget {
   const MyBookingsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyBookingsPage> createState() => _MyBookingsPageState();
+}
+
+class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final bookingsAsync = ref.watch(tenantBookingsProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('My Bookings'), centerTitle: true),
-      body: bookingsAsync.when(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) => setState(() => _query = value.trim()),
+              decoration: const InputDecoration(
+                hintText: 'Search bookings by property, owner or status',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          Expanded(child: bookingsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => _ErrorView(
           error: error,
@@ -27,6 +55,19 @@ class MyBookingsPage extends ConsumerWidget {
             return const _EmptyBookingsView();
           }
 
+          final query = _query.toLowerCase();
+          final visibleBookings = bookings.where((booking) {
+            if (query.isEmpty) return true;
+            return booking.propertyTitle.toLowerCase().contains(query) ||
+                booking.ownerName.toLowerCase().contains(query) ||
+                booking.status.toLowerCase().contains(query) ||
+                booking.location.toLowerCase().contains(query);
+          }).toList();
+
+          if (visibleBookings.isEmpty) {
+            return const Center(child: Text('No matching bookings.'));
+          }
+
           return RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(tenantBookingsProvider);
@@ -35,9 +76,9 @@ class MyBookingsPage extends ConsumerWidget {
             },
             child: ListView.builder(
               padding: const EdgeInsets.only(top: 12, bottom: 24),
-              itemCount: bookings.length,
+              itemCount: visibleBookings.length,
               itemBuilder: (context, index) {
-                final booking = bookings[index];
+                final booking = visibleBookings[index];
 
                 return BookingCard(
                   bookingId: booking.id,
@@ -62,6 +103,8 @@ class MyBookingsPage extends ConsumerWidget {
             ),
           );
         },
+      )),
+        ],
       ),
     );
   }
