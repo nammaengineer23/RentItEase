@@ -4,14 +4,14 @@ import {
 } from '@nestjs/common';
 
 import { ImageFileValidator } from '../../common/validators/image-file.validator';
-import { FirebaseService } from '../../firebase/firebase.service';
+import { StorageService } from '../../storage/storage.service';
 
 
 @Injectable()
 export class UploadsService {
 
  constructor(
-    private readonly firebaseService: FirebaseService,
+    private readonly storageService: StorageService,
   ) {}
 
 
@@ -34,7 +34,7 @@ export class UploadsService {
     }
 
     const uploadResult =
-  await this.firebaseService.uploadImage(file);
+  await this.storageService.uploadImage(file);
 
 return {
   success: true,

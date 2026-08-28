@@ -8,14 +8,14 @@ import {
 import { PropertyImageSection, UserRole } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
-import { FirebaseService } from '../../firebase/firebase.service';
+import { StorageService } from '../../storage/storage.service';
 import { ReorderImagesDto } from './dto/reorder-images.dto';
 
 @Injectable()
 export class PropertyImagesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly firebaseService: FirebaseService,
+    private readonly storageService: StorageService,
   ) {}
 
   // =====================================
@@ -314,7 +314,7 @@ export class PropertyImagesService {
       throw new NotFoundException('Image not found for this property.');
     }
 
-    // Delete image from Firebase Storage.
+    // Delete the object from R2 or legacy Firebase Storage.
     if (image.publicId) {
       await this.firebaseService.deleteImage(image.publicId);
     }

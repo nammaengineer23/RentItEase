@@ -39,6 +39,7 @@ import { UserDevicesModule } from './modules/user-devices/user-devices.module';
 import { AdminBillingModule } from "./modules/admin-billing/admin-billing.module";
 import { SocialMediaModule } from './modules/social-media/social-media.module';
 import { AppFeedbackModule } from './modules/app-feedback/app-feedback.module';
+import { StorageModule } from './storage/storage.module';
 
 
 
@@ -60,6 +61,38 @@ import { AppFeedbackModule } from './modules/app-feedback/app-feedback.module';
         FIREBASE_CLIENT_EMAIL: Joi.string().email().required(),
 
         FIREBASE_PRIVATE_KEY: Joi.string().required(),
+
+        STORAGE_DRIVER: Joi.string().valid('firebase', 'r2').default('firebase'),
+
+        R2_ACCOUNT_ID: Joi.string().when('STORAGE_DRIVER', {
+          is: 'r2',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+
+        R2_ACCESS_KEY_ID: Joi.string().when('STORAGE_DRIVER', {
+          is: 'r2',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+
+        R2_SECRET_ACCESS_KEY: Joi.string().when('STORAGE_DRIVER', {
+          is: 'r2',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+
+        R2_BUCKET_NAME: Joi.string().when('STORAGE_DRIVER', {
+          is: 'r2',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+
+        R2_PUBLIC_BASE_URL: Joi.string().uri().when('STORAGE_DRIVER', {
+          is: 'r2',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
 
         PORT: Joi.number().default(3000),
 
@@ -112,6 +145,7 @@ import { AppFeedbackModule } from './modules/app-feedback/app-feedback.module';
     AdminBillingModule,
     SocialMediaModule,
     AppFeedbackModule,
+    StorageModule,
   ],
 
   controllers: [AppController],
