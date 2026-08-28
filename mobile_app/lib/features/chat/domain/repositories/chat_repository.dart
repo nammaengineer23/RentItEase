@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../entities/conversation_entity.dart';
 import '../entities/message_entity.dart';
 
@@ -15,7 +17,11 @@ abstract class ChatRepository {
   Future<MessageEntity> sendMessage({
     required String conversationId,
     required String text,
+    String messageType = 'TEXT',
   });
+
+  Future<String> uploadChatImage(File image);
+  Future<String> uploadChatFile(File file);
 
   /// Mark all unread messages in a conversation as read.
   Future<void> markAsRead({required String conversationId});
@@ -29,3 +35,4 @@ abstract class ChatRepository {
   /// Delete an existing message.
   Future<void> deleteMessage({required String messageId});
 }
+import 'dart:io';

@@ -51,6 +51,28 @@ class AdminApi {
     );
   }
 
+  Future<void> approveProperty(String id) async {
+    await _dio.patch<void>('/admin/properties/$id/approve');
+  }
+
+  Future<void> markPropertyPremium(String propertyId, String ownerId) async {
+    final response = await _dio.post<dynamic>(
+      '/premium-listings/users/$ownerId',
+      data: {
+        'propertyId': propertyId,
+        'durationDays': 30,
+        'amount': 0,
+        'currency': 'INR',
+      },
+    );
+    dynamic value = _unwrap(response);
+    if (value is Map && value['id'] != null) {
+      await _dio.patch<void>('/premium-listings/${value['id']}/activate');
+      return;
+    }
+    throw const FormatException('Invalid premium listing response.');
+  }
+
   Future<void> deleteProperty(String id) async {
     await _dio.delete<void>('/admin/properties/$id');
   }
@@ -75,10 +97,28 @@ class AdminApi {
     return _map(await _dio.get<Map<String, dynamic>>('/admin/analytics'));
   }
 
+  Future<List<Map<String, dynamic>>> getMemberships() async {
+    return _list(await _dio.get<dynamic>('/admin/billing/memberships'));
+  }
+
+  Future<List<Map<String, dynamic>>> getSocialProperties() async {
+    return _list(await _dio.get<dynamic>('/admin/social-media/properties'));
+  }
+
+  Future<Map<String, dynamic>> getSocialAnalytics() async {
+    return _map(await _dio.get<dynamic>('/admin/social-media/analytics'));
+  }
+
   dynamic _unwrap(Response<dynamic> response) {
-    final body = response.data;
-    if (body is Map && body['data'] != null) return body['data'];
-    return body;
+    dynamic value = response.data;
+    for (var depth = 0; depth < 5; depth++) {
+      if (value is Map && value['data'] != null) {
+        value = value['data'];
+      } else {
+        break;
+      }
+    }
+    return value;
   }
 
   Map<String, dynamic> _map(Response<dynamic> response) {

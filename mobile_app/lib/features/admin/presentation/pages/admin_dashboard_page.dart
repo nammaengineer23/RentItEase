@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../authentication/providers/authentication_provider.dart';
 import '../../providers/admin_provider.dart';
@@ -23,10 +24,12 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
 
   static const _titles = [
     'Admin Dashboard',
-    'User Management',
-    'Property Management',
+    'Premium Memberships',
+    'Social Media',
     'Reviews & Visits',
     'Platform Analytics',
+    'User Management',
+    'Property Management',
   ];
 
   @override
@@ -48,10 +51,10 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
         await notifier.loadDashboard();
         break;
       case 1:
-        await notifier.loadUsers();
+        await notifier.loadMemberships();
         break;
       case 2:
-        await notifier.loadProperties();
+        await notifier.loadSocialMedia();
         break;
       case 3:
         await notifier.loadReviews();
@@ -59,6 +62,12 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
         break;
       case 4:
         await notifier.loadAnalytics();
+        break;
+      case 5:
+        await notifier.loadUsers();
+        break;
+      case 6:
+        await notifier.loadProperties();
         break;
     }
   }
@@ -92,12 +101,14 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
         children: [
           IndexedStack(
             index: _index,
-            children: const [
-              _DashboardView(),
-              _UsersView(),
-              _PropertiesView(),
-              _ActivityView(),
-              _AnalyticsView(),
+            children: [
+              _DashboardView(onSelect: _select),
+              const _PremiumView(),
+              const _SocialMediaView(),
+              const _ActivityView(),
+              const _AnalyticsView(),
+              const _UsersView(),
+              const _PropertiesView(),
             ],
           ),
           if (state.loading)
@@ -110,7 +121,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
         ],
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
+        selectedIndex: _index < 5 ? _index : 0,
         onDestinationSelected: _select,
         destinations: const [
           NavigationDestination(
@@ -119,14 +130,14 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
             label: 'Dashboard',
           ),
           NavigationDestination(
-            icon: Icon(Icons.people_outline),
-            selectedIcon: Icon(Icons.people),
-            label: 'Users',
+            icon: Icon(Icons.workspace_premium_outlined),
+            selectedIcon: Icon(Icons.workspace_premium),
+            label: 'Premium',
           ),
           NavigationDestination(
-            icon: Icon(Icons.apartment_outlined),
-            selectedIcon: Icon(Icons.apartment),
-            label: 'Properties',
+            icon: Icon(Icons.campaign_outlined),
+            selectedIcon: Icon(Icons.campaign),
+            label: 'Social',
           ),
           NavigationDestination(
             icon: Icon(Icons.fact_check_outlined),
@@ -145,7 +156,9 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
 }
 
 class _DashboardView extends ConsumerWidget {
-  const _DashboardView();
+  const _DashboardView({required this.onSelect});
+
+  final ValueChanged<int> onSelect;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -167,43 +180,65 @@ class _DashboardView extends ConsumerWidget {
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
         children: [
-          _MetricCard('Users', _number(users, 'totalUsers'), Icons.people),
-          _MetricCard('Owners', _number(users, 'totalOwners'), Icons.business),
-          _MetricCard('Admins', _number(users, 'totalAdmins'), Icons.shield),
+          _MetricCard(
+            'Users',
+            _number(users, 'totalUsers'),
+            Icons.people,
+            onTap: () => onSelect(5),
+          ),
+          _MetricCard(
+            'Owners',
+            _number(users, 'totalOwners'),
+            Icons.business,
+            onTap: () => onSelect(5),
+          ),
+          _MetricCard(
+            'Admins',
+            _number(users, 'totalAdmins'),
+            Icons.shield,
+            onTap: () => onSelect(5),
+          ),
           _MetricCard(
             'Properties',
             _number(properties, 'totalProperties'),
             Icons.apartment,
+            onTap: () => onSelect(6),
           ),
           _MetricCard(
             'Available',
             _number(properties, 'activeProperties'),
             Icons.check_circle,
+            onTap: () => onSelect(6),
           ),
           _MetricCard(
             'Hidden/Rented',
             _number(properties, 'rentedProperties'),
             Icons.visibility_off,
+            onTap: () => onSelect(6),
           ),
           _MetricCard(
             'Reviews',
             _number(engagement, 'totalReviews'),
             Icons.reviews,
+            onTap: () => onSelect(3),
           ),
           _MetricCard(
             'Favorites',
             _number(engagement, 'totalFavorites'),
             Icons.favorite,
+            onTap: () => onSelect(4),
           ),
           _MetricCard(
             'Pending Visits',
             _number(visits, 'pendingVisits'),
             Icons.schedule,
+            onTap: () => onSelect(3),
           ),
           _MetricCard(
             'Completed Visits',
             _number(visits, 'completedVisits'),
             Icons.task_alt,
+            onTap: () => onSelect(3),
           ),
         ],
       ),
@@ -288,8 +323,20 @@ class _UsersView extends ConsumerWidget {
                 notifier,
                 _text(user, 'id'),
               ),
-              trailing: PopupMenuButton<String>(
-                onSelected: (action) async {
+              trailing: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  if (_text(user, 'phone').isNotEmpty)
+                    IconButton(
+                      tooltip: 'Call ${_text(user, 'fullName')}',
+                      onPressed: () => launchUrl(
+                        Uri.parse('tel:${_text(user, 'phone')}'),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                      icon: const Icon(Icons.phone_outlined),
+                    ),
+                  PopupMenuButton<String>(
+                    onSelected: (action) async {
                   if (action == 'toggle') {
                     await _runAction(
                       context,
@@ -313,16 +360,18 @@ class _UsersView extends ConsumerWidget {
                     );
                   }
                 },
-                itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: 'toggle',
-                    child: Text(active ? 'Deactivate' : 'Activate'),
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: 'toggle',
+                        child: Text(active ? 'Deactivate' : 'Activate'),
+                      ),
+                      if (role != 'ADMIN')
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Delete'),
+                        ),
+                    ],
                   ),
-                  if (role != 'ADMIN')
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Delete'),
-                    ),
                 ],
               ),
             ),
@@ -351,6 +400,7 @@ class _PropertiesView extends ConsumerWidget {
         itemBuilder: (context, index) {
           final property = state.properties[index];
           final visible = property['isAvailable'] == true;
+          final verified = property['isVerified'] == true;
           final owner = _section(property, 'owner');
           final image = property['primaryImage']?.toString();
 
@@ -374,6 +424,7 @@ class _PropertiesView extends ConsumerWidget {
               subtitle: Text(
                 '${_text(property, 'city')} • ₹${_number(property, 'price')}\n'
                 'Owner: ${_text(owner, 'fullName')} • '
+                '${verified ? 'Verified' : 'Pending verification'} • '
                 '${visible ? 'Visible' : 'Hidden'}',
               ),
               isThreeLine: true,
@@ -384,7 +435,22 @@ class _PropertiesView extends ConsumerWidget {
               ),
               trailing: PopupMenuButton<String>(
                 onSelected: (action) async {
-                  if (action == 'toggle') {
+                  if (action == 'approve') {
+                    await _runAction(
+                      context,
+                      () => notifier.approveProperty(_text(property, 'id')),
+                      'Property and owner approved',
+                    );
+                  } else if (action == 'premium') {
+                    await _runAction(
+                      context,
+                      () => notifier.markPropertyPremium(
+                        _text(property, 'id'),
+                        _text(owner, 'id'),
+                      ),
+                      'Property marked premium for 30 days',
+                    );
+                  } else if (action == 'toggle') {
                     await _runAction(
                       context,
                       () => notifier.setPropertyVisible(
@@ -408,6 +474,15 @@ class _PropertiesView extends ConsumerWidget {
                   }
                 },
                 itemBuilder: (_) => [
+                  if (!verified)
+                    const PopupMenuItem(
+                      value: 'approve',
+                      child: Text('Approve property & owner'),
+                    ),
+                  const PopupMenuItem(
+                    value: 'premium',
+                    child: Text('Make Premium (30 days)'),
+                  ),
                   PopupMenuItem(
                     value: 'toggle',
                     child: Text(visible ? 'Hide' : 'Unhide'),
@@ -418,6 +493,81 @@ class _PropertiesView extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _PremiumView extends ConsumerWidget {
+  const _PremiumView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(adminProvider);
+    return _AdminRefreshView(
+      error: state.error,
+      empty: state.memberships.isEmpty,
+      onRefresh: ref.read(adminProvider.notifier).loadMemberships,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: state.memberships.length,
+        itemBuilder: (context, index) {
+          final membership = state.memberships[index];
+          final user = _section(membership, 'user');
+          final plan = _section(membership, 'plan');
+          return Card(
+            child: ListTile(
+              leading: const CircleAvatar(
+                child: Icon(Icons.workspace_premium_outlined),
+              ),
+              title: Text(_text(user, 'fullName')),
+              subtitle: Text(
+                '${_text(plan, 'name')} • ${_text(membership, 'status')}\n'
+                'Ends ${_text(membership, 'endDate')}',
+              ),
+              isThreeLine: true,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SocialMediaView extends ConsumerWidget {
+  const _SocialMediaView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(adminProvider);
+    return _AdminRefreshView(
+      error: state.error,
+      empty: state.socialProperties.isEmpty,
+      onRefresh: ref.read(adminProvider.notifier).loadSocialMedia,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: state.socialProperties.length,
+        itemBuilder: (context, index) {
+          final property = state.socialProperties[index];
+          final consent = _section(property, 'socialMarketingConsent');
+          final approved = consent['approved'] == true;
+          return Card(
+            child: ListTile(
+              leading: Icon(
+                approved ? Icons.campaign : Icons.no_accounts_outlined,
+              ),
+              title: Text(_text(property, 'title')),
+              subtitle: Text(
+                approved
+                    ? 'Owner consent active • ${_text(consent, 'platforms')}'
+                    : 'Owner has not granted social publishing consent',
+              ),
+              trailing: approved
+                  ? const Icon(Icons.check_circle, color: Colors.green)
+                  : const Icon(Icons.lock_outline),
             ),
           );
         },
@@ -559,6 +709,7 @@ class _AnalyticsView extends ConsumerWidget {
     final users = _section(data, 'users');
     final properties = _section(data, 'properties');
     final engagement = _section(data, 'engagement');
+    final social = state.socialAnalytics;
 
     return _AdminRefreshView(
       error: state.error,
@@ -592,6 +743,18 @@ class _AnalyticsView extends ConsumerWidget {
               'Reviews': _number(engagement, 'reviews'),
               'Favorites': _number(engagement, 'favorites'),
               'Visits': _number(engagement, 'visits'),
+            },
+          ),
+          _AnalyticsSection(
+            title: 'Social Media',
+            values: {
+              'Total posts': _number(social, 'totalPosts'),
+              'Published': _number(social, 'published'),
+              'Pending': _number(social, 'pending'),
+              'Failed': _number(social, 'failed'),
+              'Instagram': _number(social, 'instagram'),
+              'Facebook': _number(social, 'facebook'),
+              'YouTube': _number(social, 'youtube'),
             },
           ),
         ],
@@ -637,16 +800,20 @@ class _AdminRefreshView extends StatelessWidget {
 }
 
 class _MetricCard extends StatelessWidget {
-  const _MetricCard(this.label, this.value, this.icon);
+  const _MetricCard(this.label, this.value, this.icon, {this.onTap});
 
   final String label;
   final int value;
   final IconData icon;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -659,6 +826,7 @@ class _MetricCard extends StatelessWidget {
             ),
             Text(label, textAlign: TextAlign.center),
           ],
+        ),
         ),
       ),
     );

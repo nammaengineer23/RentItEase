@@ -6,12 +6,16 @@ class MessageInput extends StatefulWidget {
     required this.onSend,
     this.onCamera,
     this.onGallery,
+    this.onFile,
+    this.onVoice,
     this.onTyping,
   });
 
   final ValueChanged<String> onSend;
   final VoidCallback? onCamera;
   final VoidCallback? onGallery;
+  final VoidCallback? onFile;
+  final VoidCallback? onVoice;
   final ValueChanged<bool>? onTyping;
 
   @override
@@ -73,12 +77,7 @@ class _MessageInputState extends State<MessageInput> {
                   color: Colors.orange,
                   onTap: () {
                     Navigator.pop(context);
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('File sharing coming soon.'),
-                      ),
-                    );
+                    widget.onFile?.call();
                   },
                 ),
               ],
@@ -87,6 +86,36 @@ class _MessageInputState extends State<MessageInput> {
         );
       },
     );
+  }
+
+  Future<void> _showEmojiPicker() async {
+    final emoji = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: GridView.count(
+          shrinkWrap: true,
+          crossAxisCount: 6,
+          padding: const EdgeInsets.all(16),
+          children: [
+            for (final value in const [
+              '😊', '😀', '😂', '😍', '👍', '🙏',
+              '🎉', '❤️', '🏠', '✅', '🤝', '📍',
+            ])
+              TextButton(
+                onPressed: () => Navigator.pop(context, value),
+                child: Text(value, style: const TextStyle(fontSize: 28)),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (emoji == null) return;
+    _controller.text += emoji;
+    _controller.selection = TextSelection.collapsed(
+      offset: _controller.text.length,
+    );
+    _focusNode.requestFocus();
+    setState(() {});
   }
 
   Widget _attachmentButton({
@@ -137,9 +166,7 @@ class _MessageInputState extends State<MessageInput> {
         child: Row(
           children: [
             IconButton(
-              onPressed: () {
-                // Emoji picker can be added later.
-              },
+              onPressed: _showEmojiPicker,
               icon: const Icon(Icons.emoji_emotions_outlined),
             ),
 
@@ -188,13 +215,7 @@ class _MessageInputState extends State<MessageInput> {
                     )
                   : IconButton(
                       key: const ValueKey('mic'),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Voice messages coming soon.'),
-                          ),
-                        );
-                      },
+                      onPressed: widget.onVoice,
                       icon: const Icon(Icons.mic),
                     ),
             ),

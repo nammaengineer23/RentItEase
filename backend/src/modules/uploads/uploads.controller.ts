@@ -87,4 +87,27 @@ export class UploadsController {
       file,
     );
   }
+
+  @Post('file')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 15 * 1024 * 1024 },
+      fileFilter: (_request, file, callback) => {
+        const allowed = [
+          '.pdf', '.doc', '.docx', '.txt',
+          '.m4a', '.aac', '.mp3', '.wav', '.ogg',
+        ];
+        callback(
+          allowed.includes(extname(file.originalname).toLowerCase())
+            ? null
+            : new Error('Unsupported chat file type.'),
+          allowed.includes(extname(file.originalname).toLowerCase()),
+        );
+      },
+    }),
+  )
+  uploadFile(@UploadedFile() file: Express.Multer.File) {
+    return this.uploadsService.uploadFile(file);
+  }
 }

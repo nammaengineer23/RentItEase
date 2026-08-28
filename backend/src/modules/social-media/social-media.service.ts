@@ -126,6 +126,33 @@ export class SocialMediaService {
     };
   }
 
+  listProperties() {
+    return this.prisma.property.findMany({
+      include: {
+        owner: { select: { id: true, fullName: true } },
+        socialMarketingConsent: true,
+        socialMediaPosts: { orderBy: { createdAt: 'desc' }, take: 5 },
+        images: { where: { isPrimary: true }, take: 1 },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async analytics() {
+    const posts = await this.prisma.socialMediaPost.findMany({
+      select: { platform: true, status: true },
+    });
+    return {
+      totalPosts: posts.length,
+      published: posts.filter((post) => post.status === 'PUBLISHED').length,
+      failed: posts.filter((post) => post.status === 'FAILED').length,
+      pending: posts.filter((post) => post.status === 'PENDING').length,
+      instagram: posts.filter((post) => post.platform === 'INSTAGRAM').length,
+      facebook: posts.filter((post) => post.platform === 'FACEBOOK').length,
+      youtube: posts.filter((post) => post.platform === 'YOUTUBE').length,
+    };
+  }
+
   async updateSettings(dto: SocialSettingsDto) {
     // Runtime settings are intentionally returned rather than persisted in this
     // first batch. Persist admin settings in a dedicated system-settings table

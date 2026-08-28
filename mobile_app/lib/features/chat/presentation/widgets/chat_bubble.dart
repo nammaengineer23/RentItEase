@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/entities/message_entity.dart';
 
@@ -48,17 +49,51 @@ class ChatBubble extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                message.deletedAt == null ? message.text : 'Message deleted',
-                style: TextStyle(
-                  color: isMine ? Colors.white : Colors.black87,
-                  fontSize: 15,
-                  height: 1.4,
-                  fontStyle: message.deletedAt == null
-                      ? FontStyle.normal
-                      : FontStyle.italic,
+              if (message.deletedAt == null && message.messageType == 'IMAGE')
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    message.text,
+                    width: 240,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const SizedBox(
+                      width: 220,
+                      height: 120,
+                      child: Center(child: Icon(Icons.broken_image_outlined)),
+                    ),
+                  ),
+                )
+              else if (message.deletedAt == null &&
+                  (message.messageType == 'DOCUMENT' ||
+                      message.messageType == 'VOICE'))
+                OutlinedButton.icon(
+                  onPressed: () => launchUrl(
+                    Uri.parse(message.text),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  icon: Icon(
+                    message.messageType == 'VOICE'
+                        ? Icons.play_arrow
+                        : Icons.description_outlined,
+                  ),
+                  label: Text(
+                    message.messageType == 'VOICE'
+                        ? 'Play voice message'
+                        : 'Open document',
+                  ),
+                )
+              else
+                Text(
+                  message.deletedAt == null ? message.text : 'Message deleted',
+                  style: TextStyle(
+                    color: isMine ? Colors.white : Colors.black87,
+                    fontSize: 15,
+                    height: 1.4,
+                    fontStyle: message.deletedAt == null
+                        ? FontStyle.normal
+                        : FontStyle.italic,
+                  ),
                 ),
-              ),
               const SizedBox(height: 8),
               Row(
                 mainAxisSize: MainAxisSize.min,

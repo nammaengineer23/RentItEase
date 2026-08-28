@@ -82,7 +82,8 @@ class ProfilePage extends ConsumerWidget {
                     onTap: () => _requestOwnerAccess(context, ref),
                   ),
 
-                ProfileMenuTile(
+                if (profile.role.trim().toUpperCase() != 'OWNER')
+                  ProfileMenuTile(
                   icon: Icons.event,
                   title: profile.role.trim().toUpperCase() == 'OWNER'
                       ? 'Property Visits'
@@ -102,7 +103,8 @@ class ProfilePage extends ConsumerWidget {
                   },
                 ),
 
-                ProfileMenuTile(
+                if (profile.role.trim().toUpperCase() != 'OWNER')
+                  ProfileMenuTile(
                   icon: Icons.favorite,
                   title: profile.role.trim().toUpperCase() == 'OWNER'
                       ? 'Property Favorites'
@@ -120,6 +122,13 @@ class ProfilePage extends ConsumerWidget {
                       MaterialPageRoute(builder: (_) => const FavoritesPage()),
                     );
                   },
+                ),
+
+                ProfileMenuTile(
+                  icon: Icons.workspace_premium_outlined,
+                  title: 'Premium Membership',
+                  subtitle: 'View plans, benefits and membership status',
+                  onTap: () => _showMembership(context, ref, profile.id),
                 ),
 
                 ProfileMenuTile(
@@ -167,13 +176,88 @@ class ProfilePage extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Owner request sent for admin approval.'),
+          content: Text(
+            'Owner request sent. Add your first property for admin review.',
+          ),
+        ),
+      );
+      context.push('/owner/add-property');
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to submit request: $error')),
+      );
+    }
+  }
+
+  Future<void> _showMembership(
+    BuildContext context,
+    WidgetRef ref,
+    String userId,
+  ) async {
+    try {
+      final responses = await Future.wait([
+        ref.read(dioProvider).get('/membership/plans'),
+        ref.read(dioProvider).get('/membership/users/$userId/active'),
+      ]);
+      dynamic plans = responses[0].data;
+      dynamic active = responses[1].data;
+      while (plans is Map && plans.containsKey('data')) plans = plans['data'];
+      while (active is Map && active.containsKey('data')) {
+        active = active['data'];
+      }
+      if (!context.mounted) return;
+      await showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (context) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Premium Membership',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 12),
+                if (active is Map && active.isNotEmpty)
+                  const ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.verified, color: Colors.green),
+                    title: Text('Membership active'),
+                    subtitle: Text('Owner contact details are unlocked.'),
+                  )
+                else
+                  const ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.lock_open_outlined),
+                    title: Text('No active membership'),
+                    subtitle: Text(
+                      'Choose a plan to unlock premium property access.',
+                    ),
+                  ),
+                if (plans is List)
+                  ...plans.whereType<Map>().take(3).map(
+                    (plan) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.workspace_premium_outlined),
+                      title: Text(plan['name']?.toString() ?? 'Premium plan'),
+                      subtitle: Text(
+                        '₹${plan['price'] ?? 0} • ${plan['durationDays'] ?? ''} days',
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       );
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to submit request: $error')),
+        SnackBar(content: Text('Unable to load membership: $error')),
       );
     }
   }

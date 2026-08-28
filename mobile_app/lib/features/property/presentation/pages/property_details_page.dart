@@ -6,6 +6,8 @@ import '../../domain/entities/property_entity.dart';
 import '../../providers/property_provider.dart';
 
 import '../../../favorites/providers/favorites_provider.dart';
+import '../../../authentication/providers/authentication_provider.dart';
+import '../../../../core/network/dio_provider.dart';
 import '../../../maps/presentation/widgets/property_map.dart';
 import '../../../property_visits/presentation/pages/book_visit_page.dart';
 import '../widgets/property_action_buttons.dart';
@@ -31,6 +33,7 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
   bool isLoading = true;
   bool isFavorite = false;
   bool isFavoriteLoading = true;
+  bool hasPremiumMembership = false;
 
   String? error;
 
@@ -40,6 +43,29 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
 
     _loadProperty();
     _checkFavorite();
+    _checkMembership();
+  }
+
+  Future<void> _checkMembership() async {
+    final userId = ref
+        .read(authenticationProvider)
+        .authResponse
+        ?.user
+        .id;
+    if (userId == null || userId.isEmpty) return;
+    try {
+      final response = await ref
+          .read(dioProvider)
+          .get('/membership/users/$userId/active');
+      dynamic value = response.data;
+      while (value is Map && value.containsKey('data')) {
+        value = value['data'];
+      }
+      if (!mounted) return;
+      setState(() => hasPremiumMembership = value is Map && value.isNotEmpty);
+    } catch (_) {
+      // A missing active membership is represented as a locked contact card.
+    }
   }
 
   // ============================================================
@@ -51,6 +77,21 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
       final repository = ref.read(propertyRepositoryProvider);
 
       final result = await repository.getProperty(widget.propertyId);
+
+      final role = ref
+          .read(authenticationProvider)
+          .authResponse
+          ?.user
+          .role
+          .trim()
+          .toUpperCase();
+      if (role == 'USER' || role == 'TENANT') {
+        try {
+          await ref.read(dioProvider).post('/properties/${widget.propertyId}/view');
+        } catch (_) {
+          // A view-count failure must not prevent opening property details.
+        }
+      }
 
       if (!mounted) return;
 
@@ -305,17 +346,29 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        child: Text(
-                          property.ownerName.isEmpty
-                              ? '?'
-                              : property.ownerName[0].toUpperCase(),
-                        ),
-                      ),
-                      title: Text(property.ownerName),
-                      subtitle: Text(property.ownerPhone),
-                    ),
+                    child: hasPremiumMembership
+                        ? ListTile(
+                            leading: CircleAvatar(
+                              child: Text(
+                                property.ownerName.isEmpty
+                                    ? 'O'
+                                    : property.ownerName[0].toUpperCase(),
+                              ),
+                            ),
+                            title: Text(property.ownerName),
+                            subtitle: Text(property.ownerPhone),
+                          )
+                        : ListTile(
+                            leading: const CircleAvatar(
+                              child: Icon(Icons.workspace_premium_outlined),
+                            ),
+                            title: const Text('Owner contact is protected'),
+                            subtitle: const Text(
+                              'Activate Premium Membership to view owner details.',
+                            ),
+                            trailing: const Icon(Icons.lock_outline),
+                            onTap: () => context.push('/profile'),
+                          ),
                   ),
 
                   const SizedBox(height: 12),

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../../domain/entities/conversation_entity.dart';
 import '../../domain/entities/message_entity.dart';
 import '../../domain/repositories/chat_repository.dart';
@@ -8,6 +10,12 @@ class ChatRepositoryImpl implements ChatRepository {
   ChatRepositoryImpl(this.api);
 
   final ChatApi api;
+
+  @override
+  Future<String> uploadChatImage(File image) => api.uploadChatImage(image);
+
+  @override
+  Future<String> uploadChatFile(File file) => api.uploadChatFile(file);
 
   @override
   Future<List<ConversationEntity>> getConversations() async {
@@ -32,8 +40,13 @@ class ChatRepositoryImpl implements ChatRepository {
   Future<MessageEntity> sendMessage({
     required String conversationId,
     required String text,
+    String messageType = 'TEXT',
   }) async {
-    return await api.sendMessage(conversationId: conversationId, text: text);
+    return await api.sendMessage(
+      conversationId: conversationId,
+      text: text,
+      messageType: messageType,
+    );
   }
 
   @override
@@ -54,3 +67,4 @@ class ChatRepositoryImpl implements ChatRepository {
     await api.deleteMessage(messageId: messageId);
   }
 }
+import 'dart:io';

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/dio_provider.dart';
@@ -140,10 +142,43 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   Future<bool> sendMessage(String text) async {
+    return _send(text, 'TEXT');
+  }
+
+  Future<bool> sendImage(File image) async {
+    return sendAttachment(image, 'IMAGE', image: true);
+  }
+
+  Future<bool> sendAttachment(
+    File file,
+    String messageType, {
+    bool image = false,
+  }) async {
+    final conversationId = state.activeConversationId;
+    if (conversationId == null || state.isSending) return false;
+    state = state.copyWith(isSending: true, clearError: true);
+    try {
+      final url = image
+          ? await _repository.uploadChatImage(file)
+          : await _repository.uploadChatFile(file);
+      return _send(url, messageType, alreadySending: true);
+    } catch (error) {
+      state = state.copyWith(isSending: false, error: _message(error));
+      return false;
+    }
+  }
+
+  Future<bool> _send(
+    String text,
+    String messageType, {
+    bool alreadySending = false,
+  }) async {
     final conversationId = state.activeConversationId;
     final trimmed = text.trim();
 
-    if (conversationId == null || trimmed.isEmpty || state.isSending) {
+    if (conversationId == null ||
+        trimmed.isEmpty ||
+        (state.isSending && !alreadySending)) {
       return false;
     }
 
@@ -153,6 +188,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
       final message = await _repository.sendMessage(
         conversationId: conversationId,
         text: trimmed,
+        messageType: messageType,
       );
 
       state = state.copyWith(

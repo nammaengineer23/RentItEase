@@ -119,6 +119,7 @@ model Property {
   petFriendly            Boolean                 @default(false)
   securityDeposit        Decimal                 @db.Decimal(10, 2)
   isAvailable            Boolean                 @default(true)
+  isVerified             Boolean                 @default(false)
   ownerId                String
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
@@ -127,6 +128,7 @@ model Property {
   locality               String?
   longitude              Decimal?                @db.Decimal(9, 6)
   displayOrder           Int                     @default(0)
+  viewCount              Int                     @default(0)
   bookings               Booking[]
   conversations          Conversation[]
   favorites              Favorite[]
@@ -657,6 +659,7 @@ enum MessageType {
   TEXT
   IMAGE
   DOCUMENT
+  VOICE
 }
 
 enum NotificationType {

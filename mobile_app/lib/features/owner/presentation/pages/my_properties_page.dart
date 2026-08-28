@@ -107,21 +107,23 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
                         ? const Center(
                             child: Text('No properties match this status.'),
                           )
-                        : ListView.builder(
-                padding: const EdgeInsets.all(16),
+                        : PageView.builder(
+                scrollDirection: Axis.vertical,
                 itemCount: properties.length,
                 itemBuilder: (context, index) {
                   final property = properties[index];
 
-                  return PropertyOwnerCard(
-                    property: property,
-                    onTap: () {
-                      context.push('/owner/property-details', extra: property);
-                    },
-                    onEdit: () {
-                      context.push('/owner/edit-property', extra: property);
-                    },
-                    onDelete: () async {
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                    child: PropertyOwnerCard(
+                      property: property,
+                      onTap: () {
+                        context.push('/owner/property-details', extra: property);
+                      },
+                      onEdit: () {
+                        context.push('/owner/edit-property', extra: property);
+                      },
+                      onDelete: () async {
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (_) => AlertDialog(
@@ -159,7 +161,8 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
                           content: Text('Property deleted successfully'),
                         ),
                       );
-                    },
+                      },
+                    ),
                   );
                 },
               ),

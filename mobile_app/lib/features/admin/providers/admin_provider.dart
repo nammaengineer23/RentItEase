@@ -22,6 +22,9 @@ class AdminState {
     this.reviews = const [],
     this.visits = const [],
     this.analytics = const {},
+    this.memberships = const [],
+    this.socialProperties = const [],
+    this.socialAnalytics = const {},
   });
 
   final bool loading;
@@ -33,6 +36,9 @@ class AdminState {
   final List<Map<String, dynamic>> reviews;
   final List<Map<String, dynamic>> visits;
   final Map<String, dynamic> analytics;
+  final List<Map<String, dynamic>> memberships;
+  final List<Map<String, dynamic>> socialProperties;
+  final Map<String, dynamic> socialAnalytics;
 
   AdminState copyWith({
     bool? loading,
@@ -45,6 +51,9 @@ class AdminState {
     List<Map<String, dynamic>>? reviews,
     List<Map<String, dynamic>>? visits,
     Map<String, dynamic>? analytics,
+    List<Map<String, dynamic>>? memberships,
+    List<Map<String, dynamic>>? socialProperties,
+    Map<String, dynamic>? socialAnalytics,
   }) {
     return AdminState(
       loading: loading ?? this.loading,
@@ -56,6 +65,9 @@ class AdminState {
       reviews: reviews ?? this.reviews,
       visits: visits ?? this.visits,
       analytics: analytics ?? this.analytics,
+      memberships: memberships ?? this.memberships,
+      socialProperties: socialProperties ?? this.socialProperties,
+      socialAnalytics: socialAnalytics ?? this.socialAnalytics,
     );
   }
 }
@@ -108,8 +120,31 @@ class AdminNotifier extends StateNotifier<AdminState> {
 
   Future<void> loadAnalytics() async {
     await _load(
+      () async {
+        final results = await Future.wait<Map<String, dynamic>>([
+          _api.getAnalytics(),
+          _api.getSocialAnalytics(),
+        ]);
+        state = state.copyWith(
+          analytics: results[0],
+          socialAnalytics: results[1],
+        );
+      },
+    );
+  }
+
+  Future<void> loadMemberships() async {
+    await _load(
       () async => state = state.copyWith(
-        analytics: await _api.getAnalytics(),
+        memberships: await _api.getMemberships(),
+      ),
+    );
+  }
+
+  Future<void> loadSocialMedia() async {
+    await _load(
+      () async => state = state.copyWith(
+        socialProperties: await _api.getSocialProperties(),
       ),
     );
   }
@@ -130,6 +165,17 @@ class AdminNotifier extends StateNotifier<AdminState> {
   Future<void> setPropertyVisible(String id, bool visible) async {
     await _action(
       () => _api.setPropertyVisible(id, visible),
+      loadProperties,
+    );
+  }
+
+  Future<void> approveProperty(String id) async {
+    await _action(() => _api.approveProperty(id), loadProperties);
+  }
+
+  Future<void> markPropertyPremium(String propertyId, String ownerId) async {
+    await _action(
+      () => _api.markPropertyPremium(propertyId, ownerId),
       loadProperties,
     );
   }
