@@ -195,11 +195,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _sendFile() async {
-    final result = await FilePicker().pickFiles(
+    final files = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: const ['pdf', 'doc', 'docx', 'txt'],
     );
-    final path = result?.files.single.path;
+    if (files.isEmpty) return;
+    final path = files.single.path;
     if (path == null) return;
     await ref
         .read(chatProvider.notifier)
