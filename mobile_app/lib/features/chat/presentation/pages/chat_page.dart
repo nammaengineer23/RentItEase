@@ -195,7 +195,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _sendFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker().pickFiles(
       type: FileType.custom,
       allowedExtensions: const ['pdf', 'doc', 'docx', 'txt'],
     );

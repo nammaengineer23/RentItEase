@@ -202,7 +202,9 @@ class ProfilePage extends ConsumerWidget {
       ]);
       dynamic plans = responses[0].data;
       dynamic active = responses[1].data;
-      while (plans is Map && plans.containsKey('data')) plans = plans['data'];
+      while (plans is Map && plans.containsKey('data')) {
+        plans = plans['data'];
+      }
       while (active is Map && active.containsKey('data')) {
         active = active['data'];
       }

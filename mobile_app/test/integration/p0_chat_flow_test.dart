@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -97,6 +99,7 @@ class _FakeChatRepository implements ChatRepository {
   Future<MessageEntity> sendMessage({
     required String conversationId,
     required String text,
+    String messageType = 'TEXT',
   }) async {
     sentTexts.add(text);
 
@@ -106,11 +109,17 @@ class _FakeChatRepository implements ChatRepository {
       senderId: 'tenant-1',
       senderName: 'Tenant User',
       text: text,
-      messageType: 'TEXT',
+      messageType: messageType,
       isRead: false,
       createdAt: DateTime(2026, 8, 26, 12, sentTexts.length),
     );
   }
+
+  @override
+  Future<String> uploadChatImage(File image) async => 'https://example.com/image';
+
+  @override
+  Future<String> uploadChatFile(File file) async => 'https://example.com/file';
 
   @override
   Future<void> markAsRead({required String conversationId}) async {
