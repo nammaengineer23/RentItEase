@@ -1,35 +1,4 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-
-function authHeaders(): HeadersInit {
-  const token =
-    localStorage.getItem('accessToken') ||
-    localStorage.getItem('token') ||
-    localStorage.getItem('jwt');
-
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeaders(),
-      ...(init.headers || {}),
-    },
-  });
-
-  const body = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(
-      body?.message || body?.error || `Request failed (${response.status})`,
-    );
-  }
-
-  return body as T;
-}
+import { apiRequest } from './http';
 
 export type SocialPlatform = 'INSTAGRAM' | 'FACEBOOK' | 'YOUTUBE';
 
@@ -51,11 +20,44 @@ export interface SocialSettings {
   defaultTemplate: string;
 }
 
+export interface ConsentedProperty {
+  id: string;
+  title: string;
+  city: string;
+  price: number | string;
+  images: Array<{ imageUrl: string }>;
+  owner: { fullName: string };
+  socialMarketingConsent: {
+    approved: boolean;
+    autoPublish: boolean;
+    platforms: SocialPlatform[];
+    consentVersion: string;
+    consentedAt?: string;
+  };
+}
+
+interface ApiDataResponse<T> {
+  data: T;
+}
+
+async function socialRequest<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const response = await apiRequest<T | ApiDataResponse<T>>(path, options);
+  return typeof response === 'object' && response !== null && 'data' in response
+    ? (response as ApiDataResponse<T>).data
+    : (response as T);
+}
+
 export const socialMediaApi = {
-  settings: () => request<SocialSettings>('/admin/social-media/settings'),
+  settings: () => socialRequest<SocialSettings>('/admin/social-media/settings'),
+
+  properties: () =>
+    socialRequest<ConsentedProperty[]>('/admin/social-media/properties'),
 
   generate: (propertyId: string, secondsPerPhoto = 3) =>
-    request<GenerateVideoResponse>('/admin/social-media/generate', {
+    socialRequest<GenerateVideoResponse>('/admin/social-media/generate', {
       method: 'POST',
       body: JSON.stringify({
         propertyId,
@@ -69,7 +71,7 @@ export const socialMediaApi = {
     caption?: string,
     title?: string,
   ) =>
-    request<{ externalId: string; url?: string }>(
+    socialRequest<{ externalId: string; url?: string }>(
       `/admin/social-media/properties/${propertyId}/publish`,
       {
         method: 'POST',
@@ -78,7 +80,7 @@ export const socialMediaApi = {
     ),
 
   processApproved: (propertyId: string) =>
-    request<{
+    socialRequest<{
       skipped?: boolean;
       reason?: string;
       publications?: Array<{

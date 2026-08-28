@@ -12,9 +12,10 @@ import { VideoGeneratorService } from './video/video-generator.service';
 import { VideoService } from './video/video.service';
 import { VideoTemplateService } from './video/video-template.service';
 import { SocialMediaStorageService } from './social-media.storage.service';
+import { StorageModule } from '../../storage/storage.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, StorageModule],
   controllers: [SocialMediaController, OwnerSocialMediaController],
   providers: [
     SocialMediaService,

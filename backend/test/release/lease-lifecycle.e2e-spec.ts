@@ -9,6 +9,7 @@ import {
   futureIso,
   login,
   statusOk,
+  createPropertyCompat,
 } from './helpers';
 
 describe('Release E2E • Lease Lifecycle', () => {
@@ -49,10 +50,7 @@ describe('Release E2E • Lease Lifecycle', () => {
   it('2. owner creates fresh lifecycle E2E property', async () => {
     expect(ownerToken).toBeTruthy();
 
-    const res = await request(apiUrl())
-      .post('/properties')
-      .set(auth(ownerToken))
-      .send({
+    const res = await createPropertyCompat(ownerToken, {
         title: `Release Lease Lifecycle Property ${Date.now()}`,
         description:
           'Dedicated property created automatically by the RentItEase Lease Lifecycle release E2E test.',
@@ -74,6 +72,8 @@ describe('Release E2E • Lease Lifecycle', () => {
         parking: true,
         petFriendly: true,
         securityDeposit: 50000,
+        termsAccepted: true,
+        termsVersion: '1.0',
       });
 
     statusOk(res);

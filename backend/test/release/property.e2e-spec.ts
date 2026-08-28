@@ -1,6 +1,7 @@
 import request from 'supertest';
 
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
+import { createPropertyCompat } from './helpers';
 
 describe('Property E2E', () => {
   // ============================================================
@@ -459,12 +460,18 @@ describe('Property E2E', () => {
       parking: true,
       petFriendly: true,
       securityDeposit: 50000,
+      termsAccepted: true,
+      termsVersion: '1.0',
     };
 
-    const response = await request(apiUrl)
+    const rejectedWithoutTerms = await request(apiUrl)
       .post('/properties')
       .set('Authorization', `Bearer ${ownerToken}`)
-      .send(payload);
+      .send({ ...payload, termsAccepted: false });
+
+    expect(rejectedWithoutTerms.status).toBe(400);
+
+    const response = await createPropertyCompat(ownerToken, payload);
 
     assertSuccess(response, 'Property creation');
 

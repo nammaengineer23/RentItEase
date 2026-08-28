@@ -67,6 +67,8 @@ class OwnerRepositoryImpl implements OwnerRepository {
     required String stateName,
     bool dailyRentEnabled = false,
     double? dailyRent,
+    required bool termsAccepted,
+    required bool socialMediaConsent,
   }) {
     return _api.addProperty({
       'title': property.title,
@@ -91,6 +93,9 @@ class OwnerRepositoryImpl implements OwnerRepository {
       'securityDeposit': securityDeposit,
       'dailyRentEnabled': dailyRentEnabled,
       if (dailyRentEnabled) 'dailyRent': dailyRent,
+      'termsAccepted': termsAccepted,
+      'termsVersion': '1.0',
+      'socialMediaConsent': socialMediaConsent,
     });
   }
 

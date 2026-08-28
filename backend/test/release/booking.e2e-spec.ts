@@ -8,6 +8,7 @@ import {
   login,
   futureIso,
   statusOk,
+  createPropertyCompat,
 } from './helpers';
 
 describe('Release E2E • Booking', () => {
@@ -36,10 +37,7 @@ describe('Release E2E • Booking', () => {
   });
 
   it('1. owner creates fresh E2E property', async () => {
-    const res = await request(apiUrl())
-      .post('/properties')
-      .set(auth(ownerToken))
-      .send({
+    const res = await createPropertyCompat(ownerToken, {
         title: `Release Booking Test Property ${Date.now()}`,
         description:
           'Dedicated property created automatically by the RentItEase Booking release E2E test.',
@@ -61,6 +59,8 @@ describe('Release E2E • Booking', () => {
         parking: true,
         petFriendly: true,
         securityDeposit: 50000,
+        termsAccepted: true,
+        termsVersion: '1.0',
       });
 
     statusOk(res);

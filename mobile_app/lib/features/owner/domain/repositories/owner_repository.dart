@@ -43,6 +43,8 @@ abstract class OwnerRepository {
     required String stateName,
     bool dailyRentEnabled = false,
     double? dailyRent,
+    required bool termsAccepted,
+    required bool socialMediaConsent,
   });
 
   Future<void> updateProperty(

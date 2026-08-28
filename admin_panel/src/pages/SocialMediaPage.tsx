@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   socialMediaApi,
+  type ConsentedProperty,
   type GenerateVideoResponse,
   type SocialPlatform,
   type SocialSettings,
@@ -10,6 +11,7 @@ import '../styles/social-media.css';
 export function SocialMediaPage() {
   const [propertyId, setPropertyId] = useState('');
   const [settings, setSettings] = useState<SocialSettings | null>(null);
+  const [properties, setProperties] = useState<ConsentedProperty[]>([]);
   const [video, setVideo] = useState<GenerateVideoResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState<SocialPlatform | null>(null);
@@ -17,8 +19,23 @@ export function SocialMediaPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    socialMediaApi.settings().then(setSettings).catch(() => undefined);
+    Promise.all([socialMediaApi.settings(), socialMediaApi.properties()])
+      .then(([settingsResult, propertiesResult]) => {
+        setSettings(settingsResult);
+        setProperties(propertiesResult);
+      })
+      .catch((e) => {
+        setError(
+          e instanceof Error
+            ? e.message
+            : 'Unable to load social-media configuration.',
+        );
+      });
   }, []);
+
+  const selectedProperty = properties.find(
+    (property) => property.id === propertyId,
+  );
 
   async function generateVideo() {
     if (!propertyId.trim()) {
@@ -113,18 +130,35 @@ export function SocialMediaPage() {
       </div>
 
       <div className="social-card">
-        <label htmlFor="property-id">Property ID</label>
+        <label htmlFor="property-id">Owner-consented property</label>
         <div className="social-input-row">
-          <input
+          <select
             id="property-id"
             value={propertyId}
             onChange={(event) => setPropertyId(event.target.value)}
-            placeholder="e.g. cmrpyufqv0003v5600z6q2cm6"
-          />
+          >
+            <option value="">Select a property</option>
+            {properties.map((property) => (
+              <option key={property.id} value={property.id}>
+                {property.title} — {property.city} — {property.owner.fullName}
+              </option>
+            ))}
+          </select>
           <button onClick={generateVideo} disabled={loading}>
             {loading ? 'Generating…' : 'Generate Video'}
           </button>
         </div>
+
+        {selectedProperty && (
+          <div className="social-consent-summary">
+            <strong>Owner consent verified</strong>
+            <span>Publishing platforms are selected by the administrator.</span>
+            <span>
+              Consent version{' '}
+              {selectedProperty.socialMarketingConsent.consentVersion}
+            </span>
+          </div>
+        )}
 
         <button
           className="social-secondary"
@@ -149,7 +183,17 @@ export function SocialMediaPage() {
           )}
 
           <label htmlFor="caption">Generated caption</label>
-          <textarea id="caption" value={video.caption} readOnly rows={9} />
+          <textarea
+            id="caption"
+            value={video.caption}
+            rows={9}
+            onChange={(event) => {
+              const caption = event.target.value;
+              setVideo((current) =>
+                current ? { ...current, caption } : current,
+              );
+            }}
+          />
 
           <div className="social-publish-grid">
             {(
@@ -158,20 +202,24 @@ export function SocialMediaPage() {
                 ['FACEBOOK', settings?.facebookEnabled],
                 ['YOUTUBE', settings?.youtubeEnabled],
               ] as const
-            ).map(([platform, enabled]) => (
-              <button
-                key={platform}
-                onClick={() => publish(platform)}
-                disabled={!enabled || publishing !== null}
-                title={!enabled ? `${platform} is not configured` : ''}
-              >
-                {publishing === platform
-                  ? 'Publishing…'
-                  : enabled
-                    ? `Publish to ${platform}`
-                    : `${platform} not configured`}
-              </button>
-            ))}
+            ).map(([platform, enabled]) => {
+              return (
+                <button
+                  key={platform}
+                  onClick={() => publish(platform)}
+                  disabled={!enabled || publishing !== null}
+                  title={
+                    !enabled ? `${platform} is not configured` : ''
+                  }
+                >
+                  {publishing === platform
+                    ? 'Publishing…'
+                    : enabled
+                      ? `Publish to ${platform}`
+                      : `${platform} not configured`}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

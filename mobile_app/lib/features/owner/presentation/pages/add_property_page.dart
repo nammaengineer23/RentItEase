@@ -44,6 +44,8 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   bool parking = false;
   bool petFriendly = false;
   bool dailyRentEnabled = false;
+  bool termsAccepted = false;
+  bool socialMediaConsent = false;
   bool loading = false;
   LocationModel? selectedLocation;
   Map<String, List<File>> selectedImagesBySection = const {};
@@ -89,6 +91,11 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
   Future<void> _saveProperty() async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (!termsAccepted) {
+      _showError('Please accept the property listing terms and conditions.');
       return;
     }
 
@@ -174,6 +181,8 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
             stateName: stateController.text.trim(),
             dailyRentEnabled: dailyRentEnabled,
             dailyRent: dailyRent,
+            termsAccepted: termsAccepted,
+            socialMediaConsent: socialMediaConsent,
           );
 
       if (selectedImagesBySection.isNotEmpty) {
@@ -609,6 +618,48 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             const SizedBox(height: 24),
 
+            const Text(
+              'Terms and permissions',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              value: termsAccepted,
+              onChanged: loading
+                  ? null
+                  : (value) => setState(() => termsAccepted = value ?? false),
+              title: const Text(
+                'I accept the property listing terms and conditions',
+              ),
+              subtitle: const Text(
+                'I confirm that the property details and photos are accurate, lawful, and that I am authorized to list this property.',
+              ),
+            ),
+
+            TextButton(
+              onPressed: _showPropertyTerms,
+              child: const Text('Read property listing terms'),
+            ),
+
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              value: socialMediaConsent,
+              onChanged: loading
+                  ? null
+                  : (value) => setState(
+                        () => socialMediaConsent = value ?? false,
+                      ),
+              title: const Text('Allow social-media promotion'),
+              subtitle: const Text(
+                'Optional: RentItEase may create promotional videos using this listing’s details and photos. An administrator will decide which configured social-media platforms to use. Automatic posting is disabled.',
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
             SizedBox(
               height: 52,
               child: FilledButton.icon(
@@ -632,6 +683,30 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
             const SizedBox(height: 24),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _showPropertyTerms() {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Property Listing Terms'),
+        content: const SingleChildScrollView(
+          child: Text(
+            '1. You confirm that you own the property or are authorized to list it.\n\n'
+            '2. Listing details, pricing, availability, location, and photos must be accurate and must not violate another person’s rights.\n\n'
+            '3. RentItEase may verify, moderate, hide, or remove misleading or unlawful listings.\n\n'
+            '4. Social-media promotion is optional. If selected, you grant RentItEase permission to create promotional videos and allow an administrator to choose the configured platforms for publishing. Automatic posting remains disabled, and you may revoke consent later.\n\n'
+            '5. Property listing terms version 1.0 applies to this acceptance.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }

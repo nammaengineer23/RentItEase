@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   IsPositive,
+  Equals,
   ValidateIf,
 } from 'class-validator';
 
@@ -17,6 +18,31 @@ import {
 } from '@prisma/client';
 
 export class CreatePropertyDto {
+  @ApiProperty({
+    example: true,
+    description: 'Must be true to confirm acceptance of the property listing terms',
+  })
+  @Equals(true, { message: 'Property listing terms must be accepted.' })
+  termsAccepted!: boolean;
+
+  @ApiProperty({
+    required: false,
+    default: '1.0',
+    description: 'Version of the property listing terms accepted by the owner',
+  })
+  @IsOptional()
+  @IsString()
+  termsVersion?: string;
+
+  @ApiProperty({
+    required: false,
+    default: false,
+    description: 'Allow RentItEase to create and manually publish property marketing content',
+  })
+  @IsOptional()
+  @IsBoolean()
+  socialMediaConsent?: boolean;
+
   @ApiProperty({
     example: '',
   })

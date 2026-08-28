@@ -16,6 +16,7 @@ describe('Release E2E • Admin', () => {
     await request(apiUrl()).get('/admin/reviews').set(auth(token)).expect(200);
     await request(apiUrl()).get('/admin/visits').set(auth(token)).expect(200);
     await request(apiUrl()).get('/admin/analytics').set(auth(token)).expect(200);
+    await request(apiUrl()).get('/admin/social-media/settings').set(auth(token)).expect(200);
 
     await request(apiUrl()).get('/admin/billing/memberships').set(auth(token)).expect(200);
     await request(apiUrl()).get('/admin/billing/premium-listings').set(auth(token)).expect(200);

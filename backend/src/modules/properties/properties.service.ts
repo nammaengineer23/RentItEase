@@ -30,6 +30,9 @@ async create(
 ) {
   const {
     amenityIds,
+    termsAccepted,
+    termsVersion,
+    socialMediaConsent,
     ...propertyData
   } = createPropertyDto;
 
@@ -39,6 +42,21 @@ async create(
 
       ownerId: user.id,
       isAvailable: true,
+      termsAcceptedAt: termsAccepted ? new Date() : null,
+      termsVersion: termsVersion || '1.0',
+
+      socialMarketingConsent: socialMediaConsent
+        ? {
+            create: {
+              ownerId: user.id,
+              approved: true,
+              autoPublish: false,
+              platforms: [],
+              consentVersion: termsVersion || '1.0',
+              consentedAt: new Date(),
+            },
+          }
+        : undefined,
 
       amenities: amenityIds?.length
         ? {
@@ -825,10 +843,12 @@ async findSimilar(id: string) {
       );
     }
 
-    const {
-      amenityIds,
-      ...propertyData
-    } = updatePropertyDto;
+    const { amenityIds } = updatePropertyDto;
+    const propertyData = { ...updatePropertyDto };
+    delete propertyData.amenityIds;
+    delete propertyData.termsAccepted;
+    delete propertyData.termsVersion;
+    delete propertyData.socialMediaConsent;
 
     const updatedProperty =
       await this.prisma.property.update({
