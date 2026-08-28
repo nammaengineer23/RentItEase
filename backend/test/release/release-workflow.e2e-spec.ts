@@ -8,6 +8,7 @@ import {
   login,
   statusOk,
   futureIso,
+  createPropertyCompat,
 } from './helpers';
 import { createHmac } from 'crypto';
 
@@ -60,10 +61,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
     expect(tenantToken).toBeTruthy();
     expect(ownerToken).toBeTruthy();
 
-    const property = await request(apiUrl())
-      .post('/properties')
-      .set(auth(ownerToken))
-      .send({
+    const property = await createPropertyCompat(ownerToken, {
         title: `Release Test Property ${Date.now()}`,
         description:
           'Property created automatically by the RentItEase release E2E workflow.',

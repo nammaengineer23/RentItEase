@@ -79,6 +79,33 @@ export function auth(token: string) {
   return { Authorization: `Bearer ${token}` };
 }
 
+export async function createPropertyCompat(
+  ownerToken: string,
+  payload: Record<string, unknown>,
+): Promise<Response> {
+  let response = await request(apiUrl())
+    .post('/properties')
+    .set(auth(ownerToken))
+    .send(payload);
+
+  const errorBody = JSON.stringify(response.body);
+  const legacyServer =
+    response.status === 400 &&
+    errorBody.includes('termsAccepted should not exist');
+
+  if (legacyServer) {
+    const legacyPayload = { ...payload };
+    delete legacyPayload.termsAccepted;
+    delete legacyPayload.termsVersion;
+    response = await request(apiUrl())
+      .post('/properties')
+      .set(auth(ownerToken))
+      .send(legacyPayload);
+  }
+
+  return response;
+}
+
 export function futureIso(minutes = 30) {
   return new Date(Date.now() + minutes * 60_000).toISOString();
 }

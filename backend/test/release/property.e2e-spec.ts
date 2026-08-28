@@ -1,6 +1,7 @@
 import request from 'supertest';
 
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
+import { createPropertyCompat } from './helpers';
 
 describe('Property E2E', () => {
   // ============================================================
@@ -470,10 +471,7 @@ describe('Property E2E', () => {
 
     expect(rejectedWithoutTerms.status).toBe(400);
 
-    const response = await request(apiUrl)
-      .post('/properties')
-      .set('Authorization', `Bearer ${ownerToken}`)
-      .send(payload);
+    const response = await createPropertyCompat(ownerToken, payload);
 
     assertSuccess(response, 'Property creation');
 
