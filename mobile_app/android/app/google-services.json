@@ -12,7 +12,20 @@
           "package_name": "com.rentitease.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "276976121047-bvp7fu8neag5h5ahontsf9gkvd2ijl8s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rentitease.app",
+            "certificate_hash": "28c717adf1ea260d1b4aa4a363ee29e2236b8784"
+          }
+        },
+        {
+          "client_id": "276976121047-k6r7t78tnnf25clvjbnpsqfj5sfca7q7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD0GI1ew-EyBzea-wLwvQUiCPsJXW6Ls8k"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "276976121047-k6r7t78tnnf25clvjbnpsqfj5sfca7q7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "276976121047-6q5lic6g0v9vk3lcfvc9bhbd8899v88i.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.RentItEase.app.mobileApp"
+              }
+            }
+          ]
         }
       }
     }

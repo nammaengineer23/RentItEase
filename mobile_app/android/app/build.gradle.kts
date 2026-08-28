@@ -3,22 +3,54 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
+
     // START: FlutterFire Configuration
     id("com.google.gms.google-services")
     // END: FlutterFire Configuration
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+
+    // The Flutter Gradle Plugin must be applied after the
+    // Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// ============================================================
+// Android signing properties
+// android/key.properties
+// ============================================================
 
 val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties()
 
 if (keystorePropertiesFile.exists()) {
-    FileInputStream(keystorePropertiesFile).use(keystoreProperties::load)
+    FileInputStream(keystorePropertiesFile).use(
+        keystoreProperties::load,
+    )
 }
+
+// ============================================================
+// Local Android properties
+// android/local.properties
+//
+// MAPS_API_KEY must remain outside Git.
+// ============================================================
+
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties()
+
+if (localPropertiesFile.exists()) {
+    FileInputStream(localPropertiesFile).use(
+        localProperties::load,
+    )
+}
+
+val mapsApiKey =
+    localProperties.getProperty("MAPS_API_KEY")
+        ?: System.getenv("MAPS_API_KEY")
+        ?: ""
 
 android {
     namespace = "com.rentitease.app"
+
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -29,19 +61,42 @@ android {
 
     defaultConfig {
         applicationId = "com.rentitease.app"
+
         minSdk = 24
         targetSdk = 36
+
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Google Maps API key is injected into AndroidManifest.xml.
+        //
+        // Local builds:
+        // android/local.properties
+        //
+        // CI builds:
+        // MAPS_API_KEY environment variable
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
+
+    // ============================================================
+    // Release signing
+    // ============================================================
 
     signingConfigs {
         if (keystorePropertiesFile.exists()) {
             create("release") {
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
-                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias =
+                    keystoreProperties.getProperty("keyAlias")
+
+                keyPassword =
+                    keystoreProperties.getProperty("keyPassword")
+
+                storeFile = file(
+                    keystoreProperties.getProperty("storeFile"),
+                )
+
+                storePassword =
+                    keystoreProperties.getProperty("storePassword")
             }
         }
     }
@@ -49,7 +104,8 @@ android {
     buildTypes {
         release {
             if (keystorePropertiesFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
+                signingConfig =
+                    signingConfigs.getByName("release")
             }
         }
     }
@@ -57,7 +113,8 @@ android {
 
 kotlin {
     compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+        jvmTarget =
+            org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 
