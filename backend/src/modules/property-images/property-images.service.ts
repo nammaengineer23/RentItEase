@@ -108,7 +108,7 @@ export class PropertyImagesService {
     for (let index = 0; index < files.length; index++) {
       const file = files[index];
 
-      const uploadResult = await this.firebaseService.uploadImage(
+      const uploadResult = await this.storageService.uploadImage(
         file,
         'properties',
       );
@@ -316,7 +316,7 @@ export class PropertyImagesService {
 
     // Delete the object from R2 or legacy Firebase Storage.
     if (image.publicId) {
-      await this.firebaseService.deleteImage(image.publicId);
+      await this.storageService.deleteImage(image.publicId);
     }
 
     // Delete image from database.
