@@ -152,10 +152,7 @@ export function SocialMediaPage() {
         {selectedProperty && (
           <div className="social-consent-summary">
             <strong>Owner consent verified</strong>
-            <span>
-              Allowed platforms:{' '}
-              {selectedProperty.socialMarketingConsent.platforms.join(', ')}
-            </span>
+            <span>Publishing platforms are selected by the administrator.</span>
             <span>
               Consent version{' '}
               {selectedProperty.socialMarketingConsent.consentVersion}
@@ -206,31 +203,20 @@ export function SocialMediaPage() {
                 ['YOUTUBE', settings?.youtubeEnabled],
               ] as const
             ).map(([platform, enabled]) => {
-              const ownerAllowed =
-                selectedProperty?.socialMarketingConsent.platforms.includes(
-                  platform,
-                ) ?? false;
-
               return (
                 <button
                   key={platform}
                   onClick={() => publish(platform)}
-                  disabled={!enabled || !ownerAllowed || publishing !== null}
+                  disabled={!enabled || publishing !== null}
                   title={
-                    !ownerAllowed
-                      ? `Owner did not consent to ${platform}`
-                      : !enabled
-                        ? `${platform} is not configured`
-                        : ''
+                    !enabled ? `${platform} is not configured` : ''
                   }
                 >
                   {publishing === platform
                     ? 'Publishing…'
-                    : enabled && ownerAllowed
+                    : enabled
                       ? `Publish to ${platform}`
-                      : !ownerAllowed
-                        ? `${platform} not permitted`
-                        : `${platform} not configured`}
+                      : `${platform} not configured`}
                 </button>
               );
             })}

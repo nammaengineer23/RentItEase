@@ -33,7 +33,6 @@ async create(
     termsAccepted,
     termsVersion,
     socialMediaConsent,
-    socialMediaPlatforms,
     ...propertyData
   } = createPropertyDto;
 
@@ -52,7 +51,7 @@ async create(
               ownerId: user.id,
               approved: true,
               autoPublish: false,
-              platforms: socialMediaPlatforms || [],
+              platforms: [],
               consentVersion: termsVersion || '1.0',
               consentedAt: new Date(),
             },
@@ -850,7 +849,6 @@ async findSimilar(id: string) {
     delete propertyData.termsAccepted;
     delete propertyData.termsVersion;
     delete propertyData.socialMediaConsent;
-    delete propertyData.socialMediaPlatforms;
 
     const updatedProperty =
       await this.prisma.property.update({

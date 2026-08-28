@@ -115,7 +115,6 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
     double? dailyRent,
     required bool termsAccepted,
     required bool socialMediaConsent,
-    required List<String> socialMediaPlatforms,
   }) async {
     try {
       state = state.copyWith(loading: true, error: null);
@@ -139,7 +138,6 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
         dailyRent: dailyRent,
         termsAccepted: termsAccepted,
         socialMediaConsent: socialMediaConsent,
-        socialMediaPlatforms: socialMediaPlatforms,
       );
 
       await loadMyProperties();

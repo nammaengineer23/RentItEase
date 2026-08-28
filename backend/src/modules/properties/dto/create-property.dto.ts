@@ -8,8 +8,6 @@ import {
   IsPositive,
   Equals,
   ValidateIf,
-  ArrayNotEmpty,
-  IsIn,
 } from 'class-validator';
 
 import { ApiProperty } from '@nestjs/swagger';
@@ -44,16 +42,6 @@ export class CreatePropertyDto {
   @IsOptional()
   @IsBoolean()
   socialMediaConsent?: boolean;
-
-  @ApiProperty({
-    required: false,
-    type: [String],
-    enum: ['INSTAGRAM', 'FACEBOOK', 'YOUTUBE'],
-  })
-  @ValidateIf((dto: CreatePropertyDto) => dto.socialMediaConsent === true)
-  @ArrayNotEmpty()
-  @IsIn(['INSTAGRAM', 'FACEBOOK', 'YOUTUBE'], { each: true })
-  socialMediaPlatforms?: string[];
 
   @ApiProperty({
     example: '',

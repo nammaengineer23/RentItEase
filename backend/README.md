@@ -24,4 +24,5 @@ YOUTUBE_DEFAULT_PRIVACY=private
 
 Keep `SOCIAL_AUTOMATION_MODE=GENERATE_ONLY` until platform credentials are
 verified. Owner consent is enforced by the backend for both generation and
-manual publishing; the admin UI cannot override it.
+manual publishing. Once consent exists, the administrator chooses which
+configured platform receives each post; consent itself cannot be bypassed.

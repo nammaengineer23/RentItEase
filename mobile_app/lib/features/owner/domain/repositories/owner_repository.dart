@@ -45,7 +45,6 @@ abstract class OwnerRepository {
     double? dailyRent,
     required bool termsAccepted,
     required bool socialMediaConsent,
-    required List<String> socialMediaPlatforms,
   });
 
   Future<void> updateProperty(

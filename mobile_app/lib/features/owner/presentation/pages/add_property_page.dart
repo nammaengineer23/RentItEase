@@ -46,11 +46,6 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   bool dailyRentEnabled = false;
   bool termsAccepted = false;
   bool socialMediaConsent = false;
-  final Set<String> socialMediaPlatforms = {
-    'INSTAGRAM',
-    'FACEBOOK',
-    'YOUTUBE',
-  };
   bool loading = false;
   LocationModel? selectedLocation;
   Map<String, List<File>> selectedImagesBySection = const {};
@@ -101,11 +96,6 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
     if (!termsAccepted) {
       _showError('Please accept the property listing terms and conditions.');
-      return;
-    }
-
-    if (socialMediaConsent && socialMediaPlatforms.isEmpty) {
-      _showError('Select at least one social-media platform.');
       return;
     }
 
@@ -193,7 +183,6 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
             dailyRent: dailyRent,
             termsAccepted: termsAccepted,
             socialMediaConsent: socialMediaConsent,
-            socialMediaPlatforms: socialMediaPlatforms.toList(),
           );
 
       if (selectedImagesBySection.isNotEmpty) {
@@ -665,31 +654,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
                       ),
               title: const Text('Allow social-media promotion'),
               subtitle: const Text(
-                'Optional: RentItEase may create promotional videos using this listing’s details and photos. An administrator may publish only to the platforms selected below. Automatic posting is disabled.',
+                'Optional: RentItEase may create promotional videos using this listing’s details and photos. An administrator will decide which configured social-media platforms to use. Automatic posting is disabled.',
               ),
             ),
-
-            if (socialMediaConsent)
-              Wrap(
-                spacing: 8,
-                children: const ['INSTAGRAM', 'FACEBOOK', 'YOUTUBE']
-                    .map(
-                      (platform) => FilterChip(
-                        label: Text(platform),
-                        selected: socialMediaPlatforms.contains(platform),
-                        onSelected: loading
-                            ? null
-                            : (selected) => setState(() {
-                                  if (selected) {
-                                    socialMediaPlatforms.add(platform);
-                                  } else {
-                                    socialMediaPlatforms.remove(platform);
-                                  }
-                                }),
-                      ),
-                    )
-                    .toList(),
-              ),
 
             const SizedBox(height: 24),
 
@@ -730,7 +697,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
             '1. You confirm that you own the property or are authorized to list it.\n\n'
             '2. Listing details, pricing, availability, location, and photos must be accurate and must not violate another person’s rights.\n\n'
             '3. RentItEase may verify, moderate, hide, or remove misleading or unlawful listings.\n\n'
-            '4. Social-media promotion is optional. If selected, you grant RentItEase permission to create promotional videos and publish them only on your chosen platforms. Automatic posting remains disabled, and you may revoke consent later.\n\n'
+            '4. Social-media promotion is optional. If selected, you grant RentItEase permission to create promotional videos and allow an administrator to choose the configured platforms for publishing. Automatic posting remains disabled, and you may revoke consent later.\n\n'
             '5. Property listing terms version 1.0 applies to this acceptance.',
           ),
         ),

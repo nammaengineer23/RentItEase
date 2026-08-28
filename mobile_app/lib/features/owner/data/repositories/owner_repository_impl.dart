@@ -69,7 +69,6 @@ class OwnerRepositoryImpl implements OwnerRepository {
     double? dailyRent,
     required bool termsAccepted,
     required bool socialMediaConsent,
-    required List<String> socialMediaPlatforms,
   }) {
     return _api.addProperty({
       'title': property.title,
@@ -97,7 +96,6 @@ class OwnerRepositoryImpl implements OwnerRepository {
       'termsAccepted': termsAccepted,
       'termsVersion': '1.0',
       'socialMediaConsent': socialMediaConsent,
-      if (socialMediaConsent) 'socialMediaPlatforms': socialMediaPlatforms,
     });
   }
 

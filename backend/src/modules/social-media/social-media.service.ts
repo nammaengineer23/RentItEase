@@ -26,7 +26,7 @@ export class SocialMediaService {
   }
 
   async publish(dto: PublishPostDto & { propertyId: string }) {
-    const consent = await this.requireConsent(dto.propertyId, dto.platform);
+    const consent = await this.requireConsent(dto.propertyId);
     const generated = await this.videoService.generate(dto.propertyId);
     const publicVideoUrl = await this.storage.uploadVideo(generated.filePath, dto.propertyId);
     const platform = dto.platform as 'INSTAGRAM' | 'FACEBOOK' | 'YOUTUBE';
@@ -102,7 +102,7 @@ export class SocialMediaService {
     });
   }
 
-  private async requireConsent(propertyId: string, platform?: string) {
+  private async requireConsent(propertyId: string) {
     const consent = await this.prisma.socialMarketingConsent.findUnique({
       where: { propertyId },
     });
@@ -113,13 +113,6 @@ export class SocialMediaService {
       );
     }
 
-    const platforms = consent.platforms as string[];
-    if (platform && !platforms.includes(platform)) {
-      throw new BadRequestException(
-        `Owner has not consented to publishing on ${platform}.`,
-      );
-    }
-
     return consent;
   }
 
@@ -127,8 +120,6 @@ export class SocialMediaService {
     propertyId: string;
     ownerId: string;
     approved: boolean;
-    autoPublish: boolean;
-    platforms: string[];
     consentVersion?: string;
   }) {
     const property = await this.prisma.property.findFirst({
@@ -143,15 +134,15 @@ export class SocialMediaService {
         propertyId: dto.propertyId,
         ownerId: dto.ownerId,
         approved: dto.approved,
-        autoPublish: dto.autoPublish,
-        platforms: dto.platforms,
+        autoPublish: false,
+        platforms: [],
         consentVersion: dto.consentVersion || '1.0',
         consentedAt: new Date(),
       },
       update: {
         approved: dto.approved,
-        autoPublish: dto.autoPublish,
-        platforms: dto.platforms,
+        autoPublish: false,
+        platforms: [],
         consentVersion: dto.consentVersion || '1.0',
         consentedAt: new Date(),
         revokedAt: dto.approved ? null : new Date(),
