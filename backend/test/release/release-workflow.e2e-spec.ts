@@ -85,6 +85,8 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
         parking: true,
         petFriendly: true,
         securityDeposit: 50000,
+        termsAccepted: true,
+        termsVersion: '1.0',
       });
 
     statusOk(property);

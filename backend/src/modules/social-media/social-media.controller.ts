@@ -4,9 +4,13 @@ import { GenerateVideoDto } from './dto/generate-video.dto';
 import { PublishPostDto } from './dto/publish-post.dto';
 import { SocialSettingsDto } from './dto/social-settings.dto';
 import { SocialMediaService } from './social-media.service';
+import { UserRole } from '@prisma/client';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
 
 @Controller('admin/social-media')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
 export class SocialMediaController {
   constructor(private readonly service: SocialMediaService) {}
 
@@ -23,6 +27,11 @@ export class SocialMediaController {
   @Post('generate')
   generate(@Body() dto: GenerateVideoDto) {
     return this.service.generate(dto);
+  }
+
+  @Get('properties')
+  getConsentedProperties() {
+    return this.service.getConsentedProperties();
   }
 
   @Post('properties/:propertyId/publish')

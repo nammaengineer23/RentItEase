@@ -459,7 +459,16 @@ describe('Property E2E', () => {
       parking: true,
       petFriendly: true,
       securityDeposit: 50000,
+      termsAccepted: true,
+      termsVersion: '1.0',
     };
+
+    const rejectedWithoutTerms = await request(apiUrl)
+      .post('/properties')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ ...payload, termsAccepted: false });
+
+    expect(rejectedWithoutTerms.status).toBe(400);
 
     const response = await request(apiUrl)
       .post('/properties')

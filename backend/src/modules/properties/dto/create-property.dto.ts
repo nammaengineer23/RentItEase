@@ -6,7 +6,10 @@ import {
   IsOptional,
   IsString,
   IsPositive,
+  Equals,
   ValidateIf,
+  ArrayNotEmpty,
+  IsIn,
 } from 'class-validator';
 
 import { ApiProperty } from '@nestjs/swagger';
@@ -17,6 +20,41 @@ import {
 } from '@prisma/client';
 
 export class CreatePropertyDto {
+  @ApiProperty({
+    example: true,
+    description: 'Must be true to confirm acceptance of the property listing terms',
+  })
+  @Equals(true, { message: 'Property listing terms must be accepted.' })
+  termsAccepted!: boolean;
+
+  @ApiProperty({
+    required: false,
+    default: '1.0',
+    description: 'Version of the property listing terms accepted by the owner',
+  })
+  @IsOptional()
+  @IsString()
+  termsVersion?: string;
+
+  @ApiProperty({
+    required: false,
+    default: false,
+    description: 'Allow RentItEase to create and manually publish property marketing content',
+  })
+  @IsOptional()
+  @IsBoolean()
+  socialMediaConsent?: boolean;
+
+  @ApiProperty({
+    required: false,
+    type: [String],
+    enum: ['INSTAGRAM', 'FACEBOOK', 'YOUTUBE'],
+  })
+  @ValidateIf((dto: CreatePropertyDto) => dto.socialMediaConsent === true)
+  @ArrayNotEmpty()
+  @IsIn(['INSTAGRAM', 'FACEBOOK', 'YOUTUBE'], { each: true })
+  socialMediaPlatforms?: string[];
+
   @ApiProperty({
     example: '',
   })

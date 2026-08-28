@@ -1,42 +1,27 @@
 import { Injectable } from '@nestjs/common';
-import { existsSync } from 'node:fs';
-import { getApps, initializeApp, cert } from 'firebase-admin/app';
-import { getStorage } from 'firebase-admin/storage';
+import { readFile } from 'node:fs/promises';
+import { basename } from 'node:path';
+
+import { StorageService } from '../../storage/storage.service';
 
 @Injectable()
 export class SocialMediaStorageService {
-  private ensureFirebase() {
-    if (!getApps().length) {
-      const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-      if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !privateKey) {
-        throw new Error('Firebase Admin environment variables are required for video storage.');
-      }
-
-      initializeApp({
-        credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey,
-        }),
-        storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-      });
-    }
-  }
+  constructor(private readonly storage: StorageService) {}
 
   async uploadVideo(filePath: string, propertyId: string): Promise<string> {
-    if (!existsSync(filePath)) throw new Error(`Generated video not found: ${filePath}`);
+    const buffer = await readFile(filePath);
+    const file = {
+      buffer,
+      originalname: basename(filePath),
+      mimetype: 'video/mp4',
+      size: buffer.length,
+    } as Express.Multer.File;
 
-    this.ensureFirebase();
-    const bucket = getStorage().bucket();
-    const destination = `social-videos/${propertyId}/${Date.now()}.mp4`;
-    const file = bucket.file(destination);
+    const stored = await this.storage.uploadImage(
+      file,
+      `social-videos/${propertyId}`,
+    );
 
-    await file.save(await import('node:fs/promises').then((fs) => fs.readFile(filePath)), {
-      contentType: 'video/mp4',
-      metadata: { cacheControl: 'public,max-age=3600' },
-    });
-
-    await file.makePublic();
-    return `https://storage.googleapis.com/${bucket.name}/${encodeURIComponent(destination).replace(/%2F/g, '/')}`;
+    return stored.imageUrl;
   }
 }

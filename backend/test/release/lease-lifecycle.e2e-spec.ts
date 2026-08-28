@@ -74,6 +74,8 @@ describe('Release E2E • Lease Lifecycle', () => {
         parking: true,
         petFriendly: true,
         securityDeposit: 50000,
+        termsAccepted: true,
+        termsVersion: '1.0',
       });
 
     statusOk(res);
