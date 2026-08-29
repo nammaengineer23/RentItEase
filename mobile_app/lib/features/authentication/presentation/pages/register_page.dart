@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 import '../../providers/authentication_provider.dart';
@@ -59,13 +60,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final emailSent = await provider.requestSignupEmailOtp(email);
     if (!mounted) return;
     if (!emailSent) {
-      _showError(provider.errorMessage ?? 'Unable to send email OTP.');
+      _showError(provider.errorMessage ?? context.tr('unableSendEmailOtp'));
       return;
     }
 
     final emailOtp = await showOtpCodeDialog(
       context,
-      title: 'Verify Email',
+      title: context.tr('verifyEmail'),
       destination: email,
     );
     if (emailOtp == null || !mounted) return;
@@ -73,7 +74,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final emailProof = await provider.verifySignupEmailOtp(email, emailOtp);
     if (!mounted) return;
     if (emailProof == null) {
-      _showError(provider.errorMessage ?? 'Email verification failed.');
+      _showError(
+        provider.errorMessage ?? context.tr('emailVerificationFailed'),
+      );
       return;
     }
 
@@ -83,12 +86,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         phoneNumber: '+91$phone',
         requestCode: () => showOtpCodeDialog(
           context,
-          title: 'Verify Phone Number',
+          title: context.tr('verifyPhoneNumber'),
           destination: '+91 $phone',
         ),
       );
     } catch (error) {
-      if (mounted) _showError('Phone verification failed: $error');
+      if (mounted) {
+        _showError('${context.tr('phoneVerificationFailed')}: $error');
+      }
       return;
     }
 
@@ -105,8 +110,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Email and phone verified. Account created.'),
+        SnackBar(
+          content: Text(context.tr('accountCreated')),
           backgroundColor: Colors.green,
         ),
       );
@@ -114,7 +119,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       return;
     }
 
-    _showError(provider.errorMessage ?? 'Registration failed.');
+    _showError(provider.errorMessage ?? context.tr('registrationFailed'));
   }
 
   void _showError(String message) {
@@ -142,7 +147,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       final phone = _phoneController.text.trim();
       if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
         _showError(
-          'Enter a valid 10-digit mobile number above, then tap Google again.',
+          context.tr('googlePhoneInstruction'),
         );
         return;
       }
@@ -152,7 +157,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           phoneNumber: '+91$phone',
           requestCode: () => showOtpCodeDialog(
             context,
-            title: 'Verify Phone Number',
+            title: context.tr('verifyPhoneNumber'),
             destination: '+91 $phone',
           ),
         );
@@ -164,12 +169,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         }
       } catch (error) {
         if (!mounted) return;
-        _showError('Phone verification failed: $error');
+        _showError('${context.tr('phoneVerificationFailed')}: $error');
         return;
       }
     }
 
-    _showError(provider.errorMessage ?? 'Google signup failed');
+    _showError(provider.errorMessage ?? context.tr('googleSignupFailed'));
   }
 
   @override
@@ -187,27 +192,26 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               children: [
                 const SizedBox(height: 20),
 
-                const AuthHeader(
-                  title: 'Create Account',
-                  subtitle:
-                      'Join RentItEase and start finding your perfect rental home.',
+                AuthHeader(
+                  title: context.tr('createAccount'),
+                  subtitle: context.tr('registerSubtitle'),
                 ),
 
                 const SizedBox(height: 35),
 
                 CustomTextField(
                   controller: _nameController,
-                  hintText: 'Full Name',
+                  hintText: context.tr('fullName'),
                   prefixIcon: Icons.person_outline,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.name],
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Enter your full name';
+                      return context.tr('enterFullName');
                     }
 
                     if (value.trim().length < 3) {
-                      return 'Name must be at least 3 characters';
+                      return context.tr('nameMinimum');
                     }
 
                     return null;
@@ -218,14 +222,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
                 CustomTextField(
                   controller: _emailController,
-                  hintText: 'Email Address',
+                  hintText: context.tr('emailAddress'),
                   prefixIcon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.email],
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Enter your email';
+                      return context.tr('enterYourEmail');
                     }
 
                     final emailRegex = RegExp(
@@ -233,7 +237,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     );
 
                     if (!emailRegex.hasMatch(value.trim())) {
-                      return 'Enter a valid email';
+                      return context.tr('validEmail');
                     }
 
                     return null;
@@ -244,18 +248,18 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
                 CustomTextField(
                   controller: _phoneController,
-                  hintText: 'Mobile Number',
+                  hintText: context.tr('mobileNumber'),
                   prefixIcon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.telephoneNumber],
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Enter mobile number';
+                      return context.tr('enterMobileNumber');
                     }
 
                     if (!RegExp(r'^[6-9]\d{9}$').hasMatch(value.trim())) {
-                      return 'Enter a valid 10-digit mobile number';
+                      return context.tr('validMobileNumber');
                     }
 
                     return null;
@@ -266,7 +270,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
                 CustomTextField(
                   controller: _passwordController,
-                  hintText: 'Password',
+                  hintText: context.tr('password'),
                   prefixIcon: Icons.lock_outline,
                   obscureText: provider.obscurePassword,
                   textInputAction: TextInputAction.done,
@@ -286,11 +290,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Enter password';
+                      return context.tr('enterPasswordShort');
                     }
 
                     if (value.length < 8) {
-                      return 'Password must be at least 8 characters';
+                      return context.tr('passwordMinimum8');
                     }
 
                     return null;
@@ -304,7 +308,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 const SizedBox(height: 30),
 
                 CustomButton(
-                  text: 'Create Account',
+                  text: context.tr('createAccount'),
                   isLoading: provider.isLoading,
                   onPressed: _register,
                 ),
@@ -321,10 +325,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Already have an account?'),
+                    Text(context.tr('alreadyHaveAccount')),
                     TextButton(
                       onPressed: widget.onLogin,
-                      child: const Text('Login'),
+                      child: Text(context.tr('login')),
                     ),
                   ],
                 ),

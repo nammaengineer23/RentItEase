@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 import '../../providers/authentication_provider.dart';
@@ -54,7 +55,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       return;
     }
 
-    _showError(provider.errorMessage ?? 'Login failed');
+    _showError(provider.errorMessage ?? context.tr('loginFailed'));
   }
 
   Future<void> _loginWithOtp() async {
@@ -68,13 +69,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       );
       if (!mounted) return;
       if (!sent) {
-        _showError(provider.errorMessage ?? 'Unable to send login OTP.');
+        _showError(provider.errorMessage ?? context.tr('unableSendLoginOtp'));
         return;
       }
 
       final otp = await showOtpCodeDialog(
         context,
-        title: 'Email OTP Login',
+        title: context.tr('emailOtpLogin'),
         destination: identifier,
       );
       if (otp == null || !mounted) return;
@@ -86,7 +87,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     } else {
       final digits = identifier.replaceAll(RegExp(r'\D'), '');
       if (digits.length != 10) {
-        _showError('Enter a valid email or 10-digit mobile number.');
+        _showError(context.tr('validEmailOrMobile'));
         return;
       }
 
@@ -95,13 +96,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           phoneNumber: '+91$digits',
           requestCode: () => showOtpCodeDialog(
             context,
-            title: 'Phone OTP Login',
+            title: context.tr('phoneOtpLogin'),
             destination: '+91 $digits',
           ),
         );
         success = await provider.loginWithPhoneOtp(idToken);
       } catch (error) {
-        if (mounted) _showError('Phone verification failed: $error');
+        if (mounted) {
+          _showError('${context.tr('phoneVerificationFailed')}: $error');
+        }
         return;
       }
     }
@@ -112,7 +115,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       return;
     }
 
-    _showError(provider.errorMessage ?? 'OTP login failed.');
+    _showError(provider.errorMessage ?? context.tr('otpLoginFailed'));
   }
 
   void _openAuthenticatedHome(AuthenticationProvider provider) {
@@ -148,7 +151,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(provider.errorMessage ?? 'Google sign-in failed'),
+        content: Text(
+          provider.errorMessage ?? context.tr('googleSignInFailed'),
+        ),
         backgroundColor: Colors.red,
       ),
     );
@@ -168,24 +173,24 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               children: [
                 const SizedBox(height: 30),
 
-                const AuthHeader(
-                  title: 'Welcome Back',
-                  subtitle: 'Login to continue your rental journey.',
+                AuthHeader(
+                  title: context.tr('welcomeBack'),
+                  subtitle: context.tr('loginSubtitle'),
                 ),
 
                 const SizedBox(height: 24),
 
                 SegmentedButton<bool>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: false,
-                      icon: Icon(Icons.password),
-                      label: Text('Password'),
+                      icon: const Icon(Icons.password),
+                      label: Text(context.tr('password')),
                     ),
                     ButtonSegment(
                       value: true,
-                      icon: Icon(Icons.sms_outlined),
-                      label: Text('OTP'),
+                      icon: const Icon(Icons.sms_outlined),
+                      label: Text(context.tr('otp')),
                     ),
                   ],
                   selected: {_useOtp},
@@ -198,12 +203,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                 CustomTextField(
                   controller: _emailController,
-                  hintText: 'Email Address or Mobile Number',
+                  hintText: context.tr('emailOrMobile'),
                   prefixIcon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter email';
+                      return context.tr('enterEmail');
                     }
 
                     return null;
@@ -214,7 +219,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   const SizedBox(height: 20),
                   CustomTextField(
                     controller: _passwordController,
-                    hintText: 'Password',
+                    hintText: context.tr('password'),
                     prefixIcon: Icons.lock_outline,
                     obscureText: provider.obscurePassword,
                     suffixIcon: IconButton(
@@ -231,7 +236,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                     validator: (value) {
                       if (!_useOtp && (value == null || value.isEmpty)) {
-                        return 'Please enter password';
+                        return context.tr('enterPassword');
                       }
                       return null;
                     },
@@ -246,7 +251,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 const SizedBox(height: 24),
 
                 CustomButton(
-                  text: _useOtp ? 'Send OTP' : 'Login',
+                  text: _useOtp ? context.tr('sendOtp') : context.tr('login'),
                   isLoading: provider.isLoading,
                   onPressed: _login,
                 ),
@@ -263,10 +268,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Don't have an account?"),
+                    Text(context.tr('noAccount')),
                     TextButton(
                       onPressed: widget.onRegister,
-                      child: const Text('Sign Up'),
+                      child: Text(context.tr('signUp')),
                     ),
                   ],
                 ),

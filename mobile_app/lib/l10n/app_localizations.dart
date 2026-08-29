@@ -27,7 +27,11 @@ class AppLocalizations {
 
   String text(String key) {
     final language = _translations[locale.languageCode] ?? _translations['en']!;
-    return language[key] ?? _translations['en']![key] ?? key;
+    return language[key] ??
+        _authenticationTranslations[locale.languageCode]?[key] ??
+        _translations['en']![key] ??
+        _authenticationTranslations['en']?[key] ??
+        key;
   }
 
   static const languageNames = <String, String>{
@@ -127,5 +131,142 @@ const _translations = <String, Map<String, String>>{
   },
   'gu': {
     'settings': 'સેટિંગ્સ', 'preferences': 'પસંદગીઓ', 'notifications': 'સૂચનાઓ', 'pushNotifications': 'પુશ સૂચનાઓ', 'emailNotifications': 'ઇમેઇલ સૂચનાઓ', 'smsNotifications': 'SMS સૂચનાઓ', 'appearance': 'દેખાવ', 'darkMode': 'ડાર્ક મોડ', 'language': 'ભાષા', 'appLanguage': 'એપની ભાષા', 'selectLanguage': 'ભાષા પસંદ કરો', 'contactUs': 'અમારો સંપર્ક કરો', 'generalEnquiries': 'સામાન્ય પૂછપરછ', 'customerSupport': 'ગ્રાહક સહાય', 'callUs': 'અમને કૉલ કરો', 'changePassword': 'પાસવર્ડ બદલો', 'currentPassword': 'વર્તમાન પાસવર્ડ', 'newPassword': 'નવો પાસવર્ડ', 'confirmNewPassword': 'નવા પાસવર્ડની પુષ્ટિ કરો', 'cancel': 'રદ કરો', 'delete': 'કાઢી નાખો', 'deleteAccount': 'ખાતું કાઢી નાખો', 'retry': 'ફરી પ્રયાસ કરો', 'home': 'હોમ', 'search': 'શોધો', 'favorites': 'મનપસંદ', 'engagement': 'સહભાગિતા', 'visits': 'મુલાકાતો', 'bookings': 'બુકિંગ', 'profile': 'પ્રોફાઇલ', 'later': 'પછી', 'submit': 'સબમિટ કરો',
+  },
+};
+
+const _authenticationTranslations = <String, Map<String, String>>{
+  'en': {
+    'welcomeBack': 'Welcome Back',
+    'loginSubtitle': 'Login to continue your rental journey.',
+    'password': 'Password',
+    'otp': 'OTP',
+    'emailOrMobile': 'Email Address or Mobile Number',
+    'enterEmail': 'Please enter email',
+    'enterPassword': 'Please enter password',
+    'sendOtp': 'Send OTP',
+    'login': 'Login',
+    'rememberMe': 'Remember Me',
+    'forgotPasswordQuestion': 'Forgot Password?',
+    'continueWithGoogle': 'Continue with Google',
+    'noAccount': "Don't have an account?",
+    'signUp': 'Sign Up',
+    'loginFailed': 'Login failed',
+    'unableSendLoginOtp': 'Unable to send login OTP.',
+    'emailOtpLogin': 'Email OTP Login',
+    'phoneOtpLogin': 'Phone OTP Login',
+    'validEmailOrMobile': 'Enter a valid email or 10-digit mobile number.',
+    'phoneVerificationFailed': 'Phone verification failed',
+    'otpLoginFailed': 'OTP login failed.',
+    'googleSignInFailed': 'Google sign-in failed',
+    'createAccount': 'Create Account',
+    'registerSubtitle':
+        'Join RentItEase and start finding your perfect rental home.',
+    'fullName': 'Full Name',
+    'emailAddress': 'Email Address',
+    'mobileNumber': 'Mobile Number',
+    'enterFullName': 'Enter your full name',
+    'nameMinimum': 'Name must be at least 3 characters',
+    'enterYourEmail': 'Enter your email',
+    'validEmail': 'Enter a valid email',
+    'enterMobileNumber': 'Enter mobile number',
+    'validMobileNumber': 'Enter a valid 10-digit mobile number',
+    'enterPasswordShort': 'Enter password',
+    'passwordMinimum8': 'Password must be at least 8 characters',
+    'alreadyHaveAccount': 'Already have an account?',
+    'unableSendEmailOtp': 'Unable to send email OTP.',
+    'verifyEmail': 'Verify Email',
+    'emailVerificationFailed': 'Email verification failed.',
+    'verifyPhoneNumber': 'Verify Phone Number',
+    'accountCreated': 'Email and phone verified. Account created.',
+    'registrationFailed': 'Registration failed.',
+    'googlePhoneInstruction':
+        'Enter a valid 10-digit mobile number above, then tap Google again.',
+    'googleSignupFailed': 'Google signup failed',
+    'forgotPassword': 'Forgot Password',
+    'forgotPasswordSubtitle':
+        'Enter your registered email address and we will send you a password reset link.',
+    'resetLinkSent':
+        'If this email is registered, a password reset link was sent.',
+    'unableRequestReset': 'Unable to request password reset.',
+    'validEmailAddress': 'Enter a valid email address',
+    'sendAgain': 'Send Again',
+    'sendResetLink': 'Send Reset Link',
+    'checkResetInbox':
+        'Check your inbox and spam folder. The response is kept private even if the email is not registered.',
+    'backToLogin': 'Back to Login',
+    'otpInstruction': 'Enter the 6-digit code sent to {destination}.',
+    'verificationCode': 'Verification code',
+    'verify': 'Verify',
+    'passwordStrength': 'Password Strength:',
+    'weak': 'Weak',
+    'medium': 'Medium',
+    'strong': 'Strong',
+  },
+  'kn': {
+    'welcomeBack': 'ಮತ್ತೆ ಸ್ವಾಗತ',
+    'loginSubtitle': 'ನಿಮ್ಮ ಬಾಡಿಗೆ ಪ್ರಯಾಣವನ್ನು ಮುಂದುವರಿಸಲು ಲಾಗಿನ್ ಮಾಡಿ.',
+    'password': 'ಪಾಸ್‌ವರ್ಡ್',
+    'otp': 'OTP',
+    'emailOrMobile': 'ಇಮೇಲ್ ವಿಳಾಸ ಅಥವಾ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ',
+    'enterEmail': 'ದಯವಿಟ್ಟು ಇಮೇಲ್ ನಮೂದಿಸಿ',
+    'enterPassword': 'ದಯವಿಟ್ಟು ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ',
+    'sendOtp': 'OTP ಕಳುಹಿಸಿ',
+    'login': 'ಲಾಗಿನ್',
+    'rememberMe': 'ನನ್ನನ್ನು ನೆನಪಿಡಿ',
+    'forgotPasswordQuestion': 'ಪಾಸ್‌ವರ್ಡ್ ಮರೆತಿರಾ?',
+    'continueWithGoogle': 'Google ಮೂಲಕ ಮುಂದುವರಿಸಿ',
+    'noAccount': 'ಖಾತೆ ಇಲ್ಲವೇ?',
+    'signUp': 'ನೋಂದಾಯಿಸಿ',
+    'loginFailed': 'ಲಾಗಿನ್ ವಿಫಲವಾಗಿದೆ',
+    'unableSendLoginOtp': 'ಲಾಗಿನ್ OTP ಕಳುಹಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.',
+    'emailOtpLogin': 'ಇಮೇಲ್ OTP ಲಾಗಿನ್',
+    'phoneOtpLogin': 'ಫೋನ್ OTP ಲಾಗಿನ್',
+    'validEmailOrMobile': 'ಮಾನ್ಯ ಇಮೇಲ್ ಅಥವಾ 10 ಅಂಕಿಯ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ.',
+    'phoneVerificationFailed': 'ಫೋನ್ ಪರಿಶೀಲನೆ ವಿಫಲವಾಗಿದೆ',
+    'otpLoginFailed': 'OTP ಲಾಗಿನ್ ವಿಫಲವಾಗಿದೆ.',
+    'googleSignInFailed': 'Google ಸೈನ್-ಇನ್ ವಿಫಲವಾಗಿದೆ',
+    'createAccount': 'ಖಾತೆ ರಚಿಸಿ',
+    'registerSubtitle':
+        'RentItEase ಗೆ ಸೇರಿ ಮತ್ತು ನಿಮ್ಮ ಸೂಕ್ತ ಬಾಡಿಗೆ ಮನೆಯನ್ನು ಹುಡುಕಲು ಪ್ರಾರಂಭಿಸಿ.',
+    'fullName': 'ಪೂರ್ಣ ಹೆಸರು',
+    'emailAddress': 'ಇಮೇಲ್ ವಿಳಾಸ',
+    'mobileNumber': 'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ',
+    'enterFullName': 'ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರನ್ನು ನಮೂದಿಸಿ',
+    'nameMinimum': 'ಹೆಸರು ಕನಿಷ್ಠ 3 ಅಕ್ಷರಗಳಿರಬೇಕು',
+    'enterYourEmail': 'ನಿಮ್ಮ ಇಮೇಲ್ ನಮೂದಿಸಿ',
+    'validEmail': 'ಮಾನ್ಯ ಇಮೇಲ್ ನಮೂದಿಸಿ',
+    'enterMobileNumber': 'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ',
+    'validMobileNumber': 'ಮಾನ್ಯ 10 ಅಂಕಿಯ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ',
+    'enterPasswordShort': 'ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ',
+    'passwordMinimum8': 'ಪಾಸ್‌ವರ್ಡ್ ಕನಿಷ್ಠ 8 ಅಕ್ಷರಗಳಿರಬೇಕು',
+    'alreadyHaveAccount': 'ಈಗಾಗಲೇ ಖಾತೆ ಇದೆಯೇ?',
+    'unableSendEmailOtp': 'ಇಮೇಲ್ OTP ಕಳುಹಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.',
+    'verifyEmail': 'ಇಮೇಲ್ ಪರಿಶೀಲಿಸಿ',
+    'emailVerificationFailed': 'ಇಮೇಲ್ ಪರಿಶೀಲನೆ ವಿಫಲವಾಗಿದೆ.',
+    'verifyPhoneNumber': 'ಫೋನ್ ಸಂಖ್ಯೆ ಪರಿಶೀಲಿಸಿ',
+    'accountCreated': 'ಇಮೇಲ್ ಮತ್ತು ಫೋನ್ ಪರಿಶೀಲಿಸಲಾಗಿದೆ. ಖಾತೆ ರಚಿಸಲಾಗಿದೆ.',
+    'registrationFailed': 'ನೋಂದಣಿ ವಿಫಲವಾಗಿದೆ.',
+    'googlePhoneInstruction':
+        'ಮೇಲೆ ಮಾನ್ಯ 10 ಅಂಕಿಯ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ, ನಂತರ Google ಅನ್ನು ಮತ್ತೆ ಒತ್ತಿರಿ.',
+    'googleSignupFailed': 'Google ನೋಂದಣಿ ವಿಫಲವಾಗಿದೆ',
+    'forgotPassword': 'ಪಾಸ್‌ವರ್ಡ್ ಮರೆತಿರಾ',
+    'forgotPasswordSubtitle':
+        'ನಿಮ್ಮ ನೋಂದಾಯಿತ ಇಮೇಲ್ ವಿಳಾಸವನ್ನು ನಮೂದಿಸಿ; ಪಾಸ್‌ವರ್ಡ್ ಮರುಹೊಂದಿಸುವ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತೇವೆ.',
+    'resetLinkSent':
+        'ಈ ಇಮೇಲ್ ನೋಂದಾಯಿತವಾಗಿದ್ದರೆ, ಪಾಸ್‌ವರ್ಡ್ ಮರುಹೊಂದಿಸುವ ಲಿಂಕ್ ಕಳುಹಿಸಲಾಗಿದೆ.',
+    'unableRequestReset': 'ಪಾಸ್‌ವರ್ಡ್ ಮರುಹೊಂದಿಸಲು ವಿನಂತಿಸಲಾಗಲಿಲ್ಲ.',
+    'validEmailAddress': 'ಮಾನ್ಯ ಇಮೇಲ್ ವಿಳಾಸ ನಮೂದಿಸಿ',
+    'sendAgain': 'ಮತ್ತೆ ಕಳುಹಿಸಿ',
+    'sendResetLink': 'ಮರುಹೊಂದಿಸುವ ಲಿಂಕ್ ಕಳುಹಿಸಿ',
+    'checkResetInbox':
+        'ನಿಮ್ಮ ಇನ್‌ಬಾಕ್ಸ್ ಮತ್ತು ಸ್ಪ್ಯಾಮ್ ಫೋಲ್ಡರ್ ಪರಿಶೀಲಿಸಿ. ಇಮೇಲ್ ನೋಂದಾಯಿತವಾಗಿಲ್ಲದಿದ್ದರೂ ಪ್ರತಿಕ್ರಿಯೆಯನ್ನು ಗೌಪ್ಯವಾಗಿಡಲಾಗುತ್ತದೆ.',
+    'backToLogin': 'ಲಾಗಿನ್‌ಗೆ ಹಿಂತಿರುಗಿ',
+    'otpInstruction': '{destination} ಗೆ ಕಳುಹಿಸಿದ 6 ಅಂಕಿಯ ಕೋಡ್ ನಮೂದಿಸಿ.',
+    'verificationCode': 'ಪರಿಶೀಲನಾ ಕೋಡ್',
+    'verify': 'ಪರಿಶೀಲಿಸಿ',
+    'passwordStrength': 'ಪಾಸ್‌ವರ್ಡ್ ಸಾಮರ್ಥ್ಯ:',
+    'weak': 'ದುರ್ಬಲ',
+    'medium': 'ಮಧ್ಯಮ',
+    'strong': 'ಬಲವಾದ',
   },
 };

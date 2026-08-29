@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 
 Future<String?> showOtpCodeDialog(
   BuildContext context, {
@@ -16,16 +17,20 @@ Future<String?> showOtpCodeDialog(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Enter the 6-digit code sent to $destination.'),
+          Text(
+            dialogContext
+                .tr('otpInstruction')
+                .replaceFirst('{destination}', destination),
+          ),
           const SizedBox(height: 16),
           TextField(
             controller: controller,
             autofocus: true,
             keyboardType: TextInputType.number,
             maxLength: 6,
-            decoration: const InputDecoration(
-              labelText: 'Verification code',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: dialogContext.tr('verificationCode'),
+              border: const OutlineInputBorder(),
               counterText: '',
             ),
           ),
@@ -34,7 +39,7 @@ Future<String?> showOtpCodeDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(),
-          child: const Text('Cancel'),
+          child: Text(dialogContext.tr('cancel')),
         ),
         FilledButton(
           onPressed: () {
@@ -43,7 +48,7 @@ Future<String?> showOtpCodeDialog(
               Navigator.of(dialogContext).pop(code);
             }
           },
-          child: const Text('Verify'),
+          child: Text(dialogContext.tr('verify')),
         ),
       ],
     ),
