@@ -47,6 +47,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
   SearchNotifier(this._repository) : super(const SearchState());
 
   final SearchRepository _repository;
+  bool _loadingMore = false;
 
   Future<void> search(SearchEntity filters) async {
     state = state.copyWith(isLoading: true, error: null, filters: filters);
@@ -76,20 +77,22 @@ class SearchNotifier extends StateNotifier<SearchState> {
   Future<void> refresh() => search(state.filters);
 
   Future<void> loadMore() async {
-    if (state.isLoading || !state.hasMore) return;
+    if (state.isLoading || _loadingMore || !state.hasMore) return;
+    _loadingMore = true;
     final next = state.filters.copyWith(page: state.filters.page + 1);
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(error: null);
     try {
       final results = await _repository.search(next);
       state = state.copyWith(
-        isLoading: false,
         results: [...state.results, ...results],
         filters: next,
         hasMore: results.length == next.limit,
         error: null,
       );
     } catch (error) {
-      state = state.copyWith(isLoading: false, error: error.toString());
+      state = state.copyWith(error: error.toString());
+    } finally {
+      _loadingMore = false;
     }
   }
 
