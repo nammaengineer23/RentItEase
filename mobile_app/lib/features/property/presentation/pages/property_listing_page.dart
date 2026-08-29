@@ -61,7 +61,16 @@ class PropertyListingPage extends ConsumerWidget {
                   onTap: () => _openDetails(context, property),
 
                   onBookVisit: () {
-                    context.push('/book-visit/${property.id}');
+                    context.push(
+                      '/book-visit/${property.id}',
+                      extra: {
+                        'propertyTitle': property.title,
+                        'propertyImage': property.imageUrls.isNotEmpty
+                            ? property.imageUrls.first
+                            : '',
+                        'ownerName': property.ownerName,
+                      },
+                    );
                   },
 
                   onContactOwner: () {
