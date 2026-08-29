@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/property_entity.dart';
 import '../../providers/property_provider.dart';
 
@@ -169,7 +170,9 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            isFavorite ? 'Added to Favorites ❤️' : 'Removed from Favorites',
+            isFavorite
+                ? context.tr('addedFavorite')
+                : context.tr('removedFavorite'),
           ),
         ),
       );
@@ -181,7 +184,9 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
       final providerError = ref.read(favoritesProvider).error;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(providerError ?? 'Failed to update favorite')),
+        SnackBar(
+          content: Text(providerError ?? context.tr('favoriteUpdateFailed')),
+        ),
       );
     }
   }
@@ -211,7 +216,9 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
     final property = this.property;
 
     if (property == null) {
-      return const Scaffold(body: Center(child: Text('Property not found.')));
+      return Scaffold(
+        body: Center(child: Text(context.tr('propertyNotFound'))),
+      );
     }
 
     return Scaffold(
@@ -241,8 +248,8 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                 backgroundColor: Colors.white,
                 child: IconButton(
                   tooltip: isFavorite
-                      ? 'Remove from favorites'
-                      : 'Add to favorites',
+                      ? context.tr('removeFromFavorites')
+                      : context.tr('addToFavorites'),
                   onPressed: isFavoriteLoading ? null : _toggleFavorite,
                   icon: isFavoriteLoading
                       ? const SizedBox(
@@ -321,9 +328,12 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
 
                   const SizedBox(height: 28),
 
-                  const Text(
-                    'Description',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    context.tr('description'),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
 
                   const SizedBox(height: 10),
@@ -335,9 +345,12 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
 
                   const SizedBox(height: 30),
 
-                  const Text(
-                    'Owner Details',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    context.tr('ownerDetails'),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
 
                   const SizedBox(height: 14),
@@ -364,10 +377,8 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                             leading: const CircleAvatar(
                               child: Icon(Icons.workspace_premium_outlined),
                             ),
-                            title: const Text('Owner contact is protected'),
-                            subtitle: const Text(
-                              'Activate Premium Membership to view owner details.',
-                            ),
+                            title: Text(context.tr('ownerContactProtected')),
+                            subtitle: Text(context.tr('premiumOwnerContact')),
                             trailing: const Icon(Icons.lock_outline),
                             onTap: () => context.push('/profile'),
                           ),
@@ -382,15 +393,18 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                         extra: {'propertyId': property.id},
                       ),
                       icon: const Icon(Icons.chat_bubble_outline),
-                      label: const Text('Chat with property owner'),
+                      label: Text(context.tr('chatWithOwner')),
                     ),
                   ),
 
                   const SizedBox(height: 30),
 
-                  const Text(
-                    'Location',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    context.tr('location'),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
 
                   const SizedBox(height: 15),

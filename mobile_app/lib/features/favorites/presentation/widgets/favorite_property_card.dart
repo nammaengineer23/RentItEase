@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../models/favorite_property_model.dart';
 import '../../providers/favorites_provider.dart';
 
@@ -111,7 +112,7 @@ class FavoritePropertyCard extends ConsumerWidget {
         ),
 
         IconButton(
-          tooltip: 'Remove from favorites',
+          tooltip: context.tr('removeFromFavorites'),
           icon: const Icon(Icons.favorite, color: Colors.red),
           onPressed: () async {
             if (onRemove != null) {
@@ -129,8 +130,8 @@ class FavoritePropertyCard extends ConsumerWidget {
               SnackBar(
                 content: Text(
                   success
-                      ? 'Removed from favorites'
-                      : 'Failed to remove favorite',
+                      ? context.tr('removedFavorite')
+                      : context.tr('removeFavoriteFailed'),
                 ),
               ),
             );

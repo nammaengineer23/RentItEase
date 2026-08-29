@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../providers/favorites_provider.dart';
 import '../widgets/favorite_property_card.dart';
 
@@ -40,7 +41,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
     final state = ref.watch(favoritesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My Favorites ❤️'), centerTitle: true),
+      appBar: AppBar(title: Text(context.tr('myFavorites')), centerTitle: true),
       body: Column(
         children: [
           Padding(
@@ -49,7 +50,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
               controller: _searchController,
               onChanged: (value) => setState(() => _query = value.trim()),
               decoration: InputDecoration(
-                hintText: 'Search favorite properties',
+                hintText: context.tr('searchFavorites'),
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _query.isEmpty
                     ? null
@@ -86,7 +87,10 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
               const SizedBox(height: 16),
               Text(state.error!, textAlign: TextAlign.center),
               const SizedBox(height: 20),
-              ElevatedButton(onPressed: _refresh, child: const Text('Retry')),
+              ElevatedButton(
+                onPressed: _refresh,
+                child: Text(context.tr('retry')),
+              ),
             ],
           ),
         ),
@@ -98,23 +102,25 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
         onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 180),
-            Icon(Icons.favorite_border, size: 90),
-            SizedBox(height: 20),
+          children: [
+            const SizedBox(height: 180),
+            const Icon(Icons.favorite_border, size: 90),
+            const SizedBox(height: 20),
             Center(
               child: Text(
-                'No Favorite Properties',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                context.tr('noFavoriteProperties'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Center(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
-                  'Save properties to quickly find '
-                  'them later.',
+                  context.tr('saveFavorites'),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -133,7 +139,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
     }).toList();
 
     if (favorites.isEmpty) {
-      return const Center(child: Text('No matching favorite properties.'));
+      return Center(child: Text(context.tr('noMatchingFavorites')));
     }
 
     return RefreshIndicator(
@@ -162,8 +168,8 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
                 SnackBar(
                   content: Text(
                     success
-                        ? 'Removed from favorites'
-                        : 'Failed to remove favorite',
+                        ? context.tr('removedFavorite')
+                        : context.tr('removeFavoriteFailed'),
                   ),
                 ),
               );

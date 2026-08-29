@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/entities/property_entity.dart';
@@ -14,7 +16,7 @@ class PropertyPage extends ConsumerWidget {
     final propertyState = ref.watch(propertyProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Properties'), centerTitle: true),
+      appBar: AppBar(title: Text(context.tr('properties')), centerTitle: true),
       body: propertyState.when(
         loading: () {
           return const Center(child: CircularProgressIndicator());
@@ -35,7 +37,7 @@ class PropertyPage extends ConsumerWidget {
                       ref.read(propertyProvider.notifier).loadProperties();
                     },
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
+                    label: Text(context.tr('retry')),
                   ),
                 ],
               ),
@@ -44,7 +46,7 @@ class PropertyPage extends ConsumerWidget {
         },
         data: (properties) {
           if (properties.isEmpty) {
-            return const Center(child: Text('No properties found.'));
+            return Center(child: Text(context.tr('noPropertiesFound')));
           }
 
           return RefreshIndicator(

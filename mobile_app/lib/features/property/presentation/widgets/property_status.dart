@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class PropertyStatus extends StatelessWidget {
   final bool isVerified;
@@ -27,7 +28,7 @@ class PropertyStatus extends StatelessWidget {
         if (isVerified)
           _StatusChip(
             icon: Icons.verified,
-            label: 'Owner Verified',
+            label: context.tr('ownerVerified'),
             backgroundColor: Colors.green.shade50,
             iconColor: Colors.green,
             textColor: Colors.green.shade700,
@@ -35,7 +36,9 @@ class PropertyStatus extends StatelessWidget {
 
         _StatusChip(
           icon: isAvailable ? Icons.check_circle : Icons.cancel,
-          label: isAvailable ? 'Available Now' : 'Occupied',
+          label: isAvailable
+              ? context.tr('availableNow')
+              : context.tr('occupied'),
           backgroundColor: isAvailable
               ? Colors.blue.shade50
               : Colors.red.shade50,
@@ -57,7 +60,7 @@ class PropertyStatus extends StatelessWidget {
 
         _StatusChip(
           icon: Icons.remove_red_eye_outlined,
-          label: '$views Views',
+          label: '$views ${context.tr('views')}',
           backgroundColor: Colors.grey.shade100,
           iconColor: Colors.grey.shade700,
           textColor: Colors.grey.shade800,

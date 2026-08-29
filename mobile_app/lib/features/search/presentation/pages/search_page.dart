@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/search_entity.dart';
 import '../../providers/search_provider.dart';
 import '../../../property/providers/property_provider.dart';
@@ -112,37 +113,46 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Filter properties',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                Text(
+                  context.tr('filterProperties'),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: city,
-                  decoration: const InputDecoration(
-                    labelText: 'City',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: context.tr('city'),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: locality,
-                  decoration: const InputDecoration(
-                    labelText: 'Locality',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: context.tr('locality'),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: propertyType,
-                  decoration: const InputDecoration(
-                    labelText: 'Property type',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: context.tr('propertyType'),
+                    border: const OutlineInputBorder(),
                   ),
-                  items: const ['Apartment', 'House', 'Villa', 'PG', 'Hostel', 'Office']
-                      .map((value) => DropdownMenuItem(
-                            value: value.toUpperCase(),
-                            child: Text(value),
+                  items: const <MapEntry<String, String>>[
+                    MapEntry('APARTMENT', 'apartment'),
+                    MapEntry('HOUSE', 'house'),
+                    MapEntry('VILLA', 'villa'),
+                    MapEntry('PG', 'pg'),
+                    MapEntry('HOSTEL', 'hostel'),
+                    MapEntry('OFFICE', 'office'),
+                  ].map((entry) => DropdownMenuItem(
+                            value: entry.key,
+                            child: Text(context.tr(entry.value)),
                           ))
                       .toList(),
                   onChanged: (value) => setSheetState(() => propertyType = value),
@@ -150,9 +160,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int>(
                   initialValue: bedrooms,
-                  decoration: const InputDecoration(
-                    labelText: 'Bedrooms',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: context.tr('bedrooms'),
+                    border: const OutlineInputBorder(),
                   ),
                   items: List.generate(
                     5,
@@ -170,9 +180,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       child: TextField(
                         controller: minRent,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Minimum rent',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: context.tr('minimumRent'),
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                     ),
@@ -181,9 +191,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       child: TextField(
                         controller: maxRent,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Maximum rent',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: context.tr('maximumRent'),
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                     ),
@@ -191,7 +201,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Available for daily rent'),
+                  title: Text(context.tr('dailyRentAvailable')),
                   value: dailyRentEnabled,
                   onChanged: (value) =>
                       setSheetState(() => dailyRentEnabled = value),
@@ -203,9 +213,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         child: TextField(
                           controller: minDailyRent,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Min daily rent',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: context.tr('minimumDailyRent'),
+                            border: const OutlineInputBorder(),
                           ),
                         ),
                       ),
@@ -214,9 +224,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         child: TextField(
                           controller: maxDailyRent,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Max daily rent',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: context.tr('maximumDailyRent'),
+                            border: const OutlineInputBorder(),
                           ),
                         ),
                       ),
@@ -224,14 +234,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                   ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Available properties only'),
+                  title: Text(context.tr('availableOnly')),
                   value: availableOnly,
                   onChanged: (value) =>
                       setSheetState(() => availableOnly = value),
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Parking required'),
+                  title: Text(context.tr('parkingRequired')),
                   value: parking,
                   onChanged: (value) => setSheetState(() => parking = value),
                 ),
@@ -243,7 +253,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                           setState(() => _filters = const SearchEntity());
                           Navigator.pop(sheetContext, false);
                         },
-                        child: const Text('Clear'),
+                        child: Text(context.tr('clear')),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -274,7 +284,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                           });
                           Navigator.pop(sheetContext, true);
                         },
-                        child: const Text('Apply'),
+                        child: Text(context.tr('apply')),
                       ),
                     ),
                   ],
@@ -302,10 +312,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Search Properties'),
+        title: Text(context.tr('searchProperties')),
         actions: [
           IconButton(
-            tooltip: 'Filters',
+            tooltip: context.tr('filters'),
             onPressed: _showFilters,
             icon: const Icon(Icons.tune),
           ),
@@ -320,7 +330,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               textInputAction: TextInputAction.search,
               onSubmitted: (_) => _search(),
               decoration: InputDecoration(
-                hintText: 'Search by city, locality or property',
+                hintText: context.tr('searchPropertyHint'),
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.send),
@@ -342,14 +352,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         action: _search,
                       )
                     : !_hasSearched
-                        ? const _SearchMessage(
+                        ? _SearchMessage(
                             icon: Icons.manage_search,
-                            message: 'Search or apply filters to find properties.',
+                            message: context.tr('searchOrFilter'),
                           )
                         : state.results.isEmpty
-                            ? const _SearchMessage(
+                            ? _SearchMessage(
                                 icon: Icons.search_off,
-                                message: 'No properties found.',
+                                message: context.tr('noPropertiesFound'),
                               )
                             : PageView.builder(
                                 scrollDirection: Axis.vertical,
@@ -425,7 +435,10 @@ class _SearchMessage extends StatelessWidget {
             Text(message, textAlign: TextAlign.center),
             if (action != null) ...[
               const SizedBox(height: 16),
-              FilledButton(onPressed: action, child: const Text('Retry')),
+              FilledButton(
+                onPressed: action,
+                child: Text(context.tr('retry')),
+              ),
             ],
           ],
         ),

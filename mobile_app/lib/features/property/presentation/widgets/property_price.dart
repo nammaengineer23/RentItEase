@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class PropertyPrice extends StatelessWidget {
   final double rent;
@@ -23,9 +24,9 @@ class PropertyPrice extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        const Text(
-          '/ month',
-          style: TextStyle(color: Colors.grey, fontSize: 15),
+        Text(
+          context.tr('perMonth'),
+          style: const TextStyle(color: Colors.grey, fontSize: 15),
         ),
         const Spacer(),
         Container(
@@ -35,7 +36,9 @@ class PropertyPrice extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            isAvailable ? 'Available' : 'Occupied',
+            isAvailable
+                ? context.tr('availableNow')
+                : context.tr('occupied'),
             style: TextStyle(
               color: isAvailable ? Colors.green.shade700 : Colors.red.shade700,
               fontWeight: FontWeight.w600,

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../providers/property_visit_provider.dart';
 import '../../../property/providers/property_provider.dart';
 import '../widgets/visit_date_picker.dart';
@@ -66,20 +67,20 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
     final selectedVisitDate = visitDate;
 
     if (widget.propertyId.trim().isEmpty) {
-      _showMessage('Property information is missing.');
+      _showMessage(context.tr('propertyMissing'));
       return;
     }
 
     if (selectedVisitDate == null) {
       _showMessage(
-        'Please select a visit date and time.',
+        context.tr('selectVisitDate'),
       );
       return;
     }
 
     if (!selectedVisitDate.isAfter(DateTime.now())) {
       _showMessage(
-        'Please select a future date and time.',
+        context.tr('selectFutureDate'),
       );
       return;
     }
@@ -108,7 +109,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
       }
 
       _showMessage(
-        'Visit booked successfully.',
+        context.tr('visitBooked'),
       );
 
       Navigator.of(context).pop(true);
@@ -148,44 +149,44 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
 
       switch (error.response?.statusCode) {
         case 401:
-          return 'Please log in again to book a visit.';
+          return context.tr('loginAgainVisit');
 
         case 403:
-          return 'You are not authorized to book this visit.';
+          return context.tr('notAuthorizedVisit');
 
         case 404:
-          return 'Property not found.';
+          return context.tr('propertyNotFound');
 
         case 409:
-          return 'This time slot is already booked.';
+          return context.tr('slotAlreadyBooked');
 
         case 500:
-          return 'Server error. Please try again later.';
+          return context.tr('serverTryLater');
       }
 
       if (error.type == DioExceptionType.connectionError ||
           error.type == DioExceptionType.connectionTimeout ||
           error.type == DioExceptionType.receiveTimeout ||
           error.type == DioExceptionType.sendTimeout) {
-        return 'Unable to connect to the server. Please check your internet connection.';
+        return context.tr('serverConnectionFailed');
       }
     }
 
     final message = error.toString();
 
     if (message.contains('already booked')) {
-      return 'This time slot is already booked. Please choose another time.';
+      return context.tr('chooseAnotherTime');
     }
 
     if (message.contains('not available')) {
-      return 'This property is not currently available for visits.';
+      return context.tr('propertyUnavailableVisits');
     }
 
     if (message.contains('future')) {
-      return 'Please select a future date and time.';
+      return context.tr('selectFutureDate');
     }
 
-    return 'Unable to book the visit. Please try again.';
+    return context.tr('bookVisitFailed');
   }
 
   void _showMessage(String message) {
@@ -212,7 +213,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Book Property Visit'),
+        title: Text(context.tr('bookPropertyVisit')),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -253,7 +254,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
                         children: [
                           Text(
                             propertyTitle.isEmpty
-                                ? 'Selected property'
+                                ? context.tr('selectedProperty')
                                 : propertyTitle,
                             style: const TextStyle(
                               fontSize: 22,
@@ -271,7 +272,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
                               Expanded(
                                 child: Text(
                                   widget.ownerName.isEmpty
-                                      ? 'Property Owner'
+                                      ? context.tr('propertyOwner')
                                       : widget.ownerName,
                                 ),
                               ),
@@ -313,12 +314,10 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
                 maxLines: 4,
                 maxLength: 500,
                 enabled: !loading,
-                decoration:
-                    const InputDecoration(
-                  labelText: 'Notes (Optional)',
-                  hintText:
-                      'Preferred time, instructions...',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: context.tr('notesOptional'),
+                  hintText: context.tr('notesHint'),
+                  border: const OutlineInputBorder(),
                 ),
               ),
 
@@ -349,8 +348,8 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
                         ),
                   label: Text(
                     loading
-                        ? 'Booking...'
-                        : 'Book Visit',
+                        ? context.tr('booking')
+                        : context.tr('bookVisit'),
                   ),
                 ),
               ),
