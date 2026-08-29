@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/widgets/app_svg_icon.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class HomeBottomNavigation extends StatelessWidget {
   final int currentIndex;
@@ -35,7 +36,7 @@ class HomeBottomNavigation extends StatelessWidget {
             size: 26,
             color: colorScheme.primary,
           ),
-          label: 'Home',
+          label: context.tr('home'),
         ),
         NavigationDestination(
           icon: AppSvgIcon(
@@ -48,7 +49,7 @@ class HomeBottomNavigation extends StatelessWidget {
             size: 26,
             color: colorScheme.primary,
           ),
-          label: 'Search',
+          label: context.tr('search'),
         ),
         NavigationDestination(
           icon: AppSvgIcon(
@@ -61,7 +62,7 @@ class HomeBottomNavigation extends StatelessWidget {
             size: 26,
             color: colorScheme.primary,
           ),
-          label: ownerMode ? 'Analytics' : 'Favorites',
+          label: context.tr(ownerMode ? 'analytics' : 'favorites'),
         ),
         NavigationDestination(
           icon: AppSvgIcon(
@@ -74,7 +75,7 @@ class HomeBottomNavigation extends StatelessWidget {
             size: 26,
             color: colorScheme.primary,
           ),
-          label: ownerMode ? 'Visits' : 'Bookings',
+          label: context.tr(ownerMode ? 'visits' : 'bookings'),
         ),
         NavigationDestination(
           icon: AppSvgIcon(
@@ -87,7 +88,7 @@ class HomeBottomNavigation extends StatelessWidget {
             size: 26,
             color: colorScheme.primary,
           ),
-          label: 'Profile',
+          label: context.tr('profile'),
         ),
       ],
     );
