@@ -42,7 +42,7 @@ export class PropertyVisitsService {
       throw new NotFoundException('Property not found.');
     }
 
-    if (!property.isAvailable) {
+    if (!property.isVerified || !property.isAvailable) {
       throw new BadRequestException(
         'This property is not available for visits.',
       );
