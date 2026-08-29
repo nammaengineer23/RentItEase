@@ -129,30 +129,6 @@ export class FirebaseService {
         data,
       });
 
-    console.log('==============================');
-    console.log('📲 Firebase Push Notification');
-    console.log(
-      `Success: ${response.successCount}`,
-    );
-    console.log(
-      `Failure: ${response.failureCount}`,
-    );
-
-    response.responses.forEach((result, index) => {
-      if (result.success) {
-        console.log(
-          `✅ Token ${index + 1}: Sent successfully`,
-        );
-      } else {
-        console.error(
-          `❌ Token ${index + 1}:`,
-          result.error?.message,
-        );
-      }
-    });
-
-    console.log('==============================');
-
     return response;
   } catch (error) {
     console.error(

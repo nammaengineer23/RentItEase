@@ -5,6 +5,7 @@ import '../../../core/network/dio_provider.dart';
 import '../data/repositories/settings_repository_impl.dart';
 import '../domain/entities/settings_entity.dart';
 import '../domain/repositories/settings_repository.dart';
+import '../../notifications/services/push_notification_service.dart';
 
 // ============================================================
 // Repository Provider
@@ -31,10 +32,12 @@ final settingsProvider =
 
 class SettingsNotifier extends AsyncNotifier<SettingsEntity> {
   late final SettingsRepository repository;
+  late final PushNotificationService pushNotificationService;
 
   @override
   Future<SettingsEntity> build() async {
     repository = ref.read(settingsRepositoryProvider);
+    pushNotificationService = PushNotificationService();
 
     return repository.getSettings();
   }
@@ -77,6 +80,11 @@ class SettingsNotifier extends AsyncNotifier<SettingsEntity> {
       );
 
       state = AsyncData(updated);
+      if (pushNotifications == true) {
+        await pushNotificationService.activate();
+      } else if (pushNotifications == false) {
+        await pushNotificationService.deactivate();
+      }
     } catch (e, st) {
       // Restore the previous server state if the request fails.
       state = AsyncError(e, st);
