@@ -240,7 +240,7 @@ class AuthenticationService {
       data: {
         'idToken': idToken,
         if (createAccount) 'createAccount': true,
-        if (phoneIdToken != null) 'phoneIdToken': phoneIdToken,
+        ?'phoneIdToken': phoneIdToken,
       },
     );
 
