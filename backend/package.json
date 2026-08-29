@@ -20,6 +20,7 @@
     "test:e2e:property-visits": "jest --config ./test/jest-e2e.json --runInBand --testPathPatterns=property-visits.e2e-spec.ts",
     "test:e2e:chat": "jest --config ./test/jest-e2e.json --runInBand --testPathPatterns=chat.e2e-spec.ts",
     "test:e2e:all": "jest --config ./test/jest-e2e.json --runInBand",
+    "test:unit:properties": "jest --config ./test/jest-properties-unit.json --runInBand",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
