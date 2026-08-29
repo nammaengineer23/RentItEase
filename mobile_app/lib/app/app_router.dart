@@ -41,6 +41,7 @@ import '../features/payment/presentation/pages/payment_page.dart';
 
 import '../features/profile/presentation/pages/edit_profile_page.dart';
 import '../features/profile/presentation/pages/profile_page.dart';
+import '../features/profile/presentation/pages/premium_membership_page.dart';
 
 import '../features/property/domain/entities/property_entity.dart';
 import '../features/property/presentation/pages/property_details_page.dart';
@@ -451,6 +452,12 @@ class AppRouter {
         name: 'edit-profile',
         builder: (context, state) =>
             const EditProfilePage(),
+      ),
+
+      GoRoute(
+        path: '/profile/premium',
+        name: 'premium-membership',
+        builder: (context, state) => const PremiumMembershipPage(),
       ),
 
       GoRoute(

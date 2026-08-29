@@ -185,6 +185,21 @@ import {
       return this.ensureInvoiceAccess(invoice, user);
     }
 
+    async findByMembership(
+      membershipId: string,
+      user: { id: string; role: string },
+    ) {
+      const invoice = await this.prisma.invoice.findFirst({
+        where: { membershipId, status: InvoiceStatus.PAID },
+        include: { membership: { include: { plan: true } } },
+      });
+      if (!invoice) throw new NotFoundException('Premium invoice not found');
+      if (user.role !== 'ADMIN' && invoice.userId !== user.id) {
+        throw new BadRequestException('Invoice access denied');
+      }
+      return invoice;
+    }
+
     private ensureInvoiceAccess(
       invoice: any,
       user: { id: string; role: string },
