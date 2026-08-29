@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/property_visit_provider.dart';
+import '../../../property/providers/property_provider.dart';
 import '../widgets/visit_date_picker.dart';
 
 class BookVisitPage extends ConsumerStatefulWidget {
@@ -30,6 +31,36 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
   DateTime? visitDate;
 
   bool loading = false;
+  late String propertyTitle;
+  late String propertyImage;
+
+  @override
+  void initState() {
+    super.initState();
+    propertyTitle = widget.propertyTitle;
+    propertyImage = widget.propertyImage;
+    if (propertyTitle.isEmpty || propertyImage.isEmpty) {
+      Future.microtask(_loadPropertySummary);
+    }
+  }
+
+  Future<void> _loadPropertySummary() async {
+    if (widget.propertyId.trim().isEmpty) return;
+    try {
+      final property = await ref
+          .read(propertyProvider.notifier)
+          .getProperty(widget.propertyId);
+      if (!mounted) return;
+      setState(() {
+        propertyTitle = property.title;
+        propertyImage = property.imageUrls.isNotEmpty
+            ? property.imageUrls.first
+            : '';
+      });
+    } catch (_) {
+      // The API still validates the property ID when the summary cannot load.
+    }
+  }
 
   Future<void> bookVisit() async {
     final selectedVisitDate = visitDate;
@@ -202,10 +233,10 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
                   children: [
                     AspectRatio(
                       aspectRatio: 16 / 9,
-                      child: widget.propertyImage.isEmpty
+                      child: propertyImage.isEmpty
                           ? _buildPlaceholderImage()
                           : Image.network(
-                              widget.propertyImage,
+                              propertyImage,
                               fit: BoxFit.cover,
                               errorBuilder:
                                   (_, _, _) =>
@@ -221,7 +252,9 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
                             CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.propertyTitle,
+                            propertyTitle.isEmpty
+                                ? 'Selected property'
+                                : propertyTitle,
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight:

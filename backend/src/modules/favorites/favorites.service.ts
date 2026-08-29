@@ -22,9 +22,11 @@ export class FavoritesService {
     user: any,
   ) {
     const property =
-      await this.prisma.property.findUnique({
+      await this.prisma.property.findFirst({
         where: {
           id: propertyId,
+          isVerified: true,
+          isAvailable: true,
         },
       });
 
@@ -82,8 +84,6 @@ return {
               owner: {
                 select: {
                   id: true,
-                  fullName: true,
-                  phone: true,
                 },
               },
 

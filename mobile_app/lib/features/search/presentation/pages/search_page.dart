@@ -52,7 +52,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             longitude: position.longitude,
             radius: 25,
           );
-      ref.read(searchProvider.notifier).showNearby(properties);
+      if (properties.isEmpty) {
+        await ref.read(searchProvider.notifier).search(const SearchEntity());
+      } else {
+        ref.read(searchProvider.notifier).showNearby(properties);
+      }
     } catch (_) {
       await ref.read(searchProvider.notifier).search(const SearchEntity());
     }
@@ -372,6 +376,15 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                         ),
                                         onBookVisit: () => context.push(
                                           '/book-visit/${property.id}',
+                                          extra: {
+                                            'propertyTitle': property.title,
+                                            'propertyImage': property
+                                                    .imageUrls
+                                                    .isNotEmpty
+                                                ? property.imageUrls.first
+                                                : '',
+                                            'ownerName': property.ownerName,
+                                          },
                                         ),
                                         onContactOwner: () => context.push(
                                           '/chat?propertyId=${property.id}',

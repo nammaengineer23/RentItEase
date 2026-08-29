@@ -15,23 +15,7 @@ class FavoritesApi {
     try {
       final response = await dio.get('/favorites');
 
-      dynamic data = response.data;
-
-      if (data is Map && data['data'] is Map) {
-        data = data['data'];
-      }
-
-      List<dynamic> list = [];
-
-      if (data is List) {
-        list = data;
-      } else if (data is Map<String, dynamic>) {
-        if (data['favorites'] is List) {
-          list = data['favorites'] as List<dynamic>;
-        } else if (data['data'] is List) {
-          list = data['data'] as List<dynamic>;
-        }
-      }
+      final list = _extractList(response.data);
 
       return list
           .whereType<Map>()
@@ -77,17 +61,8 @@ class FavoritesApi {
     try {
       final response = await dio.get('/favorites/check/$propertyId');
 
-      dynamic data = response.data;
-
-      if (data is Map && data['data'] is Map) {
-        data = data['data'];
-      }
-
-      if (data is Map<String, dynamic>) {
-        return data['isFavorite'] == true;
-      }
-
-      return false;
+      final data = _extractMap(response.data);
+      return data['isFavorite'] == true;
     } on DioException catch (e) {
       throw Exception(_errorMessage(e, 'Failed to check favorite'));
     }
@@ -101,13 +76,19 @@ class FavoritesApi {
     final responseData = error.response?.data;
 
     if (responseData is Map<String, dynamic>) {
-      final message = responseData['message'];
+      dynamic value = responseData;
+      for (var depth = 0; depth < 5; depth++) {
+        if (value is! Map || !value.containsKey('data')) break;
+        value = value['data'];
+      }
+      final map = value is Map ? value : responseData;
+      final message = map['message'] ?? responseData['message'];
 
       if (message is String && message.isNotEmpty) {
         return message;
       }
 
-      final errorMessage = responseData['error'];
+      final errorMessage = map['error'] ?? responseData['error'];
 
       if (errorMessage is String && errorMessage.isNotEmpty) {
         return errorMessage;
@@ -115,5 +96,29 @@ class FavoritesApi {
     }
 
     return error.response?.statusMessage ?? fallback;
+  }
+
+  static List<dynamic> _extractList(dynamic response) {
+    dynamic value = response;
+    for (var depth = 0; depth < 5; depth++) {
+      if (value is List) return value;
+      if (value is! Map) break;
+      if (value['favorites'] is List) return value['favorites'] as List;
+      if (!value.containsKey('data')) break;
+      value = value['data'];
+    }
+    return const [];
+  }
+
+  static Map<String, dynamic> _extractMap(dynamic response) {
+    dynamic value = response;
+    for (var depth = 0; depth < 5; depth++) {
+      if (value is! Map) return const {};
+      final map = Map<String, dynamic>.from(value);
+      if (map.containsKey('isFavorite')) return map;
+      if (!map.containsKey('data')) return map;
+      value = map['data'];
+    }
+    return value is Map ? Map<String, dynamic>.from(value) : const {};
   }
 }
