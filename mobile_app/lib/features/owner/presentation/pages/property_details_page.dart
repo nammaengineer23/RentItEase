@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../data/models/owner_property_model.dart';
 import '../../providers/owner_provider.dart';
 import 'edit_property_page.dart';
@@ -27,16 +28,16 @@ class OwnerPropertyDetailsPage extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete Property'),
-        content: const Text('Are you sure you want to delete this property?'),
+        title: Text(context.tr('deleteProperty')),
+        content: Text(context.tr('deletePropertyQuestion')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(context.tr('delete')),
           ),
         ],
       ),
@@ -49,13 +50,13 @@ class OwnerPropertyDetailsPage extends ConsumerWidget {
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Property deleted successfully')),
+        SnackBar(content: Text(context.tr('propertyDeleted'))),
       );
       Navigator.pop(context, true);
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to delete property: $error')),
+        SnackBar(content: Text('${context.tr('propertyDeleteFailed')}: $error')),
       );
     }
   }
@@ -64,7 +65,7 @@ class OwnerPropertyDetailsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Property Details'),
+        title: Text(context.tr('propertyDetails')),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -114,33 +115,33 @@ class OwnerPropertyDetailsPage extends ConsumerWidget {
                 const SizedBox(height: 20),
                 _InfoTile(
                   icon: Icons.location_on,
-                  title: 'Address',
+                  title: context.tr('address'),
                   value:
                       '${property.address}, ${property.locality}, ${property.city}',
                 ),
                 _InfoTile(
                   icon: Icons.apartment,
-                  title: 'Property Type',
+                  title: context.tr('propertyType'),
                   value: property.propertyType,
                 ),
                 _InfoTile(
                   icon: Icons.description,
-                  title: 'Description',
+                  title: context.tr('description'),
                   value: property.description,
                 ),
                 _InfoTile(
                   icon: Icons.visibility,
-                  title: 'Views',
+                  title: context.tr('views'),
                   value: property.views.toString(),
                 ),
                 _InfoTile(
                   icon: Icons.favorite,
-                  title: 'Favorites',
+                  title: context.tr('favorites'),
                   value: property.favorites.toString(),
                 ),
                 _InfoTile(
                   icon: Icons.calendar_today,
-                  title: 'Visit Requests',
+                  title: context.tr('visitRequests'),
                   value: property.visitRequests.toString(),
                 ),
                 const SizedBox(height: 30),
@@ -148,7 +149,7 @@ class OwnerPropertyDetailsPage extends ConsumerWidget {
                   width: double.infinity,
                   child: FilledButton.icon(
                     icon: const Icon(Icons.edit),
-                    label: const Text('Edit Property'),
+                    label: Text(context.tr('editProperty')),
                     onPressed: () => _edit(context),
                   ),
                 ),
@@ -157,7 +158,7 @@ class OwnerPropertyDetailsPage extends ConsumerWidget {
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.delete),
-                    label: const Text('Delete Property'),
+                    label: Text(context.tr('deleteProperty')),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red,
                     ),

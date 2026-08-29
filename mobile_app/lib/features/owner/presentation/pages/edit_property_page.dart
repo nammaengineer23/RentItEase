@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../../maps/models/location_model.dart';
 import '../../../maps/presentation/pages/map_picker_page.dart';
@@ -152,7 +153,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     } catch (error) {
       if (mounted) {
         setState(() => imagesLoading = false);
-        _showError('Unable to load property photos: $error');
+        _showError('${context.tr('loadPhotosFailed')}: $error');
       }
     }
   }
@@ -177,7 +178,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
 
     final location = provider.selectedLocation;
     if (location == null) {
-      _showError('Current location is unavailable.');
+      _showError(context.tr('currentLocationUnavailable'));
       return;
     }
     _applyLocation(location);
@@ -197,7 +198,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
         imageId: image.id,
       );
     } catch (error) {
-      if (mounted) _showError('Unable to delete photo: $error');
+      if (mounted) _showError('${context.tr('deletePhotoFailed')}: $error');
       rethrow;
     }
   }
@@ -220,7 +221,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
         bedrooms == null ||
         bathrooms == null ||
         area == null) {
-      _showError('Please enter valid numeric property details.');
+      _showError(context.tr('validNumericDetails'));
       return;
     }
 
@@ -293,30 +294,32 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Property updated successfully')),
+        SnackBar(content: Text(context.tr('propertyUpdated'))),
       );
       Navigator.pop(context, true);
     } catch (error) {
-      if (mounted) _showError('Unable to update property: $error');
+      if (mounted) {
+        _showError('${context.tr('updatePropertyFailed')}: $error');
+      }
     } finally {
       if (mounted) setState(() => loading = false);
     }
   }
 
   String? _required(String? value) =>
-      value == null || value.trim().isEmpty ? 'Required' : null;
+      value == null || value.trim().isEmpty ? context.tr('required') : null;
 
   String? _number(String? value) {
-    if (_required(value) != null) return 'Required';
+    if (_required(value) != null) return context.tr('required');
     return double.tryParse(value!.trim()) == null
-        ? 'Enter a valid number'
+        ? context.tr('validNumber')
         : null;
   }
 
   String? _integer(String? value) {
-    if (_required(value) != null) return 'Required';
+    if (_required(value) != null) return context.tr('required');
     return int.tryParse(value!.trim()) == null
-        ? 'Enter a valid number'
+        ? context.tr('validNumber')
         : null;
   }
 
@@ -374,31 +377,31 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     const gap = SizedBox(height: 16);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Property')),
+      appBar: AppBar(title: Text(context.tr('editProperty'))),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _field(titleController, 'Property Title'),
+            _field(titleController, context.tr('propertyTitle')),
             gap,
             _field(
               descriptionController,
-              'Description',
+              context.tr('description'),
               maxLines: 4,
             ),
             gap,
             _field(
               rentController,
-              'Monthly Rent',
+              context.tr('monthlyRent'),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: _number,
             ),
             gap,
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Available for daily rent'),
-              subtitle: const Text('Allow short stays at a separate daily rate'),
+              title: Text(context.tr('dailyRentAvailable')),
+              subtitle: Text(context.tr('perDayRentDescription')),
               value: dailyRentEnabled,
               onChanged: loading
                   ? null
@@ -407,7 +410,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
             if (dailyRentEnabled) ...[
               _field(
                 dailyRentController,
-                'Daily Rent',
+                context.tr('dailyRent'),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 validator: _number,
@@ -416,26 +419,29 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
             ],
             _field(
               securityDepositController,
-              'Security Deposit',
+              context.tr('securityDeposit'),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: _number,
             ),
             gap,
             DropdownButtonFormField<String>(
               initialValue: propertyType,
-              decoration: const InputDecoration(
-                labelText: 'Property Type',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.tr('propertyType'),
+                border: const OutlineInputBorder(),
               ),
-              items: const [
-                'Apartment',
-                'House',
-                'Villa',
-                'Studio',
-                'Room',
-                'PG',
-              ].map((value) {
-                return DropdownMenuItem(value: value, child: Text(value));
+              items: const {
+                'Apartment': 'apartment',
+                'House': 'house',
+                'Villa': 'villa',
+                'Studio': 'studio',
+                'Room': 'room',
+                'PG': 'pg',
+              }.entries.map((entry) {
+                return DropdownMenuItem(
+                  value: entry.key,
+                  child: Text(context.tr(entry.value)),
+                );
               }).toList(),
               onChanged: loading
                   ? null
@@ -444,16 +450,19 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
             gap,
             DropdownButtonFormField<String>(
               initialValue: furnishing,
-              decoration: const InputDecoration(
-                labelText: 'Furnishing',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.tr('furnishing'),
+                border: const OutlineInputBorder(),
               ),
-              items: const [
-                'Unfurnished',
-                'Semi Furnished',
-                'Fully Furnished',
-              ].map((value) {
-                return DropdownMenuItem(value: value, child: Text(value));
+              items: const {
+                'Unfurnished': 'unfurnished',
+                'Semi Furnished': 'semiFurnished',
+                'Fully Furnished': 'fullyFurnished',
+              }.entries.map((entry) {
+                return DropdownMenuItem(
+                  value: entry.key,
+                  child: Text(context.tr(entry.value)),
+                );
               }).toList(),
               onChanged: loading
                   ? null
@@ -465,7 +474,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
                 Expanded(
                   child: _field(
                     bedroomsController,
-                    'Bedrooms',
+                    context.tr('bedrooms'),
                     keyboardType: TextInputType.number,
                     validator: _integer,
                   ),
@@ -474,7 +483,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
                 Expanded(
                   child: _field(
                     bathroomsController,
-                    'Bathrooms',
+                    context.tr('bathrooms'),
                     keyboardType: TextInputType.number,
                     validator: _integer,
                   ),
@@ -484,13 +493,13 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
             gap,
             _field(
               areaController,
-              'Area (sq ft)',
+              context.tr('areaSqFt'),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: _number,
             ),
             const SizedBox(height: 24),
             Text(
-              'Property Location',
+              context.tr('propertyLocation'),
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
@@ -500,7 +509,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
                   child: OutlinedButton.icon(
                     onPressed: loading ? null : _useCurrentLocation,
                     icon: const Icon(Icons.my_location),
-                    label: const Text('Use Current'),
+                    label: Text(context.tr('useCurrent')),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -508,7 +517,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
                   child: OutlinedButton.icon(
                     onPressed: loading ? null : _pickLocation,
                     icon: const Icon(Icons.map_outlined),
-                    label: const Text('Choose on Map'),
+                    label: Text(context.tr('chooseOnMap')),
                   ),
                 ),
               ],
@@ -517,39 +526,43 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  'Coordinates: '
+                  '${context.tr('coordinates')}: '
                   '${selectedLocation!.latitude.toStringAsFixed(6)}, '
                   '${selectedLocation!.longitude.toStringAsFixed(6)}',
                 ),
               ),
             gap,
-            _field(addressController, 'Address'),
+            _field(addressController, context.tr('address')),
             gap,
-            _field(localityController, 'Locality'),
+            _field(localityController, context.tr('locality')),
             gap,
-            _field(landmarkController, 'Landmark', validator: (_) => null),
+            _field(
+              landmarkController,
+              context.tr('landmark'),
+              validator: (_) => null,
+            ),
             gap,
-            _field(cityController, 'City'),
+            _field(cityController, context.tr('city')),
             gap,
-            _field(stateController, 'State'),
+            _field(stateController, context.tr('state')),
             gap,
-            _field(countryController, 'Country'),
+            _field(countryController, context.tr('country')),
             gap,
             _field(
               pincodeController,
-              'Pincode',
+              context.tr('pincode'),
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 8),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Parking'),
+              title: Text(context.tr('parking')),
               value: parking,
               onChanged: loading ? null : (value) => setState(() => parking = value),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Pet Friendly'),
+              title: Text(context.tr('petFriendly')),
               value: petFriendly,
               onChanged: loading
                   ? null
@@ -557,7 +570,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Available for Rent'),
+              title: Text(context.tr('availableForRent')),
               value: isAvailable,
               onChanged: loading
                   ? null
@@ -565,7 +578,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Property Photos',
+              context.tr('propertyPhotos'),
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
@@ -593,7 +606,11 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
                         ),
                       )
                     : const Icon(Icons.save),
-                label: Text(loading ? 'Updating...' : 'Update Property'),
+                label: Text(
+                  loading
+                      ? context.tr('updating')
+                      : context.tr('updateProperty'),
+                ),
               ),
             ),
           ],

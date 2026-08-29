@@ -82,4 +82,26 @@ void main() {
       );
     }
   });
+
+  test('Kannada owner dashboard flow has priority translations', () {
+    const localizations = AppLocalizations(Locale('kn'));
+    const keys = <String>[
+      'ownerDashboard',
+      'activeProperties',
+      'pendingVisits',
+      'recentActivity',
+      'myProperties',
+      'visitRequests',
+      'propertyPerformance',
+      'deleteProperty',
+    ];
+
+    for (final key in keys) {
+      expect(localizations.text(key), isNot(key));
+      expect(
+        localizations.text(key),
+        isNot(const AppLocalizations(Locale('en')).text(key)),
+      );
+    }
+  });
 }

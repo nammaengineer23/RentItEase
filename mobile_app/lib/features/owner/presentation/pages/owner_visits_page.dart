@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../providers/owner_provider.dart';
 import '../widgets/visit_request_card.dart';
 
@@ -26,7 +27,7 @@ class _OwnerVisitsPageState extends ConsumerState<OwnerVisitsPage> {
     final state = ref.watch(ownerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Visit Requests')),
+      appBar: AppBar(title: Text(context.tr('visitRequests'))),
       body: RefreshIndicator(
         onRefresh: () =>
             ref.read(ownerProvider.notifier).refreshVisitRequests(),
@@ -48,14 +49,14 @@ class _OwnerVisitsPageState extends ConsumerState<OwnerVisitsPage> {
               )
             : state.visitRequests.isEmpty
             ? ListView(
-                children: const [
-                  SizedBox(height: 120),
-                  Icon(Icons.event_busy, size: 80, color: Colors.grey),
-                  SizedBox(height: 20),
+              children: [
+                  const SizedBox(height: 120),
+                  const Icon(Icons.event_busy, size: 80, color: Colors.grey),
+                  const SizedBox(height: 20),
                   Center(
                     child: Text(
-                      'No visit requests available.',
-                      style: TextStyle(fontSize: 18),
+                      context.tr('noVisitRequests'),
+                      style: const TextStyle(fontSize: 18),
                     ),
                   ),
                 ],
@@ -78,7 +79,7 @@ class _OwnerVisitsPageState extends ConsumerState<OwnerVisitsPage> {
                             if (!context.mounted) return;
 
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Visit approved')),
+                              SnackBar(content: Text(context.tr('visitApproved'))),
                             );
                           }
                         : null,
@@ -92,7 +93,7 @@ class _OwnerVisitsPageState extends ConsumerState<OwnerVisitsPage> {
                             if (!context.mounted) return;
 
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Visit rejected')),
+                              SnackBar(content: Text(context.tr('visitRejected'))),
                             );
                           }
                         : null,
@@ -106,7 +107,7 @@ class _OwnerVisitsPageState extends ConsumerState<OwnerVisitsPage> {
                             if (!context.mounted) return;
 
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Visit completed')),
+                              SnackBar(content: Text(context.tr('visitCompleted'))),
                             );
                           }
                         : null,

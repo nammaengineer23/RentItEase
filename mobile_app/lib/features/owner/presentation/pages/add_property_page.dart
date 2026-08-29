@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../../maps/models/location_model.dart';
 import '../../../maps/presentation/pages/map_picker_page.dart';
@@ -111,7 +112,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
         bedrooms == null ||
         bathrooms == null ||
         area == null) {
-      _showError('Please enter valid numeric property details.');
+      _showError(context.tr('validNumericDetails'));
       return;
     }
 
@@ -188,7 +189,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Property created successfully')),
+        SnackBar(content: Text(context.tr('propertyCreated'))),
       );
 
       Navigator.of(context).pop(true);
@@ -197,7 +198,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
         return;
       }
 
-      _showError('Failed to create property: $e');
+      _showError('${context.tr('createPropertyFailed')}: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -215,7 +216,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
   String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Required';
+      return context.tr('required');
     }
 
     return null;
@@ -223,11 +224,11 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
   String? _number(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Required';
+      return context.tr('required');
     }
 
     if (double.tryParse(value.trim()) == null) {
-      return 'Enter a valid number';
+      return context.tr('validNumber');
     }
 
     return null;
@@ -235,11 +236,11 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
   String? _integer(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Required';
+      return context.tr('required');
     }
 
     if (int.tryParse(value.trim()) == null) {
-      return 'Enter a valid number';
+      return context.tr('validNumber');
     }
 
     return null;
@@ -268,7 +269,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Property')),
+      appBar: AppBar(title: Text(context.tr('addProperty'))),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -276,9 +277,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
           children: [
             TextFormField(
               controller: titleController,
-              decoration: const InputDecoration(
-                labelText: 'Property Title',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.tr('propertyTitle'),
+                border: const OutlineInputBorder(),
               ),
               validator: _required,
             ),
@@ -288,9 +289,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
             TextFormField(
               controller: descriptionController,
               maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.tr('description'),
+                border: const OutlineInputBorder(),
               ),
               validator: _required,
             ),
@@ -302,10 +303,10 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: const InputDecoration(
-                labelText: 'Monthly Rent',
+              decoration: InputDecoration(
+                labelText: context.tr('monthlyRent'),
                 prefixText: '₹ ',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
               ),
               validator: _number,
             ),
@@ -314,10 +315,8 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Available for per-day rent'),
-              subtitle: const Text(
-                'Enable short stays with an owner-defined daily price',
-              ),
+              title: Text(context.tr('perDayRent')),
+              subtitle: Text(context.tr('perDayRentDescription')),
               value: dailyRentEnabled,
               onChanged: loading
                   ? null
@@ -330,11 +329,11 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Rent Per Day',
-                  helperText: 'Set a competitive amount based on demand',
+                decoration: InputDecoration(
+                  labelText: context.tr('rentPerDay'),
+                  helperText: context.tr('dailyRentHelper'),
                   prefixText: '₹ ',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: dailyRentEnabled ? _number : null,
               ),
@@ -346,10 +345,10 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: const InputDecoration(
-                labelText: 'Security Deposit',
+              decoration: InputDecoration(
+                labelText: context.tr('securityDeposit'),
                 prefixText: '₹ ',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
               ),
               validator: _number,
             ),
@@ -358,18 +357,21 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             DropdownButtonFormField<String>(
               initialValue: propertyType,
-              decoration: const InputDecoration(
-                labelText: 'Property Type',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.tr('propertyType'),
+                border: const OutlineInputBorder(),
               ),
-              items: const [
-                DropdownMenuItem(value: 'Apartment', child: Text('Apartment')),
-                DropdownMenuItem(value: 'House', child: Text('House')),
-                DropdownMenuItem(value: 'Villa', child: Text('Villa')),
-                DropdownMenuItem(value: 'Studio', child: Text('Studio')),
-                DropdownMenuItem(value: 'Room', child: Text('Room')),
-                DropdownMenuItem(value: 'PG', child: Text('PG')),
-              ],
+              items: const {
+                'Apartment': 'apartment',
+                'House': 'house',
+                'Villa': 'villa',
+                'Studio': 'studio',
+                'Room': 'room',
+                'PG': 'pg',
+              }.entries.map((entry) => DropdownMenuItem(
+                    value: entry.key,
+                    child: Text(context.tr(entry.value)),
+                  )).toList(),
               onChanged: (value) {
                 if (value != null) {
                   setState(() {
@@ -383,24 +385,18 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             DropdownButtonFormField<String>(
               initialValue: furnishing,
-              decoration: const InputDecoration(
-                labelText: 'Furnishing',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.tr('furnishing'),
+                border: const OutlineInputBorder(),
               ),
-              items: const [
-                DropdownMenuItem(
-                  value: 'Unfurnished',
-                  child: Text('Unfurnished'),
-                ),
-                DropdownMenuItem(
-                  value: 'Semi Furnished',
-                  child: Text('Semi Furnished'),
-                ),
-                DropdownMenuItem(
-                  value: 'Fully Furnished',
-                  child: Text('Fully Furnished'),
-                ),
-              ],
+              items: const {
+                'Unfurnished': 'unfurnished',
+                'Semi Furnished': 'semiFurnished',
+                'Fully Furnished': 'fullyFurnished',
+              }.entries.map((entry) => DropdownMenuItem(
+                    value: entry.key,
+                    child: Text(context.tr(entry.value)),
+                  )).toList(),
               onChanged: (value) {
                 if (value != null) {
                   setState(() {
@@ -418,9 +414,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
                   child: TextFormField(
                     controller: bedroomsController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Bedrooms',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: context.tr('bedrooms'),
+                      border: const OutlineInputBorder(),
                     ),
                     validator: _integer,
                   ),
@@ -430,9 +426,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
                   child: TextFormField(
                     controller: bathroomsController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Bathrooms',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: context.tr('bathrooms'),
+                      border: const OutlineInputBorder(),
                     ),
                     validator: _integer,
                   ),
@@ -447,18 +443,18 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: const InputDecoration(
-                labelText: 'Area (sq ft)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.tr('areaSqFt'),
+                border: const OutlineInputBorder(),
               ),
               validator: _number,
             ),
 
             const SizedBox(height: 16),
 
-            const Text(
-              'Property Location',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              context.tr('propertyLocation'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 8),
@@ -468,8 +464,8 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
               icon: const Icon(Icons.location_on_outlined),
               label: Text(
                 selectedLocation == null
-                    ? 'Getting Current Location…'
-                    : 'Change Location on Map',
+                    ? context.tr('gettingCurrentLocation')
+                    : context.tr('changeLocationMap'),
               ),
             ),
 
@@ -477,7 +473,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  'Coordinates: '
+                  '${context.tr('coordinates')}: '
                   '${selectedLocation!.latitude.toStringAsFixed(6)}, '
                   '${selectedLocation!.longitude.toStringAsFixed(6)}',
                 ),
@@ -487,9 +483,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             TextFormField(
               controller: addressController,
-              decoration: const InputDecoration(
-                labelText: 'Address',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.tr('address'),
+                border: const OutlineInputBorder(),
               ),
               validator: _required,
             ),
@@ -498,9 +494,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             TextFormField(
               controller: localityController,
-              decoration: const InputDecoration(
-                labelText: 'Locality',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.tr('locality'),
+                border: const OutlineInputBorder(),
               ),
               validator: _required,
             ),
@@ -509,9 +505,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             TextFormField(
               controller: landmarkController,
-              decoration: const InputDecoration(
-                labelText: 'Landmark',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.tr('landmark'),
+                border: const OutlineInputBorder(),
               ),
             ),
 
@@ -519,9 +515,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             TextFormField(
               controller: cityController,
-              decoration: const InputDecoration(
-                labelText: 'City',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.tr('city'),
+                border: const OutlineInputBorder(),
               ),
               validator: _required,
             ),
@@ -530,9 +526,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             TextFormField(
               controller: stateController,
-              decoration: const InputDecoration(
-                labelText: 'State',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.tr('state'),
+                border: const OutlineInputBorder(),
               ),
               validator: _required,
             ),
@@ -541,9 +537,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             TextFormField(
               controller: countryController,
-              decoration: const InputDecoration(
-                labelText: 'Country',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.tr('country'),
+                border: const OutlineInputBorder(),
               ),
               validator: _required,
             ),
@@ -553,9 +549,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
             TextFormField(
               controller: pincodeController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Pincode',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.tr('pincode'),
+                border: const OutlineInputBorder(),
               ),
               validator: _required,
             ),
@@ -564,7 +560,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Parking'),
+              title: Text(context.tr('parking')),
               value: parking,
               onChanged: (value) {
                 setState(() {
@@ -575,7 +571,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Pet Friendly'),
+              title: Text(context.tr('petFriendly')),
               value: petFriendly,
               onChanged: (value) {
                 setState(() {
@@ -586,9 +582,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             const SizedBox(height: 16),
 
-            const Text(
-              'Property Photos',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              context.tr('propertyPhotos'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 8),
@@ -599,11 +595,10 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
               },
             ),
 
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
               child: Text(
-                'Select up to 2 photos in each section. '
-                'The first selected photo will be the primary cover.',
+                context.tr('photoSectionHelp'),
               ),
             ),
 
@@ -624,7 +619,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
                       )
                     : const Icon(Icons.save),
                 label: Text(
-                  loading ? 'Creating Property...' : 'Create Property',
+                  loading
+                      ? context.tr('creatingProperty')
+                      : context.tr('createProperty'),
                 ),
               ),
             ),

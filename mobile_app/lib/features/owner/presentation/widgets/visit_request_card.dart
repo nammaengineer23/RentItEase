@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/visit_request_entity.dart';
 
 class VisitRequestCard extends StatelessWidget {
@@ -112,7 +113,7 @@ class VisitRequestCard extends StatelessWidget {
                     child: FilledButton.icon(
                       onPressed: onApprove,
                       icon: const Icon(Icons.check),
-                      label: const Text('Approve'),
+                      label: Text(context.tr('approve')),
                     ),
                   ),
 
@@ -122,7 +123,7 @@ class VisitRequestCard extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: onReject,
                       icon: const Icon(Icons.close),
-                      label: const Text('Reject'),
+                      label: Text(context.tr('reject')),
                     ),
                   ),
                 ],
@@ -134,7 +135,7 @@ class VisitRequestCard extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: onComplete,
                   icon: const Icon(Icons.task_alt),
-                  label: const Text('Mark Completed'),
+                  label: Text(context.tr('markCompleted')),
                 ),
               ),
           ],

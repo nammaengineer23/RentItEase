@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../providers/owner_provider.dart';
 import '../../../authentication/providers/authentication_provider.dart';
 
@@ -30,10 +31,10 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Owner Dashboard'),
+        title: Text(context.tr('ownerDashboard')),
         actions: [
           IconButton(
-            tooltip: 'Logout',
+            tooltip: context.tr('logout'),
             onPressed: () async {
               await ref.read(authenticationProvider).logout();
               if (context.mounted) context.go('/auth');
@@ -67,7 +68,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
 
                 children: [
                   DashboardCard(
-                    title: 'Properties',
+                    title: context.tr('properties'),
                     value: '${state.summary?.totalProperties ?? 0}',
                     icon: Icons.home_work,
                     onTap: () => context.push('/owner/properties'),
@@ -76,7 +77,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                   const SizedBox(height: 16),
 
                   DashboardCard(
-                    title: 'Active Properties',
+                    title: context.tr('activeProperties'),
                     value: '${state.summary?.activeProperties ?? 0}',
                     icon: Icons.verified,
                     onTap: () => context.push('/owner/properties'),
@@ -85,7 +86,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                   const SizedBox(height: 16),
 
                   DashboardCard(
-                    title: 'Pending Visits',
+                    title: context.tr('pendingVisits'),
                     value: '${state.summary?.pendingVisits ?? 0}',
                     icon: Icons.event,
                     onTap: () => context.push('/owner/visit-requests'),
@@ -94,7 +95,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                   const SizedBox(height: 16),
 
                   DashboardCard(
-                    title: 'Completed Visits',
+                    title: context.tr('completedVisits'),
                     value: '${state.summary?.completedVisits ?? 0}',
                     icon: Icons.task_alt,
                     onTap: () => context.push('/owner/visits'),
@@ -103,7 +104,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                   const SizedBox(height: 16),
 
                   DashboardCard(
-                    title: 'Property Views',
+                    title: context.tr('propertyViews'),
                     value: '${state.summary?.totalViews ?? 0}',
                     icon: Icons.visibility,
                     onTap: () => context.push('/owner/analytics'),
@@ -112,7 +113,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                   const SizedBox(height: 16),
 
                   DashboardCard(
-                    title: 'Favorites',
+                    title: context.tr('favorites'),
                     value: '${state.summary?.totalFavorites ?? 0}',
                     icon: Icons.favorite,
                     onTap: () => context.push('/owner/analytics'),
@@ -120,18 +121,21 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
 
                   const SizedBox(height: 30),
 
-                  const Text(
-                    'Recent Activity',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    context.tr('recentActivity'),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
 
                   const SizedBox(height: 16),
 
                   if (state.activities.isEmpty)
-                    const Card(
+                    Card(
                       child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Center(child: Text('No recent activity')),
+                        padding: const EdgeInsets.all(20),
+                        child: Center(child: Text(context.tr('noRecentActivity'))),
                       ),
                     ),
 

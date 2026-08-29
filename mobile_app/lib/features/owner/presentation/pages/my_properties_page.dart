@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../providers/owner_provider.dart';
 import '../widgets/property_owner_card.dart';
 
@@ -38,13 +39,13 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My Properties')),
+      appBar: AppBar(title: Text(context.tr('myProperties'))),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           context.push('/owner/add-property');
         },
         icon: const Icon(Icons.add),
-        label: const Text('Add Property'),
+        label: Text(context.tr('addProperty')),
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(ownerProvider.notifier).refreshProperties(),
@@ -63,14 +64,14 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
               )
             : state.properties.isEmpty
             ? ListView(
-                children: const [
-                  SizedBox(height: 120),
-                  Icon(Icons.home_work_outlined, size: 80, color: Colors.grey),
-                  SizedBox(height: 20),
+              children: [
+                  const SizedBox(height: 120),
+                  const Icon(Icons.home_work_outlined, size: 80, color: Colors.grey),
+                  const SizedBox(height: 20),
                   Center(
                     child: Text(
-                      'No properties found',
-                      style: TextStyle(fontSize: 18),
+                      context.tr('noPropertiesFound'),
+                      style: const TextStyle(fontSize: 18),
                     ),
                   ),
                 ],
@@ -83,20 +84,20 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       children: [
-                        for (final entry in const {
-                          'all': 'All',
-                          'available': 'Available',
-                          'occupied': 'Occupied',
-                          'visited': 'Visited',
-                          'completed': 'Completed',
-                        }.entries)
+                        for (final key in const [
+                          'all',
+                          'available',
+                          'occupied',
+                          'visited',
+                          'completed',
+                        ])
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 4),
                             child: ChoiceChip(
-                              label: Text(entry.value),
-                              selected: _status == entry.key,
+                              label: Text(context.tr(key)),
+                              selected: _status == key,
                               onSelected: (_) =>
-                                  setState(() => _status = entry.key),
+                                  setState(() => _status = key),
                             ),
                           ),
                       ],
@@ -104,8 +105,8 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
                   ),
                   Expanded(
                     child: properties.isEmpty
-                        ? const Center(
-                            child: Text('No properties match this status.'),
+                        ? Center(
+                            child: Text(context.tr('noStatusProperties')),
                           )
                         : PageView.builder(
                 scrollDirection: Axis.vertical,
@@ -127,18 +128,16 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (_) => AlertDialog(
-                          title: const Text('Delete Property'),
-                          content: const Text(
-                            'Are you sure you want to delete this property?',
-                          ),
+                          title: Text(context.tr('deleteProperty')),
+                          content: Text(context.tr('deletePropertyQuestion')),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Cancel'),
+                              child: Text(context.tr('cancel')),
                             ),
                             FilledButton(
                               onPressed: () => Navigator.pop(context, true),
-                              child: const Text('Delete'),
+                              child: Text(context.tr('delete')),
                             ),
                           ],
                         ),
@@ -157,8 +156,8 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
                       }
 
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Property deleted successfully'),
+                        SnackBar(
+                          content: Text(context.tr('propertyDeleted')),
                         ),
                       );
                       },
