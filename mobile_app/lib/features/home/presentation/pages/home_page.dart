@@ -151,8 +151,16 @@ class _HomePageState extends ConsumerState<HomePage> {
                 child: PropertyCard(
                   property: property,
                   onTap: () => _openProperty(property),
-                  onBookVisit: () =>
-                      context.push('/book-visit/${property.id}'),
+                  onBookVisit: () => context.push(
+                    '/book-visit/${property.id}',
+                    extra: {
+                      'propertyTitle': property.title,
+                      'propertyImage': property.imageUrls.isNotEmpty
+                          ? property.imageUrls.first
+                          : '',
+                      'ownerName': property.ownerName,
+                    },
+                  ),
                   onContactOwner: () => context.push(
                     '/chat',
                     extra: {'propertyId': property.id},
