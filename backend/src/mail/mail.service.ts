@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
-import { MailerService } from '@nestjs-modules/mailer';
+import { PrismaService } from '../database/prisma.service';
 @Injectable()
 export class MailService {
   private transporter: nodemailer.Transporter;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
     this.transporter = nodemailer.createTransport({
       host: this.configService.get<string>('MAIL_HOST'),
       port: Number(this.configService.get<number>('MAIL_PORT')),
@@ -15,6 +18,28 @@ export class MailService {
         user: this.configService.get<string>('MAIL_USER'),
         pass: this.configService.get<string>('MAIL_PASSWORD'),
       },
+    });
+  }
+
+  private async sendNotificationMail(
+    email: string,
+    options: nodemailer.SendMailOptions,
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        settings: { select: { emailNotifications: true } },
+      },
+    });
+
+    if (user?.settings?.emailNotifications === false) {
+      return { skipped: true, reason: 'Email notifications disabled by user' };
+    }
+
+    return this.transporter.sendMail({
+      from: this.configService.get<string>('MAIL_FROM'),
+      ...options,
+      to: email,
     });
   }
 
@@ -149,9 +174,7 @@ export class MailService {
     propertyTitle: string,
     visitDate: string,
   ) {
-    await this.transporter.sendMail({
-      from: this.configService.get<string>('MAIL_FROM'),
-      to: email,
+    await this.sendNotificationMail(email, {
       subject: 'Property Visit Booked',
       html: `
         <h2>Hello ${fullName},</h2>
@@ -181,9 +204,7 @@ export class MailService {
     propertyTitle: string,
     visitDate: string,
   ) {
-    await this.transporter.sendMail({
-      from: this.configService.get<string>('MAIL_FROM'),
-      to: email,
+    await this.sendNotificationMail(email, {
       subject: 'Property Visit Approved ✅',
       html: `
         <h2>Hello ${fullName},</h2>
@@ -212,9 +233,7 @@ export class MailService {
     fullName: string,
     propertyTitle: string,
   ) {
-    await this.transporter.sendMail({
-      from: this.configService.get<string>('MAIL_FROM'),
-      to: email,
+    await this.sendNotificationMail(email, {
       subject: 'Property Visit Rejected',
       html: `
         <h2>Hello ${fullName},</h2>
@@ -241,9 +260,7 @@ export class MailService {
     fullName: string,
     propertyTitle: string,
   ) {
-    await this.transporter.sendMail({
-      from: this.configService.get<string>('MAIL_FROM'),
-      to: email,
+    await this.sendNotificationMail(email, {
       subject: 'Property Visit Cancelled',
       html: `
         <h2>Hello ${fullName},</h2>
@@ -270,9 +287,7 @@ export class MailService {
     fullName: string,
     propertyTitle: string,
   ) {
-    await this.transporter.sendMail({
-      from: this.configService.get<string>('MAIL_FROM'),
-      to: email,
+    await this.sendNotificationMail(email, {
       subject: 'Thanks for Visiting 🏡',
       html: `
         <h2>Hello ${fullName},</h2>

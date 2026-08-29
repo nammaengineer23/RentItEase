@@ -1,12 +1,8 @@
 name: Backend CI
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  # Temporarily manual-only. RC1 contains backend lint, unit tests and build.
+  workflow_dispatch:
 
 jobs:
   backend:

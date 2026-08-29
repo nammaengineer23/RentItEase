@@ -1,9 +1,8 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  # Temporarily manual-only while RC1 is the sole automatic workflow.
+  workflow_dispatch:
 
 jobs:
   release:
