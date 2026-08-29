@@ -1,7 +1,7 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": "..",
-  "testRegex": "(properties|favorites)\\.service\\.spec\\.ts$",
+  "testRegex": "(properties|favorites|mail)\\.service\\.spec\\.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
