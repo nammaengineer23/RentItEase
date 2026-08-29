@@ -15,6 +15,16 @@ export class SocialMediaController {
     return this.service.settings();
   }
 
+  @Get('properties')
+  getProperties() {
+    return this.service.listProperties();
+  }
+
+  @Get('analytics')
+  getAnalytics() {
+    return this.service.analytics();
+  }
+
   @Post('settings')
   updateSettings(@Body() dto: SocialSettingsDto) {
     return this.service.updateSettings(dto);

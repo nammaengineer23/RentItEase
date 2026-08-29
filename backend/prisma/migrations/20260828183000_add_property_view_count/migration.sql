@@ -1,0 +1,7 @@
+ALTER TABLE "Property"
+ADD COLUMN "viewCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN "isVerified" BOOLEAN NOT NULL DEFAULT false;
+
+UPDATE "Property" SET "isVerified" = true;
+
+ALTER TYPE "MessageType" ADD VALUE IF NOT EXISTS 'VOICE';

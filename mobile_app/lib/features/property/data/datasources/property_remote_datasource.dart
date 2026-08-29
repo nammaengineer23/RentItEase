@@ -124,36 +124,32 @@ class PropertyRemoteDataSource {
   // =========================================
 
   List<dynamic> _extractList(dynamic data) {
-    if (data is List) {
-      return data;
+    dynamic value = data;
+    for (var depth = 0; depth < 5; depth++) {
+      if (value is List) return List<dynamic>.from(value);
+      if (value is! Map) break;
+
+      final map = Map<String, dynamic>.from(value);
+      for (final key in const ['results', 'items', 'properties']) {
+        if (map[key] is List) return List<dynamic>.from(map[key] as List);
+      }
+      if (!map.containsKey('data')) break;
+      value = map['data'];
     }
-
-    if (data is Map<String, dynamic>) {
-      if (data['data'] is List) {
-        return List<dynamic>.from(data['data']);
-      }
-
-      if (data['results'] is List) {
-        return List<dynamic>.from(data['results']);
-      }
-
-      if (data['items'] is List) {
-        return List<dynamic>.from(data['items']);
-      }
-    }
-
-    return [];
+    return const [];
   }
 
   Map<String, dynamic> _extractMap(dynamic data) {
-    if (data is Map<String, dynamic>) {
-      if (data['data'] is Map<String, dynamic>) {
-        return Map<String, dynamic>.from(data['data']);
+    dynamic value = data;
+    for (var depth = 0; depth < 5; depth++) {
+      if (value is! Map) return const {};
+      final map = Map<String, dynamic>.from(value);
+      if (map['property'] is Map) {
+        return Map<String, dynamic>.from(map['property'] as Map);
       }
-
-      return Map<String, dynamic>.from(data);
+      if (!map.containsKey('data') || map['data'] is! Map) return map;
+      value = map['data'];
     }
-
-    return {};
+    return value is Map ? Map<String, dynamic>.from(value) : const {};
   }
 }

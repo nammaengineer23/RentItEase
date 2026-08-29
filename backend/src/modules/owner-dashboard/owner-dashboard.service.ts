@@ -37,6 +37,11 @@ export class OwnerDashboardService {
       0,
     );
 
+    const totalViews = properties.reduce(
+      (sum, property) => sum + property.viewCount,
+      0,
+    );
+
     const totalVisits = properties.reduce(
       (sum, property) => sum + property.visits.length,
       0,
@@ -80,8 +85,10 @@ export class OwnerDashboardService {
 
     return {
       totalProperties,
+      activeProperties: availableProperties,
       availableProperties,
       rentedProperties,
+      totalViews,
       totalFavorites,
       totalVisits,
       pendingVisits,
@@ -217,6 +224,8 @@ export class OwnerDashboardService {
         averageRating,
         totalReviews,
         totalFavorites: property.favorites.length,
+        views: property.viewCount,
+        totalViews: property.viewCount,
         pendingVisits,
         completedVisits,
         primaryImage:

@@ -471,6 +471,27 @@ async getProperty(id: string) {
     );
   }
 
+  async approveProperty(id: string) {
+    const property = await this.prisma.property.findUnique({ where: { id } });
+    if (!property) throw new NotFoundException('Property not found.');
+
+    return this.prisma.$transaction(async (prisma) => {
+      const approved = await prisma.property.update({
+        where: { id },
+        data: { isVerified: true, isAvailable: true },
+      });
+      await prisma.user.update({
+        where: { id: property.ownerId },
+        data: {
+          role: 'OWNER',
+          ownerRequestStatus: 'APPROVED',
+          ownerReviewedAt: new Date(),
+        },
+      });
+      return serializePrisma(approved);
+    });
+  }
+
   // ==========================
   // Delete Property
   // ==========================

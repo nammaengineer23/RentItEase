@@ -38,7 +38,8 @@ async create(
       ...propertyData,
 
       ownerId: user.id,
-      isAvailable: true,
+      isAvailable: false,
+      isVerified: false,
 
       amenities: amenityIds?.length
         ? {
@@ -107,7 +108,7 @@ private buildPropertyWhere(
     maxDailyRent,
   } = filterDto;
 
-  const where: Prisma.PropertyWhereInput = {};
+  const where: Prisma.PropertyWhereInput = { isVerified: true };
 
   if (search) {
     where.OR = [
@@ -688,8 +689,29 @@ async findNearby(query: NearbyPropertiesDto) {
 
     return {
       success: true,
-      property: serializePrisma(property),
+      property: {
+        ...serializePrisma(property),
+        views: property.viewCount,
+        totalViews: property.viewCount,
+      },
     };
+  }
+
+  async recordView(id: string, user: { id: string; role: UserRole }) {
+    const property = await this.prisma.property.findUnique({
+      where: { id },
+      select: { id: true, ownerId: true, viewCount: true },
+    });
+    if (!property) throw new NotFoundException('Property not found.');
+    if (user.role !== UserRole.USER || property.ownerId === user.id) {
+      return { views: property.viewCount, counted: false };
+    }
+    const updated = await this.prisma.property.update({
+      where: { id },
+      data: { viewCount: { increment: 1 } },
+      select: { viewCount: true },
+    });
+    return { views: updated.viewCount, counted: true };
   }
 
   // ===========================

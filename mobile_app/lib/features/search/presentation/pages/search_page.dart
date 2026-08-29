@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../domain/entities/search_entity.dart';
 import '../../providers/search_provider.dart';
 import '../../../property/providers/property_provider.dart';
+import '../../../property/presentation/widgets/property_card.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key, this.openFilters = false});
@@ -346,54 +347,39 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                 icon: Icons.search_off,
                                 message: 'No properties found.',
                               )
-                            : RefreshIndicator(
-                                onRefresh: ref.read(searchProvider.notifier).refresh,
-                                child: ListView.builder(
-                                  physics: const AlwaysScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.all(16),
-                                  itemCount: state.results.length + 1,
-                                  itemBuilder: (context, index) {
-                                    if (index == state.results.length) {
-                                      if (!state.hasMore) {
-                                        return const Padding(
-                                          padding: EdgeInsets.all(20),
-                                          child: Center(
-                                            child: Text('All properties loaded'),
-                                          ),
-                                        );
-                                      }
-                                      return Padding(
-                                        padding: const EdgeInsets.all(16),
-                                        child: FilledButton.icon(
-                                          onPressed: ref
-                                              .read(searchProvider.notifier)
-                                              .loadMore,
-                                          icon: const Icon(Icons.expand_more),
-                                          label: const Text('Load next properties'),
+                            : PageView.builder(
+                                scrollDirection: Axis.vertical,
+                                itemCount: state.results.length,
+                                onPageChanged: (index) {
+                                  if (index >= state.results.length - 2 &&
+                                      state.hasMore) {
+                                    ref.read(searchProvider.notifier).loadMore();
+                                  }
+                                },
+                                itemBuilder: (context, index) {
+                                  final property = state.results[index];
+                                  return RefreshIndicator(
+                                    onRefresh: ref
+                                        .read(searchProvider.notifier)
+                                        .refresh,
+                                    child: SingleChildScrollView(
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(),
+                                      child: PropertyCard(
+                                        property: property,
+                                        onTap: () => context.push(
+                                          '/property/${property.id}',
                                         ),
-                                      );
-                                    }
-                                    final property = state.results[index];
-                                    return Card(
-                                      child: ListTile(
-                                        leading: const Icon(Icons.home_work),
-                                        title: Text(
-                                          property.title,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
+                                        onBookVisit: () => context.push(
+                                          '/book-visit/${property.id}',
                                         ),
-                                        subtitle: Text(
-                                          '${property.locality}, ${property.city}\n'
-                                          '₹${property.rent.toStringAsFixed(0)} / month',
+                                        onContactOwner: () => context.push(
+                                          '/chat?propertyId=${property.id}',
                                         ),
-                                        isThreeLine: true,
-                                        trailing: const Icon(Icons.chevron_right),
-                                        onTap: () =>
-                                            context.push('/property/${property.id}'),
                                       ),
-                                    );
-                                  },
-                                ),
+                                    ),
+                                  );
+                                },
                               ),
           ),
         ],

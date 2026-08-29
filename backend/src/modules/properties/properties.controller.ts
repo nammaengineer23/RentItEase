@@ -40,7 +40,7 @@ export class PropertiesController {
   // Create Property
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.USER, UserRole.OWNER)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Create Property',
@@ -124,6 +124,13 @@ nearby(
 ) {
   return this.propertiesService.findNearby(query);
 }
+
+  @Post(':id/view')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  recordView(@Param('id') id: string, @Request() req: any) {
+    return this.propertiesService.recordView(id, req.user);
+  }
 
   // Get Property By Id
   @Get(':id')

@@ -65,47 +65,71 @@ class PropertyModel {
   final double longitude;
 
   factory PropertyModel.fromJson(Map<String, dynamic> json) {
+    final owner = _map(json['owner']);
+    final images = json['images'];
+    final imageUrls = images is List
+        ? images
+              .whereType<Map>()
+              .map((image) => image['imageUrl'] ?? image['url'])
+              .whereType<String>()
+              .toList()
+        : (json['imageUrls'] as List<dynamic>?)
+                  ?.map((value) => value.toString())
+                  .toList() ??
+              const <String>[];
+
     return PropertyModel(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
-      rent: (json['rent'] as num?)?.toDouble() ?? 0.0,
+      rent: _double(json['rent'] ?? json['price']),
       city: json['city']?.toString() ?? '',
       locality: json['locality']?.toString() ?? '',
       address: json['address']?.toString() ?? '',
-      bedrooms: (json['bedrooms'] as num?)?.toInt() ?? 0,
-      bathrooms: (json['bathrooms'] as num?)?.toInt() ?? 0,
-      balconies: (json['balconies'] as num?)?.toInt() ?? 0,
-      area: (json['area'] as num?)?.toDouble() ?? 0.0,
+      bedrooms: _int(json['bedrooms']),
+      bathrooms: _int(json['bathrooms']),
+      balconies: _int(json['balconies']),
+      area: _double(json['area']),
       propertyType: json['propertyType']?.toString() ?? '',
       furnishing: json['furnishing']?.toString() ?? '',
-      floor: (json['floor'] as num?)?.toInt() ?? 0,
-      totalFloors: (json['totalFloors'] as num?)?.toInt() ?? 0,
-      parking: (json['parking'] as num?)?.toInt() ?? 0,
-      isAvailable: json['isAvailable'] == true,
-      isFeatured: json['isFeatured'] == true,
-      isVerified: json['isVerified'] == true,
-      rating: (json['averageRating'] as num?)?.toDouble() ??
-          (json['rating'] as num?)?.toDouble() ??
-          0.0,
-      totalReviews: (json['totalReviews'] as num?)?.toInt() ?? 0,
-      views: (json['views'] as num?)?.toInt() ?? 0,
-      imageUrls:
-          (json['imageUrls'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          const [],
-      ownerId: json['ownerId']?.toString() ?? '',
-      ownerName: json['ownerName']?.toString() ?? '',
-      ownerPhone: json['ownerPhone']?.toString() ?? '',
+      floor: _int(json['floor']),
+      totalFloors: _int(json['totalFloors']),
+      parking: json['parking'] == true ? 1 : _int(json['parking']),
+      isAvailable: _bool(json['isAvailable'], fallback: true),
+      isFeatured: _bool(json['isFeatured']),
+      isVerified: _bool(json['isVerified']),
+      rating: _double(json['averageRating'] ?? json['rating']),
+      totalReviews: _int(json['totalReviews']),
+      views: _int(json['views'] ?? json['totalViews']),
+      imageUrls: imageUrls,
+      ownerId: (json['ownerId'] ?? owner['id'])?.toString() ?? '',
+      ownerName: (json['ownerName'] ?? owner['fullName'])?.toString() ?? '',
+      ownerPhone: (json['ownerPhone'] ?? owner['phone'])?.toString() ?? '',
       createdAt:
           DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.now(),
 
       // Backend Decimal(9,6) values arrive as JSON numbers.
-      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
-      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      latitude: _double(json['latitude']),
+      longitude: _double(json['longitude']),
     );
+  }
+
+  static Map<String, dynamic> _map(dynamic value) =>
+      value is Map ? Map<String, dynamic>.from(value) : const {};
+
+  static double _double(dynamic value) => value is num
+      ? value.toDouble()
+      : double.tryParse(value?.toString() ?? '') ?? 0;
+
+  static int _int(dynamic value) => value is num
+      ? value.toInt()
+      : int.tryParse(value?.toString() ?? '') ?? 0;
+
+  static bool _bool(dynamic value, {bool fallback = false}) {
+    if (value is bool) return value;
+    if (value == null) return fallback;
+    return value.toString().toLowerCase() == 'true';
   }
 
   Map<String, dynamic> toJson() {

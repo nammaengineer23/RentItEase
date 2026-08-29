@@ -37,16 +37,7 @@ class SearchApi {
         queryParameters: query,
       );
 
-      dynamic payload = response.data;
-      if (payload is Map && payload['data'] is Map) {
-        payload = payload['data'];
-      }
-
-      final list = payload is List
-          ? payload
-          : payload is Map && payload['data'] is List
-              ? payload['data'] as List
-              : const [];
+      final list = _extractList(response.data);
 
       return list.whereType<Map>().map((item) {
         final json = Map<String, dynamic>.from(item);
@@ -84,4 +75,14 @@ class SearchApi {
   }
 
   Future<List<PropertyEntity>> recentSearches() async => const [];
+
+  static List<dynamic> _extractList(dynamic response) {
+    dynamic value = response;
+    for (var depth = 0; depth < 5; depth++) {
+      if (value is List) return value;
+      if (value is! Map || !value.containsKey('data')) break;
+      value = value['data'];
+    }
+    return const [];
+  }
 }

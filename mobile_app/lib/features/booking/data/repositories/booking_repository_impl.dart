@@ -21,14 +21,7 @@ class BookingRepositoryImpl implements BookingRepository {
       throw Exception('Empty bookings response.');
     }
 
-    final payload = responseData['data'] is Map
-        ? Map<String, dynamic>.from(responseData['data'] as Map)
-        : responseData;
-    final bookingsData = payload['bookings'] ?? payload['data'];
-
-    if (bookingsData is! List) {
-      throw Exception('Invalid bookings response.');
-    }
+    final bookingsData = _extractList(responseData);
 
     return bookingsData
         .whereType<Map>()
@@ -48,11 +41,7 @@ class BookingRepositoryImpl implements BookingRepository {
       throw Exception('Empty booking response.');
     }
 
-    final outerData = responseData['data'];
-    final data = outerData is Map &&
-            outerData['data'] is Map
-        ? outerData['data']
-        : outerData;
+    final data = _extractMap(responseData);
 
     if (data is! Map) {
       throw Exception('Invalid booking response.');
@@ -80,11 +69,7 @@ class BookingRepositoryImpl implements BookingRepository {
       throw Exception('Empty booking creation response.');
     }
 
-    final outerData = responseData['data'];
-    final data = outerData is Map &&
-            outerData['data'] is Map
-        ? outerData['data']
-        : outerData;
+    final data = _extractMap(responseData);
 
     if (data is! Map) {
       throw Exception('Invalid booking creation response.');
@@ -105,16 +90,35 @@ class BookingRepositoryImpl implements BookingRepository {
       throw Exception('Empty booking cancellation response.');
     }
 
-    final outerData = responseData['data'];
-    final data = outerData is Map &&
-            outerData['data'] is Map
-        ? outerData['data']
-        : outerData;
+    final data = _extractMap(responseData);
 
     if (data is! Map) {
       throw Exception('Invalid booking cancellation response.');
     }
 
     return BookingModel.fromJson(Map<String, dynamic>.from(data));
+  }
+
+  static List<dynamic> _extractList(dynamic response) {
+    dynamic value = response;
+    for (var depth = 0; depth < 5; depth++) {
+      if (value is List) return value;
+      if (value is! Map) break;
+      if (value['bookings'] is List) return value['bookings'] as List;
+      if (!value.containsKey('data')) break;
+      value = value['data'];
+    }
+    return const [];
+  }
+
+  static dynamic _extractMap(dynamic response) {
+    dynamic value = response;
+    for (var depth = 0; depth < 5; depth++) {
+      if (value is! Map) return value;
+      if (value['booking'] is Map) return value['booking'];
+      if (!value.containsKey('data') || value['data'] is! Map) return value;
+      value = value['data'];
+    }
+    return value;
   }
 }

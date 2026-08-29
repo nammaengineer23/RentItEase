@@ -611,7 +611,7 @@ class _SettingsContent extends ConsumerWidget {
 
           Center(
             child: Text(
-              'RentItEase Settings',
+              '© ${DateTime.now().year} RentItEase. All rights reserved.',
               style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
             ),
           ),

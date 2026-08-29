@@ -61,7 +61,7 @@ class HomeBottomNavigation extends StatelessWidget {
             size: 26,
             color: colorScheme.primary,
           ),
-          label: ownerMode ? 'Engagement' : 'Favorites',
+          label: ownerMode ? 'Analytics' : 'Favorites',
         ),
         NavigationDestination(
           icon: AppSvgIcon(

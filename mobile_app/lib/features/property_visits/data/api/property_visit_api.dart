@@ -22,14 +22,7 @@ class PropertyVisitApi {
       throw Exception('Empty property visits response.');
     }
 
-    final payload = data['data'] is Map
-        ? Map<String, dynamic>.from(data['data'] as Map)
-        : data;
-    final visits = payload['visits'] ?? payload['data'];
-
-    if (visits is! List) {
-      throw Exception('Invalid property visits response.');
-    }
+    final visits = _extractList(data);
 
     return visits
         .whereType<Map>()
@@ -56,14 +49,7 @@ class PropertyVisitApi {
       throw Exception('Empty owner visits response.');
     }
 
-    final payload = data['data'] is Map
-        ? Map<String, dynamic>.from(data['data'] as Map)
-        : data;
-    final visits = payload['visits'] ?? payload['data'];
-
-    if (visits is! List) {
-      throw Exception('Invalid owner visits response.');
-    }
+    final visits = _extractList(data);
 
     return visits
         .whereType<Map>()
@@ -174,5 +160,17 @@ class PropertyVisitApi {
     await _dio.patch(
       '$_basePath/${visitId.trim()}/complete',
     );
+  }
+
+  static List<dynamic> _extractList(dynamic response) {
+    dynamic value = response;
+    for (var depth = 0; depth < 5; depth++) {
+      if (value is List) return value;
+      if (value is! Map) break;
+      if (value['visits'] is List) return value['visits'] as List;
+      if (!value.containsKey('data')) break;
+      value = value['data'];
+    }
+    return const [];
   }
 }

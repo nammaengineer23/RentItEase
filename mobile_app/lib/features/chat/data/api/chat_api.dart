@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 
 import '../models/conversation_model.dart';
@@ -58,13 +60,40 @@ class ChatApi {
   Future<MessageModel> sendMessage({
     required String conversationId,
     required String text,
+    String messageType = 'TEXT',
   }) async {
     final response = await dio.post(
       '/chat/conversations/$conversationId/messages',
-      data: {'text': text},
+      data: {'text': text, 'messageType': messageType},
     );
 
     return MessageModel.fromJson(_extractData(response.data));
+  }
+
+  Future<String> uploadChatImage(File image) async {
+    return _upload(image, '/uploads/image', 'imageUrl');
+  }
+
+  Future<String> uploadChatFile(File file) async {
+    return _upload(file, '/uploads/file', 'fileUrl');
+  }
+
+  Future<String> _upload(File file, String path, String responseKey) async {
+    final response = await dio.post(
+      path,
+      data: FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          file.path,
+          filename: file.path.split(RegExp(r'[/\\]')).last,
+        ),
+      }),
+      options: Options(contentType: 'multipart/form-data'),
+    );
+    final data = _extractData(response.data);
+    if (data is Map && data[responseKey] != null) {
+      return data[responseKey].toString();
+    }
+    throw const FormatException('Invalid file upload response.');
   }
 
   // ==========================================================
@@ -104,12 +133,15 @@ class ChatApi {
   // ==========================================================
 
   dynamic _extractData(dynamic responseData) {
-    if (responseData is Map<String, dynamic> &&
-        responseData.containsKey('data')) {
-      return responseData['data'];
+    dynamic value = responseData;
+    for (var depth = 0; depth < 5; depth++) {
+      if (value is Map && value.containsKey('data')) {
+        value = value['data'];
+        continue;
+      }
+      break;
     }
-
-    return responseData;
+    return value;
   }
 
   List<dynamic> _extractList(dynamic responseData) {

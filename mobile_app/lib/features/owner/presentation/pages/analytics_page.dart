@@ -37,6 +37,8 @@ class OwnerAnalyticsPage extends ConsumerWidget {
 
                     crossAxisCount: 2,
 
+                    childAspectRatio: 1.25,
+
                     crossAxisSpacing: 12,
 
                     mainAxisSpacing: 12,
@@ -141,7 +143,13 @@ class OwnerAnalyticsPage extends ConsumerWidget {
             style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
           ),
 
-          Text(title),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(title, maxLines: 1),
+            ),
+          ),
         ],
       ),
     );

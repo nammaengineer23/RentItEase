@@ -45,4 +45,17 @@ return {
   size: file.size,
 };
   }
+
+  async uploadFile(file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('No file uploaded');
+    const result = await this.storageService.uploadImage(file, 'chat');
+    return {
+      success: true,
+      fileUrl: result.imageUrl,
+      filename: result.publicId,
+      originalName: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+    };
+  }
 }

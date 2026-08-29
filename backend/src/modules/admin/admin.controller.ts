@@ -131,6 +131,14 @@ unhideProperty(
   return this.adminService.unhideProperty(id);
 }
 
+@Patch('properties/:id/approve')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+@ApiBearerAuth()
+approveProperty(@Param('id') id: string) {
+  return this.adminService.approveProperty(id);
+}
+
 // ==========================
 // Delete Property
 // ==========================
