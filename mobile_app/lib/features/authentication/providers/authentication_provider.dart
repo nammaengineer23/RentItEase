@@ -6,6 +6,7 @@ import '../data/models/auth_response.dart';
 import '../data/models/login_request.dart';
 import '../data/models/register_request.dart';
 import '../data/repositories/authentication_repository_impl.dart';
+import '../../notifications/services/push_notification_service.dart';
 
 final authenticationProvider = ChangeNotifierProvider<AuthenticationProvider>((
   ref,
@@ -14,10 +15,15 @@ final authenticationProvider = ChangeNotifierProvider<AuthenticationProvider>((
 });
 
 class AuthenticationProvider extends ChangeNotifier {
-  AuthenticationProvider({AuthenticationRepositoryImpl? repository})
-    : _repository = repository ?? AuthenticationRepositoryImpl();
+  AuthenticationProvider({
+    AuthenticationRepositoryImpl? repository,
+    PushNotificationService? pushNotificationService,
+  }) : _repository = repository ?? AuthenticationRepositoryImpl(),
+       _pushNotificationService =
+           pushNotificationService ?? PushNotificationService();
 
   final AuthenticationRepositoryImpl _repository;
+  final PushNotificationService _pushNotificationService;
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -315,6 +321,7 @@ class AuthenticationProvider extends ChangeNotifier {
   _errorMessage = null;
 
   try {
+    await _pushNotificationService.deactivate();
     await _repository.logout();
   } finally {
     // Always clear local authentication state.
@@ -334,6 +341,9 @@ class AuthenticationProvider extends ChangeNotifier {
   Future<void> loadSavedSession() async {
     try {
       _authResponse = await _repository.restoreSession();
+      if (_authResponse != null) {
+        await _pushNotificationService.activate();
+      }
     } catch (_) {
       _authResponse = null;
     }
@@ -342,6 +352,7 @@ class AuthenticationProvider extends ChangeNotifier {
 
   Future<void> _saveSession(AuthResponse response) async {
     await _repository.saveSession(response);
+    await _pushNotificationService.activate();
   }
 
   void clearError() {

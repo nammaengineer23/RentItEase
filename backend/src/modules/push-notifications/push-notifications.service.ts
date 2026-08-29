@@ -52,10 +52,6 @@ export class PushNotificationsService {
     };
   }
 
-  console.log('==============================');
-  console.log('📨 sendToUser() called');
-  console.log('User ID:', userId);
-
   const devices =
     await this.prisma.userDevice.findMany({
       where: {
@@ -63,12 +59,7 @@ export class PushNotificationsService {
       },
     });
 
-  console.log('Devices found:', devices.length);
-
   if (devices.length === 0) {
-    console.log('❌ No registered devices');
-    console.log('==============================');
-
     return {
       success: false,
       message: 'No registered devices',
@@ -79,16 +70,29 @@ export class PushNotificationsService {
     (device) => device.token,
   );
 
-  console.log('FCM Tokens:', tokens);
-  console.log('➡️ Calling Firebase...');
-  console.log('==============================');
-
-  return this.firebaseService.sendToDevices(
+  const response = await this.firebaseService.sendToDevices(
     tokens,
     title,
     body,
     data,
   );
+
+  const invalidTokens = response?.responses
+    .map((result, index) => ({ result, token: tokens[index] }))
+    .filter(({ result }) => {
+      const code = result.error?.code;
+      return code === 'messaging/registration-token-not-registered' ||
+        code === 'messaging/invalid-registration-token';
+    })
+    .map(({ token }) => token) ?? [];
+
+  if (invalidTokens.length > 0) {
+    await this.prisma.userDevice.deleteMany({
+      where: { token: { in: invalidTokens } },
+    });
+  }
+
+  return response;
 }
   // ==========================
   // Remove Device
