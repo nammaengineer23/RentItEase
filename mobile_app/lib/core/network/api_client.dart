@@ -122,8 +122,8 @@ class _ApiErrorInterceptor extends Interceptor {
   @override
   void onError(DioException error, ErrorInterceptorHandler handler) {
     final data = error.response?.data;
-    final message = data is Map<String, dynamic>
-        ? _messageFrom(data['message'])
+    final message = data is Map
+        ? _messageFromMap(Map<String, dynamic>.from(data))
         : error.message ?? 'Network request failed.';
     handler.reject(
       DioException(
@@ -138,4 +138,23 @@ class _ApiErrorInterceptor extends Interceptor {
   String _messageFrom(dynamic value) => value is List
       ? value.join('\n')
       : value?.toString() ?? 'Network request failed.';
+
+  String _messageFromMap(Map<String, dynamic> data) {
+    final direct = data['message'];
+    if (direct != null) return _messageFrom(direct);
+
+    final nestedError = data['error'];
+    if (nestedError is Map) {
+      final message = nestedError['message'];
+      if (message != null) return _messageFrom(message);
+    } else if (nestedError != null) {
+      return _messageFrom(nestedError);
+    }
+
+    final nestedData = data['data'];
+    if (nestedData is Map) {
+      return _messageFromMap(Map<String, dynamic>.from(nestedData));
+    }
+    return 'Network request failed.';
+  }
 }

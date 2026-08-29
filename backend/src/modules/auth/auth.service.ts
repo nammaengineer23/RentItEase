@@ -361,7 +361,11 @@ export class AuthService {
   // ==========================================
   // Firebase Login
   // ==========================================
-  async firebaseLogin(idToken: string) {
+  async firebaseLogin(
+    idToken: string,
+    createAccount = false,
+    phoneIdToken?: string,
+  ) {
     const decoded = await this.firebaseService.verifyToken(idToken);
 
     const phone = decoded.phone_number?.trim();
@@ -382,16 +386,49 @@ export class AuthService {
     }
 
     if (!user) {
-      const fallbackPhone = `firebase:${decoded.uid}`;
-      const fallbackEmail =
-        email ??
-        `${(phone ?? decoded.uid).replace('+', '')}@firebase.rentitease.local`;
+      if (!createAccount) {
+        throw new UnauthorizedException(
+          'No RentItEase account exists for this Google account. Complete phone verification to create one.',
+        );
+      }
+
+      if (!email || decoded.email_verified !== true) {
+        throw new UnauthorizedException(
+          'A verified Google email is required to create an account.',
+        );
+      }
+
+      if (!phoneIdToken) {
+        throw new UnauthorizedException(
+          'Phone verification is required to create an account.',
+        );
+      }
+
+      const decodedPhone = await this.firebaseService.verifyToken(phoneIdToken);
+      const verifiedPhone = decodedPhone.phone_number?.trim();
+      if (!verifiedPhone) {
+        throw new UnauthorizedException(
+          'Verified phone number not found in Firebase token.',
+        );
+      }
+
+      const phoneOwner = await this.prisma.user.findFirst({
+        where: {
+          OR: [
+            { phone: verifiedPhone },
+            { phone: this.normalizePhone(verifiedPhone) },
+          ],
+        },
+      });
+      if (phoneOwner) {
+        throw new ConflictException('Phone number already exists.');
+      }
 
       user = await this.prisma.user.create({
         data: {
           fullName: decoded.name ?? 'RentItEase User',
-          phone: phone ?? fallbackPhone,
-          email: fallbackEmail,
+          phone: this.normalizePhone(verifiedPhone),
+          email,
           passwordHash: '',
           photoUrl: decoded.picture,
         },

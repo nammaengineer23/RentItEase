@@ -84,6 +84,8 @@ firebaseLogin(
 ) {
   return this.authService.firebaseLogin(
     dto.idToken,
+    dto.createAccount ?? false,
+    dto.phoneIdToken,
   );
 }
 

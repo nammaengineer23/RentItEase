@@ -62,8 +62,16 @@ class AuthenticationRepositoryImpl {
     return _service.refreshToken();
   }
 
-  Future<AuthResponse> firebaseLogin(String idToken) {
-    return _service.firebaseLogin(idToken);
+  Future<AuthResponse> firebaseLogin(
+    String idToken, {
+    bool createAccount = false,
+    String? phoneIdToken,
+  }) {
+    return _service.firebaseLogin(
+      idToken,
+      createAccount: createAccount,
+      phoneIdToken: phoneIdToken,
+    );
   }
 
   Future<AuthResponse?> restoreSession() {

@@ -135,12 +135,41 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(provider.errorMessage ?? 'Google signup failed'),
-        backgroundColor: Colors.red,
-      ),
-    );
+    final needsPhoneVerification = provider.errorMessage
+            ?.contains('Complete phone verification') ??
+        false;
+    if (needsPhoneVerification) {
+      final phone = _phoneController.text.trim();
+      if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
+        _showError(
+          'Enter a valid 10-digit mobile number above, then tap Google again.',
+        );
+        return;
+      }
+
+      try {
+        final phoneProof = await FirebasePhoneOtpService().verifyPhone(
+          phoneNumber: '+91$phone',
+          requestCode: () => showOtpCodeDialog(
+            context,
+            title: 'Verify Phone Number',
+            destination: '+91 $phone',
+          ),
+        );
+        final created = await provider.completeGoogleRegistration(phoneProof);
+        if (!mounted) return;
+        if (created) {
+          context.go('/home');
+          return;
+        }
+      } catch (error) {
+        if (!mounted) return;
+        _showError('Phone verification failed: $error');
+        return;
+      }
+    }
+
+    _showError(provider.errorMessage ?? 'Google signup failed');
   }
 
   @override
