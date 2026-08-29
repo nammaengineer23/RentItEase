@@ -26,6 +26,7 @@ class AuthenticationProvider extends ChangeNotifier {
   String? _errorMessage;
   AuthResponse? _authResponse;
   bool _googleSignInInitialized = false;
+  String? _pendingGoogleIdToken;
 
   bool get isLoading => _isLoading;
 
@@ -256,10 +257,40 @@ class AuthenticationProvider extends ChangeNotifier {
         throw Exception('Firebase did not return an ID token.');
       }
 
+      _pendingGoogleIdToken = firebaseIdToken;
       final response = await _repository.firebaseLogin(firebaseIdToken);
       _authResponse = response;
       await _saveSession(response);
+      _pendingGoogleIdToken = null;
 
+      return true;
+    } catch (error) {
+      _errorMessage = _googleErrorMessage(error);
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> completeGoogleRegistration(String phoneIdToken) async {
+    final googleIdToken = _pendingGoogleIdToken;
+    if (googleIdToken == null || googleIdToken.isEmpty) {
+      _errorMessage = 'Start Google signup again before verifying your phone.';
+      notifyListeners();
+      return false;
+    }
+
+    _setLoading(true);
+    try {
+      _errorMessage = null;
+      final response = await _repository.firebaseLogin(
+        googleIdToken,
+        createAccount: true,
+        phoneIdToken: phoneIdToken,
+      );
+      _authResponse = response;
+      await _saveSession(response);
+      _pendingGoogleIdToken = null;
       return true;
     } catch (error) {
       _errorMessage = _googleErrorMessage(error);

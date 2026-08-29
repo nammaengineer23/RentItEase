@@ -1,23 +1,22 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/storage_service.dart';
 
 class TokenStorage {
   TokenStorage._();
 
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
+  static final StorageService _storage = StorageService();
 
   // ==========================================
   // Save Access Token
   // ==========================================
 
   static Future<void> saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_accessTokenKey, token);
+    await _storage.setString(_accessTokenKey, token);
   }
 
   static Future<void> saveAccessToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_accessTokenKey, token);
+    await _storage.setString(_accessTokenKey, token);
   }
 
   // ==========================================
@@ -25,8 +24,7 @@ class TokenStorage {
   // ==========================================
 
   static Future<void> saveRefreshToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_refreshTokenKey, token);
+    await _storage.setString(_refreshTokenKey, token);
   }
 
   // ==========================================
@@ -34,13 +32,11 @@ class TokenStorage {
   // ==========================================
 
   static Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_accessTokenKey);
+    return _storage.getString(_accessTokenKey);
   }
 
   static Future<String?> getAccessToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_accessTokenKey);
+    return _storage.getString(_accessTokenKey);
   }
 
   // ==========================================
@@ -48,8 +44,7 @@ class TokenStorage {
   // ==========================================
 
   static Future<String?> getRefreshToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_refreshTokenKey);
+    return _storage.getString(_refreshTokenKey);
   }
 
   // ==========================================
@@ -66,8 +61,7 @@ class TokenStorage {
   // ==========================================
 
   static Future<void> clearToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_accessTokenKey);
+    await _storage.remove(_accessTokenKey);
   }
 
   // ==========================================
@@ -75,9 +69,7 @@ class TokenStorage {
   // ==========================================
 
   static Future<void> clearAll() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.remove(_accessTokenKey);
-    await prefs.remove(_refreshTokenKey);
+    await _storage.remove(_accessTokenKey);
+    await _storage.remove(_refreshTokenKey);
   }
 }

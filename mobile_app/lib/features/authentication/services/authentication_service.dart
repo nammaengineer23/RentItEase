@@ -230,10 +230,18 @@ class AuthenticationService {
   // FIREBASE LOGIN
   // ============================================================
 
-  Future<AuthResponse> firebaseLogin(String idToken) async {
+  Future<AuthResponse> firebaseLogin(
+    String idToken, {
+    bool createAccount = false,
+    String? phoneIdToken,
+  }) async {
     final response = await _client.dio.post<Map<String, dynamic>>(
       '/auth/firebase-login',
-      data: {'idToken': idToken},
+      data: {
+        'idToken': idToken,
+        if (createAccount) 'createAccount': true,
+        if (phoneIdToken != null) 'phoneIdToken': phoneIdToken,
+      },
     );
 
     final auth = AuthResponse.fromJson(_extractData(response.data));
