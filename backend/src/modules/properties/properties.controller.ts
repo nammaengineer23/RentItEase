@@ -11,11 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { PropertiesService } from './properties.service';
 
@@ -33,9 +29,7 @@ import { NearbyPropertiesDto } from './dto/nearby-properties.dto';
 @ApiTags('Properties')
 @Controller('properties')
 export class PropertiesController {
-  constructor(
-    private readonly propertiesService: PropertiesService,
-  ) {}
+  constructor(private readonly propertiesService: PropertiesService) {}
 
   // Create Property
   @Post()
@@ -45,14 +39,8 @@ export class PropertiesController {
   @ApiOperation({
     summary: 'Create Property',
   })
-  create(
-    @Body() createPropertyDto: CreatePropertyDto,
-    @Request() req: any,
-  ) {
-    return this.propertiesService.create(
-      createPropertyDto,
-      req.user,
-    );
+  create(@Body() createPropertyDto: CreatePropertyDto, @Request() req: any) {
+    return this.propertiesService.create(createPropertyDto, req.user);
   }
 
   // Get All Properties
@@ -60,70 +48,60 @@ export class PropertiesController {
   @ApiOperation({
     summary: 'Get All Properties',
   })
-  findAll(
-    @Query() filterDto: FilterPropertiesDto,
-  ) {
-    return this.propertiesService.findAll(
-      filterDto,
-    );
+  findAll(@Query() filterDto: FilterPropertiesDto) {
+    return this.propertiesService.findAll(filterDto);
   }
 
   // ===========================
-// Update Property Amenities
-// ===========================
-
-@Post(':id/amenities')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
-@ApiOperation({
-  summary: 'Assign amenities to property',
-})
-updateAmenities(
-  @Param('id') id: string,
-  @Body() dto: UpdatePropertyAmenitiesDto,
-  @Request() req: any,
-) {
-  return this.propertiesService.updateAmenities(
-    id,
-    dto,
-    req.user,
-  );
-}
+  // Update Property Amenities
   // ===========================
-// Owner - My Properties
-// ===========================
 
-@Get('my-properties')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
-@ApiOperation({
-  summary: 'Get logged-in owner properties',
-})
-findMyProperties(@Request() req: any) {
-  return this.propertiesService.findMyProperties(req.user);
-}
+  @Post(':id/amenities')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Assign amenities to property',
+  })
+  updateAmenities(
+    @Param('id') id: string,
+    @Body() dto: UpdatePropertyAmenitiesDto,
+    @Request() req: any,
+  ) {
+    return this.propertiesService.updateAmenities(id, dto, req.user);
+  }
+  // ===========================
+  // Owner - My Properties
+  // ===========================
+
+  @Get('my-properties')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get logged-in owner properties',
+  })
+  findMyProperties(@Request() req: any) {
+    return this.propertiesService.findMyProperties(req.user);
+  }
   //Home Screen Data
   @Get('home')
-@ApiOperation({
-  summary: 'Home Screen Data',
-})
-home() {
-  return this.propertiesService.home();
-}
+  @ApiOperation({
+    summary: 'Home Screen Data',
+  })
+  home() {
+    return this.propertiesService.home();
+  }
 
-// ===========================
-// Nearby Properties
-// ===========================
+  // ===========================
+  // Nearby Properties
+  // ===========================
 
-@Get('nearby')
-@ApiOperation({
-  summary: 'Find nearby properties',
-})
-nearby(
-  @Query() query: NearbyPropertiesDto,
-) {
-  return this.propertiesService.findNearby(query);
-}
+  @Get('nearby')
+  @ApiOperation({
+    summary: 'Find nearby properties',
+  })
+  nearby(@Query() query: NearbyPropertiesDto) {
+    return this.propertiesService.findNearby(query);
+  }
 
   @Post(':id/view')
   @UseGuards(JwtAuthGuard)
@@ -132,14 +110,22 @@ nearby(
     return this.propertiesService.recordView(id, req.user);
   }
 
+  @Get(':id/contact')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get owner contact for an eligible member',
+  })
+  getOwnerContact(@Param('id') id: string, @Request() req: any) {
+    return this.propertiesService.getOwnerContact(id, req.user);
+  }
+
   // Get Property By Id
   @Get(':id')
   @ApiOperation({
     summary: 'Get Property By ID',
   })
-  findOne(
-    @Param('id') id: string,
-  ) {
+  findOne(@Param('id') id: string) {
     return this.propertiesService.findOne(id);
   }
 
@@ -155,11 +141,7 @@ nearby(
     @Body() updatePropertyDto: UpdatePropertyDto,
     @Request() req: any,
   ) {
-    return this.propertiesService.update(
-      id,
-      updatePropertyDto,
-      req.user,
-    );
+    return this.propertiesService.update(id, updatePropertyDto, req.user);
   }
 
   // Delete Property
@@ -169,13 +151,7 @@ nearby(
   @ApiOperation({
     summary: 'Delete Property',
   })
-  remove(
-    @Param('id') id: string,
-    @Request() req: any,
-  ) {
-    return this.propertiesService.remove(
-      id,
-      req.user,
-    );
+  remove(@Param('id') id: string, @Request() req: any) {
+    return this.propertiesService.remove(id, req.user);
   }
 }
