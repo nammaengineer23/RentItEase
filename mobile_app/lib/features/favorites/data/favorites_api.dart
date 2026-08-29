@@ -62,12 +62,7 @@ class FavoritesApi {
       final response = await dio.get('/favorites/check/$propertyId');
 
       final data = _extractMap(response.data);
-
-      if (data is Map<String, dynamic>) {
-        return data['isFavorite'] == true;
-      }
-
-      return false;
+      return data['isFavorite'] == true;
     } on DioException catch (e) {
       throw Exception(_errorMessage(e, 'Failed to check favorite'));
     }
