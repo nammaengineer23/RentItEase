@@ -34,6 +34,8 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
   bool isFavorite = false;
   bool isFavoriteLoading = true;
   bool hasPremiumMembership = false;
+  String ownerName = '';
+  String ownerPhone = '';
 
   String? error;
 
@@ -43,28 +45,28 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
 
     _loadProperty();
     _checkFavorite();
-    _checkMembership();
+    _loadOwnerContact();
   }
 
-  Future<void> _checkMembership() async {
-    final userId = ref
-        .read(authenticationProvider)
-        .authResponse
-        ?.user
-        .id;
-    if (userId == null || userId.isEmpty) return;
+  Future<void> _loadOwnerContact() async {
     try {
       final response = await ref
           .read(dioProvider)
-          .get('/membership/users/$userId/active');
+          .get('/properties/${widget.propertyId}/contact');
       dynamic value = response.data;
       while (value is Map && value.containsKey('data')) {
         value = value['data'];
       }
       if (!mounted) return;
-      setState(() => hasPremiumMembership = value is Map && value.isNotEmpty);
+      if (value is Map) {
+        setState(() {
+          hasPremiumMembership = true;
+          ownerName = value['fullName']?.toString() ?? '';
+          ownerPhone = value['phone']?.toString() ?? '';
+        });
+      }
     } catch (_) {
-      // A missing active membership is represented as a locked contact card.
+      // A 403 response is represented as a locked contact card.
     }
   }
 
@@ -350,13 +352,13 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                         ? ListTile(
                             leading: CircleAvatar(
                               child: Text(
-                                property.ownerName.isEmpty
+                                ownerName.isEmpty
                                     ? 'O'
-                                    : property.ownerName[0].toUpperCase(),
+                                    : ownerName[0].toUpperCase(),
                               ),
                             ),
-                            title: Text(property.ownerName),
-                            subtitle: Text(property.ownerPhone),
+                            title: Text(ownerName),
+                            subtitle: Text(ownerPhone),
                           )
                         : ListTile(
                             leading: const CircleAvatar(
