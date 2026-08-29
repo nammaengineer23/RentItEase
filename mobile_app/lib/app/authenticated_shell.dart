@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../features/authentication/providers/authentication_provider.dart';
 import '../features/home/presentation/widgets/bottom_navigation.dart';
 import '../core/network/dio_provider.dart';
+import '../l10n/app_localizations.dart';
 
 class AuthenticatedShell extends ConsumerStatefulWidget {
   const AuthenticatedShell({
@@ -117,9 +118,9 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
 
     _lastBackPress = now;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Press back again to close RentItEase'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(context.tr('backAgain')),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -132,12 +133,12 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Rate RentItEase'),
+          title: Text(context.tr('rateApp')),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('How was your experience?'),
+                Text(context.tr('experienceQuestion')),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -156,9 +157,9 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
                   controller: commentController,
                   maxLines: 3,
                   maxLength: 2000,
-                  decoration: const InputDecoration(
-                    labelText: 'Comments (optional)',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: context.tr('commentsOptional'),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
               ],
@@ -167,11 +168,11 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, 'later'),
-              child: const Text('Later'),
+              child: Text(context.tr('later')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, 'submit'),
-              child: const Text('Submit'),
+              child: Text(context.tr('submit')),
             ),
           ],
         ),
@@ -196,7 +197,7 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
       } catch (error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Unable to save rating: $error')),
+            SnackBar(content: Text('${context.tr('unableSaveRating')}: $error')),
           );
         }
       }

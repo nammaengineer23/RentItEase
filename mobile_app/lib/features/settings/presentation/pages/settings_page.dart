@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/entities/settings_entity.dart';
 import '../../providers/settings_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -13,7 +14,7 @@ class SettingsPage extends ConsumerWidget {
     final settingsState = ref.watch(settingsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(context.tr('settings'))),
       body: settingsState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
 
@@ -103,7 +104,7 @@ class _SettingsContent extends ConsumerWidget {
           return StatefulBuilder(
             builder: (context, setState) {
               return AlertDialog(
-                title: const Text('Change Password'),
+                title: Text(context.tr('changePassword')),
                 content: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -112,7 +113,7 @@ class _SettingsContent extends ConsumerWidget {
                         controller: currentPasswordController,
                         obscureText: obscureCurrent,
                         decoration: InputDecoration(
-                          labelText: 'Current Password',
+                          labelText: context.tr('currentPassword'),
                           border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
                             onPressed: () {
@@ -133,8 +134,8 @@ class _SettingsContent extends ConsumerWidget {
                         controller: newPasswordController,
                         obscureText: obscureNew,
                         decoration: InputDecoration(
-                          labelText: 'New Password',
-                          helperText: 'Minimum 8 characters',
+                          labelText: context.tr('newPassword'),
+                          helperText: context.tr('minimum8Characters'),
                           border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
                             onPressed: () {
@@ -155,7 +156,7 @@ class _SettingsContent extends ConsumerWidget {
                         controller: confirmPasswordController,
                         obscureText: obscureConfirm,
                         decoration: InputDecoration(
-                          labelText: 'Confirm New Password',
+                          labelText: context.tr('confirmNewPassword'),
                           border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
                             onPressed: () {
@@ -181,7 +182,7 @@ class _SettingsContent extends ConsumerWidget {
                         : () {
                             Navigator.pop(dialogContext);
                           },
-                    child: const Text('Cancel'),
+                    child: Text(context.tr('cancel')),
                   ),
                   FilledButton(
                     onPressed: loading
@@ -202,10 +203,8 @@ class _SettingsContent extends ConsumerWidget {
                                 newPassword.isEmpty ||
                                 confirmPassword.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Please fill all password fields.',
-                                  ),
+                                SnackBar(
+                                  content: Text(context.tr('fillPasswordFields')),
                                 ),
                               );
                               return;
@@ -213,10 +212,8 @@ class _SettingsContent extends ConsumerWidget {
 
                             if (newPassword.length < 8) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'New password must be at least 8 characters.',
-                                  ),
+                                SnackBar(
+                                  content: Text(context.tr('passwordMinimum')),
                                 ),
                               );
                               return;
@@ -224,8 +221,8 @@ class _SettingsContent extends ConsumerWidget {
 
                             if (newPassword != confirmPassword) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('New passwords do not match.'),
+                                SnackBar(
+                                  content: Text(context.tr('passwordMismatch')),
                                 ),
                               );
                               return;
@@ -250,10 +247,8 @@ class _SettingsContent extends ConsumerWidget {
                               Navigator.pop(dialogContext);
 
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Password changed successfully.',
-                                  ),
+                                SnackBar(
+                                  content: Text(context.tr('passwordChanged')),
                                 ),
                               );
                             } catch (e) {
@@ -276,7 +271,7 @@ class _SettingsContent extends ConsumerWidget {
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Change Password'),
+                        : Text(context.tr('changePassword')),
                   ),
                 ],
               );
@@ -296,23 +291,20 @@ class _SettingsContent extends ConsumerWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Delete Account'),
-          content: const Text(
-            'This will permanently delete your account and its data. '
-            'This action cannot be undone.',
-          ),
+          title: Text(context.tr('deleteAccount')),
+          content: Text(context.tr('deleteAccountWarning')),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext, false);
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('cancel')),
             ),
             FilledButton(
               onPressed: () {
                 Navigator.pop(dialogContext, true);
               },
-              child: const Text('Delete'),
+              child: Text(context.tr('delete')),
             ),
           ],
         );
@@ -331,7 +323,7 @@ class _SettingsContent extends ConsumerWidget {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Account deleted successfully.')),
+        SnackBar(content: Text(context.tr('accountDeleted'))),
       );
 
       // Authentication/logout navigation will be connected here
@@ -357,15 +349,15 @@ class _SettingsContent extends ConsumerWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Preferences',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          Text(
+            context.tr('preferences'),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 8),
 
           Text(
-            'Customize your RentItEase experience.',
+            context.tr('customizeExperience'),
             style: TextStyle(color: Colors.grey.shade700),
           ),
 
@@ -374,9 +366,9 @@ class _SettingsContent extends ConsumerWidget {
           // ==================================================
           // Notifications
           // ==================================================
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.notifications_outlined,
-            title: 'Notifications',
+            title: context.tr('notifications'),
           ),
 
           Card(
@@ -384,8 +376,8 @@ class _SettingsContent extends ConsumerWidget {
               children: [
                 SwitchListTile(
                   secondary: const Icon(Icons.notifications),
-                  title: const Text('Push Notifications'),
-                  subtitle: const Text('Receive notifications on your device'),
+                  title: Text(context.tr('pushNotifications')),
+                  subtitle: Text(context.tr('pushDescription')),
                   value: settings.pushNotifications,
                   onChanged: (value) {
                     _updateSetting(context, ref, pushNotifications: value);
@@ -394,8 +386,8 @@ class _SettingsContent extends ConsumerWidget {
                 const Divider(height: 1),
                 SwitchListTile(
                   secondary: const Icon(Icons.email_outlined),
-                  title: const Text('Email Notifications'),
-                  subtitle: const Text('Receive important updates by email'),
+                  title: Text(context.tr('emailNotifications')),
+                  subtitle: Text(context.tr('emailDescription')),
                   value: settings.emailNotifications,
                   onChanged: (value) {
                     _updateSetting(context, ref, emailNotifications: value);
@@ -404,8 +396,8 @@ class _SettingsContent extends ConsumerWidget {
                 const Divider(height: 1),
                 SwitchListTile(
                   secondary: const Icon(Icons.sms_outlined),
-                  title: const Text('SMS Notifications'),
-                  subtitle: const Text('Receive important updates by SMS'),
+                  title: Text(context.tr('smsNotifications')),
+                  subtitle: Text(context.tr('smsDescription')),
                   value: settings.smsNotifications,
                   onChanged: (value) {
                     _updateSetting(context, ref, smsNotifications: value);
@@ -420,16 +412,16 @@ class _SettingsContent extends ConsumerWidget {
           // ==================================================
           // Appearance
           // ==================================================
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.palette_outlined,
-            title: 'Appearance',
+            title: context.tr('appearance'),
           ),
 
           Card(
             child: SwitchListTile(
               secondary: const Icon(Icons.dark_mode_outlined),
-              title: const Text('Dark Mode'),
-              subtitle: const Text('Use a dark appearance throughout the app'),
+              title: Text(context.tr('darkMode')),
+              subtitle: Text(context.tr('darkModeDescription')),
               value: settings.darkMode,
               onChanged: (value) {
                 _updateSetting(context, ref, darkMode: value);
@@ -442,14 +434,15 @@ class _SettingsContent extends ConsumerWidget {
           // ==================================================
           // Language
           // ==================================================
-          const _SectionTitle(icon: Icons.language, title: 'Language'),
+          _SectionTitle(icon: Icons.language, title: context.tr('language')),
 
           Card(
             child: ListTile(
               leading: const Icon(Icons.translate),
-              title: const Text('App Language'),
+              title: Text(context.tr('appLanguage')),
               subtitle: Text(
-                settings.language == 'en' ? 'English' : settings.language,
+                AppLocalizations.languageNames[settings.language] ??
+                    settings.language,
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () async {
@@ -460,23 +453,14 @@ class _SettingsContent extends ConsumerWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const ListTile(
+                          ListTile(
                             title: Text(
-                              'Select Language',
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              context.tr('selectLanguage'),
+                              style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
-                          for (final entry in const {
-                            'en': 'English',
-                            'kn': 'ಕನ್ನಡ (Kannada)',
-                            'hi': 'हिन्दी (Hindi)',
-                            'ta': 'தமிழ் (Tamil)',
-                            'te': 'తెలుగు (Telugu)',
-                            'ml': 'മലയാളം (Malayalam)',
-                            'mr': 'मराठी (Marathi)',
-                            'bn': 'বাংলা (Bengali)',
-                            'gu': 'ગુજરાતી (Gujarati)',
-                          }.entries)
+                          for (final entry
+                              in AppLocalizations.languageNames.entries)
                             ListTile(
                               leading: const Icon(Icons.language),
                               title: Text(entry.value),
@@ -503,9 +487,9 @@ class _SettingsContent extends ConsumerWidget {
 
           const SizedBox(height: 24),
 
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.support_agent,
-            title: 'Contact Us',
+            title: context.tr('contactUs'),
           ),
 
           Card(
@@ -513,7 +497,7 @@ class _SettingsContent extends ConsumerWidget {
               children: [
                 ListTile(
                   leading: const Icon(Icons.business_outlined),
-                  title: const Text('General enquiries'),
+                  title: Text(context.tr('generalEnquiries')),
                   subtitle: const Text('contact@rentitease.com'),
                   trailing: const Icon(Icons.open_in_new),
                   onTap: () => _openContact(
@@ -524,7 +508,7 @@ class _SettingsContent extends ConsumerWidget {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.support_outlined),
-                  title: const Text('Customer support'),
+                  title: Text(context.tr('customerSupport')),
                   subtitle: const Text('support@rentitease.com'),
                   trailing: const Icon(Icons.open_in_new),
                   onTap: () => _openContact(
@@ -535,7 +519,7 @@ class _SettingsContent extends ConsumerWidget {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.phone_outlined),
-                  title: const Text('Call RentItEase'),
+                  title: Text(context.tr('callUs')),
                   subtitle: const Text('+91 99863 85925'),
                   trailing: const Icon(Icons.call),
                   onTap: () => _openContact(
@@ -546,7 +530,7 @@ class _SettingsContent extends ConsumerWidget {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.language_outlined),
-                  title: const Text('Website'),
+                  title: Text(context.tr('website')),
                   subtitle: const Text('rentitease.com'),
                   trailing: const Icon(Icons.open_in_new),
                   onTap: () => _openContact(
@@ -563,13 +547,16 @@ class _SettingsContent extends ConsumerWidget {
           // ==================================================
           // Security
           // ==================================================
-          const _SectionTitle(icon: Icons.security_outlined, title: 'Security'),
+          _SectionTitle(
+            icon: Icons.security_outlined,
+            title: context.tr('security'),
+          ),
 
           Card(
             child: ListTile(
               leading: const Icon(Icons.lock_outline),
-              title: const Text('Change Password'),
-              subtitle: const Text('Update your account password'),
+              title: Text(context.tr('changePassword')),
+              subtitle: Text(context.tr('updatePassword')),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 _showChangePasswordDialog(context, ref);
@@ -582,24 +569,22 @@ class _SettingsContent extends ConsumerWidget {
           // ==================================================
           // Danger Zone
           // ==================================================
-          const _SectionTitle(
+          _SectionTitle(
             icon: Icons.warning_amber_outlined,
-            title: 'Account',
+            title: context.tr('account'),
           ),
 
           Card(
             child: ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text(
-                'Delete Account',
-                style: TextStyle(
+              title: Text(
+                context.tr('deleteAccount'),
+                style: const TextStyle(
                   color: Colors.red,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              subtitle: const Text(
-                'Permanently delete your RentItEase account',
-              ),
+              subtitle: Text(context.tr('deleteAccountDescription')),
               trailing: const Icon(Icons.chevron_right, color: Colors.red),
               onTap: () {
                 _deleteAccount(context, ref);
@@ -611,7 +596,7 @@ class _SettingsContent extends ConsumerWidget {
 
           Center(
             child: Text(
-              '© ${DateTime.now().year} RentItEase. All rights reserved.',
+              context.tr('settingsFooter'),
               style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
             ),
           ),
@@ -626,7 +611,7 @@ class _SettingsContent extends ConsumerWidget {
     if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Unable to open this contact option.')),
+      SnackBar(content: Text(context.tr('unableOpenContact'))),
     );
   }
 }
@@ -679,14 +664,17 @@ class _ErrorView extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, size: 70, color: Colors.red),
             const SizedBox(height: 20),
-            const Text(
-              'Unable to load settings.',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              context.tr('unableLoadSettings'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             Text(error.toString(), textAlign: TextAlign.center),
             const SizedBox(height: 20),
-            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+            ElevatedButton(
+              onPressed: onRetry,
+              child: Text(context.tr('retry')),
+            ),
           ],
         ),
       ),
