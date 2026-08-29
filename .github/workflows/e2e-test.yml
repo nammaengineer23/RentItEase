@@ -44,6 +44,12 @@ jobs:
       - name: Prisma generate
         run: npx prisma generate
 
+      - name: Lint backend
+        run: npm run lint
+
+      - name: Backend unit tests
+        run: npm run test:unit:properties
+
       - name: Build backend
         run: npm run build
 
