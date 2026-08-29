@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 import '../../providers/authentication_provider.dart';
@@ -39,10 +40,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     if (success) {
       setState(() => _sent = true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'If this email is registered, a password reset link was sent.',
-          ),
+        SnackBar(
+          content: Text(context.tr('resetLinkSent')),
           backgroundColor: Colors.green,
         ),
       );
@@ -52,7 +51,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          provider.errorMessage ?? 'Unable to request password reset.',
+          provider.errorMessage ?? context.tr('unableRequestReset'),
         ),
         backgroundColor: Colors.red,
       ),
@@ -64,7 +63,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     final provider = ref.watch(authenticationProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Forgot Password')),
+      appBar: AppBar(title: Text(context.tr('forgotPassword'))),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -73,40 +72,39 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             child: Column(
               children: [
                 const SizedBox(height: 20),
-                const AuthHeader(
-                  title: 'Forgot Password',
-                  subtitle:
-                      'Enter your registered email address and we will send '
-                      'you a password reset link.',
+                AuthHeader(
+                  title: context.tr('forgotPassword'),
+                  subtitle: context.tr('forgotPasswordSubtitle'),
                 ),
                 const SizedBox(height: 40),
                 CustomTextField(
                   controller: _emailController,
-                  hintText: 'Email Address',
+                  hintText: context.tr('emailAddress'),
                   prefixIcon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     final email = value?.trim() ?? '';
-                    if (email.isEmpty) return 'Please enter your email';
+                    if (email.isEmpty) return context.tr('enterYourEmail');
                     if (!RegExp(
                       r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,}$',
                     ).hasMatch(email)) {
-                      return 'Enter a valid email address';
+                      return context.tr('validEmailAddress');
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 30),
                 CustomButton(
-                  text: _sent ? 'Send Again' : 'Send Reset Link',
+                  text: _sent
+                      ? context.tr('sendAgain')
+                      : context.tr('sendResetLink'),
                   isLoading: provider.isLoading,
                   onPressed: _sendResetLink,
                 ),
                 if (_sent) ...[
                   const SizedBox(height: 16),
-                  const Text(
-                    'Check your inbox and spam folder. The response is kept '
-                    'private even if the email is not registered.',
+                  Text(
+                    context.tr('checkResetInbox'),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -115,7 +113,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   onPressed: provider.isLoading
                       ? null
                       : () => Navigator.pop(context),
-                  child: const Text('Back to Login'),
+                  child: Text(context.tr('backToLogin')),
                 ),
               ],
             ),

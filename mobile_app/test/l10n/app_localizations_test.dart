@@ -33,4 +33,31 @@ void main() {
     const localizations = AppLocalizations(Locale('kn'));
     expect(localizations.text('notYetTranslated'), 'notYetTranslated');
   });
+
+  test('Kannada authentication flow has complete priority translations', () {
+    const localizations = AppLocalizations(Locale('kn'));
+    const keys = <String>[
+      'welcomeBack',
+      'login',
+      'createAccount',
+      'forgotPassword',
+      'verifyEmail',
+      'verifyPhoneNumber',
+      'continueWithGoogle',
+      'verificationCode',
+    ];
+
+    for (final key in keys) {
+      expect(localizations.text(key), isNot(key));
+      expect(
+        localizations.text(key),
+        isNot(const AppLocalizations(Locale('en')).text(key)),
+      );
+    }
+  });
+
+  test('other configured languages fall back to English auth text', () {
+    const localizations = AppLocalizations(Locale('hi'));
+    expect(localizations.text('welcomeBack'), 'Welcome Back');
+  });
 }

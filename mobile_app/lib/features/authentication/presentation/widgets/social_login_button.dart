@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class SocialLoginButton extends StatelessWidget {
   const SocialLoginButton({
@@ -32,18 +33,18 @@ class SocialLoginButton extends StatelessWidget {
                 height: 22,
                 child: CircularProgressIndicator(strokeWidth: 2.5),
               )
-            : const Row(
+            : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _GoogleIcon(),
-                  SizedBox(width: 12),
+                  const _GoogleIcon(),
+                  const SizedBox(width: 12),
                   Flexible(
                     child: Text(
-                      'Continue with Google',
+                      context.tr('continueWithGoogle'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,

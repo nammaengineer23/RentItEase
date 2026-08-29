@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class PasswordStrength extends StatelessWidget {
   final String password;
@@ -14,13 +15,13 @@ class PasswordStrength extends StatelessWidget {
 
     if (strength < 0.3) {
       color = Colors.red;
-      text = "Weak";
+      text = context.tr('weak');
     } else if (strength < 0.7) {
       color = Colors.orange;
-      text = "Medium";
+      text = context.tr('medium');
     } else {
       color = Colors.green;
-      text = "Strong";
+      text = context.tr('strong');
     }
 
     return Column(
@@ -39,7 +40,7 @@ class PasswordStrength extends StatelessWidget {
         Row(
           children: [
             Text(
-              "Password Strength:",
+              context.tr('passwordStrength'),
               style: Theme.of(context).textTheme.bodyMedium,
             ),
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../providers/authentication_provider.dart';
 
 class RememberMe extends ConsumerWidget {
@@ -25,9 +26,9 @@ class RememberMe extends ConsumerWidget {
           ),
         ),
 
-        const Text(
-          'Remember Me',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+        Text(
+          context.tr('rememberMe'),
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
         ),
 
         const Spacer(),
@@ -35,7 +36,7 @@ class RememberMe extends ConsumerWidget {
         TextButton(
           onPressed: onForgotPassword,
           child: Text(
-            'Forgot Password?',
+            context.tr('forgotPasswordQuestion'),
             style: TextStyle(
               color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.w600,
