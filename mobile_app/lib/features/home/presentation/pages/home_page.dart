@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../notifications/providers/notifications_provider.dart';
 import '../../../authentication/providers/authentication_provider.dart';
 import '../../../property/domain/entities/property_entity.dart';
@@ -66,14 +67,17 @@ class _HomePageState extends ConsumerState<HomePage> {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'RentItEase',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
             ),
-            Text('Find your perfect home', style: TextStyle(fontSize: 13)),
+            Text(
+              context.tr('findPerfectHome'),
+              style: const TextStyle(fontSize: 13),
+            ),
           ],
         ),
         actions: [
@@ -104,7 +108,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ],
           ),
           IconButton(
-            tooltip: 'Logout',
+            tooltip: context.tr('logout'),
             onPressed: () async {
               await ref.read(authenticationProvider).logout();
               if (context.mounted) context.go('/auth');
@@ -127,7 +131,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 onPressed: () {
                   ref.read(propertyProvider.notifier).loadProperties();
                 },
-                child: const Text('Retry'),
+                child: Text(context.tr('retry')),
               ),
             ],
           ),
@@ -138,7 +142,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               : properties.where((property) => property.isAvailable).toList();
 
           if (feed.isEmpty) {
-            return const Center(child: Text('No nearby properties available.'));
+            return Center(child: Text(context.tr('noNearbyProperties')));
           }
 
           return PageView.builder(

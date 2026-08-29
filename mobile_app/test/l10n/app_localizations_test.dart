@@ -60,4 +60,26 @@ void main() {
     const localizations = AppLocalizations(Locale('hi'));
     expect(localizations.text('welcomeBack'), 'Welcome Back');
   });
+
+  test('Kannada tenant discovery flow has priority translations', () {
+    const localizations = AppLocalizations(Locale('kn'));
+    const keys = <String>[
+      'findPerfectHome',
+      'searchProperties',
+      'filterProperties',
+      'myFavorites',
+      'bookPropertyVisit',
+      'visitDate',
+      'ownerContactProtected',
+      'chatWithOwner',
+    ];
+
+    for (final key in keys) {
+      expect(localizations.text(key), isNot(key));
+      expect(
+        localizations.text(key),
+        isNot(const AppLocalizations(Locale('en')).text(key)),
+      );
+    }
+  });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class PropertyActionButtons extends StatelessWidget {
   const PropertyActionButtons({
@@ -18,7 +19,7 @@ class PropertyActionButtons extends StatelessWidget {
           child: OutlinedButton.icon(
             onPressed: onContactOwner,
             icon: const Icon(Icons.chat_bubble_outline),
-            label: const Text('Chat'),
+            label: Text(context.tr('chat')),
           ),
         ),
 
@@ -29,7 +30,7 @@ class PropertyActionButtons extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: onBookVisit,
             icon: const Icon(Icons.calendar_today),
-            label: const Text('Book Visit'),
+            label: Text(context.tr('bookVisit')),
           ),
         ),
       ],

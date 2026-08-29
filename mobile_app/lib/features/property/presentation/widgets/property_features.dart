@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class PropertyFeatures extends StatelessWidget {
   final int bedrooms;
@@ -24,15 +25,16 @@ class PropertyFeatures extends StatelessWidget {
       children: [
         _FeatureItem(
           icon: Icons.bed_rounded,
-          title: '$bedrooms Bed${bedrooms > 1 ? 's' : ''}',
+          title: '$bedrooms ${context.tr(bedrooms == 1 ? 'bed' : 'beds')}',
         ),
         _FeatureItem(
           icon: Icons.bathtub_rounded,
-          title: '$bathrooms Bath${bathrooms > 1 ? 's' : ''}',
+          title: '$bathrooms ${context.tr(bathrooms == 1 ? 'bath' : 'baths')}',
         ),
         _FeatureItem(
           icon: Icons.balcony_rounded,
-          title: '$balconies Balcony${balconies > 1 ? 'ies' : ''}',
+          title:
+              '$balconies ${context.tr(balconies == 1 ? 'balcony' : 'balconies')}',
         ),
         _FeatureItem(
           icon: Icons.square_foot_rounded,
@@ -40,7 +42,9 @@ class PropertyFeatures extends StatelessWidget {
         ),
         _FeatureItem(
           icon: Icons.local_parking_rounded,
-          title: parking > 0 ? '$parking Parking' : 'No Parking',
+          title: parking > 0
+              ? '$parking ${context.tr('parking')}'
+              : context.tr('noParking'),
         ),
       ],
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class VisitDatePicker extends StatefulWidget {
   const VisitDatePicker({super.key, required this.onChanged, this.initialDate});
@@ -108,9 +109,12 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Preferred Visit Schedule',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            Text(
+              context.tr('preferredVisitSchedule'),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
             ),
 
             const SizedBox(height: 20),
@@ -118,7 +122,7 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.calendar_today),
-              title: const Text('Visit Date'),
+              title: Text(context.tr('visitDate')),
               subtitle: Text(formattedDate),
               trailing: const Icon(Icons.chevron_right),
               onTap: pickDate,
@@ -129,7 +133,7 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.access_time),
-              title: const Text('Visit Time'),
+              title: Text(context.tr('visitTime')),
               subtitle: Text(formattedTime),
               trailing: const Icon(Icons.chevron_right),
               onTap: pickTime,
