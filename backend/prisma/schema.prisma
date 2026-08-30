@@ -178,8 +178,6 @@ model SocialMarketingConsent {
   propertyId     String            @unique
   ownerId        String
   approved       Boolean           @default(false)
-  autoPublish    Boolean           @default(false)
-  platforms      Json
   consentVersion String            @default("1.0")
   consentedAt    DateTime?
   revokedAt      DateTime?
@@ -191,7 +189,6 @@ model SocialMarketingConsent {
 
   @@index([ownerId])
   @@index([approved])
-  @@index([autoPublish])
 }
 
 model SocialMediaPost {
@@ -204,15 +201,42 @@ model SocialMediaPost {
   videoUrl    String?
   externalId  String?
   error       String?
+  scheduledAt DateTime?
+  nextRetryAt DateTime?
+  attemptCount Int                 @default(0)
+  maxAttempts  Int                 @default(3)
+  lastAttemptAt DateTime?
   publishedAt DateTime?
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
   consent     SocialMarketingConsent? @relation(fields: [consentId], references: [id])
   property    Property                @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  analyticsSnapshots SocialAnalyticsSnapshot[]
 
   @@index([propertyId])
   @@index([platform])
   @@index([status])
+  @@index([status, scheduledAt])
+  @@index([status, nextRetryAt])
+}
+
+model SocialMediaAuditEvent {
+  id        String   @id @default(cuid())
+  postId    String?
+  propertyId String
+  actorId   String?
+  eventType String
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([propertyId, createdAt])
+  @@index([postId, createdAt])
+}
+
+model SocialMediaSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
 }
 
 model Favorite {
@@ -560,7 +584,7 @@ model SocialAccountConnection {
 
 model SocialAnalyticsSnapshot {
   id          String   @id @default(cuid())
-  campaignId  String
+  postId      String
   platform    String
   impressions Int      @default(0)
   clicks      Int      @default(0)
@@ -569,7 +593,9 @@ model SocialAnalyticsSnapshot {
   leads       Int      @default(0)
   capturedAt  DateTime @default(now())
 
-  @@index([campaignId])
+  post        SocialMediaPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
   @@index([platform, capturedAt])
 }
 
