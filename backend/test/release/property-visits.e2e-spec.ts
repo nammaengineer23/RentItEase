@@ -21,6 +21,19 @@ describe('Property Visits E2E', () => {
    */
   const apiUrl = `${baseUrl}${apiPrefix}`;
 
+  function extractData(body: any): any {
+    let current = body;
+    while (
+      current &&
+      typeof current === 'object' &&
+      !Array.isArray(current) &&
+      current.data !== undefined
+    ) {
+      current = current.data;
+    }
+    return current;
+  }
+
   // ============================================================
   // Test accounts / property
   // ============================================================
