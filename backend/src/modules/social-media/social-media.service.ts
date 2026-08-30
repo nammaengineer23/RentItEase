@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { SocialPlatform, SocialPostStatus } from '@prisma/client';
+import { Prisma, SocialPlatform, SocialPostStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { GenerateVideoDto } from './dto/generate-video.dto';
 import { PublishPostDto } from './dto/publish-post.dto';
@@ -239,6 +239,11 @@ export class SocialMediaService {
   }
 
   private audit(propertyId: string, actorId: string, eventType: string, postId?: string, details?: Record<string, unknown>) {
-    return this.prisma.socialMediaAuditEvent.create({ data: { propertyId, actorId, postId, eventType, details } });
+    const jsonDetails = details
+      ? (JSON.parse(JSON.stringify(details)) as Prisma.InputJsonValue)
+      : undefined;
+    return this.prisma.socialMediaAuditEvent.create({
+      data: { propertyId, actorId, postId, eventType, details: jsonDetails },
+    });
   }
 }
