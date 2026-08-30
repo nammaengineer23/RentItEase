@@ -55,6 +55,7 @@ export class SocialMediaService {
         propertyId: dto.propertyId,
         ownerId: dto.ownerId,
         approved: dto.approved,
+        platforms: [],
         consentVersion: dto.consentVersion || '1.0',
         consentedAt: new Date(),
       },
