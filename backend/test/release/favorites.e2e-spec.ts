@@ -7,11 +7,17 @@ import {
   expect,
 } from '@jest/globals';
 
-import { apiUrl, extractData, statusOk } from './helpers';
+import {
+  apiUrl,
+  createApprovedE2EProperty,
+  extractData,
+  statusOk,
+} from './helpers';
 
 describe('RentItEase Release E2E • Favorites', () => {
   let tenantToken = '';
   let ownerToken = '';
+  let adminToken = '';
   let propertyId = '';
   let favoriteAdded = false;
 
@@ -30,6 +36,9 @@ describe('RentItEase Release E2E • Favorites', () => {
 
   const ownerPassword =
     process.env.E2E_OWNER_PASSWORD || 'Test@123456';
+
+  const adminEmail = process.env.E2E_ADMIN_EMAIL;
+  const adminPassword = process.env.E2E_ADMIN_PASSWORD;
 
   // ============================================================
   // AUTH HEADER
@@ -147,54 +156,6 @@ describe('RentItEase Release E2E • Favorites', () => {
   }
 
   // ============================================================
-  // FIND USABLE PROPERTY
-  // ============================================================
-
-  async function findUsableProperty(): Promise<string> {
-    const response = await request(apiUrl()).get('/properties');
-
-    if (response.status !== 200) {
-      throw new Error(
-        `Unable to retrieve properties: ${response.status} ${JSON.stringify(
-          response.body,
-        )}`,
-      );
-    }
-
-    const data = extractData(response.body);
-
-    const properties = Array.isArray(data)
-      ? data
-      : Array.isArray(data?.properties)
-        ? data.properties
-        : Array.isArray(data?.items)
-          ? data.items
-          : Array.isArray(response.body?.properties)
-            ? response.body.properties
-            : Array.isArray(response.body?.items)
-              ? response.body.items
-              : [];
-
-    const property = properties.find(
-      (item: any) =>
-        item?.id &&
-        item?.isAvailable !== false &&
-        item?.status !== 'INACTIVE' &&
-        item?.status !== 'DELETED',
-    );
-
-    if (!property?.id) {
-      throw new Error(
-        `No usable property found for Favorites E2E test. Response: ${JSON.stringify(
-          response.body,
-        )}`,
-      );
-    }
-
-    return String(property.id);
-  }
-
-  // ============================================================
   // LOGIN HELPER
   //
   // IMPORTANT:
@@ -242,6 +203,7 @@ describe('RentItEase Release E2E • Favorites', () => {
     console.log(`API: ${apiUrl()}`);
     console.log(`Tenant: ${tenantEmail}`);
     console.log(`Owner: ${ownerEmail}`);
+    console.log(`Admin: ${adminEmail || 'not configured'}`);
     console.log('==============================================');
     console.log('');
   });
@@ -281,25 +243,48 @@ describe('RentItEase Release E2E • Favorites', () => {
   });
 
   // ============================================================
-  // 3. FIND USABLE PROPERTY
+  // 3. ADMIN LOGIN
   // ============================================================
 
-  it('3. Find a usable property', async () => {
-    expect(tenantToken).toBeTruthy();
+  it('3. Admin can login', async () => {
+    if (!adminEmail || !adminPassword) {
+      throw new Error(
+        'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required for Favorites E2E.',
+      );
+    }
 
-    propertyId = await findUsableProperty();
+    adminToken = await login(adminEmail, adminPassword, 'Admin');
+
+    expect(adminToken).toBeTruthy();
+
+    console.log('✓ Admin login successful');
+  });
+
+  // ============================================================
+  // 4. CREATE AND APPROVE ISOLATED PROPERTY
+  // ============================================================
+
+  it('4. Creates an approved property fixture', async () => {
+    expect(ownerToken).toBeTruthy();
+    expect(adminToken).toBeTruthy();
+
+    propertyId = await createApprovedE2EProperty(
+      ownerToken,
+      adminToken,
+      'Release Favorites',
+    );
 
     expect(propertyId).toBeTruthy();
 
-    console.log('✓ Usable property found');
+    console.log('✓ Approved property fixture created');
     console.log(`  Property ID: ${propertyId}`);
   });
 
   // ============================================================
-  // 4. UNAUTHENTICATED ADD FAVORITE
+  // 5. UNAUTHENTICATED ADD FAVORITE
   // ============================================================
 
-  it('4. Unauthenticated user cannot add favorite', async () => {
+  it('5. Unauthenticated user cannot add favorite', async () => {
     expect(propertyId).toBeTruthy();
 
     const response = await request(apiUrl()).post(
@@ -314,10 +299,10 @@ describe('RentItEase Release E2E • Favorites', () => {
   });
 
   // ============================================================
-  // 5. TENANT ADD FAVORITE
+  // 6. TENANT ADD FAVORITE
   // ============================================================
 
-  it('5. Tenant can add property to favorites', async () => {
+  it('6. Tenant can add property to favorites', async () => {
     expect(tenantToken).toBeTruthy();
     expect(propertyId).toBeTruthy();
 
@@ -362,10 +347,10 @@ describe('RentItEase Release E2E • Favorites', () => {
   });
 
   // ============================================================
-  // 6. FAVORITE STATUS = TRUE
+  // 7. FAVORITE STATUS = TRUE
   // ============================================================
 
-  it('6. Tenant can check favorite status', async () => {
+  it('7. Tenant can check favorite status', async () => {
     expect(tenantToken).toBeTruthy();
     expect(propertyId).toBeTruthy();
 
@@ -383,10 +368,10 @@ describe('RentItEase Release E2E • Favorites', () => {
   });
 
   // ============================================================
-  // 7. FAVORITE LIST CONTAINS PROPERTY
+  // 8. FAVORITE LIST CONTAINS PROPERTY
   // ============================================================
 
-  it('7. Tenant favorite list contains the property', async () => {
+  it('8. Tenant favorite list contains the property', async () => {
     expect(tenantToken).toBeTruthy();
     expect(propertyId).toBeTruthy();
 
@@ -411,10 +396,10 @@ describe('RentItEase Release E2E • Favorites', () => {
   });
 
   // ============================================================
-  // 8. PROPERTY DETAILS WHILE FAVORITED
+  // 9. PROPERTY DETAILS WHILE FAVORITED
   // ============================================================
 
-  it('8. Tenant can retrieve property details while favorited', async () => {
+  it('9. Tenant can retrieve property details while favorited', async () => {
     expect(tenantToken).toBeTruthy();
     expect(propertyId).toBeTruthy();
 
@@ -438,10 +423,10 @@ describe('RentItEase Release E2E • Favorites', () => {
   });
 
   // ============================================================
-  // 9. OWNER FAVORITE STATE IS ISOLATED
+  // 10. OWNER FAVORITE STATE IS ISOLATED
   // ============================================================
 
-  it('9. Owner cannot use tenant favorite state as their own', async () => {
+  it('10. Owner cannot use tenant favorite state as their own', async () => {
     expect(ownerToken).toBeTruthy();
     expect(propertyId).toBeTruthy();
 
@@ -459,10 +444,10 @@ describe('RentItEase Release E2E • Favorites', () => {
   });
 
   // ============================================================
-  // 10. OWNER FAVORITE LIST IS INDEPENDENT
+  // 11. OWNER FAVORITE LIST IS INDEPENDENT
   // ============================================================
 
-  it('10. Owner can access their own favorite list independently', async () => {
+  it('11. Owner can access their own favorite list independently', async () => {
     expect(ownerToken).toBeTruthy();
 
     const response = await request(apiUrl())
@@ -488,10 +473,10 @@ describe('RentItEase Release E2E • Favorites', () => {
   });
 
   // ============================================================
-  // 11. TENANT REMOVE FAVORITE
+  // 12. TENANT REMOVE FAVORITE
   // ============================================================
 
-  it('11. Tenant can remove property from favorites', async () => {
+  it('12. Tenant can remove property from favorites', async () => {
     expect(tenantToken).toBeTruthy();
     expect(propertyId).toBeTruthy();
     expect(favoriteAdded).toBe(true);
@@ -508,10 +493,10 @@ describe('RentItEase Release E2E • Favorites', () => {
   });
 
   // ============================================================
-  // 12. FAVORITE STATUS = FALSE
+  // 13. FAVORITE STATUS = FALSE
   // ============================================================
 
-  it('12. Favorite status is false after removal', async () => {
+  it('13. Favorite status is false after removal', async () => {
     expect(tenantToken).toBeTruthy();
     expect(propertyId).toBeTruthy();
 
@@ -529,10 +514,10 @@ describe('RentItEase Release E2E • Favorites', () => {
   });
 
   // ============================================================
-  // 13. PROPERTY ABSENT FROM FAVORITE LIST
+  // 14. PROPERTY ABSENT FROM FAVORITE LIST
   // ============================================================
 
-  it('13. Removed property is absent from favorite list', async () => {
+  it('14. Removed property is absent from favorite list', async () => {
     expect(tenantToken).toBeTruthy();
     expect(propertyId).toBeTruthy();
 

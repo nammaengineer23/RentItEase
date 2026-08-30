@@ -23,6 +23,8 @@ describe('Property E2E', () => {
 
   const tenantEmail = process.env.E2E_TENANT_EMAIL;
   const tenantPassword = process.env.E2E_TENANT_PASSWORD;
+  const adminEmail = process.env.E2E_ADMIN_EMAIL;
+  const adminPassword = process.env.E2E_ADMIN_PASSWORD;
 
   // ============================================================
   // Runtime state
@@ -30,6 +32,7 @@ describe('Property E2E', () => {
 
   let ownerToken = '';
   let tenantToken = '';
+  let adminToken = '';
 
   let propertyId = '';
   let amenityId = '';
@@ -56,6 +59,8 @@ describe('Property E2E', () => {
     if (!tenantPassword) {
       missing.push('E2E_TENANT_PASSWORD');
     }
+    if (!adminEmail) missing.push('E2E_ADMIN_EMAIL');
+    if (!adminPassword) missing.push('E2E_ADMIN_PASSWORD');
 
     if (missing.length > 0) {
       throw new Error(
@@ -430,6 +435,16 @@ describe('Property E2E', () => {
     expect(tenantToken).toBeTruthy();
   });
 
+  it('2a. Admin can login', async () => {
+    const response = await request(apiUrl).post('/auth/login').send({
+      login: adminEmail,
+      password: adminPassword,
+    });
+    assertSuccess(response, 'Admin login');
+    adminToken = extractToken(response.body);
+    expect(adminToken).toBeTruthy();
+  });
+
   // ============================================================
   // 3. Owner creates property
   // ============================================================
@@ -476,6 +491,11 @@ describe('Property E2E', () => {
     expect(property.title).toBe(payload.title);
     expect(property.city).toBe(payload.city);
     expect(property.ownerId ?? property.owner?.id).toBeTruthy();
+
+    const approval = await request(apiUrl)
+      .patch(`/admin/properties/${propertyId}/approve`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    assertSuccess(approval, 'Property approval');
   });
 
   // ============================================================
