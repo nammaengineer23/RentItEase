@@ -44,7 +44,7 @@ export interface GenerateVideoResponse {
 }
 
 export interface SocialSettings {
-  mode: 'DISABLED' | 'GENERATE_ONLY' | 'AUTO_PUBLISH' | string;
+  mode: 'DISABLED' | 'GENERATE_ONLY' | string;
   instagramEnabled: boolean;
   facebookEnabled: boolean;
   youtubeEnabled: boolean;
@@ -74,6 +74,21 @@ export const socialMediaApi = {
       {
         method: 'POST',
         body: JSON.stringify({ platform, caption, title }),
+      },
+    ),
+
+  schedule: (
+    propertyId: string,
+    platform: SocialPlatform,
+    scheduledAt: string,
+    caption?: string,
+    title?: string,
+  ) =>
+    request<{ id: string; scheduledAt: string }>(
+      `/admin/social-media/properties/${propertyId}/schedule`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ platform, scheduledAt, caption, title }),
       },
     ),
 

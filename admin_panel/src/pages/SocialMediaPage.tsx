@@ -13,6 +13,7 @@ export function SocialMediaPage() {
   const [video, setVideo] = useState<GenerateVideoResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState<SocialPlatform | null>(null);
+  const [scheduledAt, setScheduledAt] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -63,6 +64,37 @@ export function SocialMediaPage() {
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : `${platform} publishing failed.`);
+    } finally {
+      setPublishing(null);
+    }
+  }
+
+  async function schedule(platform: SocialPlatform) {
+    if (!propertyId.trim() || !scheduledAt) {
+      setError('Enter a property ID and future schedule time.');
+      return;
+    }
+
+    const date = new Date(scheduledAt);
+    if (Number.isNaN(date.getTime()) || date <= new Date()) {
+      setError('Choose a future schedule time.');
+      return;
+    }
+
+    setPublishing(platform);
+    setError('');
+    setMessage('');
+    try {
+      await socialMediaApi.schedule(
+        propertyId.trim(),
+        platform,
+        date.toISOString(),
+        video?.caption,
+        video?.videoTitle,
+      );
+      setMessage(`${platform} post scheduled successfully.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : `Unable to schedule ${platform}.`);
     } finally {
       setPublishing(null);
     }
@@ -170,6 +202,31 @@ export function SocialMediaPage() {
                   : enabled
                     ? `Publish to ${platform}`
                     : `${platform} not configured`}
+              </button>
+            ))}
+          </div>
+
+          <label htmlFor="scheduled-at">Schedule for later</label>
+          <input
+            id="scheduled-at"
+            type="datetime-local"
+            value={scheduledAt}
+            onChange={(event) => setScheduledAt(event.target.value)}
+          />
+          <div className="social-publish-grid">
+            {(
+              [
+                ['INSTAGRAM', settings?.instagramEnabled],
+                ['FACEBOOK', settings?.facebookEnabled],
+                ['YOUTUBE', settings?.youtubeEnabled],
+              ] as const
+            ).map(([platform, enabled]) => (
+              <button
+                key={`schedule-${platform}`}
+                onClick={() => schedule(platform)}
+                disabled={!enabled || publishing !== null || !scheduledAt}
+              >
+                {`Schedule ${platform}`}
               </button>
             ))}
           </div>

@@ -1,4 +1,7 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GenerateVideoDto } from './dto/generate-video.dto';
 import { PublishPostDto } from './dto/publish-post.dto';
@@ -6,7 +9,8 @@ import { SocialSettingsDto } from './dto/social-settings.dto';
 import { SocialMediaService } from './social-media.service';
 
 @Controller('admin/social-media')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
 export class SocialMediaController {
   constructor(private readonly service: SocialMediaService) {}
 
@@ -39,8 +43,42 @@ export class SocialMediaController {
   publish(
     @Param('propertyId') propertyId: string,
     @Body() dto: PublishPostDto,
+    @Req() req: any,
   ) {
-    return this.service.publish({ ...dto, propertyId });
+    return this.service.publish({ ...dto, propertyId, actorId: req.user.id });
+  }
+
+  @Post('properties/:propertyId/schedule')
+  schedule(
+    @Param('propertyId') propertyId: string,
+    @Body() dto: PublishPostDto & { scheduledAt: string },
+    @Req() req: any,
+  ) {
+    return this.service.schedule({
+      ...dto,
+      propertyId,
+      actorId: req.user.id,
+      scheduledAt: new Date(dto.scheduledAt),
+    });
+  }
+
+  @Post('posts/:postId/retry')
+  retry(@Param('postId') postId: string, @Req() req: any) {
+    return this.service.retry(postId, req.user.id);
+  }
+
+  @Post('posts/:postId/analytics')
+  recordAnalytics(
+    @Param('postId') postId: string,
+    @Body() metrics: { impressions?: number; clicks?: number; likes?: number; shares?: number; leads?: number },
+    @Req() req: any,
+  ) {
+    return this.service.recordAnalytics(postId, req.user.id, metrics);
+  }
+
+  @Post('process-due')
+  processDue() {
+    return this.service.processDuePosts();
   }
 
   @Post('properties/:propertyId/approved')
