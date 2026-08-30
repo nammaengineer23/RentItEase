@@ -195,6 +195,7 @@ class _PremiumMembershipPageState
         break;
       }
     }
+    final activeMembership = active;
     final hasTrial = _memberships.any((item) => item['isTrial'] == true);
 
     return Scaffold(
@@ -249,15 +250,19 @@ class _PremiumMembershipPageState
                     ),
                   ),
                   const SizedBox(height: 16),
-                  if (active != null)
+                  if (activeMembership != null)
                     Card(
                       child: ListTile(
                         leading: const Icon(Icons.verified, color: Colors.green),
                         title: const Text('Premium active'),
-                        subtitle: Text('Valid until ${active['endDate'] ?? ''}'),
+                        subtitle: Text(
+                          'Valid until ${activeMembership['endDate'] ?? ''}',
+                        ),
                         trailing: IconButton(
                           tooltip: 'Download invoice',
-                          onPressed: () => _downloadInvoice(active['id'].toString()),
+                          onPressed: () => _downloadInvoice(
+                            activeMembership['id'].toString(),
+                          ),
                           icon: const Icon(Icons.download),
                         ),
                       ),
