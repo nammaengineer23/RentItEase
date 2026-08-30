@@ -6,11 +6,14 @@ import {
   Patch,
   Post,
   Query,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { MembershipService } from './membership.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('membership')
 export class MembershipController {
@@ -35,6 +38,33 @@ export class MembershipController {
   @Get('plans/:id')
   getPlan(@Param('id') id: string) {
     return this.membershipService.getPlan(id);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  getMyMemberships(@Request() req: any) {
+    return this.membershipService.getUserMemberships(req.user.id);
+  }
+
+  @Post('me/premium/request')
+  @UseGuards(JwtAuthGuard)
+  requestPremiumMembership(@Request() req: any) {
+    return this.membershipService.requestPremiumMembership(req.user.id);
+  }
+
+  @Post('me/premium/verify')
+  @UseGuards(JwtAuthGuard)
+  verifyPremiumPayment(
+    @Request() req: any,
+    @Body()
+    body: {
+      membershipId: string;
+      razorpayOrderId: string;
+      razorpayPaymentId: string;
+      razorpaySignature: string;
+    },
+  ) {
+    return this.membershipService.verifyPremiumPayment(req.user.id, body);
   }
 
   @Patch('plans/:id')

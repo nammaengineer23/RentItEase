@@ -38,6 +38,14 @@ export class InvoicesController {
     return this.invoicesService.findByBooking(bookingId, user);
   }
 
+  @Get('membership/:membershipId')
+  findByMembership(
+    @Param('membershipId') membershipId: string,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.invoicesService.findByMembership(membershipId, user);
+  }
+
   @Get('number/:invoiceNumber')
   findByInvoiceNumber(@Param('invoiceNumber') invoiceNumber: string) {
     return this.invoicesService.findByInvoiceNumber(invoiceNumber);

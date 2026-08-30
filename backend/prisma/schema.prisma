@@ -291,6 +291,7 @@ model Invoice {
   invoiceNumber String        @unique
   userId        String
   paymentId     String?
+  membershipId  String?
   amount        Decimal       @db.Decimal(10, 2)
   taxAmount     Decimal       @default(0) @db.Decimal(10, 2)
   totalAmount   Decimal       @db.Decimal(10, 2)
@@ -304,9 +305,11 @@ model Invoice {
   updatedAt     DateTime      @updatedAt
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   payment       Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  membership    Membership?   @relation(fields: [membershipId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([paymentId])
+  @@index([membershipId])
   @@index([status])
   @@index([invoiceDate])
 }
@@ -329,22 +332,29 @@ model MembershipPlan {
 }
 
 model Membership {
-  id              String           @id @default(cuid())
-  userId          String
-  planId          String
-  status          MembershipStatus @default(PENDING)
-  startDate       DateTime?
-  endDate         DateTime?
-  activatedAt     DateTime?
-  expiredAt       DateTime?
-  cancelledAt     DateTime?
-  autoRenew       Boolean          @default(false)
-  notes           String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  plan            MembershipPlan   @relation(fields: [planId], references: [id])
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  premiumListings PremiumListing[]
+  id                String           @id @default(cuid())
+  userId            String
+  planId            String
+  status            MembershipStatus @default(PENDING)
+  startDate         DateTime?
+  endDate           DateTime?
+  activatedAt       DateTime?
+  expiredAt         DateTime?
+  cancelledAt       DateTime?
+  autoRenew         Boolean          @default(false)
+  notes             String?
+  isTrial           Boolean          @default(false)
+  amount            Decimal          @default(0) @db.Decimal(10, 2)
+  razorpayOrderId   String?          @unique
+  razorpayPaymentId String?          @unique
+  razorpaySignature String?
+  paidAt            DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  plan              MembershipPlan   @relation(fields: [planId], references: [id])
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  premiumListings   PremiumListing[]
+  invoices          Invoice[]
 
   @@index([userId])
   @@index([planId])
