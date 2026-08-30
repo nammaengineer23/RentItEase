@@ -280,6 +280,44 @@ class _PremiumMembershipPageState
                         hasTrial ? 'Buy Premium for ₹99' : 'Start 30-Day Free Trial',
                       ),
                     ),
+                  if (_memberships.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    Text(
+                      'Membership and invoice history',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    ..._memberships.map(
+                      (membership) => Card(
+                        child: ListTile(
+                          leading: Icon(
+                            membership['isTrial'] == true
+                                ? Icons.card_giftcard
+                                : Icons.receipt_long,
+                          ),
+                          title: Text(
+                            membership['isTrial'] == true
+                                ? 'Free 30-day trial'
+                                : 'Premium purchase • ₹${membership['amount'] ?? 99}',
+                          ),
+                          subtitle: Text(
+                            '${membership['status'] ?? ''} • ${membership['endDate'] ?? ''}',
+                          ),
+                          trailing: IconButton(
+                            tooltip: 'Download invoice',
+                            onPressed: () => _downloadInvoice(
+                              membership['id'].toString(),
+                            ),
+                            icon: const Icon(Icons.download),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Renewal is manual. After expiry, purchase another 30 days for ₹99.',
+                    ),
+                  ],
                 ],
               ),
             ),

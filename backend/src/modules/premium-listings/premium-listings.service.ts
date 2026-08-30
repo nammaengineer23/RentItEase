@@ -17,6 +17,67 @@ import { UpdatePremiumListingDto } from './dto/update-premium-listing.dto';
 export class PremiumListingsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async promoteIncluded(userId: string, propertyId: string) {
+    const now = new Date();
+    await this.expireDueListings();
+
+    const [property, membership, existing] = await Promise.all([
+      this.prisma.property.findUnique({ where: { id: propertyId } }),
+      this.prisma.membership.findFirst({
+        where: {
+          userId,
+          status: MembershipStatus.ACTIVE,
+          OR: [{ endDate: null }, { endDate: { gt: now } }],
+          plan: { code: 'PREMIUM' },
+        },
+        include: { plan: true },
+        orderBy: { endDate: 'desc' },
+      }),
+      this.prisma.premiumListing.findFirst({
+        where: { propertyId, status: PremiumListingStatus.ACTIVE },
+        include: { property: true, membership: { include: { plan: true } } },
+      }),
+    ]);
+
+    if (!property) throw new NotFoundException('Property not found');
+    if (property.ownerId !== userId) {
+      throw new BadRequestException('You can only promote your own property');
+    }
+    if (!membership) {
+      throw new BadRequestException(
+        'An active Premium membership is required to promote a property',
+      );
+    }
+    if (existing) return existing;
+
+    const membershipEnd = membership.endDate;
+    const endDate = membershipEnd ?? new Date(now.getTime());
+    if (!membershipEnd) {
+      endDate.setDate(endDate.getDate() + membership.plan.durationDays);
+    }
+    const durationDays = Math.max(
+      1,
+      Math.ceil((endDate.getTime() - now.getTime()) / 86_400_000),
+    );
+
+    return this.prisma.premiumListing.create({
+      data: {
+        propertyId,
+        userId,
+        membershipId: membership.id,
+        membershipPlanId: membership.planId,
+        status: PremiumListingStatus.ACTIVE,
+        startDate: now,
+        endDate,
+        activatedAt: now,
+        durationDays,
+        amount: new Prisma.Decimal(0),
+        currency: 'INR',
+      },
+      include: { property: true, membership: { include: { plan: true } } },
+    });
+  }
+
   // ============================================================
   // CREATE
   // ============================================================
@@ -88,8 +149,7 @@ export class PremiumListingsService {
       data: {
         propertyId: dto.propertyId,
         userId,
-        membershipId:
-          dto.membershipId ?? activeMembership.id,
+        membershipId: activeMembership.id,
         membershipPlanId: activeMembership.planId,
         status: PremiumListingStatus.PENDING,
         durationDays,
@@ -270,6 +330,12 @@ export class PremiumListingsService {
       );
     }
 
+    if (membership.endDate && membership.endDate <= new Date()) {
+      throw new BadRequestException(
+        'The membership associated with this listing has expired',
+      );
+    }
+
     const existingActive =
       await this.prisma.premiumListing.findFirst({
         where: {
@@ -293,6 +359,10 @@ export class PremiumListingsService {
     endDate.setDate(
       endDate.getDate() + listing.durationDays,
     );
+
+    if (membership.endDate && endDate > membership.endDate) {
+      endDate.setTime(membership.endDate.getTime());
+    }
 
     return this.prisma.premiumListing.update({
       where: { id },
