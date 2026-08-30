@@ -26,6 +26,7 @@ if (!process.env.E2E_OWNER_EMAIL && process.env.E2E_OWNER_EMAIL) {
 }
 
 required.push('E2E_TENANT_EMAIL', 'E2E_OWNER_EMAIL');
+required.push('E2E_ADMIN_EMAIL', 'E2E_ADMIN_PASSWORD');
 
 if ((process.env.E2E_STRICT ?? 'true') === 'true') {
   const missing = required.filter((key) => !process.env[key]);

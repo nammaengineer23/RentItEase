@@ -5,6 +5,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   apiUrl,
   auth,
+  createApprovedE2EProperty,
   extractData,
   futureIso,
   login,
@@ -14,6 +15,7 @@ import {
 describe('Release E2E • Payment', () => {
   let tenantToken = '';
   let ownerToken = '';
+  let adminToken = '';
   let bookingId = '';
   let visitId = '';
   let paymentId = '';
@@ -22,15 +24,13 @@ describe('Release E2E • Payment', () => {
   let bookingStatus = '';
   let paymentStatus = '';
 
-  const propertyId = process.env.E2E_PROPERTY_ID!;
+  let propertyId = '';
 
   // ============================================================
   // 1. LOGIN
   // ============================================================
 
   it('1. tenant + owner login', async () => {
-    expect(propertyId).toBeTruthy();
-
     const tenant = await login(
       process.env.E2E_TENANT_EMAIL!,
       process.env.E2E_TENANT_PASSWORD!,
@@ -40,12 +40,18 @@ describe('Release E2E • Payment', () => {
       process.env.E2E_OWNER_EMAIL!,
       process.env.E2E_OWNER_PASSWORD!,
     );
+    const admin = await login(
+      process.env.E2E_ADMIN_EMAIL!,
+      process.env.E2E_ADMIN_PASSWORD!,
+    );
 
     tenantToken = tenant.token;
     ownerToken = owner.token;
+    adminToken = admin.token;
 
     expect(tenantToken).toBeTruthy();
     expect(ownerToken).toBeTruthy();
+    expect(adminToken).toBeTruthy();
   });
 
   // ============================================================
@@ -55,6 +61,11 @@ describe('Release E2E • Payment', () => {
   it('2. create/reuse booking ready for payment', async () => {
     expect(tenantToken).toBeTruthy();
     expect(ownerToken).toBeTruthy();
+    propertyId = await createApprovedE2EProperty(
+      ownerToken,
+      adminToken,
+      'Release Payment',
+    );
     expect(propertyId).toBeTruthy();
 
     const bookingsRes = await request(apiUrl())

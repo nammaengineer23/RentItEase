@@ -5,6 +5,7 @@ import { createHmac } from 'crypto';
 import {
   apiUrl,
   auth,
+  createApprovedE2EProperty,
   extractData,
   futureIso,
   login,
@@ -14,6 +15,7 @@ import {
 describe('Release E2E • Lease Lifecycle', () => {
   let tenantToken = '';
   let ownerToken = '';
+  let adminToken = '';
 
   let propertyId = '';
   let visitId = '';
@@ -34,9 +36,11 @@ describe('Release E2E • Lease Lifecycle', () => {
       process.env.E2E_OWNER_EMAIL!,
       process.env.E2E_OWNER_PASSWORD!,
     );
+    const admin = await login(process.env.E2E_ADMIN_EMAIL!, process.env.E2E_ADMIN_PASSWORD!);
 
     tenantToken = tenant.token;
     ownerToken = owner.token;
+    adminToken = admin.token;
 
     expect(tenantToken).toBeTruthy();
     expect(ownerToken).toBeTruthy();
@@ -49,41 +53,7 @@ describe('Release E2E • Lease Lifecycle', () => {
   it('2. owner creates fresh lifecycle E2E property', async () => {
     expect(ownerToken).toBeTruthy();
 
-    const res = await request(apiUrl())
-      .post('/properties')
-      .set(auth(ownerToken))
-      .send({
-        title: `Release Lease Lifecycle Property ${Date.now()}`,
-        description:
-          'Dedicated property created automatically by the RentItEase Lease Lifecycle release E2E test.',
-        price: 25000,
-        address: '123 Release Lease Lifecycle Road',
-        locality: 'HSR Layout',
-        landmark: 'Near Lease Lifecycle Test Junction',
-        city: 'Bangalore',
-        state: 'Karnataka',
-        country: 'India',
-        pincode: '560102',
-        latitude: 12.9116,
-        longitude: 77.6474,
-        bedrooms: 2,
-        bathrooms: 2,
-        area: 1200,
-        propertyType: 'APARTMENT',
-        furnishing: 'SEMI_FURNISHED',
-        parking: true,
-        petFriendly: true,
-        securityDeposit: 50000,
-      });
-
-    statusOk(res);
-
-    const property =
-      res.body?.property ??
-      extractData(res.body)?.property ??
-      extractData(res.body);
-
-    propertyId = property?.id ?? '';
+    propertyId = await createApprovedE2EProperty(ownerToken, adminToken, 'Release Lease Lifecycle');
 
     expect(propertyId).toBeTruthy();
 
