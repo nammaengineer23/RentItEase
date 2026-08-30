@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/network/dio_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/owner_property_model.dart';
 import '../../providers/owner_provider.dart';
@@ -57,6 +59,34 @@ class OwnerPropertyDetailsPage extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${context.tr('propertyDeleteFailed')}: $error')),
+      );
+    }
+  }
+
+  Future<void> _promote(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(dioProvider).post(
+        '/premium-listings/me',
+        data: {'propertyId': property.id},
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Property promoted until your Premium membership expires.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Premium membership required: $error'),
+          action: SnackBarAction(
+            label: 'View Premium',
+            onPressed: () => context.push('/profile/premium'),
+          ),
+        ),
       );
     }
   }
@@ -145,6 +175,15 @@ class OwnerPropertyDetailsPage extends ConsumerWidget {
                   value: property.visitRequests.toString(),
                 ),
                 const SizedBox(height: 30),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.workspace_premium_outlined),
+                    label: const Text('Promote with Premium'),
+                    onPressed: () => _promote(context, ref),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(

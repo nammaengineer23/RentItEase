@@ -5,18 +5,39 @@ import {
   Param,
   Patch,
   Post,
-  Query,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 
 import { CreatePremiumListingDto } from './dto/create-premium-listing.dto';
 import { UpdatePremiumListingDto } from './dto/update-premium-listing.dto';
 import { PremiumListingsService } from './premium-listings.service';
+import { PromotePropertyDto } from './dto/promote-property.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('premium-listings')
 export class PremiumListingsController {
   constructor(
     private readonly premiumListingsService: PremiumListingsService,
   ) {}
+
+  @Post('me')
+  @UseGuards(JwtAuthGuard)
+  promoteMyProperty(
+    @Request() req: any,
+    @Body() dto: PromotePropertyDto,
+  ) {
+    return this.premiumListingsService.promoteIncluded(
+      req.user.id,
+      dto.propertyId,
+    );
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  getMyListings(@Request() req: any) {
+    return this.premiumListingsService.findByUser(req.user.id);
+  }
 
   @Post('users/:userId')
   create(
