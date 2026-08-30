@@ -4,6 +4,7 @@ import {
   apiUrl,
   auth,
   clearActiveMemberships,
+  createApprovedE2EProperty,
   extractData,
   login,
   statusOk,
@@ -14,6 +15,7 @@ import { createHmac } from 'crypto';
 describe('RentItEase Release Workflow • sequential smoke', () => {
   let tenantToken = '';
   let ownerToken = '';
+  let adminToken = '';
   let tenantId = '';
   let ownerId = '';
   let propertyId = '';
@@ -26,7 +28,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
   // 01 Authentication
   // ============================================================
 
-  it('01 Authentication: tenant + owner login', async () => {
+  it('01 Authentication: tenant + owner + admin login', async () => {
     const tenant = await login(
       process.env.E2E_TENANT_EMAIL!,
       process.env.E2E_TENANT_PASSWORD!,
@@ -37,8 +39,14 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
       process.env.E2E_OWNER_PASSWORD!,
     );
 
+    const admin = await login(
+      process.env.E2E_ADMIN_EMAIL!,
+      process.env.E2E_ADMIN_PASSWORD!,
+    );
+
     tenantToken = tenant.token;
     ownerToken = owner.token;
+    adminToken = admin.token;
 
     const tenantData = extractData(tenant.body);
     const ownerData = extractData(owner.body);
@@ -48,6 +56,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
 
     expect(tenantToken).toBeTruthy();
     expect(ownerToken).toBeTruthy();
+    expect(adminToken).toBeTruthy();
     expect(tenantId).toBeTruthy();
     expect(ownerId).toBeTruthy();
   });
@@ -60,41 +69,13 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
     expect(tenantToken).toBeTruthy();
     expect(ownerToken).toBeTruthy();
 
-    const property = await request(apiUrl())
-      .post('/properties')
-      .set(auth(ownerToken))
-      .send({
-        title: `Release Test Property ${Date.now()}`,
-        description:
-          'Property created automatically by the RentItEase release E2E workflow.',
-        price: 25000,
-        address: '123 Release Test Road',
-        locality: 'HSR Layout',
-        landmark: 'Near Release Test Junction',
-        city: 'Bangalore',
-        state: 'Karnataka',
-        country: 'India',
-        pincode: '560102',
-        latitude: 12.9116,
-        longitude: 77.6474,
-        bedrooms: 2,
-        bathrooms: 2,
-        area: 1200,
-        propertyType: 'APARTMENT',
-        furnishing: 'SEMI_FURNISHED',
-        parking: true,
-        petFriendly: true,
-        securityDeposit: 50000,
-      });
+    expect(adminToken).toBeTruthy();
 
-    statusOk(property);
-
-    const propertyData =
-      property.body?.property ??
-      extractData(property.body)?.property ??
-      extractData(property.body);
-
-    propertyId = propertyData?.id ?? '';
+    propertyId = await createApprovedE2EProperty(
+      ownerToken,
+      adminToken,
+      'Release Workflow',
+    );
 
     expect(propertyId).toBeTruthy();
 
