@@ -166,8 +166,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     },
                   ),
                   onContactOwner: () => context.push(
-                    '/chat',
-                    extra: {'propertyId': property.id},
+                    '/chat?propertyId=${Uri.encodeComponent(property.id)}',
                   ),
                 ),
               );

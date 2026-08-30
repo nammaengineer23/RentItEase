@@ -77,8 +77,7 @@ class PropertyListingPage extends ConsumerWidget {
 
                   onContactOwner: () {
                     context.push(
-                      '/chat',
-                      extra: {'propertyId': property.id},
+                      '/chat?propertyId=${Uri.encodeComponent(property.id)}',
                     );
                   },
                 );
