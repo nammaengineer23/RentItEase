@@ -7,7 +7,6 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  Min,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import {
