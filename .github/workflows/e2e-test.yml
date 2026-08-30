@@ -84,7 +84,7 @@ jobs:
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
 
-      # Release test property
+      # Shared release test property used by legacy suites.
       E2E_PROPERTY_ID: ${{ secrets.E2E_PROPERTY_ID }}
 
       # Optional integrations
@@ -110,64 +110,136 @@ jobs:
       - name: Prisma generate
         run: npx prisma generate
 
-      # --------------------------------------------------------
-      # Safe configuration verification
-      # Does NOT print secret values.
-      # --------------------------------------------------------
-
       - name: Verify release E2E configuration
         run: |
-          test -n "$E2E_BASE_URL" \
-            && echo "E2E_BASE_URL: configured" \
-            || echo "E2E_BASE_URL: MISSING"
-
-          test -n "$E2E_API_PREFIX" \
-            && echo "E2E_API_PREFIX: configured" \
-            || echo "E2E_API_PREFIX: MISSING"
-
-          test -n "$E2E_TENANT_EMAIL" \
-            && echo "E2E_TENANT_EMAIL: configured" \
-            || echo "E2E_TENANT_EMAIL: MISSING"
-
-          test -n "$E2E_TENANT_PASSWORD" \
-            && echo "E2E_TENANT_PASSWORD: configured" \
-            || echo "E2E_TENANT_PASSWORD: MISSING"
-
-          test -n "$E2E_OWNER_EMAIL" \
-            && echo "E2E_OWNER_EMAIL: configured" \
-            || echo "E2E_OWNER_EMAIL: MISSING"
-
-          test -n "$E2E_OWNER_PASSWORD" \
-            && echo "E2E_OWNER_PASSWORD: configured" \
-            || echo "E2E_OWNER_PASSWORD: MISSING"
-
-          test -n "$E2E_ADMIN_EMAIL" \
-            && echo "E2E_ADMIN_EMAIL: configured" \
-            || echo "E2E_ADMIN_EMAIL: MISSING"
-
-          test -n "$E2E_ADMIN_PASSWORD" \
-            && echo "E2E_ADMIN_PASSWORD: configured" \
-            || echo "E2E_ADMIN_PASSWORD: MISSING"
-
-          test -n "$E2E_PROPERTY_ID" \
-            && echo "E2E_PROPERTY_ID: configured" \
-            || echo "E2E_PROPERTY_ID: MISSING"
-
-      # --------------------------------------------------------
-      # Release E2E
-      # --------------------------------------------------------
+          test -n "$E2E_BASE_URL" && echo "E2E_BASE_URL: configured" || (echo "E2E_BASE_URL: MISSING" && exit 1)
+          test -n "$E2E_API_PREFIX" && echo "E2E_API_PREFIX: configured" || (echo "E2E_API_PREFIX: MISSING" && exit 1)
+          test -n "$E2E_TENANT_EMAIL" && echo "E2E_TENANT_EMAIL: configured" || (echo "E2E_TENANT_EMAIL: MISSING" && exit 1)
+          test -n "$E2E_TENANT_PASSWORD" && echo "E2E_TENANT_PASSWORD: configured" || (echo "E2E_TENANT_PASSWORD: MISSING" && exit 1)
+          test -n "$E2E_OWNER_EMAIL" && echo "E2E_OWNER_EMAIL: configured" || (echo "E2E_OWNER_EMAIL: MISSING" && exit 1)
+          test -n "$E2E_OWNER_PASSWORD" && echo "E2E_OWNER_PASSWORD: configured" || (echo "E2E_OWNER_PASSWORD: MISSING" && exit 1)
+          test -n "$E2E_ADMIN_EMAIL" && echo "E2E_ADMIN_EMAIL: configured" || (echo "E2E_ADMIN_EMAIL: MISSING" && exit 1)
+          test -n "$E2E_ADMIN_PASSWORD" && echo "E2E_ADMIN_PASSWORD: configured" || (echo "E2E_ADMIN_PASSWORD: MISSING" && exit 1)
+          test -n "$E2E_PROPERTY_ID" && echo "E2E_PROPERTY_ID: configured" || (echo "E2E_PROPERTY_ID: MISSING" && exit 1)
 
       - name: Wait for production deployment to stabilize
         run: |
           sleep 60
           curl --fail --silent --show-error --retry 24 --retry-delay 5 --retry-all-errors "https://api.rentitease.com/api/v1/health"
 
-      - name: Release E2E suite
+      - name: Release E2E suite except property visits
         run: |
           npx jest \
             --config test/jest-release-e2e.json \
             --runInBand \
-            --verbose
+            --verbose \
+            --testPathIgnorePatterns=property-visits.e2e-spec.ts
+
+      - name: Create isolated property-visit fixture
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+
+          const baseUrl = process.env.E2E_BASE_URL;
+          const apiPrefix = process.env.E2E_API_PREFIX || '/api/v1';
+          const apiUrl = `${baseUrl}${apiPrefix}`;
+
+          function unwrap(body) {
+            let current = body;
+            for (let i = 0; i < 5; i += 1) {
+              if (current && typeof current === 'object' && !Array.isArray(current) && current.data !== undefined) {
+                current = current.data;
+              } else {
+                break;
+              }
+            }
+            return current;
+          }
+
+          function tokenFrom(body) {
+            return body?.accessToken || body?.data?.accessToken || body?.data?.data?.accessToken || body?.token || body?.data?.token;
+          }
+
+          async function main() {
+            const loginResponse = await fetch(`${apiUrl}/auth/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                login: process.env.E2E_OWNER_EMAIL,
+                password: process.env.E2E_OWNER_PASSWORD,
+              }),
+            });
+
+            const loginBody = await loginResponse.json();
+            if (!loginResponse.ok) {
+              throw new Error(`Owner login failed (${loginResponse.status}): ${JSON.stringify(loginBody)}`);
+            }
+
+            const token = tokenFrom(loginBody);
+            if (!token) {
+              throw new Error('Unable to extract owner access token for property-visit fixture.');
+            }
+
+            const createResponse = await fetch(`${apiUrl}/properties`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                title: `Property Visit CI Fixture ${Date.now()}`,
+                description: 'Fresh property created for the isolated property visit release test.',
+                price: 25000,
+                address: '123 Property Visit CI Road',
+                locality: 'HSR Layout',
+                landmark: 'Near CI Junction',
+                city: 'Bangalore',
+                state: 'Karnataka',
+                country: 'India',
+                pincode: '560102',
+                latitude: 12.9116,
+                longitude: 77.6474,
+                bedrooms: 2,
+                bathrooms: 2,
+                area: 1200,
+                propertyType: 'APARTMENT',
+                furnishing: 'SEMI_FURNISHED',
+                parking: true,
+                petFriendly: true,
+                securityDeposit: 50000,
+              }),
+            });
+
+            const createBody = await createResponse.json();
+            if (!createResponse.ok) {
+              throw new Error(`Property fixture creation failed (${createResponse.status}): ${JSON.stringify(createBody)}`);
+            }
+
+            const property = unwrap(createBody);
+            const propertyId = property?.property?.id || property?.id;
+            if (!propertyId) {
+              throw new Error(`Unable to extract property fixture ID: ${JSON.stringify(createBody)}`);
+            }
+
+            fs.appendFileSync(process.env.GITHUB_ENV, `E2E_VISIT_PROPERTY_ID=${propertyId}\n`);
+            console.log('Fresh property-visit fixture created successfully.');
+          }
+
+          main().catch((error) => {
+            console.error(error.message);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Property Visits E2E with isolated fixture
+        run: |
+          E2E_PROPERTY_ID="$E2E_VISIT_PROPERTY_ID" \
+            npx jest \
+              --config test/jest-release-e2e.json \
+              --runInBand \
+              --verbose \
+              test/release/property-visits.e2e-spec.ts
 
 
   # ============================================================
