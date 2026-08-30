@@ -5,8 +5,6 @@ import '../../../../core/network/dio_provider.dart';
 
 import '../../providers/profile_provider.dart';
 
-import '../../../favorites/presentation/pages/favorites_page.dart';
-import '../../../property_visits/presentation/pages/my_visits_page.dart';
 import '../widgets/logout_dialog.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/profile_menu_tile.dart';
@@ -82,8 +80,7 @@ class ProfilePage extends ConsumerWidget {
                     onTap: () => _requestOwnerAccess(context, ref),
                   ),
 
-                if (profile.role.trim().toUpperCase() != 'OWNER')
-                  ProfileMenuTile(
+                ProfileMenuTile(
                   icon: Icons.event,
                   title: profile.role.trim().toUpperCase() == 'OWNER'
                       ? 'Property Visits'
@@ -96,15 +93,11 @@ class ProfilePage extends ConsumerWidget {
                       context.push('/owner/visit-requests');
                       return;
                     }
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MyVisitsPage()),
-                    );
+                    context.push('/my-visits');
                   },
                 ),
 
-                if (profile.role.trim().toUpperCase() != 'OWNER')
-                  ProfileMenuTile(
+                ProfileMenuTile(
                   icon: Icons.favorite,
                   title: profile.role.trim().toUpperCase() == 'OWNER'
                       ? 'Property Favorites'
@@ -117,10 +110,7 @@ class ProfilePage extends ConsumerWidget {
                       context.push('/owner/analytics');
                       return;
                     }
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const FavoritesPage()),
-                    );
+                    context.push('/favorites');
                   },
                 ),
 
@@ -181,7 +171,8 @@ class ProfilePage extends ConsumerWidget {
           ),
         ),
       );
-      context.push('/owner/add-property');
+      // The role changes only after the administrator approves the request.
+      // Do not navigate to an owner-only route while the account is still USER.
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

@@ -71,16 +71,21 @@ class PropertyPage extends ConsumerWidget {
                   },
 
                   onBookVisit: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Book visit for ${property.title}'),
-                      ),
+                    context.push(
+                      '/book-visit/${property.id}',
+                      extra: {
+                        'propertyTitle': property.title,
+                        'propertyImage': property.imageUrls.isNotEmpty
+                            ? property.imageUrls.first
+                            : '',
+                        'ownerName': property.ownerName,
+                      },
                     );
                   },
 
                   onContactOwner: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Contact ${property.ownerName}')),
+                    context.push(
+                      '/chat?propertyId=${Uri.encodeComponent(property.id)}',
                     );
                   },
                 );

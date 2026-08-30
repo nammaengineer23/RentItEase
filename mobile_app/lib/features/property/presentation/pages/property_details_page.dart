@@ -10,7 +10,6 @@ import '../../../favorites/providers/favorites_provider.dart';
 import '../../../authentication/providers/authentication_provider.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../../maps/presentation/widgets/property_map.dart';
-import '../../../property_visits/presentation/pages/book_visit_page.dart';
 import '../widgets/property_action_buttons.dart';
 import '../widgets/property_features.dart';
 import '../widgets/property_image_slider.dart';
@@ -389,8 +388,7 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () => context.push(
-                        '/chat',
-                        extra: {'propertyId': property.id},
+                        '/chat?propertyId=${Uri.encodeComponent(property.id)}',
                       ),
                       icon: const Icon(Icons.chat_bubble_outline),
                       label: Text(context.tr('chatWithOwner')),
@@ -436,24 +434,20 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
           padding: const EdgeInsets.all(16),
           child: PropertyActionButtons(
             onBookVisit: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BookVisitPage(
-                    propertyId: property.id,
-                    propertyTitle: property.title,
-                    propertyImage: property.imageUrls.isNotEmpty
-                        ? property.imageUrls.first
-                        : '',
-                    ownerName: property.ownerName,
-                  ),
-                ),
+              context.push(
+                '/book-visit/${property.id}',
+                extra: {
+                  'propertyTitle': property.title,
+                  'propertyImage': property.imageUrls.isNotEmpty
+                      ? property.imageUrls.first
+                      : '',
+                  'ownerName': property.ownerName,
+                },
               );
             },
             onContactOwner: () {
               context.push(
-                '/chat',
-                extra: {'propertyId': property.id},
+                '/chat?propertyId=${Uri.encodeComponent(property.id)}',
               );
             },
           ),
