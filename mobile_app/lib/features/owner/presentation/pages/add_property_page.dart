@@ -45,16 +45,31 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   bool parking = false;
   bool petFriendly = false;
   bool dailyRentEnabled = false;
+  bool socialMarketingConsent = false;
+  bool aiSuggesting = false;
   bool loading = false;
   LocationModel? selectedLocation;
   Map<String, List<File>> selectedImagesBySection = const {};
+  List<Map<String, dynamic>> _amenities = const [];
+  final Set<String> _selectedAmenityIds = {};
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCurrentLocation();
+      _loadAmenities();
     });
+  }
+
+  Future<void> _loadAmenities() async {
+    try {
+      final response = await ref.read(dioProvider).get('/amenities');
+      final value = response.data is Map ? response.data['data'] : response.data;
+      if (mounted && value is List) {
+        setState(() => _amenities = value.whereType<Map>().map(Map<String, dynamic>.from).toList());
+      }
+    } catch (_) {}
   }
 
   void _applyLocation(LocationModel location) {
@@ -144,7 +159,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
         parking: parking,
         petFriendly: petFriendly,
         imageUrl: '',
-        isAvailable: true,
+        // New listings are submitted for admin review and stay hidden until
+        // the admin approval endpoint verifies and publishes them.
+        isAvailable: false,
         isVerified: false,
         totalViews: 0,
         pendingVisits: 0,
@@ -175,12 +192,24 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
             stateName: stateController.text.trim(),
             dailyRentEnabled: dailyRentEnabled,
             dailyRent: dailyRent,
+            amenityIds: _selectedAmenityIds.toList(),
           );
 
       if (selectedImagesBySection.isNotEmpty) {
         await PropertyImageApi(ref.read(dioProvider)).uploadSectionImages(
           propertyId: createdProperty.id,
           imagesBySection: selectedImagesBySection,
+        );
+      }
+
+      if (socialMarketingConsent) {
+        await ref.read(dioProvider).post(
+          '/social-media/owner/consent',
+          data: {
+            'propertyId': createdProperty.id,
+            'approved': true,
+            'consentVersion': '1.0',
+          },
         );
       }
 
@@ -206,6 +235,20 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
         });
       }
     }
+  }
+
+  Future<void> _suggestWithAi() async {
+    setState(() => aiSuggesting = true);
+    try {
+      final response = await ref.read(dioProvider).post('/properties/ai-suggestion', data: {
+        'propertyType': propertyType, 'city': cityController.text.trim(),
+        'locality': localityController.text.trim(), 'bedrooms': int.tryParse(bedroomsController.text),
+        'furnishing': furnishing, 'rent': double.tryParse(rentController.text),
+      });
+      dynamic value = response.data; while (value is Map && value.containsKey('data')) { value = value['data']; }
+      if (value is Map) { setState(() { titleController.text = value['title']?.toString() ?? titleController.text; descriptionController.text = value['description']?.toString() ?? descriptionController.text; }); }
+    } catch (e) { if (mounted) _showError('Unable to generate suggestion: $e'); }
+    finally { if (mounted) setState(() => aiSuggesting = false); }
   }
 
   void _showError(String message) {
@@ -275,6 +318,17 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: aiSuggesting ? null : _suggestWithAi,
+                icon: aiSuggesting
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.auto_awesome_outlined),
+                label: Text(aiSuggesting ? 'Generating…' : 'Improve with AI'),
+              ),
+            ),
+            const SizedBox(height: 8),
             TextFormField(
               controller: titleController,
               decoration: InputDecoration(
@@ -452,6 +506,22 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             const SizedBox(height: 16),
 
+            if (_amenities.isNotEmpty) ...[
+              const Text('Amenities', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Wrap(
+                spacing: 8,
+                children: _amenities.map((amenity) {
+                  final id = amenity['id'].toString();
+                  return FilterChip(
+                    label: Text(amenity['name']?.toString() ?? 'Amenity'),
+                    selected: _selectedAmenityIds.contains(id),
+                    onSelected: (selected) => setState(() => selected ? _selectedAmenityIds.add(id) : _selectedAmenityIds.remove(id)),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             Text(
               context.tr('propertyLocation'),
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -578,6 +648,16 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
                   petFriendly = value;
                 });
               },
+            ),
+
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Allow promotional content'),
+              subtitle: const Text(
+                'RentItEase may prepare marketing content after approval. It will never publish automatically.',
+              ),
+              value: socialMarketingConsent,
+              onChanged: (value) => setState(() => socialMarketingConsent = value),
             ),
 
             const SizedBox(height: 16),

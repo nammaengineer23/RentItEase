@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
@@ -55,6 +56,10 @@ class _PremiumMembershipPageState
     } catch (error) {
       if (!mounted) return;
       setState(() => _loading = false);
+      if (error is DioException && error.response?.statusCode == 404) {
+        setState(() => _memberships = const []);
+        return;
+      }
       _show('Unable to load premium membership: $error');
     }
   }

@@ -149,6 +149,47 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       return;
     }
 
+    if (provider.errorMessage?.contains('Complete phone verification') ?? false) {
+      final controller = TextEditingController();
+      final phone = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Verify phone number'),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.phone,
+            maxLength: 10,
+            decoration: const InputDecoration(
+              labelText: 'Indian mobile number',
+              prefixText: '+91 ',
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: const Text('Verify')),
+          ],
+        ),
+      );
+      if (!mounted || phone == null) return;
+      if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
+        _showError('Enter a valid 10-digit phone number.');
+        return;
+      }
+      try {
+        final phoneToken = await FirebasePhoneOtpService().verifyPhone(
+          phoneNumber: '+91$phone',
+          requestCode: () => showOtpCodeDialog(context, title: context.tr('verifyPhoneNumber'), destination: '+91 $phone'),
+        );
+        if (await provider.completeGoogleRegistration(phoneToken) && mounted) {
+          _openAuthenticatedHome(provider);
+          return;
+        }
+      } catch (error) {
+        if (mounted) _showError('Phone verification failed: $error');
+        return;
+      }
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

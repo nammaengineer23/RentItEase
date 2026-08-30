@@ -1,4 +1,4 @@
-import { ArrayNotEmpty, IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export enum OwnerSocialPlatform {
   INSTAGRAM = 'INSTAGRAM',
@@ -14,11 +14,6 @@ export class OwnerMarketingConsentDto {
   approved!: boolean;
 
   @IsBoolean()
-  autoPublish!: boolean;
-
-  @ArrayNotEmpty()
-  @IsEnum(OwnerSocialPlatform, { each: true })
-  platforms!: OwnerSocialPlatform[];
 
   @IsOptional()
   @IsString()

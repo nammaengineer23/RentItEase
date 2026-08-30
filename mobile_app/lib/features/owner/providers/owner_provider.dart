@@ -113,6 +113,7 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
     required String stateName,
     bool dailyRentEnabled = false,
     double? dailyRent,
+    List<String> amenityIds = const [],
   }) async {
     try {
       state = state.copyWith(loading: true, error: null);
@@ -134,6 +135,7 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
         stateName: stateName,
         dailyRentEnabled: dailyRentEnabled,
         dailyRent: dailyRent,
+        amenityIds: amenityIds,
       );
 
       await loadMyProperties();

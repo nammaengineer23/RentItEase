@@ -79,8 +79,6 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
     try {
       final repository = ref.read(propertyRepositoryProvider);
 
-      final result = await repository.getProperty(widget.propertyId);
-
       final role = ref
           .read(authenticationProvider)
           .authResponse
@@ -95,6 +93,8 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
           // A view-count failure must not prevent opening property details.
         }
       }
+
+      final result = await repository.getProperty(widget.propertyId);
 
       if (!mounted) return;
 
