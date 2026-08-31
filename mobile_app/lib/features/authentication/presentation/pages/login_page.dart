@@ -190,6 +190,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       }
     }
 
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
