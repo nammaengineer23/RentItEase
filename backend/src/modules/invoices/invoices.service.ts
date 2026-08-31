@@ -6,6 +6,7 @@ import {
   import { InvoiceStatus, Prisma } from '@prisma/client';
   
   import { PrismaService } from '../../database/prisma.service';
+  import { serializePrisma } from '../../common/utils/prisma-response.util';
   import { CreateInvoiceDto } from './dto/create-invoice.dto';
   
   @Injectable()
@@ -47,7 +48,7 @@ import {
       const tax = new Prisma.Decimal(taxAmount);
       const totalAmount = amount.add(tax);
   
-      return this.prisma.invoice.create({
+      const invoice = await this.prisma.invoice.create({
         data: {
           invoiceNumber: this.generateInvoiceNumber(),
           userId: dto.userId,
@@ -73,6 +74,8 @@ import {
           },
         },
       });
+
+      return serializePrisma(invoice);
     }
   
     async findAllByUser(userId: string) {
@@ -84,12 +87,14 @@ import {
         throw new NotFoundException('User not found');
       }
   
-      return this.prisma.invoice.findMany({
+      const invoices = await this.prisma.invoice.findMany({
         where: { userId },
         orderBy: {
           invoiceDate: 'desc',
         },
       });
+
+      return serializePrisma(invoices);
     }
   
     async findOne(id: string) {
@@ -111,7 +116,7 @@ import {
         throw new NotFoundException('Invoice not found');
       }
   
-      return invoice;
+      return serializePrisma(invoice);
     }
   
     async findByInvoiceNumber(invoiceNumber: string) {
@@ -133,7 +138,7 @@ import {
         throw new NotFoundException('Invoice not found');
       }
   
-      return invoice;
+      return serializePrisma(invoice);
     }
   
     async findByPayment(
@@ -161,7 +166,7 @@ import {
         },
       });
 
-      return this.ensureInvoiceAccess(invoice, user);
+      return serializePrisma(this.ensureInvoiceAccess(invoice, user));
     }
 
     async findByBooking(
@@ -182,7 +187,7 @@ import {
         },
       });
 
-      return this.ensureInvoiceAccess(invoice, user);
+      return serializePrisma(this.ensureInvoiceAccess(invoice, user));
     }
 
     async findByMembership(
@@ -197,7 +202,7 @@ import {
       if (user.role !== 'ADMIN' && invoice.userId !== user.id) {
         throw new BadRequestException('Invoice access denied');
       }
-      return invoice;
+      return serializePrisma(invoice);
     }
 
     private ensureInvoiceAccess(
@@ -216,12 +221,13 @@ import {
     async markPaid(id: string) {
       await this.findOne(id);
   
-      return this.prisma.invoice.update({
+      const invoice = await this.prisma.invoice.update({
         where: { id },
         data: {
           status: InvoiceStatus.PAID,
         },
       });
+      return serializePrisma(invoice);
     }
   
     async cancel(id: string) {
@@ -233,11 +239,12 @@ import {
         );
       }
   
-      return this.prisma.invoice.update({
+      const updatedInvoice = await this.prisma.invoice.update({
         where: { id },
         data: {
           status: InvoiceStatus.CANCELLED,
         },
       });
+      return serializePrisma(updatedInvoice);
     }
   }
