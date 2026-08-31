@@ -38,6 +38,7 @@ import '../features/owner/presentation/pages/owner_visits_page.dart';
 import '../features/owner/presentation/pages/property_details_page.dart';
 
 import '../features/payment/presentation/pages/payment_page.dart';
+import '../features/lease/presentation/pages/create_lease_page.dart';
 
 import '../features/profile/presentation/pages/edit_profile_page.dart';
 import '../features/profile/presentation/pages/profile_page.dart';
@@ -376,6 +377,18 @@ class AppRouter {
           return PaymentPage(
             bookingId: bookingId,
           );
+        },
+      ),
+
+      GoRoute(
+        path: '/lease/create/:bookingId',
+        name: 'create-lease',
+        builder: (context, state) {
+          final bookingId = state.pathParameters['bookingId'];
+          if (bookingId == null || bookingId.isEmpty) {
+            return const _RouteErrorPage(message: 'Booking ID is missing.');
+          }
+          return CreateLeasePage(bookingId: bookingId);
         },
       ),
 

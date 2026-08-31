@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
@@ -396,6 +397,14 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                     : 'Pay ₹${payment.amount.toStringAsFixed(2)}',
                 onPressed: _isVerifying ? null : _openCheckout,
               ),
+            if (isPaid)
+              OutlinedButton.icon(
+                onPressed: () => context.push('/lease/create/${widget.bookingId}'),
+                icon: const Icon(Icons.description_outlined),
+                label: const Text('Create Lease'),
+              ),
+            if (isPaid)
+              const SizedBox(height: 12),
             if (isPaid)
               PrimaryButton(
                 label: 'Download Invoice',
