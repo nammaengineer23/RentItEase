@@ -10,7 +10,7 @@ import {
   type AdminPropertyListItem,
 } from "../api/propertiesApi";
 
-type StatusFilter = "ALL" | "AVAILABLE" | "HIDDEN";
+type StatusFilter = "ALL" | "PENDING" | "AVAILABLE" | "HIDDEN";
 
 function formatDate(value: string): string {
   const date = new Date(value);
@@ -215,6 +215,7 @@ export function PropertiesPage() {
 
       const matchesStatus =
         statusFilter === "ALL" ||
+        (statusFilter === "PENDING" && !property.isVerified) ||
         (statusFilter === "AVAILABLE" && property.isAvailable) ||
         (statusFilter === "HIDDEN" && !property.isAvailable);
 
@@ -357,6 +358,7 @@ export function PropertiesPage() {
             }
           >
             <option value="ALL">All properties</option>
+            <option value="PENDING">Pending approval</option>
             <option value="AVAILABLE">Available</option>
             <option value="HIDDEN">Hidden / unavailable</option>
           </select>
@@ -497,4 +499,3 @@ export function PropertiesPage() {
     </section>
   );
 }
-

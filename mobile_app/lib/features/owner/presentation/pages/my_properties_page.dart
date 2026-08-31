@@ -132,11 +132,11 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
                           content: Text(context.tr('deletePropertyQuestion')),
                           actions: [
                             TextButton(
-                              onPressed: () => Navigator.pop(context, false),
+                              onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
                               child: Text(context.tr('cancel')),
                             ),
                             FilledButton(
-                              onPressed: () => Navigator.pop(context, true),
+                              onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
                               child: Text(context.tr('delete')),
                             ),
                           ],

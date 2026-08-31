@@ -43,6 +43,7 @@ abstract class OwnerRepository {
     required String stateName,
     bool dailyRentEnabled = false,
     double? dailyRent,
+    List<String> amenityIds = const [],
   });
 
   Future<void> updateProperty(

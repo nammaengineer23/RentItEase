@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { describe, expect, it } from '@jest/globals';
-import { apiUrl, auth, extractData, login, statusOk } from './helpers';
+import { apiUrl, auth, createApprovedE2EProperty, extractData, login, statusOk } from './helpers';
 
 describe('Release E2E • Chat', () => {
   it('send → read → edit → delete', async () => {
@@ -9,13 +9,26 @@ describe('Release E2E • Chat', () => {
       process.env.E2E_TENANT_PASSWORD!,
     );
     const token = tenant.token;
+    const owner = await login(
+      process.env.E2E_OWNER_EMAIL!,
+      process.env.E2E_OWNER_PASSWORD!,
+    );
+    const admin = await login(
+      process.env.E2E_ADMIN_EMAIL!,
+      process.env.E2E_ADMIN_PASSWORD!,
+    );
+    const propertyId = await createApprovedE2EProperty(
+      owner.token,
+      admin.token,
+      'Release Chat',
+    );
 
-    let conversationId = process.env.E2E_CONVERSATION_ID;
-    if (!conversationId) {
+    let conversationId = '';
+    {
       const create = await request(apiUrl())
         .post('/chat/conversations')
         .set(auth(token))
-        .send({ propertyId: process.env.E2E_PROPERTY_ID });
+        .send({ propertyId });
       statusOk(create);
       conversationId = extractData(create.body)?.id ?? extractData(create.body)?.conversation?.id;
     }

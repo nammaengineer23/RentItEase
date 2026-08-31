@@ -21,6 +21,19 @@ describe('Property Visits E2E', () => {
    */
   const apiUrl = `${baseUrl}${apiPrefix}`;
 
+  function extractData(body: any): any {
+    let current = body;
+    while (
+      current &&
+      typeof current === 'object' &&
+      !Array.isArray(current) &&
+      current.data !== undefined
+    ) {
+      current = current.data;
+    }
+    return current;
+  }
+
   // ============================================================
   // Test accounts / property
   // ============================================================
@@ -30,8 +43,10 @@ describe('Property Visits E2E', () => {
 
   const ownerEmail = process.env.E2E_OWNER_EMAIL;
   const ownerPassword = process.env.E2E_OWNER_PASSWORD;
+  const adminEmail = process.env.E2E_ADMIN_EMAIL;
+  const adminPassword = process.env.E2E_ADMIN_PASSWORD;
 
-  const propertyId = process.env.E2E_PROPERTY_ID;
+  let propertyId = '';
 
   // ============================================================
   // Runtime state
@@ -39,6 +54,7 @@ describe('Property Visits E2E', () => {
 
   let tenantToken = '';
   let ownerToken = '';
+  let adminToken = '';
 
   let visitId = '';
 
@@ -65,9 +81,8 @@ describe('Property Visits E2E', () => {
       missing.push('E2E_OWNER_PASSWORD');
     }
 
-    if (!propertyId) {
-      missing.push('E2E_PROPERTY_ID');
-    }
+    if (!adminEmail) missing.push('E2E_ADMIN_EMAIL');
+    if (!adminPassword) missing.push('E2E_ADMIN_PASSWORD');
 
     if (missing.length > 0) {
       throw new Error(
@@ -330,7 +345,6 @@ describe('Property Visits E2E', () => {
     console.log(`Base URL: ${baseUrl}`);
     console.log(`API Prefix: ${apiPrefix}`);
     console.log(`API: ${apiUrl}`);
-    console.log(`Property: ${propertyId}`);
     console.log('==============================================');
     console.log('');
   });
@@ -379,6 +393,25 @@ describe('Property Visits E2E', () => {
 
     console.log('✓ Owner login successful');
     console.log(`  Owner: ${ownerEmail}`);
+  });
+
+  it('2a. Admin approves an isolated visit property', async () => {
+    const adminLogin = await request(apiUrl)
+      .post('/auth/login')
+      .send({ login: adminEmail, password: adminPassword })
+      .expect(201);
+    adminToken = extractToken(adminLogin.body);
+    const created = await request(apiUrl)
+      .post('/properties')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ title: `Release Visits ${Date.now()}`, description: 'Isolated visit E2E property.', price: 25000, address: '123 Visit Test Road', locality: 'HSR Layout', city: 'Bangalore', state: 'Karnataka', country: 'India', pincode: '560102', bedrooms: 2, bathrooms: 2, area: 1200, propertyType: 'APARTMENT', furnishing: 'SEMI_FURNISHED', parking: true, petFriendly: true, securityDeposit: 50000 });
+    const property = extractData(created.body)?.property ?? extractData(created.body);
+    propertyId = property?.id ?? '';
+    expect(propertyId).toBeTruthy();
+    await request(apiUrl)
+      .patch(`/admin/properties/${propertyId}/approve`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect((res) => { if (![200, 201].includes(res.status)) throw new Error(JSON.stringify(res.body)); });
   });
 
   // ============================================================

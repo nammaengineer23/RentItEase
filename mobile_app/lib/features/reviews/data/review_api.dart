@@ -14,21 +14,20 @@ class ReviewApi {
   Future<List<ReviewModel>> getReviews(String propertyId) async {
     final response = await dio.get('/reviews/$propertyId');
 
-    final responseData = response.data;
-
-    if (responseData is! Map<String, dynamic>) {
-      throw Exception('Invalid reviews response from server.');
+    dynamic data = response.data;
+    // API responses can be wrapped by the global response interceptor and by
+    // the reviews service. Unwrap every `data` envelope before reading rows.
+    while (data is Map && data.containsKey('data')) {
+      data = data['data'];
     }
-
-    final data = responseData['data'];
 
     if (data is! List) {
       throw Exception('Invalid reviews data from server.');
     }
 
     return data
-        .whereType<Map<String, dynamic>>()
-        .map(ReviewModel.fromJson)
+        .whereType<Map>()
+        .map((item) => ReviewModel.fromJson(Map<String, dynamic>.from(item)))
         .toList();
   }
 

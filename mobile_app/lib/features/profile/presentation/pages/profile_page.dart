@@ -177,11 +177,10 @@ class ProfilePage extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Owner request sent. Add your first property for admin review.',
+            'Owner request sent. Once an admin approves it, sign out and sign in again to create and manage properties.',
           ),
         ),
       );
-      context.push('/owner/add-property');
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

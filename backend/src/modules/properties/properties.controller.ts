@@ -43,6 +43,14 @@ export class PropertiesController {
     return this.propertiesService.create(createPropertyDto, req.user);
   }
 
+  @Post('ai-suggestion')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.USER, UserRole.OWNER)
+  @ApiBearerAuth()
+  suggestListing(@Body() body: any) {
+    return this.propertiesService.suggestListingText(body);
+  }
+
   // Get All Properties
   @Get()
   @ApiOperation({

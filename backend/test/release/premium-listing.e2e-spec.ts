@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { describe, expect, it } from '@jest/globals';
 
-import { apiUrl, auth, extractData, login, statusOk } from './helpers';
+import { apiUrl, auth, createApprovedE2EProperty, extractData, login, statusOk } from './helpers';
 
 describe('Release E2E • Premium Listing', () => {
   it('purchase → activation → expiry', async () => {
@@ -15,8 +15,14 @@ describe('Release E2E • Premium Listing', () => {
     );
 
     const ownerToken = ownerLogin.token;
+    const adminLogin = await login(
+      process.env.E2E_ADMIN_EMAIL!,
+      process.env.E2E_ADMIN_PASSWORD!,
+    );
+    const adminToken = adminLogin.token;
 
     expect(ownerToken).toBeTruthy();
+    expect(adminToken).toBeTruthy();
 
     const ownerData =
       extractData(ownerLogin.body)?.user ?? extractData(ownerLogin.body);
@@ -214,9 +220,11 @@ describe('Release E2E • Premium Listing', () => {
     // 7. PROPERTY
     // ============================================================
 
-    const propertyId = process.env.E2E_PROPERTY_ID;
-
-    expect(propertyId).toBeTruthy();
+    const propertyId = await createApprovedE2EProperty(
+      ownerToken,
+      adminToken,
+      'Release Premium Listing',
+    );
 
     console.log('✓ E2E property configured');
     console.log('  Property ID:', propertyId);

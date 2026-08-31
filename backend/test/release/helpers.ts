@@ -105,6 +105,35 @@ export function statusOk(res: Response, expected: number[] = [200, 201, 204]) {
   }
 }
 
+/** Creates a pending listing and publishes it through the same admin approval
+ * path used in production, so E2E tests never depend on retained test data. */
+export async function createApprovedE2EProperty(
+  ownerToken: string,
+  adminToken: string,
+  label = 'Release E2E',
+): Promise<string> {
+  const create = await request(apiUrl())
+    .post('/properties')
+    .set(auth(ownerToken))
+    .send({
+      title: `${label} Property ${Date.now()}`,
+      description: 'Isolated property generated for release verification.',
+      price: 25000,
+      address: '123 Release Test Road', locality: 'HSR Layout', city: 'Bangalore',
+      state: 'Karnataka', country: 'India', pincode: '560102',
+      bedrooms: 2, bathrooms: 2, area: 1200, propertyType: 'APARTMENT',
+      furnishing: 'SEMI_FURNISHED', parking: true, petFriendly: true,
+      securityDeposit: 50000,
+    });
+  statusOk(create);
+  const property = extractData(create.body)?.property ?? extractData(create.body);
+  const id = property?.id as string | undefined;
+  if (!id) throw new Error(`Property fixture was not created: ${JSON.stringify(create.body)}`);
+  const approve = await request(apiUrl()).patch(`/admin/properties/${id}/approve`).set(auth(adminToken));
+  statusOk(approve);
+  return id;
+}
+
 export function unwrapArray(body: any): any[] {
   if (Array.isArray(body)) return body;
   const d = extractData(body);

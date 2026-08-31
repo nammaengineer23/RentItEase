@@ -2,6 +2,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma.service';
@@ -16,6 +17,30 @@ import { NearbyPropertiesDto } from './dto/nearby-properties.dto';
 @Injectable()
 export class PropertiesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async suggestListingText(input: {
+    propertyType?: string;
+    city?: string;
+    locality?: string;
+    bedrooms?: number;
+    furnishing?: string;
+    rent?: number;
+    amenities?: string[];
+  }) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new ServiceUnavailableException('AI suggestions are not configured.');
+    const prompt = `Create a concise rental property title and an honest 2-sentence description. Return JSON only with title and description. Details: ${JSON.stringify(input)}`;
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.5, max_tokens: 180, messages: [{ role: 'user', content: prompt }] }),
+    });
+    if (!response.ok) throw new ServiceUnavailableException('Unable to generate AI suggestion.');
+    const body = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+    const content = body.choices?.[0]?.message?.content;
+    if (!content) throw new ServiceUnavailableException('AI returned no suggestion.');
+    try { return JSON.parse(content.replace(/^```json\s*|\s*```$/g, '')); } catch { throw new ServiceUnavailableException('AI returned invalid suggestion.'); }
+  }
 
   // ===========================
   // Create Property
@@ -614,6 +639,12 @@ export class PropertiesService {
           },
         },
 
+        reviews: {
+          select: {
+            rating: true,
+          },
+        },
+
         _count: {
           select: {
             favorites: true,
@@ -626,12 +657,24 @@ export class PropertiesService {
       throw new NotFoundException('Property not found.');
     }
 
+    const totalReviews = property.reviews.length;
+    const averageRating = totalReviews
+      ? Number(
+          (
+            property.reviews.reduce((sum, review) => sum + review.rating, 0) /
+            totalReviews
+          ).toFixed(1),
+        )
+      : 0;
+
     return {
       success: true,
       property: {
         ...serializePrisma(property),
         views: property.viewCount,
         totalViews: property.viewCount,
+        averageRating,
+        totalReviews,
       },
     };
   }

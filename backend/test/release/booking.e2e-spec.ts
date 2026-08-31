@@ -4,6 +4,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   apiUrl,
   auth,
+  createApprovedE2EProperty,
   extractData,
   login,
   futureIso,
@@ -13,6 +14,7 @@ import {
 describe('Release E2E • Booking', () => {
   let tenantToken = '';
   let ownerToken = '';
+  let adminToken = '';
   let propertyId = '';
   let visitId = '';
   let bookingId = '';
@@ -27,50 +29,19 @@ describe('Release E2E • Booking', () => {
       process.env.E2E_OWNER_EMAIL!,
       process.env.E2E_OWNER_PASSWORD!,
     );
+    const adminLogin = await login(process.env.E2E_ADMIN_EMAIL!, process.env.E2E_ADMIN_PASSWORD!);
 
     tenantToken = tenantLogin.token;
     ownerToken = ownerLogin.token;
+    adminToken = adminLogin.token;
 
     expect(tenantToken).toBeTruthy();
     expect(ownerToken).toBeTruthy();
+    expect(adminToken).toBeTruthy();
   });
 
   it('1. owner creates fresh E2E property', async () => {
-    const res = await request(apiUrl())
-      .post('/properties')
-      .set(auth(ownerToken))
-      .send({
-        title: `Release Booking Test Property ${Date.now()}`,
-        description:
-          'Dedicated property created automatically by the RentItEase Booking release E2E test.',
-        price: 25000,
-        address: '123 Release Booking Test Road',
-        locality: 'HSR Layout',
-        landmark: 'Near Release Booking Test Junction',
-        city: 'Bangalore',
-        state: 'Karnataka',
-        country: 'India',
-        pincode: '560102',
-        latitude: 12.9116,
-        longitude: 77.6474,
-        bedrooms: 2,
-        bathrooms: 2,
-        area: 1200,
-        propertyType: 'APARTMENT',
-        furnishing: 'SEMI_FURNISHED',
-        parking: true,
-        petFriendly: true,
-        securityDeposit: 50000,
-      });
-
-    statusOk(res);
-
-    const property =
-      res.body?.property ??
-      extractData(res.body)?.property ??
-      extractData(res.body);
-
-    propertyId = property?.id;
+    propertyId = await createApprovedE2EProperty(ownerToken, adminToken, 'Release Booking');
 
     expect(propertyId).toBeTruthy();
 

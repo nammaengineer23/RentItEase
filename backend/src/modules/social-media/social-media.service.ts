@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { GenerateVideoDto, SocialVideoPlatform } from './dto/generate-video.dto';
+import { GenerateVideoDto } from './dto/generate-video.dto';
 import { PublishPostDto } from './dto/publish-post.dto';
 import { SocialSettingsDto } from './dto/social-settings.dto';
 import { PublishingService } from './publishing/publishing.service';
@@ -41,8 +41,6 @@ export class SocialMediaService {
     propertyId: string;
     ownerId: string;
     approved: boolean;
-    autoPublish: boolean;
-    platforms: string[];
     consentVersion?: string;
   }) {
     const property = await this.prisma.property.findFirst({
@@ -57,15 +55,12 @@ export class SocialMediaService {
         propertyId: dto.propertyId,
         ownerId: dto.ownerId,
         approved: dto.approved,
-        autoPublish: dto.autoPublish,
-        platforms: dto.platforms,
+        platforms: [],
         consentVersion: dto.consentVersion || '1.0',
         consentedAt: new Date(),
       },
       update: {
         approved: dto.approved,
-        autoPublish: dto.autoPublish,
-        platforms: dto.platforms,
         consentVersion: dto.consentVersion || '1.0',
         consentedAt: new Date(),
         revokedAt: dto.approved ? null : new Date(),
@@ -97,19 +92,14 @@ export class SocialMediaService {
       where: { propertyId },
     });
 
-    if (!consent?.approved || !consent.autoPublish) {
+    if (!consent?.approved) {
       return {
         skipped: true,
-        reason: 'Owner social-marketing consent is missing or auto-publish is disabled.',
+        reason: 'Owner social-marketing consent is missing.',
       };
     }
 
-    const platforms = consent.platforms as SocialVideoPlatform[];
-    if (!platforms.length) {
-      throw new BadRequestException('Owner consent exists, but no social platforms were selected.');
-    }
-
-    return this.processor.processApprovedProperty(propertyId, platforms as any);
+    return { skipped: true, reason: 'Awaiting admin platform selection and manual publishing.' };
   }
 
   async settings() {

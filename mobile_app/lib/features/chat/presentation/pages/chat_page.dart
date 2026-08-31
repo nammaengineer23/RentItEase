@@ -47,10 +47,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Future<void> _openConversation() async {
     final notifier = ref.read(chatProvider.notifier);
 
-    if (widget.conversationId != null) {
-      await notifier.openConversation(widget.conversationId!);
-    } else if (widget.propertyId != null) {
-      await notifier.createAndOpenConversation(widget.propertyId!);
+    final conversationId = widget.conversationId?.trim();
+    final propertyId = widget.propertyId?.trim();
+    if (conversationId != null && conversationId.isNotEmpty) {
+      await notifier.openConversation(conversationId);
+    } else if (propertyId != null && propertyId.isNotEmpty) {
+      await notifier.createAndOpenConversation(propertyId);
     }
 
     _scrollToBottom();
