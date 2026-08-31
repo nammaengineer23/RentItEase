@@ -1,11 +1,13 @@
 import request from 'supertest';
+import { createHmac } from 'crypto';
 import { describe, expect, it } from '@jest/globals';
 
-import { apiUrl, auth, extractData, login } from './helpers';
+import { apiUrl, auth, createApprovedE2EProperty, extractData, futureIso, login, statusOk } from './helpers';
 
 describe('Release E2E • Lease', () => {
   let tenantToken = '';
   let ownerToken = '';
+  let adminToken = '';
 
   let bookingId = '';
   let leaseId = '';
@@ -14,7 +16,7 @@ describe('Release E2E • Lease', () => {
   // When this test creates a new lease, the expected status is ACTIVE.
   let expectedLeaseStatus = 'ACTIVE';
 
-  const propertyId = process.env.E2E_PROPERTY_ID!;
+  let propertyId = process.env.E2E_PROPERTY_ID!;
 
   // ============================================================
   // 1. LOGIN
@@ -32,12 +34,18 @@ describe('Release E2E • Lease', () => {
       process.env.E2E_OWNER_EMAIL!,
       process.env.E2E_OWNER_PASSWORD!,
     );
+    const admin = await login(
+      process.env.E2E_ADMIN_EMAIL!,
+      process.env.E2E_ADMIN_PASSWORD!,
+    );
 
     tenantToken = tenant.token;
     ownerToken = owner.token;
+    adminToken = admin.token;
 
     expect(tenantToken).toBeTruthy();
     expect(ownerToken).toBeTruthy();
+    expect(adminToken).toBeTruthy();
   });
 
   // ============================================================
@@ -103,7 +111,41 @@ describe('Release E2E • Lease', () => {
         booking?.status === 'PAID',
     );
 
-    expect(paidBookings.length).toBeGreaterThan(0);
+    if (paidBookings.length === 0) {
+      // The release database may have been intentionally cleaned. Build a
+      // complete isolated payment flow instead of depending on retained data.
+      propertyId = await createApprovedE2EProperty(ownerToken, adminToken, 'Release Lease');
+      const visit = await request(apiUrl()).post('/property-visits').set(auth(tenantToken)).send({
+        propertyId, visitDate: futureIso(45), notes: '[E2E] Lease fixture',
+      });
+      statusOk(visit);
+      const visitId = extractData(visit.body)?.id;
+      expect(visitId).toBeTruthy();
+      statusOk(await request(apiUrl()).patch(`/property-visits/${visitId}/approve`).set(auth(ownerToken)));
+      const booking = await request(apiUrl()).post('/bookings').set(auth(tenantToken)).send({
+        visitId, notes: '[E2E] Lease fixture',
+      });
+      statusOk(booking);
+      bookingId = extractData(booking.body)?.id ?? '';
+      expect(bookingId).toBeTruthy();
+      statusOk(await request(apiUrl()).patch(`/bookings/${bookingId}/approve`).set(auth(ownerToken)));
+      statusOk(await request(apiUrl()).patch(`/bookings/${bookingId}/payment-pending`).set(auth(tenantToken)));
+      const order = await request(apiUrl()).post('/payments/order').set(auth(tenantToken)).send({ bookingId });
+      statusOk(order);
+      const payment = extractData(order.body);
+      const orderId = payment?.razorpayOrderId ?? payment?.payment?.razorpayOrderId;
+      expect(orderId).toBeTruthy();
+      const secret = process.env.E2E_RAZORPAY_KEY_SECRET;
+      if (!secret) throw new Error('E2E_RAZORPAY_KEY_SECRET is required.');
+      const paymentId = `pay_e2e_lease_${Date.now()}`;
+      const signature = createHmac('sha256', secret).update(`${orderId}|${paymentId}`).digest('hex');
+      const verified = await request(apiUrl()).post('/payments/verify').set(auth(tenantToken)).send({
+        bookingId, razorpayOrderId: orderId, razorpayPaymentId: paymentId, razorpaySignature: signature,
+      });
+      statusOk(verified);
+      console.log(`Created isolated PAID booking for lease: ${bookingId}`);
+      return;
+    }
 
     console.log(
       'PAID bookings:',
