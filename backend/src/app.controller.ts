@@ -27,7 +27,7 @@ export class AppController {
       <h2>Retention and security</h2>
       <p>We retain information for as long as needed to provide the service, meet legal obligations, resolve disputes, and enforce agreements. We use reasonable safeguards, but no internet service can guarantee absolute security.</p>
       <h2>Your choices</h2>
-      <p>You may update your profile, request access to or deletion of personal data where applicable, and opt out of non-essential marketing communications.</p>
+      <p>You may update your profile, request access to or deletion of personal data where applicable, and opt out of non-essential marketing communications. See our <a href="/delete-account">Account and Data Deletion Policy</a> for deletion instructions.</p>
       <h2>Contact</h2>
       <p>For privacy questions or requests, contact <a href="mailto:support@rentitease.com">support@rentitease.com</a>.</p>
     `));
@@ -54,8 +54,25 @@ export class AppController {
       <p>Questions about these terms can be sent to <a href="mailto:support@rentitease.com">support@rentitease.com</a>.</p>
     `));
   }
+
+  @Get('delete-account')
+  deleteAccount(@Res() response: Response): void {
+    response.type('html').send(legalPage('Account and Data Deletion Policy', `
+      <p>Effective date: August 31, 2026</p>
+      <h2>Request account deletion</h2>
+      <p>To request deletion of your RentItEase account, email <a href="mailto:support@rentitease.com?subject=RentItEase%20account%20deletion%20request">support@rentitease.com</a> from your registered email address. Include the email address or mobile number linked to your account so we can verify the request.</p>
+      <h2>What we delete</h2>
+      <p>Once the request is verified, we delete or anonymize account and profile data, saved preferences and favorites, and personal data associated with content and activity where legally and technically appropriate.</p>
+      <h2>What may be retained</h2>
+      <p>We may retain limited records where required for legal, tax, accounting, fraud prevention, dispute resolution, security, or regulatory reasons. We retain only what is necessary for those purposes.</p>
+      <h2>Timing</h2>
+      <p>We will acknowledge your request and process it after identity verification. Some related data may take additional time to be removed from backups or third-party systems.</p>
+      <h2>Need help?</h2>
+      <p>If you cannot access your account, contact <a href="mailto:support@rentitease.com">support@rentitease.com</a>.</p>
+    `));
+  }
 }
 
 function legalPage(title: string, content: string): string {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} | RentItEase</title></head><body><main><h1>RentItEase ${title}</h1>${content}<hr><p><a href="/privacy-policy">Privacy Policy</a> · <a href="/terms">Terms of Service</a></p></main></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} | RentItEase</title></head><body><main><h1>RentItEase ${title}</h1>${content}<hr><p><a href="/privacy-policy">Privacy Policy</a> · <a href="/terms">Terms of Service</a> · <a href="/delete-account">Delete Account</a></p></main></body></html>`;
 }
