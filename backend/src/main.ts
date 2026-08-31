@@ -26,7 +26,9 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['privacy-policy', 'terms', 'terms-of-service'],
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
