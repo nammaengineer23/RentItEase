@@ -116,8 +116,8 @@ export async function createApprovedE2EProperty(
     .post('/properties')
     .set(auth(ownerToken))
     .send({
-      title: `${label} Property ${Date.now()}`,
-      description: 'Isolated property generated for release verification.',
+      title: `[E2E:${process.env.E2E_RUN_ID ?? Date.now()}] ${label} Property`,
+      description: '[E2E] Isolated property generated for release verification.',
       price: 25000,
       address: '123 Release Test Road', locality: 'HSR Layout', city: 'Bangalore',
       state: 'Karnataka', country: 'India', pincode: '560102',
