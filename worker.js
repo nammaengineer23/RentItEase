@@ -46,7 +46,8 @@ export default {
       return new Response(page(document.title, document.body), {
         headers: {
           'content-type': 'text/html; charset=UTF-8',
-          'cache-control': 'public, max-age=3600',
+          // Legal links must never be replaced by a stale Flutter app shell.
+          'cache-control': 'no-store, max-age=0',
         },
       });
     }

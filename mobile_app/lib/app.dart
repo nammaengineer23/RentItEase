@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/app_router.dart';
 import 'app/app_theme.dart';
 import 'features/settings/providers/settings_provider.dart';
+import 'features/legal/presentation/pages/legal_document_page.dart';
 import 'l10n/app_localizations.dart';
 
 class RentItEaseApp extends ConsumerWidget {
@@ -12,6 +13,15 @@ class RentItEaseApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Flutter's PWA service worker can serve the app shell for a navigation
+    // that was originally a public legal URL. Render those URLs explicitly so
+    // they can never fall through to the onboarding router.
+    final legalPath = Uri.base.path.replaceFirst(RegExp(r'/$'), '');
+    if (const {'/privacy-policy', '/terms', '/terms-of-service', '/delete-account'}
+        .contains(legalPath)) {
+      return LegalDocumentPage(path: legalPath);
+    }
+
     final settingsAsync = ref.watch(settingsProvider);
 
     final darkMode = settingsAsync.valueOrNull?.darkMode ?? false;
