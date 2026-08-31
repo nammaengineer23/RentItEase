@@ -1,6 +1,7 @@
 const effectiveDate = 'August 31, 2026';
 
 const legalContent = {
+  '/contact': { title: 'Contact and Support', body: `<p>RentItEase support is here to help with account access, property listings, visits, bookings, payments, and privacy requests.</p><h2>Contact support</h2><p>Email <a href="mailto:support@rentitease.com">support@rentitease.com</a>. For faster help, include your registered email address or mobile number and a short description of the issue.</p><h2>Account and privacy requests</h2><p>For account deletion or personal-data requests, email support from your registered email address. See our <a href="/delete-account">Account and Data Deletion Policy</a>.</p>` },
   '/about': { title: 'About RentItEase', body: `<p>RentItEase is a property rental platform that helps tenants discover suitable homes and helps property owners list, manage, and rent properties with confidence.</p><h2>What we do</h2><p>Users can browse property listings, save favourites, communicate with owners, arrange visits, manage bookings, and access rental-related services.</p><h2>Our purpose</h2><p>We make finding, renting, and managing properties simpler, more transparent, and easier to access.</p><h2>Contact</h2><p>For support, contact <a href="mailto:support@rentitease.com">support@rentitease.com</a>.</p>` },
   '/privacy-policy': {
     title: 'Privacy Policy',
@@ -36,7 +37,7 @@ const legalContent = {
 };
 
 function page(title, body) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} | RentItEase</title><style>body{margin:0;background:#f7faf8;color:#15221b;font:16px/1.6 Arial,sans-serif}main{max-width:760px;margin:48px auto;padding:0 24px}h1{color:#087a45;font-size:32px;line-height:1.2}h2{margin-top:28px;font-size:20px}a{color:#087a45}footer{margin-top:40px;padding-top:20px;border-top:1px solid #d5e2da}</style></head><body><main><h1>RentItEase ${title}</h1>${body}<footer><a href="/privacy-policy">Privacy Policy</a> · <a href="/terms">Terms of Service</a> · <a href="/delete-account">Delete Account</a></footer></main></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} | RentItEase</title><style>body{margin:0;background:#f7faf8;color:#15221b;font:16px/1.6 Arial,sans-serif}main{max-width:760px;margin:48px auto;padding:0 24px}h1{color:#087a45;font-size:32px;line-height:1.2}h2{margin-top:28px;font-size:20px}a{color:#087a45}footer{margin-top:40px;padding-top:20px;border-top:1px solid #d5e2da}</style></head><body><main><h1>RentItEase ${title}</h1>${body}<footer><a href="/about">About</a> · <a href="/contact">Contact</a> · <a href="/privacy-policy">Privacy Policy</a> · <a href="/terms">Terms of Service</a> · <a href="/delete-account">Delete Account</a></footer></main></body></html>`;
 }
 
 export default {

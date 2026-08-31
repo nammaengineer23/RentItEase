@@ -57,6 +57,13 @@ class LegalDocumentPage extends StatelessWidget {
 }
 
 _LegalDocument _documentFor(String path) {
+  if (path == '/contact') {
+    return const _LegalDocument('Contact and Support', [
+      ('Contact support', 'Email support@rentitease.com for account access, listings, visits, bookings, payments, or general assistance.'),
+      ('Helpful details', 'Include your registered email address or mobile number and a short description of the issue.'),
+      ('Privacy requests', 'For account deletion or data requests, contact support from your registered email address.'),
+    ]);
+  }
   if (path == '/about') {
     return const _LegalDocument('About RentItEase', [
       ('Find, rent and manage properties easily', 'RentItEase is a property rental platform for tenants and property owners.'),
