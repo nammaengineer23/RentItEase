@@ -315,6 +315,7 @@ async deactivateUser(id: string) {
         locality: property.locality,
         price: Number(property.price),
         owner: property.owner,
+        isVerified: property.isVerified,
         isAvailable: property.isAvailable,
         totalFavorites: property.favorites.length,
         totalVisits: property.visits.length,

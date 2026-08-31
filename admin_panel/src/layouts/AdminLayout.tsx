@@ -5,6 +5,7 @@ const navItems = [
   { label: "Dashboard", path: "/dashboard" },
   { label: "Users", path: "/users" },
   { label: "Properties", path: "/properties" },
+  { label: "Owner Requests", path: "/owner-requests" },
   { label: "Reviews", path: "/reviews" },
   { label: "Visits", path: "/visits" },
   { label: "Analytics", path: "/analytics" },

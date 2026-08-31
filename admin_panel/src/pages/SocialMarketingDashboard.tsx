@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { socialMarketingApi } from '../api/socialMarketingApi';
 export default function SocialMarketingDashboard() {
   const [connections, setConnections] = useState<Record<string, any>>({});

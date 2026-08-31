@@ -11,6 +11,7 @@ import { AdminLayout } from "./layouts/AdminLayout";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { BillingPage } from "./pages/BillingPage";
 import { SocialMediaPage } from "./pages/SocialMediaPage";
+import { OwnerRequestsPage } from "./pages/OwnerRequestsPage";
 
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/properties" element={<PropertiesPage />} />
+            <Route path="/owner-requests" element={<OwnerRequestsPage />} />
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/visits" element={<VisitsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />

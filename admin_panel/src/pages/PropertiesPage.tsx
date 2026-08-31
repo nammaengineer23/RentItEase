@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   deleteProperty,
+  approveProperty,
   getProperties,
   getProperty,
   hideProperty,
@@ -283,6 +284,21 @@ export function PropertiesPage() {
     }
   }
 
+  async function handleApprove(property: AdminPropertyListItem) {
+    setBusyPropertyId(property.id);
+    setError("");
+    try {
+      const updated = await approveProperty(property.id);
+      setProperties((current) =>
+        current.map((item) => item.id === property.id ? { ...item, ...updated } : item),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to approve property.");
+    } finally {
+      setBusyPropertyId(null);
+    }
+  }
+
   async function handleDelete(property: AdminPropertyListItem) {
     const confirmed = window.confirm(
       `Delete "${property.title}"? This action cannot be undone.`,
@@ -429,12 +445,18 @@ export function PropertiesPage() {
                       <td>
                         <span
                           className={
-                            property.isAvailable
+                            !property.isVerified
+                              ? "status-badge status-pending"
+                              : property.isAvailable
                               ? "status-badge status-active"
                               : "status-badge status-inactive"
                           }
                         >
-                          {property.isAvailable ? "Available" : "Hidden"}
+                          {!property.isVerified
+                            ? "Pending approval"
+                            : property.isAvailable
+                              ? "Available"
+                              : "Hidden"}
                         </span>
                       </td>
 
@@ -457,6 +479,16 @@ export function PropertiesPage() {
                           >
                             View
                           </button>
+
+                          {!property.isVerified && (
+                            <button
+                              className="table-button"
+                              onClick={() => void handleApprove(property)}
+                              disabled={busy}
+                            >
+                              {busy ? "..." : "Approve"}
+                            </button>
+                          )}
 
                           <button
                             className="table-button"

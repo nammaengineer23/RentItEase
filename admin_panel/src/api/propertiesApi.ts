@@ -11,6 +11,7 @@ export interface AdminPropertyListItem {
     fullName: string;
     email: string;
   };
+  isVerified: boolean;
   isAvailable: boolean;
   totalFavorites: number;
   totalVisits: number;
@@ -151,9 +152,18 @@ export async function unhideProperty(
   return getProperty(id);
 }
 
+export async function approveProperty(
+  id: string,
+): Promise<AdminPropertyListItem> {
+  const response = await apiRequest<PropertyActionResponse>(
+    `/admin/properties/${id}/approve`,
+    { method: "PATCH" },
+  );
+  return response.data ?? getProperty(id);
+}
+
 export async function deleteProperty(id: string): Promise<void> {
   await apiRequest(`/admin/properties/${id}`, {
     method: "DELETE",
   });
 }
-
