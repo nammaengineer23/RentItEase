@@ -1,6 +1,7 @@
 const effectiveDate = 'August 31, 2026';
 
 const legalContent = {
+  '/about': { title: 'About RentItEase', body: `<p>RentItEase is a property rental platform that helps tenants discover suitable homes and helps property owners list, manage, and rent properties with confidence.</p><h2>What we do</h2><p>Users can browse property listings, save favourites, communicate with owners, arrange visits, manage bookings, and access rental-related services.</p><h2>Our purpose</h2><p>We make finding, renting, and managing properties simpler, more transparent, and easier to access.</p><h2>Contact</h2><p>For support, contact <a href="mailto:support@rentitease.com">support@rentitease.com</a>.</p>` },
   '/privacy-policy': {
     title: 'Privacy Policy',
     body: `<p>Effective date: ${effectiveDate}</p>

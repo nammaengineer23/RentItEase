@@ -57,6 +57,13 @@ class LegalDocumentPage extends StatelessWidget {
 }
 
 _LegalDocument _documentFor(String path) {
+  if (path == '/about') {
+    return const _LegalDocument('About RentItEase', [
+      ('Find, rent and manage properties easily', 'RentItEase is a property rental platform for tenants and property owners.'),
+      ('What we do', 'Users can browse listings, save favourites, communicate with owners, arrange visits, and manage bookings.'),
+      ('Our purpose', 'We make finding, renting, and managing properties simpler, more transparent, and easier to access.'),
+    ]);
+  }
   if (path == '/terms' || path == '/terms-of-service') {
     return const _LegalDocument('Terms of Service', [
       ('Using RentItEase', 'By using RentItEase, you agree to use the service lawfully, provide accurate information, and keep your account secure.'),

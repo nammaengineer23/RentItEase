@@ -17,7 +17,7 @@ class RentItEaseApp extends ConsumerWidget {
     // that was originally a public legal URL. Render those URLs explicitly so
     // they can never fall through to the onboarding router.
     final legalPath = Uri.base.path.replaceFirst(RegExp(r'/$'), '');
-    if (const {'/privacy-policy', '/terms', '/terms-of-service', '/delete-account'}
+    if (const {'/about', '/privacy-policy', '/terms', '/terms-of-service', '/delete-account'}
         .contains(legalPath)) {
       return LegalDocumentPage(path: legalPath);
     }
