@@ -52,6 +52,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         _errorMessage = null;
       });
 
+      ref.invalidate(paymentOrderProvider(widget.bookingId));
       final payment = await ref.read(
         paymentOrderProvider(widget.bookingId).future,
       );

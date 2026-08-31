@@ -3,6 +3,7 @@ import {
     ForbiddenException,
     Injectable,
     NotFoundException,
+    ServiceUnavailableException,
   } from '@nestjs/common';
   
   import Razorpay from 'razorpay';
@@ -52,6 +53,32 @@ import {
     // =====================================
     // Create Razorpay Order
     // =====================================
+
+    private async createRazorpayOrderWithRetry(options: any) {
+      const maxAttempts = 3;
+
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        try {
+          return await this.razorpay.orders.create(options);
+        } catch (error: any) {
+          const statusCode = error?.statusCode ?? error?.status;
+          const retryable =
+            !statusCode || statusCode >= 500 || error?.code === 'ECONNRESET';
+
+          if (!retryable || attempt === maxAttempts) {
+            throw new ServiceUnavailableException(
+              'Unable to create a payment order right now. Please try again.',
+            );
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+        }
+      }
+
+      throw new ServiceUnavailableException(
+        'Unable to create a payment order right now. Please try again.',
+      );
+    }
   
     async createOrder(dto: CreatePaymentOrderDto, user: any) {
       const booking = await this.prisma.booking.findUnique({
@@ -156,7 +183,7 @@ import {
       // Create Razorpay order
       // -------------------------------------
   
-      const razorpayOrder = await this.razorpay.orders.create({
+      const razorpayOrder = await this.createRazorpayOrderWithRetry({
         amount: amountInPaise,
         currency: 'INR',
         receipt,
