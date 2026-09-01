@@ -32,7 +32,7 @@ class SearchEntity {
     this.parking = false,
     this.sortBy = 'newest',
     this.page = 1,
-    this.limit = 10,
+    this.limit = 50,
   });
 
   SearchEntity copyWith({

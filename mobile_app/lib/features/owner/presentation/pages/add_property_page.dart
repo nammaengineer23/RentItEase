@@ -131,6 +131,11 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
       return;
     }
 
+    if (selectedLocation == null) {
+      _showError('Select the property location on the map before submitting.');
+      return;
+    }
+
     setState(() {
       loading = true;
     });

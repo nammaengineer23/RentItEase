@@ -61,52 +61,28 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Future<void> _loginWithOtp() async {
     final provider = ref.read(authenticationProvider);
     final identifier = _emailController.text.trim();
+    final digits = identifier.replaceAll(RegExp(r'\D'), '');
+    if (identifier.contains('@') || digits.length != 10) {
+      _showError('OTP login requires a valid 10-digit mobile number.');
+      return;
+    }
 
     bool success;
-    if (identifier.contains('@')) {
-      final sent = await provider.requestLoginEmailOtp(
-        identifier.toLowerCase(),
+    try {
+      final idToken = await FirebasePhoneOtpService().verifyPhone(
+        phoneNumber: '+91$digits',
+        requestCode: () => showOtpCodeDialog(
+          context,
+          title: context.tr('phoneOtpLogin'),
+          destination: '+91 $digits',
+        ),
       );
-      if (!mounted) return;
-      if (!sent) {
-        _showError(provider.errorMessage ?? context.tr('unableSendLoginOtp'));
-        return;
+      success = await provider.loginWithPhoneOtp(idToken);
+    } catch (error) {
+      if (mounted) {
+        _showError('${context.tr('phoneVerificationFailed')}: $error');
       }
-
-      final otp = await showOtpCodeDialog(
-        context,
-        title: context.tr('emailOtpLogin'),
-        destination: identifier,
-      );
-      if (otp == null || !mounted) return;
-
-      success = await provider.loginWithEmailOtp(
-        identifier.toLowerCase(),
-        otp,
-      );
-    } else {
-      final digits = identifier.replaceAll(RegExp(r'\D'), '');
-      if (digits.length != 10) {
-        _showError(context.tr('validEmailOrMobile'));
-        return;
-      }
-
-      try {
-        final idToken = await FirebasePhoneOtpService().verifyPhone(
-          phoneNumber: '+91$digits',
-          requestCode: () => showOtpCodeDialog(
-            context,
-            title: context.tr('phoneOtpLogin'),
-            destination: '+91 $digits',
-          ),
-        );
-        success = await provider.loginWithPhoneOtp(idToken);
-      } catch (error) {
-        if (mounted) {
-          _showError('${context.tr('phoneVerificationFailed')}: $error');
-        }
-        return;
-      }
+      return;
     }
 
     if (!mounted) return;
@@ -238,7 +214,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ],
                   selected: {_useOtp},
                   onSelectionChanged: (selection) {
-                    setState(() => _useOtp = selection.first);
+                    setState(() {
+                      _useOtp = selection.first;
+                      _emailController.clear();
+                    });
                   },
                 ),
 
@@ -246,14 +225,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                 CustomTextField(
                   controller: _emailController,
-                  hintText: context.tr('emailOrMobile'),
-                  prefixIcon: Icons.email_outlined,
-                  keyboardType: TextInputType.emailAddress,
+                  hintText: _useOtp ? '10-digit mobile number' : context.tr('emailOrMobile'),
+                  prefixIcon: _useOtp ? Icons.phone_outlined : Icons.email_outlined,
+                  keyboardType: _useOtp ? TextInputType.phone : TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return context.tr('enterEmail');
+                      return _useOtp ? 'Enter your 10-digit mobile number.' : context.tr('enterEmail');
                     }
-
+                    if (_useOtp && !RegExp(r'^\d{10}$').hasMatch(value.trim())) return 'Enter a valid 10-digit mobile number.';
                     return null;
                   },
                 ),

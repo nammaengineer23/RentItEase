@@ -129,8 +129,15 @@ export async function createApprovedE2EProperty(
   const property = extractData(create.body)?.property ?? extractData(create.body);
   const id = property?.id as string | undefined;
   if (!id) throw new Error(`Property fixture was not created: ${JSON.stringify(create.body)}`);
+  if (property.isVerified !== false || property.isAvailable !== false) {
+    throw new Error(`New property must remain pending before approval: ${JSON.stringify(property)}`);
+  }
   const approve = await request(apiUrl()).patch(`/admin/properties/${id}/approve`).set(auth(adminToken));
   statusOk(approve);
+  const approved = extractData(approve.body);
+  if (approved?.isVerified !== true || approved?.isAvailable !== true) {
+    throw new Error(`Approved property was not made public: ${JSON.stringify(approved)}`);
+  }
   return id;
 }
 

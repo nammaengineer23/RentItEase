@@ -31,9 +31,7 @@ class AnalyticsModel {
 
   int get rentedProperties => summary.rentedProperties;
 
-  // The current backend Analytics API does not return totalViews.
-  // Keep this getter temporarily so the existing UI compiles.
-  int get totalViews => 0;
+  int get totalViews => summary.totalViews;
 
   factory AnalyticsModel.fromJson(Map<String, dynamic> json) {
     final summaryJson = json['summary'];
@@ -86,6 +84,7 @@ class AnalyticsSummaryModel {
     required this.availableProperties,
     required this.rentedProperties,
     required this.totalFavorites,
+    required this.totalViews,
     required this.totalVisits,
     required this.pendingVisits,
     required this.completedVisits,
@@ -98,6 +97,7 @@ class AnalyticsSummaryModel {
   final int rentedProperties;
 
   final int totalFavorites;
+  final int totalViews;
   final int totalVisits;
 
   final int pendingVisits;
@@ -112,6 +112,7 @@ class AnalyticsSummaryModel {
       availableProperties: _toInt(json['availableProperties']),
       rentedProperties: _toInt(json['rentedProperties']),
       totalFavorites: _toInt(json['totalFavorites']),
+      totalViews: _toInt(json['totalViews']),
       totalVisits: _toInt(json['totalVisits']),
       pendingVisits: _toInt(json['pendingVisits']),
       completedVisits: _toInt(json['completedVisits']),
@@ -126,6 +127,7 @@ class AnalyticsSummaryModel {
       'availableProperties': availableProperties,
       'rentedProperties': rentedProperties,
       'totalFavorites': totalFavorites,
+      'totalViews': totalViews,
       'totalVisits': totalVisits,
       'pendingVisits': pendingVisits,
       'completedVisits': completedVisits,

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/property_entity.dart';
 import '../../providers/property_provider.dart';
+import '../../../search/providers/search_provider.dart';
 
 import '../../../favorites/providers/favorites_provider.dart';
 import '../../../authentication/providers/authentication_provider.dart';
@@ -39,6 +40,22 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
   String ownerPhone = '';
 
   String? error;
+
+  List<PropertyEntity> _navigationProperties() {
+    final searchResults = ref.read(searchProvider).results;
+    if (searchResults.any((item) => item.id == widget.propertyId)) {
+      return searchResults;
+    }
+    return ref.read(propertyProvider).valueOrNull ?? const [];
+  }
+
+  void _openAdjacentProperty(int offset) {
+    final properties = _navigationProperties();
+    final index = properties.indexWhere((item) => item.id == widget.propertyId);
+    final nextIndex = index + offset;
+    if (index < 0 || nextIndex < 0 || nextIndex >= properties.length) return;
+    context.go('/property/${properties[nextIndex].id}');
+  }
 
   @override
   void initState() {
@@ -214,6 +231,13 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
     }
 
     final property = this.property;
+    final navigationProperties = _navigationProperties();
+    final propertyIndex = navigationProperties.indexWhere(
+      (item) => item.id == widget.propertyId,
+    );
+    final canGoPrevious = propertyIndex > 0;
+    final canGoNext = propertyIndex >= 0 &&
+        propertyIndex < navigationProperties.length - 1;
 
     if (property == null) {
       return Scaffold(
@@ -244,6 +268,18 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
             ),
 
             actions: [
+              if (propertyIndex >= 0) ...[
+                IconButton(
+                  tooltip: 'Previous property',
+                  onPressed: canGoPrevious ? () => _openAdjacentProperty(-1) : null,
+                  icon: const Icon(Icons.chevron_left),
+                ),
+                IconButton(
+                  tooltip: 'Next property',
+                  onPressed: canGoNext ? () => _openAdjacentProperty(1) : null,
+                  icon: const Icon(Icons.chevron_right),
+                ),
+              ],
               CircleAvatar(
                 backgroundColor: Colors.white,
                 child: IconButton(

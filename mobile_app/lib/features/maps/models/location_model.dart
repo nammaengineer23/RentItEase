@@ -19,15 +19,27 @@ class LocationModel {
   final String postalCode;
 
   factory LocationModel.fromJson(Map<String, dynamic> json) {
+    final latitude = _coordinate(json['latitude'], 'latitude');
+    final longitude = _coordinate(json['longitude'], 'longitude');
     return LocationModel(
-      latitude: (json['latitude'] ?? 0).toDouble(),
-      longitude: (json['longitude'] ?? 0).toDouble(),
+      latitude: latitude,
+      longitude: longitude,
       address: json['address'] ?? '',
       city: json['city'] ?? '',
       state: json['state'] ?? '',
       country: json['country'] ?? '',
       postalCode: json['postalCode'] ?? '',
     );
+  }
+
+  static double _coordinate(dynamic value, String name) {
+    final coordinate = value is num
+        ? value.toDouble()
+        : double.tryParse(value?.toString() ?? '');
+    if (coordinate == null || !coordinate.isFinite) {
+      throw FormatException('Location $name is missing or invalid.');
+    }
+    return coordinate;
   }
 
   Map<String, dynamic> toJson() {

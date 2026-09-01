@@ -31,15 +31,13 @@ final settingsProvider =
 // ============================================================
 
 class SettingsNotifier extends AsyncNotifier<SettingsEntity> {
-  late final SettingsRepository repository;
-  late final PushNotificationService pushNotificationService;
+  SettingsRepository get _repository => ref.read(settingsRepositoryProvider);
+  final PushNotificationService _pushNotificationService =
+      PushNotificationService();
 
   @override
   Future<SettingsEntity> build() async {
-    repository = ref.read(settingsRepositoryProvider);
-    pushNotificationService = PushNotificationService();
-
-    return repository.getSettings();
+    return _repository.getSettings();
   }
 
   // ==========================================================
@@ -71,7 +69,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsEntity> {
     );
 
     try {
-      final updated = await repository.updateSettings(
+      final updated = await _repository.updateSettings(
         pushNotifications: pushNotifications,
         emailNotifications: emailNotifications,
         smsNotifications: smsNotifications,
@@ -81,9 +79,9 @@ class SettingsNotifier extends AsyncNotifier<SettingsEntity> {
 
       state = AsyncData(updated);
       if (pushNotifications == true) {
-        await pushNotificationService.activate();
+        await _pushNotificationService.activate();
       } else if (pushNotifications == false) {
-        await pushNotificationService.deactivate();
+        await _pushNotificationService.deactivate();
       }
     } catch (e, st) {
       // Restore the previous server state if the request fails.
@@ -99,7 +97,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsEntity> {
     required String currentPassword,
     required String newPassword,
   }) async {
-    await repository.changePassword(
+    await _repository.changePassword(
       currentPassword: currentPassword,
       newPassword: newPassword,
     );
@@ -110,7 +108,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsEntity> {
   // ==========================================================
 
   Future<void> deleteAccount() async {
-    await repository.deleteAccount();
+    await _repository.deleteAccount();
   }
 
   // ==========================================================
@@ -120,6 +118,6 @@ class SettingsNotifier extends AsyncNotifier<SettingsEntity> {
   Future<void> refresh() async {
     state = const AsyncLoading();
 
-    state = await AsyncValue.guard(repository.getSettings);
+    state = await AsyncValue.guard(_repository.getSettings);
   }
 }

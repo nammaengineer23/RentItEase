@@ -53,6 +53,8 @@ class _FakeChatRepository implements ChatRepository {
   static const conversationId = 'conversation-1';
   bool markedRead = false;
   final List<String> sentTexts = [];
+  final Map<String, String> editedMessages = {};
+  final Set<String> deletedMessages = {};
 
   @override
   Future<List<ConversationEntity>> getConversations() async {
@@ -130,12 +132,22 @@ class _FakeChatRepository implements ChatRepository {
   Future<MessageEntity> editMessage({
     required String messageId,
     required String text,
-  }) {
-    throw UnimplementedError();
+  }) async {
+    editedMessages[messageId] = text;
+    return MessageEntity(
+      id: messageId,
+      conversationId: conversationId,
+      senderId: 'tenant-1',
+      senderName: 'Tenant User',
+      text: text,
+      messageType: 'TEXT',
+      isRead: true,
+      createdAt: DateTime(2026, 8, 26, 12),
+    );
   }
 
   @override
-  Future<void> deleteMessage({required String messageId}) {
-    throw UnimplementedError();
+  Future<void> deleteMessage({required String messageId}) async {
+    deletedMessages.add(messageId);
   }
 }

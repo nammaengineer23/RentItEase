@@ -18,6 +18,7 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
   final PageController _pageController = PageController();
 
   int _currentPage = 0;
+  final Set<String> _failedImages = <String>{};
 
   @override
   void dispose() {
@@ -29,8 +30,9 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
   Widget build(BuildContext context) {
     final images = widget.property.imageUrls.where((url) => url.trim().isNotEmpty).toList();
 
+    final isDesktop = MediaQuery.sizeOf(context).width >= 700;
     return SizedBox(
-      height: 220,
+      height: isDesktop ? 420 : 220,
       child: Stack(
         children: [
           ClipRRect(
@@ -51,8 +53,19 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
                       });
                     },
                     itemBuilder: (context, index) {
+                      final imageUrl = images[index];
+                      if (_failedImages.contains(imageUrl)) {
+                        return _RetryImage(
+                          onRetry: () {
+                            PaintingBinding.instance.imageCache.evict(
+                              NetworkImage(imageUrl),
+                            );
+                            setState(() => _failedImages.remove(imageUrl));
+                          },
+                        );
+                      }
                       return Image.network(
-                        images[index],
+                        imageUrl,
                         fit: BoxFit.cover,
                         loadingBuilder: (context, child, loadingProgress) {
                           if (loadingProgress == null) {
@@ -67,12 +80,10 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
                           );
                         },
                         errorBuilder: (context, error, stackTrace) {
-                          return SvgPicture.asset(
-                            'assets/images/properties/property_placeholder.svg',
-                            width: double.infinity,
-                            height: double.infinity,
-                            fit: BoxFit.cover,
-                          );
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) setState(() => _failedImages.add(imageUrl));
+                          });
+                          return const SizedBox.expand();
                         },
                       );
                     },
@@ -109,6 +120,23 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
             ),
 
           if (images.length > 1)
+            if (isDesktop) ...[
+              _GalleryArrow(
+                alignment: Alignment.centerLeft,
+                icon: Icons.chevron_left,
+                onPressed: _currentPage > 0
+                    ? () => _pageController.previousPage(duration: const Duration(milliseconds: 250), curve: Curves.easeOut)
+                    : null,
+              ),
+              _GalleryArrow(
+                alignment: Alignment.centerRight,
+                icon: Icons.chevron_right,
+                onPressed: _currentPage < images.length - 1
+                    ? () => _pageController.nextPage(duration: const Duration(milliseconds: 250), curve: Curves.easeOut)
+                    : null,
+              ),
+            ],
+          if (images.length > 1)
             Positioned(
               bottom: 12,
               left: 0,
@@ -136,4 +164,21 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
       ),
     );
   }
+}
+
+class _RetryImage extends StatelessWidget {
+  const _RetryImage({required this.onRetry});
+  final VoidCallback onRetry;
+  @override
+  Widget build(BuildContext context) => Stack(fit: StackFit.expand, children: [
+    SvgPicture.asset('assets/images/properties/property_placeholder.svg', fit: BoxFit.cover),
+    Center(child: FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Retry image'))),
+  ]);
+}
+
+class _GalleryArrow extends StatelessWidget {
+  const _GalleryArrow({required this.alignment, required this.icon, required this.onPressed});
+  final Alignment alignment; final IconData icon; final VoidCallback? onPressed;
+  @override
+  Widget build(BuildContext context) => Align(alignment: alignment, child: Padding(padding: const EdgeInsets.all(16), child: IconButton.filledTonal(onPressed: onPressed, icon: Icon(icon))));
 }
