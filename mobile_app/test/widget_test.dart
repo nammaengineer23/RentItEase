@@ -46,7 +46,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Send OTP'), findsOneWidget);
-      expect(find.text('Email Address or Mobile Number'), findsOneWidget);
+      expect(find.text('10-digit mobile number'), findsOneWidget);
     });
     testWidgets('Mobile admin console exposes all navigation sections', (
       WidgetTester tester,
