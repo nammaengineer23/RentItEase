@@ -125,7 +125,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       return;
     }
 
-    if (provider.errorMessage?.contains('Complete phone verification') ?? false) {
+    if (provider.errorMessage?.contains('Complete phone verification') ??
+        false) {
       final controller = TextEditingController();
       final phone = await showDialog<String>(
         context: context,
@@ -141,8 +142,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: const Text('Verify')),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.pop(dialogContext, controller.text.trim()),
+              child: const Text('Verify'),
+            ),
           ],
         ),
       );
@@ -154,7 +162,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       try {
         final phoneToken = await FirebasePhoneOtpService().verifyPhone(
           phoneNumber: '+91$phone',
-          requestCode: () => showOtpCodeDialog(context, title: context.tr('verifyPhoneNumber'), destination: '+91 $phone'),
+          requestCode: () => showOtpCodeDialog(
+            context,
+            title: context.tr('verifyPhoneNumber'),
+            destination: '+91 $phone',
+          ),
         );
         if (await provider.completeGoogleRegistration(phoneToken) && mounted) {
           _openAuthenticatedHome(provider);
@@ -185,19 +197,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(16),
           child: Form(
             key: _formKey,
             child: Column(
               children: [
-                const SizedBox(height: 30),
+                const SizedBox(height: 12),
 
                 AuthHeader(
                   title: context.tr('welcomeBack'),
                   subtitle: context.tr('loginSubtitle'),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
 
                 SegmentedButton<bool>(
                   segments: [
@@ -221,24 +233,35 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   },
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
 
                 CustomTextField(
                   controller: _emailController,
-                  hintText: _useOtp ? '10-digit mobile number' : context.tr('emailOrMobile'),
-                  prefixIcon: _useOtp ? Icons.phone_outlined : Icons.email_outlined,
-                  keyboardType: _useOtp ? TextInputType.phone : TextInputType.emailAddress,
+                  hintText: _useOtp
+                      ? '10-digit mobile number'
+                      : context.tr('emailOrMobile'),
+                  prefixIcon: _useOtp
+                      ? Icons.phone_outlined
+                      : Icons.email_outlined,
+                  keyboardType: _useOtp
+                      ? TextInputType.phone
+                      : TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return _useOtp ? 'Enter your 10-digit mobile number.' : context.tr('enterEmail');
+                      return _useOtp
+                          ? 'Enter your 10-digit mobile number.'
+                          : context.tr('enterEmail');
                     }
-                    if (_useOtp && !RegExp(r'^\d{10}$').hasMatch(value.trim())) return 'Enter a valid 10-digit mobile number.';
+                    if (_useOtp &&
+                        !RegExp(r'^\d{10}$').hasMatch(value.trim())) {
+                      return 'Enter a valid 10-digit mobile number.';
+                    }
                     return null;
                   },
                 ),
 
                 if (!_useOtp) ...[
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   CustomTextField(
                     controller: _passwordController,
                     hintText: context.tr('password'),
@@ -263,14 +286,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   RememberMe(
-                    onForgotPassword: () =>
-                        context.push('/forgot-password'),
+                    onForgotPassword: () => context.push('/forgot-password'),
                   ),
                 ],
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
 
                 CustomButton(
                   text: _useOtp ? context.tr('sendOtp') : context.tr('login'),
@@ -278,14 +300,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   onPressed: _login,
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
 
                 SocialLoginButton(
                   isLoading: provider.isLoading,
                   onPressed: _googleLogin,
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 16),
 
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

@@ -76,7 +76,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             Text(
               context.tr('findPerfectHome'),
-              style: const TextStyle(fontSize: 13),
+              style: const TextStyle(fontSize: 14),
             ),
           ],
         ),
@@ -126,7 +126,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               const Icon(Icons.error_outline, size: 60, color: Colors.red),
               const SizedBox(height: 12),
               Text(error.toString(), textAlign: TextAlign.center),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () {
                   ref.read(propertyProvider.notifier).loadProperties();
@@ -151,7 +151,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             itemBuilder: (context, index) {
               final property = feed[index];
               return SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.only(bottom: 8),
                 child: PropertyCard(
                   property: property,
                   onTap: () => _openProperty(property),
@@ -165,10 +165,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                       'ownerName': property.ownerName,
                     },
                   ),
-                  onContactOwner: () => context.push(
-                    '/chat',
-                    extra: {'propertyId': property.id},
-                  ),
+                  onContactOwner: () =>
+                      context.push('/chat', extra: {'propertyId': property.id}),
                 ),
               );
             },
