@@ -30,8 +30,8 @@ class PropertyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      elevation: 4,
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      elevation: 1,
       shadowColor: Colors.black12,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -45,7 +45,7 @@ class PropertyCard extends StatelessWidget {
             PropertyImageSlider(property: property),
 
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -55,18 +55,18 @@ class PropertyCard extends StatelessWidget {
                     isAvailable: property.isAvailable,
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
 
                   /// Title
                   Text(
                     property.title,
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 17,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
 
                   /// Location
                   PropertyLocation(
@@ -74,7 +74,7 @@ class PropertyCard extends StatelessWidget {
                     city: property.city,
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 8),
 
                   /// Features
                   PropertyFeatures(
@@ -85,7 +85,7 @@ class PropertyCard extends StatelessWidget {
                     parking: property.parking,
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 8),
 
                   /// Status
                   PropertyStatus(
@@ -94,11 +94,10 @@ class PropertyCard extends StatelessWidget {
                     rating: property.rating,
                     totalReviews: property.totalReviews,
                     views: property.views,
-                    onReviewsTap: () =>
-                        context.push('/reviews/${property.id}'),
+                    onReviewsTap: () => context.push('/reviews/${property.id}'),
                   ),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 12),
 
                   /// Action Buttons
                   PropertyActionButtons(

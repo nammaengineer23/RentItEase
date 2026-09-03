@@ -63,97 +63,170 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                   ),
                 ],
               )
-            : ListView(
-                padding: const EdgeInsets.all(16),
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  final useTwoColumns = constraints.maxWidth >= 600;
 
-                children: [
-                  DashboardCard(
-                    title: context.tr('properties'),
-                    value: '${state.summary?.totalProperties ?? 0}',
-                    icon: Icons.home_work,
-                    onTap: () => context.push('/owner/properties'),
-                  ),
+                  return ListView(
+                    padding: const EdgeInsets.all(16),
 
-                  const SizedBox(height: 16),
+                    children: [
+                      if (useTwoColumns) ...[
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: DashboardCard(
+                                title: context.tr('properties'),
+                                value: '${state.summary?.totalProperties ?? 0}',
+                                icon: Icons.home_work,
+                                onTap: () => context.push('/owner/properties'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: DashboardCard(
+                                title: context.tr('activeProperties'),
+                                value:
+                                    '${state.summary?.activeProperties ?? 0}',
+                                icon: Icons.verified,
+                                onTap: () => context.push('/owner/properties'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: DashboardCard(
+                                title: context.tr('pendingVisits'),
+                                value: '${state.summary?.pendingVisits ?? 0}',
+                                icon: Icons.event,
+                                onTap: () =>
+                                    context.push('/owner/visit-requests'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: DashboardCard(
+                                title: context.tr('completedVisits'),
+                                value: '${state.summary?.completedVisits ?? 0}',
+                                icon: Icons.task_alt,
+                                onTap: () => context.push('/owner/visits'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: DashboardCard(
+                                title: context.tr('propertyViews'),
+                                value: '${state.summary?.totalViews ?? 0}',
+                                icon: Icons.visibility,
+                                onTap: () => context.push('/owner/analytics'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: DashboardCard(
+                                title: context.tr('favorites'),
+                                value: '${state.summary?.totalFavorites ?? 0}',
+                                icon: Icons.favorite,
+                                onTap: () => context.push('/owner/analytics'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        DashboardCard(
+                          title: context.tr('properties'),
+                          value: '${state.summary?.totalProperties ?? 0}',
+                          icon: Icons.home_work,
+                          onTap: () => context.push('/owner/properties'),
+                        ),
+                        const SizedBox(height: 12),
+                        DashboardCard(
+                          title: context.tr('activeProperties'),
+                          value: '${state.summary?.activeProperties ?? 0}',
+                          icon: Icons.verified,
+                          onTap: () => context.push('/owner/properties'),
+                        ),
+                        const SizedBox(height: 12),
+                        DashboardCard(
+                          title: context.tr('pendingVisits'),
+                          value: '${state.summary?.pendingVisits ?? 0}',
+                          icon: Icons.event,
+                          onTap: () => context.push('/owner/visit-requests'),
+                        ),
+                        const SizedBox(height: 12),
+                        DashboardCard(
+                          title: context.tr('completedVisits'),
+                          value: '${state.summary?.completedVisits ?? 0}',
+                          icon: Icons.task_alt,
+                          onTap: () => context.push('/owner/visits'),
+                        ),
+                        const SizedBox(height: 12),
+                        DashboardCard(
+                          title: context.tr('propertyViews'),
+                          value: '${state.summary?.totalViews ?? 0}',
+                          icon: Icons.visibility,
+                          onTap: () => context.push('/owner/analytics'),
+                        ),
+                        const SizedBox(height: 12),
+                        DashboardCard(
+                          title: context.tr('favorites'),
+                          value: '${state.summary?.totalFavorites ?? 0}',
+                          icon: Icons.favorite,
+                          onTap: () => context.push('/owner/analytics'),
+                        ),
+                      ],
 
-                  DashboardCard(
-                    title: context.tr('activeProperties'),
-                    value: '${state.summary?.activeProperties ?? 0}',
-                    icon: Icons.verified,
-                    onTap: () => context.push('/owner/properties'),
-                  ),
+                      const SizedBox(height: 24),
 
-                  const SizedBox(height: 16),
-
-                  DashboardCard(
-                    title: context.tr('pendingVisits'),
-                    value: '${state.summary?.pendingVisits ?? 0}',
-                    icon: Icons.event,
-                    onTap: () => context.push('/owner/visit-requests'),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  DashboardCard(
-                    title: context.tr('completedVisits'),
-                    value: '${state.summary?.completedVisits ?? 0}',
-                    icon: Icons.task_alt,
-                    onTap: () => context.push('/owner/visits'),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  DashboardCard(
-                    title: context.tr('propertyViews'),
-                    value: '${state.summary?.totalViews ?? 0}',
-                    icon: Icons.visibility,
-                    onTap: () => context.push('/owner/analytics'),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  DashboardCard(
-                    title: context.tr('favorites'),
-                    value: '${state.summary?.totalFavorites ?? 0}',
-                    icon: Icons.favorite,
-                    onTap: () => context.push('/owner/analytics'),
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  Text(
-                    context.tr('recentActivity'),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  if (state.activities.isEmpty)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Center(child: Text(context.tr('noRecentActivity'))),
-                      ),
-                    ),
-
-                  ...state.activities.map(
-                    (activity) => Card(
-                      child: ListTile(
-                        onTap: () => _openActivity(context, activity.type),
-                        leading: const CircleAvatar(child: Icon(Icons.history)),
-                        title: Text(activity.title),
-                        subtitle: Text(activity.description),
-                        trailing: Text(
-                          activity.type,
-                          style: const TextStyle(fontSize: 12),
+                      Text(
+                        context.tr('recentActivity'),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ),
-                ],
+
+                      const SizedBox(height: 12),
+
+                      if (state.activities.isEmpty)
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Center(
+                              child: Text(context.tr('noRecentActivity')),
+                            ),
+                          ),
+                        ),
+
+                      ...state.activities.map(
+                        (activity) => Card(
+                          child: ListTile(
+                            onTap: () => _openActivity(context, activity.type),
+                            leading: const CircleAvatar(
+                              child: Icon(Icons.history),
+                            ),
+                            title: Text(activity.title),
+                            subtitle: Text(activity.description),
+                            trailing: Text(
+                              activity.type,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
       ),
     );
