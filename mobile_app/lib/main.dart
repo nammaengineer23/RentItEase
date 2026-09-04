@@ -16,8 +16,8 @@ Future<void> main() async {
 
   await FirebaseAppCheck.instance.activate(
     providerAndroid: kDebugMode
-        ? AndroidProvider.debug
-        : AndroidProvider.playIntegrity,
+        ? const AndroidDebugProvider()
+        : const AndroidPlayIntegrityProvider(),
   );
 
   runApp(const ProviderScope(child: RentItEaseApp()));
