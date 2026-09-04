@@ -51,6 +51,16 @@ jobs:
             echo "storePassword=$ANDROID_STORE_PASSWORD"
           } > android/key.properties
 
+      - name: Validate mobile API URL
+        env:
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+        run: |
+          test -n "$E2E_BASE_URL"
+          case "$E2E_BASE_URL" in
+            https://*) ;;
+            *) echo "E2E_BASE_URL must use HTTPS."; exit 1 ;;
+          esac
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -67,7 +77,31 @@ jobs:
         run: |
           flutter build apk \
             --debug \
-            --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
+            --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1
+
+      - name: Sign Debug APK with stable upload key
+        env:
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+        run: |
+          APKSIGNER="$(find "$ANDROID_SDK_ROOT/build-tools" \
+            -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$APKSIGNER"
+
+          "$APKSIGNER" sign \
+            --ks android/app/upload-keystore.jks \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --ks-pass env:ANDROID_STORE_PASSWORD \
+            --key-pass env:ANDROID_KEY_PASSWORD \
+            --out build/app/outputs/flutter-apk/app-debug-stable.apk \
+            build/app/outputs/flutter-apk/app-debug.apk
+
+          mv build/app/outputs/flutter-apk/app-debug-stable.apk \
+            build/app/outputs/flutter-apk/app-debug.apk
+
+          "$APKSIGNER" verify --print-certs \
+            build/app/outputs/flutter-apk/app-debug.apk
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
@@ -79,7 +113,7 @@ jobs:
         run: |
           flutter build apk \
             --release \
-            --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
+            --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
