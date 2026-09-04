@@ -63,13 +63,25 @@ jobs:
       - name: Run Flutter integration tests
         run: flutter test test/integration/p0_chat_flow_test.dart
 
+      - name: Build Debug APK
+        run: |
+          flutter build apk \
+            --debug \
+            --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RentItEase-debug-apk
+          path: mobile_app/build/app/outputs/flutter-apk/app-debug.apk
+
       - name: Build Release APK
         run: |
           flutter build apk \
             --release \
             --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
 
-      - name: Upload APK
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: RentItEase-release-apk
