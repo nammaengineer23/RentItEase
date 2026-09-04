@@ -15,7 +15,7 @@ Future<void> main() async {
   );
 
   await FirebaseAppCheck.instance.activate(
-    androidProvider: kDebugMode
+    providerAndroid: kDebugMode
         ? AndroidProvider.debug
         : AndroidProvider.playIntegrity,
   );

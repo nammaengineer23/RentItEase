@@ -51,7 +51,7 @@ val mapsApiKey =
 android {
     namespace = "com.rentitease.app"
 
-    compileSdk = 36
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
