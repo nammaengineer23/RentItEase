@@ -6,17 +6,17 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../authentication/providers/authentication_provider.dart';
 import '../../providers/admin_provider.dart';
 
+final _adminUserQueryProvider = StateProvider<String>((_) => '');
+final _adminUserRoleProvider = StateProvider<String>((_) => 'ALL');
+final _adminUserStatusProvider = StateProvider<String>((_) => 'ALL');
+
 class AdminDashboardPage extends ConsumerStatefulWidget {
-  const AdminDashboardPage({
-    super.key,
-    this.loadOnStart = true,
-  });
+  const AdminDashboardPage({super.key, this.loadOnStart = true});
 
   final bool loadOnStart;
 
   @override
-  ConsumerState<AdminDashboardPage> createState() =>
-      _AdminDashboardPageState();
+  ConsumerState<AdminDashboardPage> createState() => _AdminDashboardPageState();
 }
 
 class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
@@ -36,9 +36,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
   void initState() {
     super.initState();
     if (widget.loadOnStart) {
-      Future.microtask(
-        () => ref.read(adminProvider.notifier).loadDashboard(),
-      );
+      Future.microtask(() => ref.read(adminProvider.notifier).loadDashboard());
     }
   }
 
@@ -253,6 +251,36 @@ class _UsersView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(adminProvider);
     final notifier = ref.read(adminProvider.notifier);
+    final query = ref.watch(_adminUserQueryProvider).trim().toLowerCase();
+    final roleFilter = ref.watch(_adminUserRoleProvider);
+    final statusFilter = ref.watch(_adminUserStatusProvider);
+    final visibleUsers = state.users.where((user) {
+      final role = _text(user, 'role').toUpperCase();
+      final matchesQuery =
+          query.isEmpty ||
+          _text(user, 'fullName').toLowerCase().contains(query) ||
+          _text(user, 'email').toLowerCase().contains(query) ||
+          _text(user, 'phone').contains(query);
+      final matchesRole =
+          roleFilter == 'ALL' ||
+          role == roleFilter ||
+          (roleFilter == 'TENANT' && role == 'USER');
+      final matchesStatus =
+          statusFilter == 'ALL' ||
+          (statusFilter == 'ACTIVE' && user['isActive'] == true) ||
+          (statusFilter == 'INACTIVE' && user['isActive'] != true);
+      return matchesQuery && matchesRole && matchesStatus;
+    }).toList();
+    final activeUsers = state.users
+        .where((user) => user['isActive'] == true)
+        .length;
+    final owners = state.users
+        .where((user) => _text(user, 'role').toUpperCase() == 'OWNER')
+        .length;
+    final tenants = state.users.where((user) {
+      final role = _text(user, 'role').toUpperCase();
+      return role == 'USER' || role == 'TENANT';
+    }).length;
 
     return _AdminRefreshView(
       error: state.error,
@@ -260,8 +288,98 @@ class _UsersView extends ConsumerWidget {
       onRefresh: notifier.loadUsers,
       child: ListView.builder(
         padding: const EdgeInsets.all(12),
-        itemCount: state.users.length + state.ownerRequests.length,
+        itemCount: visibleUsers.length + state.ownerRequests.length + 1,
         itemBuilder: (context, index) {
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _AdminStatCard(
+                        label: 'Total',
+                        value: state.users.length.toString(),
+                        icon: Icons.people_outline,
+                      ),
+                      _AdminStatCard(
+                        label: 'Active',
+                        value: activeUsers.toString(),
+                        icon: Icons.verified_user_outlined,
+                      ),
+                      _AdminStatCard(
+                        label: 'Owners',
+                        value: owners.toString(),
+                        icon: Icons.home_work_outlined,
+                      ),
+                      _AdminStatCard(
+                        label: 'Tenants',
+                        value: tenants.toString(),
+                        icon: Icons.person_outline,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    onChanged: (value) =>
+                        ref.read(_adminUserQueryProvider.notifier).state =
+                            value,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.search),
+                      hintText: 'Search name, email or phone',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final filter in const [
+                          ('ALL', 'All'),
+                          ('ADMIN', 'Admin'),
+                          ('OWNER', 'Owner'),
+                          ('TENANT', 'Tenant'),
+                        ])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(filter.$2),
+                              selected: roleFilter == filter.$1,
+                              onSelected: (_) =>
+                                  ref
+                                          .read(_adminUserRoleProvider.notifier)
+                                          .state =
+                                      filter.$1,
+                            ),
+                          ),
+                        for (final filter in const [
+                          ('ALL', 'Any status'),
+                          ('ACTIVE', 'Active'),
+                          ('INACTIVE', 'Inactive'),
+                        ])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(filter.$2),
+                              selected: statusFilter == filter.$1,
+                              onSelected: (_) =>
+                                  ref
+                                      .read(_adminUserStatusProvider.notifier)
+                                      .state = filter
+                                      .$1,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          index--;
           if (index < state.ownerRequests.length) {
             final request = state.ownerRequests[index];
             return Card(
@@ -298,7 +416,7 @@ class _UsersView extends ConsumerWidget {
             );
           }
           final userIndex = index - state.ownerRequests.length;
-          final user = state.users[userIndex];
+          final user = visibleUsers[userIndex];
           final active = user['isActive'] == true;
           final role = _text(user, 'role');
 
@@ -318,11 +436,8 @@ class _UsersView extends ConsumerWidget {
                 '${_number(user, 'totalProperties')} properties',
               ),
               isThreeLine: true,
-              onTap: () => _showUserDetails(
-                context,
-                notifier,
-                _text(user, 'id'),
-              ),
+              onTap: () =>
+                  _showUserDetails(context, notifier, _text(user, 'id')),
               trailing: Wrap(
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
@@ -337,29 +452,29 @@ class _UsersView extends ConsumerWidget {
                     ),
                   PopupMenuButton<String>(
                     onSelected: (action) async {
-                  if (action == 'toggle') {
-                    await _runAction(
-                      context,
-                      () => notifier.setUserActive(
-                        _text(user, 'id'),
-                        !active,
-                      ),
-                      active ? 'User deactivated' : 'User activated',
-                    );
-                  } else if (action == 'delete' &&
-                      await _confirm(
-                        context,
-                        'Delete user?',
-                        'This permanently removes the user and related data.',
-                      )) {
-                    if (!context.mounted) return;
-                    await _runAction(
-                      context,
-                      () => notifier.deleteUser(_text(user, 'id')),
-                      'User deleted',
-                    );
-                  }
-                },
+                      if (action == 'toggle') {
+                        await _runAction(
+                          context,
+                          () => notifier.setUserActive(
+                            _text(user, 'id'),
+                            !active,
+                          ),
+                          active ? 'User deactivated' : 'User activated',
+                        );
+                      } else if (action == 'delete' &&
+                          await _confirm(
+                            context,
+                            'Delete user?',
+                            'This permanently removes the user and related data.',
+                          )) {
+                        if (!context.mounted) return;
+                        await _runAction(
+                          context,
+                          () => notifier.deleteUser(_text(user, 'id')),
+                          'User deleted',
+                        );
+                      }
+                    },
                     itemBuilder: (_) => [
                       PopupMenuItem(
                         value: 'toggle',
@@ -380,6 +495,45 @@ class _UsersView extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _AdminStatCard extends StatelessWidget {
+  const _AdminStatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: (MediaQuery.sizeOf(context).width - 40) / 2,
+    child: Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Icon(icon, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                Text(label),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _PropertiesView extends ConsumerWidget {
@@ -487,10 +641,7 @@ class _PropertiesView extends ConsumerWidget {
                     value: 'toggle',
                     child: Text(visible ? 'Hide' : 'Unhide'),
                   ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Text('Delete'),
-                  ),
+                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
                 ],
               ),
             ),
@@ -543,31 +694,27 @@ class _SocialMediaView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(adminProvider);
+    final consentedProperties = state.socialProperties.where((property) {
+      return _section(property, 'socialMarketingConsent')['approved'] == true;
+    }).toList();
     return _AdminRefreshView(
       error: state.error,
-      empty: state.socialProperties.isEmpty,
+      empty: consentedProperties.isEmpty,
       onRefresh: ref.read(adminProvider.notifier).loadSocialMedia,
       child: ListView.builder(
         padding: const EdgeInsets.all(12),
-        itemCount: state.socialProperties.length,
+        itemCount: consentedProperties.length,
         itemBuilder: (context, index) {
-          final property = state.socialProperties[index];
+          final property = consentedProperties[index];
           final consent = _section(property, 'socialMarketingConsent');
-          final approved = consent['approved'] == true;
           return Card(
             child: ListTile(
-              leading: Icon(
-                approved ? Icons.campaign : Icons.no_accounts_outlined,
-              ),
+              leading: const Icon(Icons.campaign_outlined),
               title: Text(_text(property, 'title')),
               subtitle: Text(
-                approved
-                    ? 'Owner consent active • ${_text(consent, 'platforms')}'
-                    : 'Owner has not granted social publishing consent',
+                'Consent active • Platforms: ${_text(consent, 'platforms')}',
               ),
-              trailing: approved
-                  ? const Icon(Icons.check_circle, color: Colors.green)
-                  : const Icon(Icons.lock_outline),
+              trailing: const Icon(Icons.check_circle, color: Colors.green),
             ),
           );
         },
@@ -814,19 +961,16 @@ class _MetricCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 8),
-            Text(
-              '$value',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            Text(label, textAlign: TextAlign.center),
-          ],
-        ),
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: 8),
+              Text('$value', style: Theme.of(context).textTheme.headlineMedium),
+              Text(label, textAlign: TextAlign.center),
+            ],
+          ),
         ),
       ),
     );
@@ -875,19 +1019,15 @@ Future<void> _showUserDetails(
   try {
     final user = await notifier.getUser(id);
     if (!context.mounted) return;
-    await _showDetails(
-      context,
-      'User Details',
-      {
-        'Name': _text(user, 'fullName'),
-        'Email': _text(user, 'email'),
-        'Phone': _text(user, 'phone'),
-        'Role': _text(user, 'role'),
-        'Status': user['isActive'] == true ? 'Active' : 'Inactive',
-        'Properties': '${_number(user, 'totalProperties')}',
-        'Created': _text(user, 'createdAt'),
-      },
-    );
+    await _showDetails(context, 'User Details', {
+      'Name': _text(user, 'fullName'),
+      'Email': _text(user, 'email'),
+      'Phone': _text(user, 'phone'),
+      'Role': _text(user, 'role'),
+      'Status': user['isActive'] == true ? 'Active' : 'Inactive',
+      'Properties': '${_number(user, 'totalProperties')}',
+      'Created': _text(user, 'createdAt'),
+    });
   } catch (error) {
     if (context.mounted) _showError(context, error);
   }
@@ -902,19 +1042,14 @@ Future<void> _showPropertyDetails(
     final property = await notifier.getProperty(id);
     if (!context.mounted) return;
     final owner = _section(property, 'owner');
-    await _showDetails(
-      context,
-      'Property Details',
-      {
-        'Title': _text(property, 'title'),
-        'Location':
-            '${_text(property, 'locality')}, ${_text(property, 'city')}',
-        'Price': '₹${_number(property, 'price')}',
-        'Owner': _text(owner, 'fullName'),
-        'Owner Email': _text(owner, 'email'),
-        'Status': property['isAvailable'] == true ? 'Visible' : 'Hidden',
-      },
-    );
+    await _showDetails(context, 'Property Details', {
+      'Title': _text(property, 'title'),
+      'Location': '${_text(property, 'locality')}, ${_text(property, 'city')}',
+      'Price': '₹${_number(property, 'price')}',
+      'Owner': _text(owner, 'fullName'),
+      'Owner Email': _text(owner, 'email'),
+      'Status': property['isAvailable'] == true ? 'Visible' : 'Hidden',
+    });
   } catch (error) {
     if (context.mounted) _showError(context, error);
   }
