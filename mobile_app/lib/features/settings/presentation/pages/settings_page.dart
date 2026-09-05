@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../domain/entities/settings_entity.dart';
 import '../../providers/settings_provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/utils/app_error_message.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -71,7 +72,7 @@ class _SettingsContent extends ConsumerWidget {
       if (state.hasError) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(state.error.toString())));
+        ).showSnackBar(SnackBar(content: Text(userFriendlyError(state.error))));
       }
     } catch (e) {
       if (!context.mounted) {
@@ -80,7 +81,7 @@ class _SettingsContent extends ConsumerWidget {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      ).showSnackBar(SnackBar(content: Text(userFriendlyError(e))));
     }
   }
 
@@ -204,7 +205,9 @@ class _SettingsContent extends ConsumerWidget {
                                 confirmPassword.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(context.tr('fillPasswordFields')),
+                                  content: Text(
+                                    context.tr('fillPasswordFields'),
+                                  ),
                                 ),
                               );
                               return;
@@ -261,7 +264,7 @@ class _SettingsContent extends ConsumerWidget {
                               });
 
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(e.toString())),
+                                SnackBar(content: Text(userFriendlyError(e))),
                               );
                             }
                           },
@@ -322,9 +325,9 @@ class _SettingsContent extends ConsumerWidget {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('accountDeleted'))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.tr('accountDeleted'))));
 
       // Authentication/logout navigation will be connected here
       // once the existing authentication/session provider is confirmed.
@@ -335,7 +338,7 @@ class _SettingsContent extends ConsumerWidget {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      ).showSnackBar(SnackBar(content: Text(userFriendlyError(e))));
     }
   }
 
@@ -456,7 +459,9 @@ class _SettingsContent extends ConsumerWidget {
                           ListTile(
                             title: Text(
                               context.tr('selectLanguage'),
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           for (final entry
@@ -467,8 +472,7 @@ class _SettingsContent extends ConsumerWidget {
                               trailing: settings.language == entry.key
                                   ? const Icon(Icons.check)
                                   : null,
-                              onTap: () =>
-                                  Navigator.pop(context, entry.key),
+                              onTap: () => Navigator.pop(context, entry.key),
                             ),
                         ],
                       ),
@@ -522,10 +526,8 @@ class _SettingsContent extends ConsumerWidget {
                   title: Text(context.tr('callUs')),
                   subtitle: const Text('+91 99863 85925'),
                   trailing: const Icon(Icons.call),
-                  onTap: () => _openContact(
-                    context,
-                    Uri.parse('tel:+919986385925'),
-                  ),
+                  onTap: () =>
+                      _openContact(context, Uri.parse('tel:+919986385925')),
                 ),
                 const Divider(height: 1),
                 ListTile(
@@ -610,9 +612,9 @@ class _SettingsContent extends ConsumerWidget {
   Future<void> _openContact(BuildContext context, Uri uri) async {
     if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.tr('unableOpenContact'))),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.tr('unableOpenContact'))));
   }
 }
 
@@ -669,7 +671,7 @@ class _ErrorView extends StatelessWidget {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            Text(error.toString(), textAlign: TextAlign.center),
+            Text(userFriendlyError(error), textAlign: TextAlign.center),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: onRetry,

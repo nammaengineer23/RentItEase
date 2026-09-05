@@ -8,6 +8,7 @@ import '../../domain/entities/search_entity.dart';
 import '../../providers/search_provider.dart';
 import '../../../property/providers/property_provider.dart';
 import '../../../property/presentation/widgets/property_card.dart';
+import '../../../../core/utils/app_error_message.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key, this.openFilters = false});
@@ -22,6 +23,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   final searchController = TextEditingController();
   SearchEntity _filters = const SearchEntity();
   bool _hasSearched = false;
+  bool _isPreparingInitialSearch = true;
 
   @override
   void initState() {
@@ -33,7 +35,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   Future<void> _loadNearest() async {
-    setState(() => _hasSearched = true);
+    setState(() {
+      _hasSearched = true;
+      _isPreparingInitialSearch = true;
+    });
     try {
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -60,6 +65,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       }
     } catch (_) {
       await ref.read(searchProvider.notifier).search(const SearchEntity());
+    } finally {
+      if (mounted) {
+        setState(() => _isPreparingInitialSearch = false);
+      }
     }
   }
 
@@ -143,19 +152,24 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     labelText: context.tr('propertyType'),
                     border: const OutlineInputBorder(),
                   ),
-                  items: const <MapEntry<String, String>>[
-                    MapEntry('APARTMENT', 'apartment'),
-                    MapEntry('HOUSE', 'house'),
-                    MapEntry('VILLA', 'villa'),
-                    MapEntry('PG', 'pg'),
-                    MapEntry('HOSTEL', 'hostel'),
-                    MapEntry('OFFICE', 'office'),
-                  ].map((entry) => DropdownMenuItem(
-                            value: entry.key,
-                            child: Text(context.tr(entry.value)),
-                          ))
-                      .toList(),
-                  onChanged: (value) => setSheetState(() => propertyType = value),
+                  items:
+                      const <MapEntry<String, String>>[
+                            MapEntry('APARTMENT', 'apartment'),
+                            MapEntry('HOUSE', 'house'),
+                            MapEntry('VILLA', 'villa'),
+                            MapEntry('PG', 'pg'),
+                            MapEntry('HOSTEL', 'hostel'),
+                            MapEntry('OFFICE', 'office'),
+                          ]
+                          .map(
+                            (entry) => DropdownMenuItem(
+                              value: entry.key,
+                              child: Text(context.tr(entry.value)),
+                            ),
+                          )
+                          .toList(),
+                  onChanged: (value) =>
+                      setSheetState(() => propertyType = value),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int>(
@@ -263,7 +277,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                           setState(() {
                             _filters = SearchEntity(
                               query: searchController.text.trim(),
-                              city: city.text.trim().isEmpty ? null : city.text.trim(),
+                              city: city.text.trim().isEmpty
+                                  ? null
+                                  : city.text.trim(),
                               locality: locality.text.trim().isEmpty
                                   ? null
                                   : locality.text.trim(),
@@ -343,67 +359,59 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
           ),
           Expanded(
-            child: state.isLoading
+            child: state.isLoading || _isPreparingInitialSearch
                 ? const Center(child: CircularProgressIndicator())
                 : state.error != null
-                    ? _SearchMessage(
-                        icon: Icons.error_outline,
-                        message: state.error!,
-                        action: _search,
-                      )
-                    : !_hasSearched
-                        ? _SearchMessage(
-                            icon: Icons.manage_search,
-                            message: context.tr('searchOrFilter'),
-                          )
-                        : state.results.isEmpty
-                            ? _SearchMessage(
-                                icon: Icons.search_off,
-                                message: context.tr('noPropertiesFound'),
-                              )
-                            : PageView.builder(
-                                scrollDirection: Axis.vertical,
-                                itemCount: state.results.length,
-                                onPageChanged: (index) {
-                                  if (index >= state.results.length - 2 &&
-                                      state.hasMore) {
-                                    ref.read(searchProvider.notifier).loadMore();
-                                  }
-                                },
-                                itemBuilder: (context, index) {
-                                  final property = state.results[index];
-                                  return RefreshIndicator(
-                                    onRefresh: ref
-                                        .read(searchProvider.notifier)
-                                        .refresh,
-                                    child: SingleChildScrollView(
-                                      physics:
-                                          const AlwaysScrollableScrollPhysics(),
-                                      child: PropertyCard(
-                                        property: property,
-                                        onTap: () => context.push(
-                                          '/property/${property.id}',
-                                        ),
-                                        onBookVisit: () => context.push(
-                                          '/book-visit/${property.id}',
-                                          extra: {
-                                            'propertyTitle': property.title,
-                                            'propertyImage': property
-                                                    .imageUrls
-                                                    .isNotEmpty
-                                                ? property.imageUrls.first
-                                                : '',
-                                            'ownerName': property.ownerName,
-                                          },
-                                        ),
-                                        onContactOwner: () => context.push(
-                                          '/chat?propertyId=${property.id}',
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
+                ? _SearchMessage(
+                    icon: Icons.error_outline,
+                    message: userFriendlyError(state.error),
+                    action: _search,
+                  )
+                : !_hasSearched
+                ? _SearchMessage(
+                    icon: Icons.manage_search,
+                    message: context.tr('searchOrFilter'),
+                  )
+                : state.results.isEmpty
+                ? _SearchMessage(
+                    icon: Icons.search_off,
+                    message: context.tr('noPropertiesFound'),
+                  )
+                : PageView.builder(
+                    scrollDirection: Axis.vertical,
+                    itemCount: state.results.length,
+                    onPageChanged: (index) {
+                      if (index >= state.results.length - 2 && state.hasMore) {
+                        ref.read(searchProvider.notifier).loadMore();
+                      }
+                    },
+                    itemBuilder: (context, index) {
+                      final property = state.results[index];
+                      return RefreshIndicator(
+                        onRefresh: ref.read(searchProvider.notifier).refresh,
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: PropertyCard(
+                            property: property,
+                            onTap: () =>
+                                context.push('/property/${property.id}'),
+                            onBookVisit: () => context.push(
+                              '/book-visit/${property.id}',
+                              extra: {
+                                'propertyTitle': property.title,
+                                'propertyImage': property.imageUrls.isNotEmpty
+                                    ? property.imageUrls.first
+                                    : '',
+                                'ownerName': property.ownerName,
+                              },
+                            ),
+                            onContactOwner: () =>
+                                context.push('/chat?propertyId=${property.id}'),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -435,10 +443,7 @@ class _SearchMessage extends StatelessWidget {
             Text(message, textAlign: TextAlign.center),
             if (action != null) ...[
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: action,
-                child: Text(context.tr('retry')),
-              ),
+              FilledButton(onPressed: action, child: Text(context.tr('retry'))),
             ],
           ],
         ),

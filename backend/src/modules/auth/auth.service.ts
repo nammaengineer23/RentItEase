@@ -111,7 +111,9 @@ export class AuthService {
     });
 
     if (phoneOwner) {
-      throw new ConflictException('Phone number already exists.');
+      throw new ConflictException(
+        'This mobile number is already registered. Please sign in or use a different number.',
+      );
     }
 
     return this.register({
@@ -205,9 +207,11 @@ export class AuthService {
       orderBy: { createdAt: 'desc' },
     });
 
-    if (!challenge ||
-        challenge.expiresAt < new Date() ||
-        challenge.attempts >= 5) {
+    if (
+      !challenge ||
+      challenge.expiresAt < new Date() ||
+      challenge.attempts >= 5
+    ) {
       throw new UnauthorizedException('Invalid or expired verification code.');
     }
 
@@ -421,7 +425,9 @@ export class AuthService {
         },
       });
       if (phoneOwner) {
-        throw new ConflictException('Phone number already exists.');
+        throw new ConflictException(
+          'This mobile number is already registered. Please sign in or use a different number.',
+        );
       }
 
       user = await this.prisma.user.create({
@@ -620,11 +626,9 @@ export class AuthService {
     });
 
     const resetBaseUrl =
-      process.env.PASSWORD_RESET_URL ??
-      'https://rentitease.com/reset-password';
+      process.env.PASSWORD_RESET_URL ?? 'https://rentitease.com/reset-password';
     const separator = resetBaseUrl.includes('?') ? '&' : '?';
-    const resetLink =
-      `${resetBaseUrl}${separator}token=${encodeURIComponent(token)}`;
+    const resetLink = `${resetBaseUrl}${separator}token=${encodeURIComponent(token)}`;
 
     await this.mailService.sendPasswordResetEmail(
       user.email,
@@ -705,7 +709,9 @@ export class AuthService {
         select: { id: true },
       });
       if (phoneOwner != null && phoneOwner.id != userId) {
-        throw new ConflictException('Phone number already exists.');
+        throw new ConflictException(
+          'This mobile number is already registered. Please sign in or use a different number.',
+        );
       }
     }
 
