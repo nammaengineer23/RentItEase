@@ -43,7 +43,11 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
 
     _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
 
-    _loadPaymentOrder();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadPaymentOrder();
+      }
+    });
   }
 
   Future<void> _loadPaymentOrder() async {
@@ -240,7 +244,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
       if (payload is! Map) throw Exception('Invalid invoice response.');
 
       final invoice = Map<String, dynamic>.from(payload);
-      final directory = await getDownloadsDirectory() ??
+      final directory =
+          await getDownloadsDirectory() ??
           await getApplicationDocumentsDirectory();
       final number = invoice['invoiceNumber']?.toString() ?? widget.bookingId;
       final file = File('${directory.path}/$number.html');
@@ -369,10 +374,22 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  Chip(avatar: Icon(Icons.account_balance, size: 18), label: Text('UPI')),
-                  Chip(avatar: Icon(Icons.credit_card, size: 18), label: Text('Cards')),
-                  Chip(avatar: Icon(Icons.account_balance_wallet, size: 18), label: Text('Wallets')),
-                  Chip(avatar: Icon(Icons.business, size: 18), label: Text('Netbanking')),
+                  Chip(
+                    avatar: Icon(Icons.account_balance, size: 18),
+                    label: Text('UPI'),
+                  ),
+                  Chip(
+                    avatar: Icon(Icons.credit_card, size: 18),
+                    label: Text('Cards'),
+                  ),
+                  Chip(
+                    avatar: Icon(Icons.account_balance_wallet, size: 18),
+                    label: Text('Wallets'),
+                  ),
+                  Chip(
+                    avatar: Icon(Icons.business, size: 18),
+                    label: Text('Netbanking'),
+                  ),
                 ],
               ),
               const SizedBox(height: 6),
@@ -399,12 +416,12 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
               ),
             if (isPaid)
               OutlinedButton.icon(
-                onPressed: () => context.push('/lease/create/${widget.bookingId}'),
+                onPressed: () =>
+                    context.push('/lease/create/${widget.bookingId}'),
                 icon: const Icon(Icons.description_outlined),
                 label: const Text('Create Lease'),
               ),
-            if (isPaid)
-              const SizedBox(height: 12),
+            if (isPaid) const SizedBox(height: 12),
             if (isPaid)
               PrimaryButton(
                 label: 'Download Invoice',

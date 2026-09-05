@@ -23,6 +23,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   final searchController = TextEditingController();
   SearchEntity _filters = const SearchEntity();
   bool _hasSearched = false;
+  bool _isPreparingInitialSearch = true;
 
   @override
   void initState() {
@@ -34,7 +35,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   Future<void> _loadNearest() async {
-    setState(() => _hasSearched = true);
+    setState(() {
+      _hasSearched = true;
+      _isPreparingInitialSearch = true;
+    });
     try {
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -61,6 +65,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       }
     } catch (_) {
       await ref.read(searchProvider.notifier).search(const SearchEntity());
+    } finally {
+      if (mounted) {
+        setState(() => _isPreparingInitialSearch = false);
+      }
     }
   }
 
@@ -351,7 +359,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
           ),
           Expanded(
-            child: state.isLoading
+            child: state.isLoading || _isPreparingInitialSearch
                 ? const Center(child: CircularProgressIndicator())
                 : state.error != null
                 ? _SearchMessage(

@@ -20,7 +20,8 @@ class ConversationModel extends ConversationEntity {
     final lastMessageData = json['lastMessage'] as Map<String, dynamic>?;
 
     return ConversationModel(
-      conversationId: json['conversationId']?.toString() ?? '',
+      conversationId:
+          json['conversationId']?.toString() ?? json['id']?.toString() ?? '',
 
       propertyId: property?['id']?.toString() ?? '',
 
