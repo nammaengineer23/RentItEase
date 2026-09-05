@@ -2,12 +2,18 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ClassSerializerInterceptor } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Prisma } from '@prisma/client';
 
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import { GlobalExceptionFilter } from './common/filters/global-exception/global-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging/logging.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform/transform.interceptor';
+
+// Prisma Decimal values must be JSON-safe for mobile and web clients.
+Prisma.Decimal.prototype.toJSON = function toJSON() {
+  return this.toString();
+};
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -27,12 +33,7 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
   app.setGlobalPrefix('api/v1', {
-    exclude: [
-      'privacy-policy',
-      'terms',
-      'terms-of-service',
-      'delete-account',
-    ],
+    exclude: ['privacy-policy', 'terms', 'terms-of-service', 'delete-account'],
   });
 
   app.useGlobalPipes(
