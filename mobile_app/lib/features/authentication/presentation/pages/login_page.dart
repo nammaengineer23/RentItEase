@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/utils/app_error_message.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 import '../../providers/authentication_provider.dart';
@@ -80,7 +81,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       success = await provider.loginWithPhoneOtp(idToken);
     } catch (error) {
       if (mounted) {
-        _showError('${context.tr('phoneVerificationFailed')}: $error');
+        _showError(userFriendlyError(error));
       }
       return;
     }
@@ -173,7 +174,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           return;
         }
       } catch (error) {
-        if (mounted) _showError('Phone verification failed: $error');
+        if (mounted) _showError(userFriendlyError(error));
         return;
       }
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/app_error_message.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../l10n/app_localizations.dart';
@@ -92,7 +93,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       );
     } catch (error) {
       if (mounted) {
-        _showError('${context.tr('phoneVerificationFailed')}: $error');
+        _showError(userFriendlyError(error));
       }
       return;
     }
@@ -140,15 +141,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       return;
     }
 
-    final needsPhoneVerification = provider.errorMessage
-            ?.contains('Complete phone verification') ??
-        false;
+    final needsPhoneVerification =
+        provider.errorMessage?.contains('Complete phone verification') ?? false;
     if (needsPhoneVerification) {
       final phone = _phoneController.text.trim();
       if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
-        _showError(
-          context.tr('googlePhoneInstruction'),
-        );
+        _showError(context.tr('googlePhoneInstruction'));
         return;
       }
 
@@ -169,7 +167,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         }
       } catch (error) {
         if (!mounted) return;
-        _showError('${context.tr('phoneVerificationFailed')}: $error');
+        _showError(userFriendlyError(error));
         return;
       }
     }
@@ -187,153 +185,153 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           padding: const EdgeInsets.all(24),
           child: AutofillGroup(
             child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
+              key: _formKey,
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
 
-                AuthHeader(
-                  title: context.tr('createAccount'),
-                  subtitle: context.tr('registerSubtitle'),
-                ),
+                  AuthHeader(
+                    title: context.tr('createAccount'),
+                    subtitle: context.tr('registerSubtitle'),
+                  ),
 
-                const SizedBox(height: 35),
+                  const SizedBox(height: 35),
 
-                CustomTextField(
-                  controller: _nameController,
-                  hintText: context.tr('fullName'),
-                  prefixIcon: Icons.person_outline,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.name],
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return context.tr('enterFullName');
-                    }
+                  CustomTextField(
+                    controller: _nameController,
+                    hintText: context.tr('fullName'),
+                    prefixIcon: Icons.person_outline,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.name],
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return context.tr('enterFullName');
+                      }
 
-                    if (value.trim().length < 3) {
-                      return context.tr('nameMinimum');
-                    }
+                      if (value.trim().length < 3) {
+                        return context.tr('nameMinimum');
+                      }
 
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                CustomTextField(
-                  controller: _emailController,
-                  hintText: context.tr('emailAddress'),
-                  prefixIcon: Icons.email_outlined,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.email],
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return context.tr('enterYourEmail');
-                    }
-
-                    final emailRegex = RegExp(
-                      r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$',
-                    );
-
-                    if (!emailRegex.hasMatch(value.trim())) {
-                      return context.tr('validEmail');
-                    }
-
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                CustomTextField(
-                  controller: _phoneController,
-                  hintText: context.tr('mobileNumber'),
-                  prefixIcon: Icons.phone_outlined,
-                  keyboardType: TextInputType.phone,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.telephoneNumber],
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return context.tr('enterMobileNumber');
-                    }
-
-                    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(value.trim())) {
-                      return context.tr('validMobileNumber');
-                    }
-
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                CustomTextField(
-                  controller: _passwordController,
-                  hintText: context.tr('password'),
-                  prefixIcon: Icons.lock_outline,
-                  obscureText: provider.obscurePassword,
-                  textInputAction: TextInputAction.done,
-                  autofillHints: const [AutofillHints.newPassword],
-                  onFieldSubmitted: (_) => _register(),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      provider.obscurePassword
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      ref
-                          .read(authenticationProvider)
-                          .togglePasswordVisibility();
+                      return null;
                     },
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return context.tr('enterPasswordShort');
-                    }
 
-                    if (value.length < 8) {
-                      return context.tr('passwordMinimum8');
-                    }
+                  const SizedBox(height: 16),
 
-                    return null;
-                  },
-                ),
+                  CustomTextField(
+                    controller: _emailController,
+                    hintText: context.tr('emailAddress'),
+                    prefixIcon: Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.email],
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return context.tr('enterYourEmail');
+                      }
 
-                const SizedBox(height: 16),
+                      final emailRegex = RegExp(
+                        r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$',
+                      );
 
-                PasswordStrength(password: _passwordController.text),
+                      if (!emailRegex.hasMatch(value.trim())) {
+                        return context.tr('validEmail');
+                      }
 
-                const SizedBox(height: 30),
+                      return null;
+                    },
+                  ),
 
-                CustomButton(
-                  text: context.tr('createAccount'),
-                  isLoading: provider.isLoading,
-                  onPressed: _register,
-                ),
+                  const SizedBox(height: 16),
 
-                const SizedBox(height: 20),
+                  CustomTextField(
+                    controller: _phoneController,
+                    hintText: context.tr('mobileNumber'),
+                    prefixIcon: Icons.phone_outlined,
+                    keyboardType: TextInputType.phone,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.telephoneNumber],
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return context.tr('enterMobileNumber');
+                      }
 
-                SocialLoginButton(
-                  isLoading: provider.isLoading,
-                  onPressed: _googleRegister,
-                ),
+                      if (!RegExp(r'^[6-9]\d{9}$').hasMatch(value.trim())) {
+                        return context.tr('validMobileNumber');
+                      }
 
-                const SizedBox(height: 20),
+                      return null;
+                    },
+                  ),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(context.tr('alreadyHaveAccount')),
-                    TextButton(
-                      onPressed: widget.onLogin,
-                      child: Text(context.tr('login')),
+                  const SizedBox(height: 16),
+
+                  CustomTextField(
+                    controller: _passwordController,
+                    hintText: context.tr('password'),
+                    prefixIcon: Icons.lock_outline,
+                    obscureText: provider.obscurePassword,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.newPassword],
+                    onFieldSubmitted: (_) => _register(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        provider.obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        ref
+                            .read(authenticationProvider)
+                            .togglePasswordVisibility();
+                      },
                     ),
-                  ],
-                ),
-              ],
-            ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return context.tr('enterPasswordShort');
+                      }
+
+                      if (value.length < 8) {
+                        return context.tr('passwordMinimum8');
+                      }
+
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  PasswordStrength(password: _passwordController.text),
+
+                  const SizedBox(height: 30),
+
+                  CustomButton(
+                    text: context.tr('createAccount'),
+                    isLoading: provider.isLoading,
+                    onPressed: _register,
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  SocialLoginButton(
+                    isLoading: provider.isLoading,
+                    onPressed: _googleRegister,
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(context.tr('alreadyHaveAccount')),
+                      TextButton(
+                        onPressed: widget.onLogin,
+                        child: Text(context.tr('login')),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

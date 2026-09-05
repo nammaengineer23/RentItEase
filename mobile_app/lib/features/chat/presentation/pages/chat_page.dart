@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/app_error_message.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -80,12 +81,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(chatProvider);
-    final currentUserId = ref
-            .watch(authenticationProvider)
-            .authResponse
-            ?.user
-            .id ??
-        '';
+    final currentUserId =
+        ref.watch(authenticationProvider).authResponse?.user.id ?? '';
 
     ref.listen(chatProvider.select((value) => value.messages.length), (
       previous,
@@ -119,10 +116,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                widget.userName,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(widget.userName, overflow: TextOverflow.ellipsis),
             ),
           ],
         ),
@@ -149,7 +143,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             ),
           if (state.error != null)
             MaterialBanner(
-              content: Text(state.error!),
+              content: Text(userFriendlyError(state.error)),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -160,9 +154,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 ),
               ],
             ),
-          Expanded(
-            child: _buildMessages(state, currentUserId),
-          ),
+          Expanded(child: _buildMessages(state, currentUserId)),
           MessageInput(
             onSend: (text) async {
               final sent = await ref
@@ -178,8 +170,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             onFile: _sendFile,
             onVoice: _toggleVoice,
           ),
-          if (state.isSending)
-            const LinearProgressIndicator(minHeight: 2),
+          if (state.isSending) const LinearProgressIndicator(minHeight: 2),
         ],
       ),
     );
@@ -231,7 +222,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       return;
     }
     final directory = await getTemporaryDirectory();
-    final path = '${directory.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    final path =
+        '${directory.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
     await _audioRecorder.start(
       const RecordConfig(encoder: AudioEncoder.aacLc),
       path: path,

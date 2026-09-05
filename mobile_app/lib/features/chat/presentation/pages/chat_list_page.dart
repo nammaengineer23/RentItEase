@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/app_error_message.dart';
 
 import '../../domain/entities/conversation_entity.dart';
 import '../../providers/chat_provider.dart';
@@ -95,7 +96,7 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
           ),
           if (state.error != null)
             MaterialBanner(
-              content: Text(state.error!),
+              content: Text(userFriendlyError(state.error)),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -107,18 +108,13 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
                 ),
               ],
             ),
-          Expanded(
-            child: _buildBody(state, conversations),
-          ),
+          Expanded(child: _buildBody(state, conversations)),
         ],
       ),
     );
   }
 
-  Widget _buildBody(
-    ChatState state,
-    List<ConversationEntity> conversations,
-  ) {
+  Widget _buildBody(ChatState state, List<ConversationEntity> conversations) {
     if (state.isLoadingConversations && state.conversations.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
