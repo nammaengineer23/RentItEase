@@ -240,7 +240,7 @@ export class AuthService {
     id: string;
     fullName: string;
     email: string;
-    phone: string;
+    phone: string | null;
     role: string;
     photoUrl: string | null;
   }) {
@@ -365,11 +365,7 @@ export class AuthService {
   // ==========================================
   // Firebase Login
   // ==========================================
-  async firebaseLogin(
-    idToken: string,
-    createAccount = false,
-    phoneIdToken?: string,
-  ) {
+  async firebaseLogin(idToken: string, createAccount = false) {
     const decoded = await this.firebaseService.verifyToken(idToken);
 
     const phone = decoded.phone_number?.trim();
