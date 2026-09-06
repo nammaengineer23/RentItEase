@@ -252,9 +252,7 @@ class AuthenticationProvider extends ChangeNotifier {
         throw Exception('Google did not return an ID token.');
       }
 
-      final credential = GoogleAuthProvider.credential(
-        idToken: googleIdToken,
-      );
+      final credential = GoogleAuthProvider.credential(idToken: googleIdToken);
       final firebaseCredential = await FirebaseAuth.instance
           .signInWithCredential(credential);
       final firebaseIdToken = await firebaseCredential.user?.getIdToken(true);
@@ -264,7 +262,10 @@ class AuthenticationProvider extends ChangeNotifier {
       }
 
       _pendingGoogleIdToken = firebaseIdToken;
-      final response = await _repository.firebaseLogin(firebaseIdToken);
+      final response = await _repository.firebaseLogin(
+        firebaseIdToken,
+        createAccount: true,
+      );
       _authResponse = response;
       await _saveSession(response);
       _pendingGoogleIdToken = null;
@@ -318,25 +319,25 @@ class AuthenticationProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-  _errorMessage = null;
+    _errorMessage = null;
 
-  try {
-    await _pushNotificationService.deactivate();
-    await _repository.logout();
-  } finally {
-    // Always clear local authentication state.
-    //
-    // AuthenticationService.logout() also clears:
-    // accessToken
-    // refreshToken
-    //
-    // even when the backend request fails.
-    _authResponse = null;
-    _isLoading = false;
+    try {
+      await _pushNotificationService.deactivate();
+      await _repository.logout();
+    } finally {
+      // Always clear local authentication state.
+      //
+      // AuthenticationService.logout() also clears:
+      // accessToken
+      // refreshToken
+      //
+      // even when the backend request fails.
+      _authResponse = null;
+      _isLoading = false;
 
-    notifyListeners();
+      notifyListeners();
+    }
   }
-}
 
   Future<void> loadSavedSession() async {
     try {

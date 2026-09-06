@@ -240,7 +240,7 @@ export class AuthService {
     id: string;
     fullName: string;
     email: string;
-    phone: string;
+    phone: string | null;
     role: string;
     photoUrl: string | null;
   }) {
@@ -365,11 +365,7 @@ export class AuthService {
   // ==========================================
   // Firebase Login
   // ==========================================
-  async firebaseLogin(
-    idToken: string,
-    createAccount = false,
-    phoneIdToken?: string,
-  ) {
+  async firebaseLogin(idToken: string, createAccount = false) {
     const decoded = await this.firebaseService.verifyToken(idToken);
 
     const phone = decoded.phone_number?.trim();
@@ -402,38 +398,10 @@ export class AuthService {
         );
       }
 
-      if (!phoneIdToken) {
-        throw new UnauthorizedException(
-          'Phone verification is required to create an account.',
-        );
-      }
-
-      const decodedPhone = await this.firebaseService.verifyToken(phoneIdToken);
-      const verifiedPhone = decodedPhone.phone_number?.trim();
-      if (!verifiedPhone) {
-        throw new UnauthorizedException(
-          'Verified phone number not found in Firebase token.',
-        );
-      }
-
-      const phoneOwner = await this.prisma.user.findFirst({
-        where: {
-          OR: [
-            { phone: verifiedPhone },
-            { phone: this.normalizePhone(verifiedPhone) },
-          ],
-        },
-      });
-      if (phoneOwner) {
-        throw new ConflictException(
-          'This mobile number is already registered. Please sign in or use a different number.',
-        );
-      }
-
       user = await this.prisma.user.create({
         data: {
           fullName: decoded.name ?? 'RentItEase User',
-          phone: this.normalizePhone(verifiedPhone),
+          phone: null,
           email,
           passwordHash: '',
           photoUrl: decoded.picture,
