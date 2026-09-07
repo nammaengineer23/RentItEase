@@ -45,10 +45,14 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
       if (widget.location.startsWith('/profile') ||
           widget.location.startsWith('/settings'))
         return 4;
-      if (widget.location.startsWith('/search')) return 1;
+      if (widget.location.startsWith('/search')) {
+        return 1;
+      }
       return 0;
     }
-    if (widget.location.startsWith('/search')) return 1;
+    if (widget.location.startsWith('/search')) {
+      return 1;
+    }
     if (widget.location.startsWith('/favorites')) return 2;
     if (widget.location.startsWith('/my-bookings') ||
         widget.location.startsWith('/payment')) {
