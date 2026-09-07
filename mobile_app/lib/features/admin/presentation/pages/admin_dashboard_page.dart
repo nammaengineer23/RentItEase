@@ -429,11 +429,22 @@ class _UsersView extends ConsumerWidget {
                       : _text(user, 'fullName')[0].toUpperCase(),
                 ),
               ),
-              title: Text(_text(user, 'fullName')),
-              subtitle: Text(
-                '${_text(user, 'email')}\n'
-                '$role • ${active ? 'Active' : 'Inactive'} • '
-                '${_number(user, 'totalProperties')} properties',
+              title: Text(
+                _text(user, 'fullName'),
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _text(user, 'email'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    '$role • ${active ? 'Active' : 'Inactive'} • ${_number(user, 'totalProperties')} properties',
+                  ),
+                ],
               ),
               isThreeLine: true,
               onTap: () =>
@@ -548,106 +559,122 @@ class _PropertiesView extends ConsumerWidget {
       error: state.error,
       empty: state.properties.isEmpty,
       onRefresh: notifier.loadProperties,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: state.properties.length,
-        itemBuilder: (context, index) {
-          final property = state.properties[index];
-          final visible = property['isAvailable'] == true;
-          final verified = property['isVerified'] == true;
-          final owner = _section(property, 'owner');
-          final image = property['primaryImage']?.toString();
+      child: consentedProperties.isEmpty
+          ? ListView(
+              children: const [
+                SizedBox(height: 160),
+                Center(child: Icon(Icons.campaign_outlined, size: 56)),
+                SizedBox(height: 12),
+                Center(
+                  child: Text('No social-media consented properties yet.'),
+                ),
+              ],
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: state.properties.length,
+              itemBuilder: (context, index) {
+                final property = state.properties[index];
+                final visible = property['isAvailable'] == true;
+                final verified = property['isVerified'] == true;
+                final owner = _section(property, 'owner');
+                final image = property['primaryImage']?.toString();
 
-          return Card(
-            child: ListTile(
-              leading: SizedBox.square(
-                dimension: 58,
-                child: image == null || image.isEmpty
-                    ? const Icon(Icons.home_work_outlined)
-                    : ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) =>
-                              const Icon(Icons.broken_image_outlined),
-                        ),
-                      ),
-              ),
-              title: Text(_text(property, 'title')),
-              subtitle: Text(
-                '${_text(property, 'city')} • ₹${_number(property, 'price')}\n'
-                'Owner: ${_text(owner, 'fullName')} • '
-                '${verified ? 'Verified' : 'Pending verification'} • '
-                '${visible ? 'Visible' : 'Hidden'}',
-              ),
-              isThreeLine: true,
-              onTap: () => _showPropertyDetails(
-                context,
-                notifier,
-                _text(property, 'id'),
-              ),
-              trailing: PopupMenuButton<String>(
-                onSelected: (action) async {
-                  if (action == 'approve') {
-                    await _runAction(
-                      context,
-                      () => notifier.approveProperty(_text(property, 'id')),
-                      'Property and owner approved',
-                    );
-                  } else if (action == 'premium') {
-                    await _runAction(
-                      context,
-                      () => notifier.markPropertyPremium(
-                        _text(property, 'id'),
-                        _text(owner, 'id'),
-                      ),
-                      'Property marked premium for 30 days',
-                    );
-                  } else if (action == 'toggle') {
-                    await _runAction(
-                      context,
-                      () => notifier.setPropertyVisible(
-                        _text(property, 'id'),
-                        !visible,
-                      ),
-                      visible ? 'Property hidden' : 'Property visible',
-                    );
-                  } else if (action == 'delete' &&
-                      await _confirm(
-                        context,
-                        'Delete property?',
-                        'This permanently removes the property.',
-                      )) {
-                    if (!context.mounted) return;
-                    await _runAction(
-                      context,
-                      () => notifier.deleteProperty(_text(property, 'id')),
-                      'Property deleted',
-                    );
-                  }
-                },
-                itemBuilder: (_) => [
-                  if (!verified)
-                    const PopupMenuItem(
-                      value: 'approve',
-                      child: Text('Approve property & owner'),
+                return Card(
+                  child: ListTile(
+                    leading: SizedBox.square(
+                      dimension: 58,
+                      child: image == null || image.isEmpty
+                          ? const Icon(Icons.home_work_outlined)
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                image,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) =>
+                                    const Icon(Icons.broken_image_outlined),
+                              ),
+                            ),
                     ),
-                  const PopupMenuItem(
-                    value: 'premium',
-                    child: Text('Make Premium (30 days)'),
+                    title: Text(_text(property, 'title')),
+                    subtitle: Text(
+                      '${_text(property, 'city')} • ₹${_number(property, 'price')}\n'
+                      'Owner: ${_text(owner, 'fullName')} • '
+                      '${verified ? 'Verified' : 'Pending verification'} • '
+                      '${visible ? 'Visible' : 'Hidden'}',
+                    ),
+                    isThreeLine: true,
+                    onTap: () => _showPropertyDetails(
+                      context,
+                      notifier,
+                      _text(property, 'id'),
+                    ),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (action) async {
+                        if (action == 'approve') {
+                          await _runAction(
+                            context,
+                            () =>
+                                notifier.approveProperty(_text(property, 'id')),
+                            'Property and owner approved',
+                          );
+                        } else if (action == 'premium') {
+                          await _runAction(
+                            context,
+                            () => notifier.markPropertyPremium(
+                              _text(property, 'id'),
+                              _text(owner, 'id'),
+                            ),
+                            'Property marked premium for 30 days',
+                          );
+                        } else if (action == 'toggle') {
+                          await _runAction(
+                            context,
+                            () => notifier.setPropertyVisible(
+                              _text(property, 'id'),
+                              !visible,
+                            ),
+                            visible ? 'Property hidden' : 'Property visible',
+                          );
+                        } else if (action == 'delete' &&
+                            await _confirm(
+                              context,
+                              'Delete property?',
+                              'This permanently removes the property.',
+                            )) {
+                          if (!context.mounted) return;
+                          await _runAction(
+                            context,
+                            () =>
+                                notifier.deleteProperty(_text(property, 'id')),
+                            'Property deleted',
+                          );
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        if (!verified)
+                          const PopupMenuItem(
+                            value: 'approve',
+                            child: Text('Approve property & owner'),
+                          ),
+                        const PopupMenuItem(
+                          value: 'premium',
+                          child: Text('Make Premium (30 days)'),
+                        ),
+                        PopupMenuItem(
+                          value: 'toggle',
+                          child: Text(visible ? 'Hide' : 'Unhide'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Delete'),
+                        ),
+                      ],
+                    ),
                   ),
-                  PopupMenuItem(
-                    value: 'toggle',
-                    child: Text(visible ? 'Hide' : 'Unhide'),
-                  ),
-                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 }
@@ -817,20 +844,33 @@ class _ActivityView extends ConsumerWidget {
                               ),
                               'Visit updated',
                             ),
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(
-                                value: 'approve',
-                                child: Text('Approve'),
-                              ),
-                              PopupMenuItem(
-                                value: 'reject',
-                                child: Text('Reject'),
-                              ),
-                              PopupMenuItem(
-                                value: 'complete',
-                                child: Text('Complete'),
-                              ),
-                            ],
+                            itemBuilder: (_) {
+                              if (status == 'PENDING') {
+                                return const [
+                                  PopupMenuItem(
+                                    value: 'approve',
+                                    child: Text('Approve'),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'reject',
+                                    child: Text('Reject'),
+                                  ),
+                                ];
+                              }
+                              if (status == 'APPROVED') {
+                                return const [
+                                  PopupMenuItem(
+                                    value: 'complete',
+                                    child: Text('Complete'),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'reject',
+                                    child: Text('Reject'),
+                                  ),
+                                ];
+                              }
+                              return const [];
+                            },
                           ),
                         ),
                       );
