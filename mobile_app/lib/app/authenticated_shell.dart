@@ -43,8 +43,9 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
       if (widget.location.startsWith('/owner/analytics')) return 2;
       if (widget.location.startsWith('/owner/visit-requests')) return 3;
       if (widget.location.startsWith('/profile') ||
-          widget.location.startsWith('/settings'))
+          widget.location.startsWith('/settings')) {
         return 4;
+      }
       if (widget.location.startsWith('/search')) {
         return 1;
       }
