@@ -13,6 +13,17 @@ class OwnerVisitsPage extends ConsumerStatefulWidget {
 }
 
 class _OwnerVisitsPageState extends ConsumerState<OwnerVisitsPage> {
+  static const _statuses = [
+    'ALL',
+    'PENDING',
+    'APPROVED',
+    'COMPLETED',
+    'REJECTED',
+    'CANCELLED',
+  ];
+
+  String _selectedStatus = 'ALL';
+
   @override
   void initState() {
     super.initState();
@@ -25,95 +36,144 @@ class _OwnerVisitsPageState extends ConsumerState<OwnerVisitsPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ownerProvider);
+    final visits = state.visitRequests.where((visit) {
+      return _selectedStatus == 'ALL' || visit.status == _selectedStatus;
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('visitRequests'))),
-      body: RefreshIndicator(
-        onRefresh: () =>
-            ref.read(ownerProvider.notifier).refreshVisitRequests(),
-        child: state.loading
-            ? const Center(child: CircularProgressIndicator())
-            : state.error != null
-            ? ListView(
-                children: [
-                  const SizedBox(height: 120),
-                  const Icon(Icons.error_outline, size: 70, color: Colors.red),
-                  const SizedBox(height: 20),
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(state.error!, textAlign: TextAlign.center),
+      body: Column(
+        children: [
+          SizedBox(
+            height: 52,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              scrollDirection: Axis.horizontal,
+              itemCount: _statuses.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final status = _statuses[index];
+                return ChoiceChip(
+                  label: Text(status[0] + status.substring(1).toLowerCase()),
+                  selected: _selectedStatus == status,
+                  onSelected: (_) => setState(() => _selectedStatus = status),
+                );
+              },
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () =>
+                  ref.read(ownerProvider.notifier).refreshVisitRequests(),
+              child: state.loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : state.error != null
+                  ? ListView(
+                      children: [
+                        const SizedBox(height: 120),
+                        const Icon(
+                          Icons.error_outline,
+                          size: 70,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 20),
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Text(
+                              state.error!,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : visits.isEmpty
+                  ? ListView(
+                      children: [
+                        const SizedBox(height: 120),
+                        const Icon(
+                          Icons.event_busy,
+                          size: 80,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(height: 20),
+                        Center(
+                          child: Text(
+                            context.tr('noVisitRequests'),
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: visits.length,
+                      itemBuilder: (context, index) {
+                        final visit = visits[index];
+
+                        return VisitRequestCard(
+                          visit: visit,
+
+                          onApprove: visit.status == 'PENDING'
+                              ? () async {
+                                  await ref
+                                      .read(ownerProvider.notifier)
+                                      .approveVisit(visit.id);
+
+                                  if (!context.mounted) return;
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        context.tr('visitApproved'),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              : null,
+
+                          onReject: visit.status == 'PENDING'
+                              ? () async {
+                                  await ref
+                                      .read(ownerProvider.notifier)
+                                      .rejectVisit(visit.id);
+
+                                  if (!context.mounted) return;
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        context.tr('visitRejected'),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              : null,
+
+                          onComplete: visit.status == 'APPROVED'
+                              ? () async {
+                                  await ref
+                                      .read(ownerProvider.notifier)
+                                      .completeVisit(visit.id);
+
+                                  if (!context.mounted) return;
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        context.tr('visitCompleted'),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              : null,
+                        );
+                      },
                     ),
-                  ),
-                ],
-              )
-            : state.visitRequests.isEmpty
-            ? ListView(
-              children: [
-                  const SizedBox(height: 120),
-                  const Icon(Icons.event_busy, size: 80, color: Colors.grey),
-                  const SizedBox(height: 20),
-                  Center(
-                    child: Text(
-                      context.tr('noVisitRequests'),
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ),
-                ],
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: state.visitRequests.length,
-                itemBuilder: (context, index) {
-                  final visit = state.visitRequests[index];
-
-                  return VisitRequestCard(
-                    visit: visit,
-
-                    onApprove: visit.status == 'PENDING'
-                        ? () async {
-                            await ref
-                                .read(ownerProvider.notifier)
-                                .approveVisit(visit.id);
-
-                            if (!context.mounted) return;
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(context.tr('visitApproved'))),
-                            );
-                          }
-                        : null,
-
-                    onReject: visit.status == 'PENDING'
-                        ? () async {
-                            await ref
-                                .read(ownerProvider.notifier)
-                                .rejectVisit(visit.id);
-
-                            if (!context.mounted) return;
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(context.tr('visitRejected'))),
-                            );
-                          }
-                        : null,
-
-                    onComplete: visit.status == 'APPROVED'
-                        ? () async {
-                            await ref
-                                .read(ownerProvider.notifier)
-                                .completeVisit(visit.id);
-
-                            if (!context.mounted) return;
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(context.tr('visitCompleted'))),
-                            );
-                          }
-                        : null,
-                  );
-                },
-              ),
+            ),
+          ),
+        ],
       ),
     );
   }
