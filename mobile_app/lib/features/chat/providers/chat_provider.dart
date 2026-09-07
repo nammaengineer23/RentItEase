@@ -77,8 +77,16 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   Future<void> openConversation(String conversationId) async {
+    final id = conversationId.trim();
+    if (id.isEmpty) {
+      state = state.copyWith(
+        error: 'A conversation could not be opened. Please return to Chat and try again.',
+      );
+      return;
+    }
+
     state = state.copyWith(
-      activeConversationId: conversationId,
+      activeConversationId: id,
       messages: const [],
       isLoadingMessages: true,
       clearError: true,
@@ -86,9 +94,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     try {
       final messages = await _repository.getMessages(
-        conversationId: conversationId,
+        conversationId: id,
       );
-      await _repository.markAsRead(conversationId: conversationId);
+      await _repository.markAsRead(conversationId: id);
 
       state = state.copyWith(
         messages: messages,
@@ -103,6 +111,14 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   Future<void> createAndOpenConversation(String propertyId) async {
+    final id = propertyId.trim();
+    if (id.isEmpty) {
+      state = state.copyWith(
+        error: 'Property details are unavailable. Please return to the property and try again.',
+      );
+      return;
+    }
+
     state = state.copyWith(
       messages: const [],
       isLoadingMessages: true,
@@ -111,7 +127,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     try {
       final conversation = await _repository.createConversation(
-        propertyId: propertyId,
+        propertyId: id,
       );
       final messages = await _repository.getMessages(
         conversationId: conversation.conversationId,
@@ -179,6 +195,11 @@ class ChatNotifier extends StateNotifier<ChatState> {
     if (conversationId == null ||
         trimmed.isEmpty ||
         (state.isSending && !alreadySending)) {
+      if (conversationId == null || conversationId.isEmpty) {
+        state = state.copyWith(
+          error: 'Open a conversation before sending a message.',
+        );
+      }
       return false;
     }
 

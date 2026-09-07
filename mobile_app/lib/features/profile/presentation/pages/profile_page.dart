@@ -124,6 +124,14 @@ class ProfilePage extends ConsumerWidget {
                   },
                 ),
 
+                if (profile.role.trim().toUpperCase() != 'ADMIN')
+                  ProfileMenuTile(
+                    icon: Icons.chat_bubble_outline,
+                    title: 'Chat',
+                    subtitle: 'View and reply to property conversations',
+                    onTap: () => context.push('/chat-list'),
+                  ),
+
                 ProfileMenuTile(
                   icon: Icons.workspace_premium_outlined,
                   title: 'Premium Membership',

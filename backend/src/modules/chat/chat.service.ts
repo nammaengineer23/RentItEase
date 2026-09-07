@@ -44,6 +44,12 @@ export class ChatService {
       );
     }
 
+    if (property.ownerId === tenantId) {
+      throw new BadRequestException(
+        'Open Chat to reply to tenant conversations for your property.',
+      );
+    }
+
     const existingConversation =
       await this.prisma.conversation.findFirst({
         where: {

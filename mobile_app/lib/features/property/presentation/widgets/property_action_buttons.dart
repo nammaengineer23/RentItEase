@@ -15,18 +15,19 @@ class PropertyActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: onContactOwner,
-            icon: const Icon(Icons.chat_bubble_outline),
-            label: Text(context.tr('chat')),
+        if (onContactOwner != null)
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: onContactOwner,
+              icon: const Icon(Icons.chat_bubble_outline),
+              label: Text(context.tr('chat')),
+            ),
           ),
-        ),
 
-        const SizedBox(width: 12),
+        if (onContactOwner != null) const SizedBox(width: 12),
 
         Expanded(
-          flex: 2,
+          flex: onContactOwner == null ? 1 : 2,
           child: ElevatedButton.icon(
             onPressed: onBookVisit,
             icon: const Icon(Icons.calendar_today),

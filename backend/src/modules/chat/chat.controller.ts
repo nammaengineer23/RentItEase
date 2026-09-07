@@ -79,6 +79,7 @@ export class ChatController {
       conversationId,
       user.id,
       dto.text,
+      dto.messageType,
     );
   }
 

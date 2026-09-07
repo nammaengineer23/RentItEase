@@ -8,6 +8,7 @@ import '../../domain/entities/search_entity.dart';
 import '../../providers/search_provider.dart';
 import '../../../property/providers/property_provider.dart';
 import '../../../property/presentation/widgets/property_card.dart';
+import '../../../authentication/providers/authentication_provider.dart';
 import '../../../../core/utils/app_error_message.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
@@ -325,6 +326,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(searchProvider);
+    final currentUserId =
+        ref.watch(authenticationProvider).authResponse?.user.id;
 
     return Scaffold(
       appBar: AppBar(
@@ -405,8 +408,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                 'ownerName': property.ownerName,
                               },
                             ),
-                            onContactOwner: () =>
-                                context.push('/chat?propertyId=${property.id}'),
+                            onContactOwner: property.ownerId == currentUserId
+                                ? null
+                                : () => context.push(
+                                      '/chat?propertyId=${property.id}',
+                                    ),
                           ),
                         ),
                       );
