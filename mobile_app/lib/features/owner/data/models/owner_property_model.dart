@@ -34,6 +34,8 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
     required super.views,
     required super.favorites,
     required super.visitRequests,
+    super.imageUrls,
+    super.amenities,
   });
 
   factory OwnerPropertyModel.fromJson(Map<String, dynamic> json) {
@@ -63,7 +65,7 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
       furnishing: json['furnishing']?.toString() ?? '',
       parking: json['parking'] as bool? ?? false,
       petFriendly: json['petFriendly'] as bool? ?? false,
-      imageUrl: json['imageUrl']?.toString() ?? '',
+      imageUrl: json['imageUrl']?.toString() ?? _primaryImageUrl(json),
       isAvailable: json['isAvailable'] as bool? ?? true,
       isVerified: json['isVerified'] as bool? ?? false,
       totalViews: _toInt(json['totalViews']),
@@ -72,6 +74,8 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
       views: views,
       favorites: _toInt(json['favorites']),
       visitRequests: _toInt(json['visitRequests']),
+      imageUrls: _imageUrls(json),
+      amenities: _amenities(json),
     );
   }
 
@@ -109,6 +113,8 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
       'views': views,
       'favorites': favorites,
       'visitRequests': visitRequests,
+      'imageUrls': imageUrls,
+      'amenities': amenities,
     };
   }
 
@@ -146,5 +152,32 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
     }
 
     return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+  }
+
+  static List<String> _imageUrls(Map<String, dynamic> json) {
+    final images = json['images'];
+    if (images is! List) return const [];
+    return images
+        .whereType<Map>()
+        .map((image) => image['imageUrl']?.toString() ?? '')
+        .where((url) => url.isNotEmpty)
+        .toList();
+  }
+
+  static String _primaryImageUrl(Map<String, dynamic> json) {
+    final imageUrls = _imageUrls(json);
+    return imageUrls.isEmpty ? '' : imageUrls.first;
+  }
+
+  static List<String> _amenities(Map<String, dynamic> json) {
+    final amenities = json['amenities'];
+    if (amenities is! List) return const [];
+    return amenities
+        .map((amenity) {
+          if (amenity is Map) return amenity['name']?.toString() ?? '';
+          return amenity?.toString() ?? '';
+        })
+        .where((name) => name.isNotEmpty)
+        .toList();
   }
 }

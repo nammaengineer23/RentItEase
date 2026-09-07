@@ -32,6 +32,8 @@ class OwnerPropertyEntity {
     required this.views,
     required this.favorites,
     required this.visitRequests,
+    this.imageUrls = const [],
+    this.amenities = const [],
   });
 
   final String id;
@@ -78,4 +80,7 @@ class OwnerPropertyEntity {
   final int views;
   final int favorites;
   final int visitRequests;
+
+  final List<String> imageUrls;
+  final List<String> amenities;
 }
