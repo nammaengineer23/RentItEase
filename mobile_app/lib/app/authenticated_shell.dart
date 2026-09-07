@@ -21,8 +21,7 @@ class AuthenticatedShell extends ConsumerStatefulWidget {
   final Widget child;
 
   @override
-  ConsumerState<AuthenticatedShell> createState() =>
-      _AuthenticatedShellState();
+  ConsumerState<AuthenticatedShell> createState() => _AuthenticatedShellState();
 }
 
 class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
@@ -39,7 +38,16 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
 
   bool get _showNavigation => !_publicPaths.contains(widget.location);
 
-  int get _selectedIndex {
+  int _selectedIndexForRole(String? role) {
+    if (role == 'OWNER') {
+      if (widget.location.startsWith('/owner/analytics')) return 2;
+      if (widget.location.startsWith('/owner/visit-requests')) return 3;
+      if (widget.location.startsWith('/profile') ||
+          widget.location.startsWith('/settings'))
+        return 4;
+      if (widget.location.startsWith('/search')) return 1;
+      return 0;
+    }
     if (widget.location.startsWith('/search')) return 1;
     if (widget.location.startsWith('/favorites')) return 2;
     if (widget.location.startsWith('/my-bookings') ||
@@ -71,22 +79,22 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) => _handleBack(role),
       child: Scaffold(
-      body: widget.child,
-      bottomNavigationBar: HomeBottomNavigation(
-        currentIndex: _selectedIndex,
-        ownerMode: role == 'OWNER',
-        onTap: (index) {
-          final destinations = <String>[
-            role == 'OWNER' ? '/owner/dashboard' : '/home',
-            '/search',
-            role == 'OWNER' ? '/owner/analytics' : '/favorites',
-            role == 'OWNER' ? '/owner/visit-requests' : '/my-bookings',
-            '/profile',
-          ];
+        body: widget.child,
+        bottomNavigationBar: HomeBottomNavigation(
+          currentIndex: _selectedIndexForRole(role),
+          ownerMode: role == 'OWNER',
+          onTap: (index) {
+            final destinations = <String>[
+              role == 'OWNER' ? '/owner/dashboard' : '/home',
+              '/search',
+              role == 'OWNER' ? '/owner/analytics' : '/favorites',
+              role == 'OWNER' ? '/owner/visit-requests' : '/my-bookings',
+              '/profile',
+            ];
 
-          context.go(destinations[index]);
-        },
-      ),
+            context.go(destinations[index]);
+          },
+        ),
       ),
     );
   }
@@ -181,11 +189,16 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
 
     if (action == 'submit') {
       try {
-        await ref.read(dioProvider).post('/app-feedback', data: {
-          'rating': rating,
-          'comment': commentController.text.trim(),
-          'platform': 'android',
-        });
+        await ref
+            .read(dioProvider)
+            .post(
+              '/app-feedback',
+              data: {
+                'rating': rating,
+                'comment': commentController.text.trim(),
+                'platform': 'android',
+              },
+            );
         await preferences.setBool('app_rating_submitted', true);
 
         if (rating >= 4) {
@@ -197,7 +210,9 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
       } catch (error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${context.tr('unableSaveRating')}: $error')),
+            SnackBar(
+              content: Text('${context.tr('unableSaveRating')}: $error'),
+            ),
           );
         }
       }
