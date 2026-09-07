@@ -50,14 +50,15 @@ class AuthenticationService {
   Future<AuthResponse> registerVerified(
     RegisterRequest request, {
     required String emailVerificationToken,
-    required String phoneIdToken,
+    String? phoneIdToken,
   }) async {
     final response = await _client.dio.post<Map<String, dynamic>>(
       ApiPaths.register,
       data: {
         ...request.toJson(),
         'emailVerificationToken': emailVerificationToken,
-        'phoneIdToken': phoneIdToken,
+        if (phoneIdToken != null && phoneIdToken.isNotEmpty)
+          'phoneIdToken': phoneIdToken,
       },
     );
 

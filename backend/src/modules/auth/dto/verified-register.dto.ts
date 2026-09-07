@@ -1,10 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 import { RegisterDto } from './register.dto';
 
 export class VerifiedRegisterDto extends RegisterDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Short-lived proof returned after email OTP verification',
   })
   @IsString()
@@ -15,6 +15,6 @@ export class VerifiedRegisterDto extends RegisterDto {
     description: 'Firebase ID token containing the verified phone number',
   })
   @IsString()
-  @IsNotEmpty()
-  phoneIdToken!: string;
+  @IsOptional()
+  phoneIdToken?: string;
 }

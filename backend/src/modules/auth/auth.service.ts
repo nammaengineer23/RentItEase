@@ -89,37 +89,39 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email verification proof.');
     }
 
-    const decodedPhone = await this.firebaseService.verifyToken(
-      dto.phoneIdToken,
-    );
-    const verifiedPhone = decodedPhone.phone_number;
-
-    if (!verifiedPhone) {
-      throw new UnauthorizedException(
-        'Verified phone number not found in Firebase token.',
+    const phone = dto.phone?.trim() || null;
+    if (phone != null) {
+      if (!dto.phoneIdToken) {
+        throw new UnauthorizedException(
+          'Verify the mobile number before registering it.',
+        );
+      }
+      const decodedPhone = await this.firebaseService.verifyToken(
+        dto.phoneIdToken,
       );
-    }
-
-    if (this.normalizePhone(verifiedPhone) !== this.normalizePhone(dto.phone)) {
-      throw new UnauthorizedException(
-        'Verified phone number does not match registration phone.',
-      );
-    }
-
-    const phoneOwner = await this.prisma.user.findUnique({
-      where: { phone: dto.phone },
-    });
-
-    if (phoneOwner) {
-      throw new ConflictException(
-        'This mobile number is already registered. Please sign in or use a different number.',
-      );
+      const verifiedPhone = decodedPhone.phone_number;
+      if (
+        !verifiedPhone ||
+        this.normalizePhone(verifiedPhone) !== this.normalizePhone(phone)
+      ) {
+        throw new UnauthorizedException(
+          'Verified phone number does not match registration phone.',
+        );
+      }
+      const phoneOwner = await this.prisma.user.findUnique({
+        where: { phone },
+      });
+      if (phoneOwner) {
+        throw new ConflictException(
+          'This mobile number is already registered. Please sign in or use a different number.',
+        );
+      }
     }
 
     return this.register({
       fullName: dto.fullName,
       email,
-      phone: dto.phone,
+      phone,
       password: dto.password,
     });
   }

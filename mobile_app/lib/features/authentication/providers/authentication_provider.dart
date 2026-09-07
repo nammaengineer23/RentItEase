@@ -83,7 +83,7 @@ class AuthenticationProvider extends ChangeNotifier {
   Future<bool> register({
     required String fullName,
     required String email,
-    required String phone,
+    String? phone,
     required String password,
   }) async {
     _setLoading(true);
@@ -158,10 +158,10 @@ class AuthenticationProvider extends ChangeNotifier {
   Future<bool> registerVerified({
     required String fullName,
     required String email,
-    required String phone,
+    String? phone,
     required String password,
     required String emailVerificationToken,
-    required String phoneIdToken,
+    String? phoneIdToken,
   }) async {
     _setLoading(true);
     try {

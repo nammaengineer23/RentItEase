@@ -81,27 +81,27 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       return;
     }
 
-    String phoneProof;
-    try {
-      phoneProof = await FirebasePhoneOtpService().verifyPhone(
-        phoneNumber: '+91$phone',
-        requestCode: () => showOtpCodeDialog(
-          context,
-          title: context.tr('verifyPhoneNumber'),
-          destination: '+91 $phone',
-        ),
-      );
-    } catch (error) {
-      if (mounted) {
-        _showError(userFriendlyError(error));
+    String? phoneProof;
+    if (phone.isNotEmpty) {
+      try {
+        phoneProof = await FirebasePhoneOtpService().verifyPhone(
+          phoneNumber: '+91$phone',
+          requestCode: () => showOtpCodeDialog(
+            context,
+            title: context.tr('verifyPhoneNumber'),
+            destination: '+91 $phone',
+          ),
+        );
+      } catch (error) {
+        if (mounted) _showError(userFriendlyError(error));
+        return;
       }
-      return;
     }
 
     final success = await provider.registerVerified(
       fullName: _nameController.text.trim(),
       email: email,
-      phone: phone,
+      phone: phone.isEmpty ? null : phone,
       password: _passwordController.text,
       emailVerificationToken: emailProof,
       phoneIdToken: phoneProof,
@@ -120,7 +120,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       return;
     }
 
-    _showError(provider.errorMessage ?? context.tr('registrationFailed'));
+    _showError(
+      userFriendlyError(
+        provider.errorMessage ?? context.tr('registrationFailed'),
+      ),
+    );
   }
 
   void _showError(String message) {
@@ -252,10 +256,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     textInputAction: TextInputAction.next,
                     autofillHints: const [AutofillHints.telephoneNumber],
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return context.tr('enterMobileNumber');
-                      }
-
+                      if (value == null || value.trim().isEmpty) return null;
                       if (!RegExp(r'^[6-9]\d{9}$').hasMatch(value.trim())) {
                         return context.tr('validMobileNumber');
                       }

@@ -4,9 +4,8 @@ import '../models/register_request.dart';
 import '../../services/authentication_service.dart';
 
 class AuthenticationRepositoryImpl {
-  AuthenticationRepositoryImpl({
-    AuthenticationService? service,
-  }) : _service = service ?? AuthenticationService();
+  AuthenticationRepositoryImpl({AuthenticationService? service})
+    : _service = service ?? AuthenticationService();
 
   final AuthenticationService _service;
 
@@ -29,7 +28,7 @@ class AuthenticationRepositoryImpl {
   Future<AuthResponse> registerVerified(
     RegisterRequest request, {
     required String emailVerificationToken,
-    required String phoneIdToken,
+    String? phoneIdToken,
   }) {
     return _service.registerVerified(
       request,

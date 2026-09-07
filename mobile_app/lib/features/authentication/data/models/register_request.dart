@@ -1,13 +1,13 @@
 class RegisterRequest {
   final String fullName;
   final String email;
-  final String phone;
+  final String? phone;
   final String password;
 
   const RegisterRequest({
     required this.fullName,
     required this.email,
-    required this.phone,
+    this.phone,
     required this.password,
   });
 
@@ -15,7 +15,7 @@ class RegisterRequest {
     return {
       'fullName': fullName,
       'email': email,
-      'phone': phone,
+      if (phone != null && phone!.trim().isNotEmpty) 'phone': phone,
       'password': password,
     };
   }
@@ -24,7 +24,7 @@ class RegisterRequest {
     return RegisterRequest(
       fullName: json['fullName'] as String,
       email: json['email'] as String,
-      phone: json['phone'] as String,
+      phone: json['phone'] as String?,
       password: json['password'] as String,
     );
   }
