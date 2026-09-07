@@ -96,6 +96,12 @@ class AppRouter {
         return auth.isLoggedIn ? '/home' : '/auth';
       }
 
+      // My Visits is a tenant-only screen. Admin activity uses its own
+      // dashboard route and must not receive the all-visits response here.
+      if (location == '/my-visits' && role != 'USER') {
+        return role == 'ADMIN' ? '/admin/dashboard' : '/home';
+      }
+
       if (role == 'ADMIN' &&
           !publicPath &&
           !location.startsWith('/admin/') &&

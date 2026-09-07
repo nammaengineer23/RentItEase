@@ -16,6 +16,8 @@ class VisitCard extends StatelessWidget {
 
   final VoidCallback? onCancel;
 
+  final VoidCallback? onCreateBooking;
+
   const VisitCard({
     super.key,
     required this.visit,
@@ -24,6 +26,7 @@ class VisitCard extends StatelessWidget {
     this.onReject,
     this.onComplete,
     this.onCancel,
+    this.onCreateBooking,
   });
 
   String _formatDate(DateTime date) {
@@ -155,6 +158,17 @@ class VisitCard extends StatelessWidget {
                       onPressed: onComplete,
                       icon: const Icon(Icons.task_alt),
                       label: const Text("Mark Completed"),
+                    ),
+                  ),
+                ],
+
+                if (!isOwner && visit.status == 'APPROVED') ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: onCreateBooking,
+                      icon: const Icon(Icons.assignment_turned_in_outlined),
+                      label: const Text('Create Booking'),
                     ),
                   ),
                 ],

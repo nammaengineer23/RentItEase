@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../booking/providers/booking_provider.dart';
 import '../../domain/entities/property_visit.dart';
 import '../../providers/property_visit_provider.dart';
 import '../widgets/visit_card.dart';
@@ -149,6 +151,9 @@ class MyVisitsPage extends ConsumerWidget {
                           }
                         }
                       : null,
+                  onCreateBooking: visit.status == 'APPROVED'
+                      ? () => _createBooking(context, ref, visit)
+                      : null,
                 );
               },
             ),
@@ -156,5 +161,49 @@ class MyVisitsPage extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  Future<void> _createBooking(
+    BuildContext context,
+    WidgetRef ref,
+    PropertyVisit visit,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Create booking?'),
+        content: Text(
+          'Create a booking request for ${visit.propertyTitle}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Create Booking'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ref.read(createBookingProvider).create(visitId: visit.id);
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Booking created successfully.')),
+      );
+      context.go('/my-bookings');
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
   }
 }
