@@ -32,6 +32,7 @@ class AuthenticationProvider extends ChangeNotifier {
   String? _errorMessage;
   AuthResponse? _authResponse;
   bool _googleSignInInitialized = false;
+  bool _sessionRestored = false;
   String? _pendingGoogleIdToken;
 
   bool get isLoading => _isLoading;
@@ -45,6 +46,8 @@ class AuthenticationProvider extends ChangeNotifier {
   AuthResponse? get authResponse => _authResponse;
 
   bool get isLoggedIn => _authResponse != null;
+
+  bool get isSessionRestored => _sessionRestored;
 
   void togglePasswordVisibility() {
     _obscurePassword = !_obscurePassword;
@@ -347,8 +350,10 @@ class AuthenticationProvider extends ChangeNotifier {
       }
     } catch (_) {
       _authResponse = null;
+    } finally {
+      _sessionRestored = true;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   Future<void> _saveSession(AuthResponse response) async {

@@ -6,12 +6,21 @@ import '../../domain/entities/settings_entity.dart';
 import '../../providers/settings_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/utils/app_error_message.dart';
+import '../../../authentication/providers/authentication_provider.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authenticationProvider);
+    if (!auth.isSessionRestored) {
+      return Scaffold(
+        appBar: AppBar(title: Text(context.tr('settings'))),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final settingsState = ref.watch(settingsProvider);
 
     return Scaffold(
