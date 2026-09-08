@@ -33,6 +33,21 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
       appBar: AppBar(
         title: Text(context.tr('ownerDashboard')),
         actions: [
+          PopupMenuButton<String>(
+            tooltip: 'Notifications and activity',
+            icon: const Icon(Icons.notifications_outlined),
+            onSelected: (value) => context.push(value),
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: '/notifications',
+                child: Text('Notifications'),
+              ),
+              PopupMenuItem(
+                value: '/owner/activity',
+                child: Text('Recent activity'),
+              ),
+            ],
+          ),
           IconButton(
             tooltip: context.tr('logout'),
             onPressed: () async {
