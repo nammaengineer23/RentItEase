@@ -429,11 +429,24 @@ class _UsersView extends ConsumerWidget {
                       : _text(user, 'fullName')[0].toUpperCase(),
                 ),
               ),
-              title: Text(_text(user, 'fullName')),
-              subtitle: Text(
-                '${_text(user, 'email')}\n'
-                '$role • ${active ? 'Active' : 'Inactive'} • '
-                '${_number(user, 'totalProperties')} properties',
+              title: Text(
+                _text(user, 'fullName'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _text(user, 'email'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    '$role • ${active ? 'Active' : 'Inactive'} • '
+                    '${_number(user, 'totalProperties')} properties',
+                  ),
+                ],
               ),
               isThreeLine: true,
               onTap: () =>
@@ -701,24 +714,38 @@ class _SocialMediaView extends ConsumerWidget {
       error: state.error,
       empty: consentedProperties.isEmpty,
       onRefresh: ref.read(adminProvider.notifier).loadSocialMedia,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: consentedProperties.length,
-        itemBuilder: (context, index) {
-          final property = consentedProperties[index];
-          final consent = _section(property, 'socialMarketingConsent');
-          return Card(
-            child: ListTile(
-              leading: const Icon(Icons.campaign_outlined),
-              title: Text(_text(property, 'title')),
-              subtitle: Text(
-                'Consent active • Platforms: ${_text(consent, 'platforms')}',
-              ),
-              trailing: const Icon(Icons.check_circle, color: Colors.green),
+      child: consentedProperties.isEmpty
+          ? ListView(
+              children: const [
+                SizedBox(height: 160),
+                Center(child: Icon(Icons.campaign_outlined, size: 56)),
+                SizedBox(height: 12),
+                Center(
+                  child: Text('No social-media consented properties yet.'),
+                ),
+              ],
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: consentedProperties.length,
+              itemBuilder: (context, index) {
+                final property = consentedProperties[index];
+                final consent = _section(property, 'socialMarketingConsent');
+                return Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.campaign_outlined),
+                    title: Text(_text(property, 'title')),
+                    subtitle: Text(
+                      'Consent active • Platforms: ${_text(consent, 'platforms')}',
+                    ),
+                    trailing: const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                    ),
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 }
