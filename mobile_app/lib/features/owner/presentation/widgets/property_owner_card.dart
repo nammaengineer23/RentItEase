@@ -31,14 +31,18 @@ class PropertyOwnerCard extends StatelessWidget {
           children: [
             AspectRatio(
               aspectRatio: 16 / 9,
-              child: Image.network(
-                property.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey.shade300,
-                  child: const Center(child: Icon(Icons.home, size: 60)),
-                ),
-              ),
+              child: property.imageUrl.trim().isEmpty
+                  ? _imagePlaceholder(context)
+                  : Image.network(
+                      property.imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) =>
+                          progress == null
+                          ? child
+                          : _imagePlaceholder(context, loading: true),
+                      errorBuilder: (context, error, stackTrace) =>
+                          _imagePlaceholder(context),
+                    ),
             ),
 
             Padding(
@@ -156,4 +160,19 @@ class PropertyOwnerCard extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _imagePlaceholder(BuildContext context, {bool loading = false}) {
+  return Container(
+    color: Colors.grey.shade200,
+    child: Center(
+      child: loading
+          ? const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(),
+            )
+          : const Icon(Icons.home_outlined, size: 60, color: Colors.grey),
+    ),
+  );
 }
