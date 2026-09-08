@@ -12,12 +12,12 @@ class DashboardSummaryModel extends DashboardSummaryEntity {
 
   factory DashboardSummaryModel.fromJson(Map<String, dynamic> json) {
     return DashboardSummaryModel(
-      totalProperties: json['totalProperties'] ?? 0,
-      activeProperties: json['activeProperties'] ?? 0,
-      totalViews: json['totalViews'] ?? 0,
-      pendingVisits: json['pendingVisits'] ?? 0,
-      completedVisits: json['completedVisits'] ?? 0,
-      totalFavorites: json['totalFavorites'] ?? 0,
+      totalProperties: _toInt(json['totalProperties']),
+      activeProperties: _toInt(json['activeProperties']),
+      totalViews: _toInt(json['totalViews']),
+      pendingVisits: _toInt(json['pendingVisits']),
+      completedVisits: _toInt(json['completedVisits']),
+      totalFavorites: _toInt(json['totalFavorites']),
     );
   }
 
@@ -48,5 +48,10 @@ class DashboardSummaryModel extends DashboardSummaryEntity {
       completedVisits: completedVisits ?? this.completedVisits,
       totalFavorites: totalFavorites ?? this.totalFavorites,
     );
+  }
+
+  static int _toInt(dynamic value) {
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 }
