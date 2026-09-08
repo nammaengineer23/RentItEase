@@ -14,15 +14,15 @@ class FirebasePhoneOtpService {
   }) async {
     final completer = Completer<String>();
 
-    Future<void> completeWithCredential(
-      PhoneAuthCredential credential,
-    ) async {
+    Future<void> completeWithCredential(PhoneAuthCredential credential) async {
       if (completer.isCompleted) return;
       try {
         final result = await _auth.signInWithCredential(credential);
         final idToken = await result.user?.getIdToken(true);
         if (idToken == null || idToken.isEmpty) {
-          throw Exception('Firebase did not return a phone verification token.');
+          throw Exception(
+            'Firebase did not return a phone verification token.',
+          );
         }
         if (!completer.isCompleted) completer.complete(idToken);
       } catch (error, stackTrace) {
@@ -57,7 +57,15 @@ class FirebasePhoneOtpService {
           ),
         );
       },
-      codeAutoRetrievalTimeout: (_) {},
+      codeAutoRetrievalTimeout: (_) {
+        if (!completer.isCompleted) {
+          completer.completeError(
+            TimeoutException(
+              'Verification timed out. Please request a new OTP and try again.',
+            ),
+          );
+        }
+      },
     );
 
     return completer.future;
