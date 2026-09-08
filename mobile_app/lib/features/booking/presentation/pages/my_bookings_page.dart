@@ -13,8 +13,17 @@ class MyBookingsPage extends ConsumerStatefulWidget {
 }
 
 class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
+  static const _statuses = [
+    'ALL',
+    'PAYMENT_PENDING',
+    'APPROVED',
+    'COMPLETED',
+    'CANCELLED',
+    'REJECTED',
+  ];
   final _searchController = TextEditingController();
   String _query = '';
+  String _selectedStatus = 'ALL';
 
   @override
   void dispose() {
@@ -42,68 +51,94 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
               ),
             ),
           ),
-          Expanded(child: bookingsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => _ErrorView(
-          error: error,
-          onRetry: () {
-            ref.invalidate(tenantBookingsProvider);
-          },
-        ),
-        data: (bookings) {
-          if (bookings.isEmpty) {
-            return const _EmptyBookingsView();
-          }
-
-          final query = _query.toLowerCase();
-          final visibleBookings = bookings.where((booking) {
-            if (query.isEmpty) return true;
-            return booking.propertyTitle.toLowerCase().contains(query) ||
-                booking.ownerName.toLowerCase().contains(query) ||
-                booking.status.toLowerCase().contains(query) ||
-                booking.location.toLowerCase().contains(query);
-          }).toList();
-
-          if (visibleBookings.isEmpty) {
-            return const Center(child: Text('No matching bookings.'));
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              ref.invalidate(tenantBookingsProvider);
-
-              await ref.read(tenantBookingsProvider.future);
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.only(top: 12, bottom: 24),
-              itemCount: visibleBookings.length,
+          SizedBox(
+            height: 48,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemCount: _statuses.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
-                final booking = visibleBookings[index];
-
-                return BookingCard(
-                  bookingId: booking.id,
-                  propertyTitle: booking.propertyTitle,
-                  location: booking.location,
-                  visitDate: booking.visitDate,
-                  visitTime: booking.visitTime,
-                  ownerName: booking.ownerName,
-                  status: booking.status,
-                  monthlyRent: booking.monthlyRent,
-                  securityDeposit: booking.securityDeposit,
-                  onTap: () {
-                    _showBookingDetails(context, booking);
-                  },
-                 onPayNow: booking.status.toUpperCase() == 'PAYMENT_PENDING'
-                         ? () {
-                               context.push('/payment/${booking.id}');
-                              }
-                       : null,
+                final status = _statuses[index];
+                return ChoiceChip(
+                  label: Text(
+                    status == 'ALL' ? 'All' : status.replaceAll('_', ' '),
+                  ),
+                  selected: _selectedStatus == status,
+                  onSelected: (_) => setState(() => _selectedStatus = status),
                 );
               },
             ),
-          );
-        },
-      )),
+          ),
+          Expanded(
+            child: bookingsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stackTrace) => _ErrorView(
+                error: error,
+                onRetry: () {
+                  ref.invalidate(tenantBookingsProvider);
+                },
+              ),
+              data: (bookings) {
+                if (bookings.isEmpty) {
+                  return const _EmptyBookingsView();
+                }
+
+                final query = _query.toLowerCase();
+                final visibleBookings = bookings.where((booking) {
+                  final matchesQuery =
+                      query.isEmpty ||
+                      booking.propertyTitle.toLowerCase().contains(query) ||
+                      booking.ownerName.toLowerCase().contains(query) ||
+                      booking.status.toLowerCase().contains(query) ||
+                      booking.location.toLowerCase().contains(query);
+                  return matchesQuery &&
+                      (_selectedStatus == 'ALL' ||
+                          booking.status.toUpperCase() == _selectedStatus);
+                }).toList();
+
+                if (visibleBookings.isEmpty) {
+                  return const Center(child: Text('No matching bookings.'));
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(tenantBookingsProvider);
+
+                    await ref.read(tenantBookingsProvider.future);
+                  },
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(top: 12, bottom: 24),
+                    itemCount: visibleBookings.length,
+                    itemBuilder: (context, index) {
+                      final booking = visibleBookings[index];
+
+                      return BookingCard(
+                        bookingId: booking.id,
+                        propertyTitle: booking.propertyTitle,
+                        location: booking.location,
+                        visitDate: booking.visitDate,
+                        visitTime: booking.visitTime,
+                        ownerName: booking.ownerName,
+                        status: booking.status,
+                        monthlyRent: booking.monthlyRent,
+                        securityDeposit: booking.securityDeposit,
+                        onTap: () {
+                          _showBookingDetails(context, booking);
+                        },
+                        onPayNow:
+                            booking.status.toUpperCase() == 'PAYMENT_PENDING'
+                            ? () {
+                                context.push('/payment/${booking.id}');
+                              }
+                            : null,
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
