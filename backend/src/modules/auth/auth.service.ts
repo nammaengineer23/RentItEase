@@ -121,7 +121,7 @@ export class AuthService {
     return this.register({
       fullName: dto.fullName,
       email,
-      phone,
+      phone: phone ?? undefined,
       password: dto.password,
     });
   }
