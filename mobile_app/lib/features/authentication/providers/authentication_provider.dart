@@ -312,13 +312,26 @@ class AuthenticationProvider extends ChangeNotifier {
 
   String _googleErrorMessage(Object error) {
     final message = error.toString();
+    final normalized = message.toLowerCase();
 
-    if (message.toLowerCase().contains('canceled') ||
-        message.toLowerCase().contains('cancelled')) {
+    if (normalized.contains('canceled') || normalized.contains('cancelled')) {
       return 'Google sign-in was cancelled.';
     }
+    if (normalized.contains('network') || normalized.contains('connection')) {
+      return 'Unable to reach Google. Check your internet connection and try again.';
+    }
+    if (normalized.contains('developer_error') ||
+        normalized.contains('api_exception: 10') ||
+        normalized.contains('configuration')) {
+      return 'Google sign-in is not configured for this app build. Please contact support.';
+    }
+    if (normalized.contains('invalid-credential') ||
+        normalized.contains('credential') ||
+        normalized.contains('id token')) {
+      return 'Your Google sign-in session expired. Please try again.';
+    }
 
-    return 'Google sign-in failed: $message';
+    return 'Google sign-in could not be completed. Please try again.';
   }
 
   Future<void> logout() async {
