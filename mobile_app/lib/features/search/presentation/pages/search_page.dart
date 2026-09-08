@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -51,7 +53,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         return;
       }
 
-      final position = await Geolocator.getCurrentPosition();
+      final position = await Geolocator.getCurrentPosition().timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw TimeoutException('Location lookup timed out.'),
+      );
       final properties = await ref
           .read(propertyProvider.notifier)
           .getNearbyProperties(
@@ -326,8 +331,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(searchProvider);
-    final currentUserId =
-        ref.watch(authenticationProvider).authResponse?.user.id;
+    final currentUserId = ref
+        .watch(authenticationProvider)
+        .authResponse
+        ?.user
+        .id;
 
     return Scaffold(
       appBar: AppBar(
@@ -411,8 +419,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             onContactOwner: property.ownerId == currentUserId
                                 ? null
                                 : () => context.push(
-                                      '/chat?propertyId=${property.id}',
-                                    ),
+                                    '/chat?propertyId=${property.id}',
+                                  ),
                           ),
                         ),
                       );
