@@ -211,4 +211,3 @@ class _HomePageState extends ConsumerState<HomePage> {
     context.push('/property/${property.id}');
   }
 }
-￿￿￿

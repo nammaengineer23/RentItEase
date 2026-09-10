@@ -182,4 +182,3 @@ Widget _imagePlaceholder(BuildContext context, {bool loading = false}) {
     ),
   );
 }
-￿￿￿

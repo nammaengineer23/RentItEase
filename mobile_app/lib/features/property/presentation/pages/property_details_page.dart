@@ -510,4 +510,3 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
     );
   }
 }
-￿￿￿

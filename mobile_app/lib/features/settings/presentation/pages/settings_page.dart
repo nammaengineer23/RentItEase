@@ -94,6 +94,9 @@ class _SettingsContent extends ConsumerWidget {
     }
   }
 
+  // Retained temporarily for source compatibility; the lifecycle-safe dialog
+  // below is the active implementation.
+  // ignore: unused_element
   Future<void> _showChangePasswordDialog(
     BuildContext context,
     WidgetRef ref,

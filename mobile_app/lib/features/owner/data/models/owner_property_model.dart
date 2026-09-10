@@ -186,4 +186,3 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
         .toList();
   }
 }
-￿￿￿
