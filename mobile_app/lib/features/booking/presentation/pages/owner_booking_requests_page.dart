@@ -14,7 +14,7 @@ class OwnerBookingRequestsPage extends ConsumerWidget {
       appBar: AppBar(title: const Text('Booking Requests')),
       body: bookings.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => Center(
+        error: (_, _) => Center(
           child: FilledButton.icon(
             onPressed: () => ref.invalidate(ownerBookingsProvider),
             icon: const Icon(Icons.refresh),
