@@ -29,8 +29,13 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(ownerProvider);
     final properties = state.properties.where((property) {
-      if (_status == 'available') return property.isAvailable;
-      if (_status == 'occupied') return !property.isAvailable;
+      if (_status == 'pending') return !property.isVerified;
+      if (_status == 'available') {
+        return property.isVerified && property.isAvailable;
+      }
+      if (_status == 'occupied') {
+        return property.isVerified && !property.isAvailable;
+      }
       if (_status == 'visited') return property.visitRequests > 0;
       if (_status == 'completed') {
         return property.visitRequests > 0 && !property.isAvailable;
@@ -86,6 +91,7 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
                       children: [
                         for (final key in const [
                           'all',
+                          'pending',
                           'available',
                           'occupied',
                           'visited',
@@ -94,7 +100,11 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 4),
                             child: ChoiceChip(
-                              label: Text(context.tr(key)),
+                              label: Text(
+                                key == 'pending'
+                                    ? 'Pending approval'
+                                    : context.tr(key),
+                              ),
                               selected: _status == key,
                               onSelected: (_) =>
                                   setState(() => _status = key),
