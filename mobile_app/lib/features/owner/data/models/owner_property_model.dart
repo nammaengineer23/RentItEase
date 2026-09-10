@@ -39,7 +39,9 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
   });
 
   factory OwnerPropertyModel.fromJson(Map<String, dynamic> json) {
-    final views = _toInt(json['views'] ?? json['totalViews']);
+    final views = _toInt(
+      json['views'] ?? json['totalViews'] ?? json['viewCount'],
+    );
 
     return OwnerPropertyModel(
       id: json['id']?.toString() ?? '',
@@ -68,7 +70,10 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
       imageUrl: json['imageUrl']?.toString() ?? _primaryImageUrl(json),
       isAvailable: json['isAvailable'] as bool? ?? true,
       isVerified: json['isVerified'] as bool? ?? false,
-      totalViews: _toInt(json['totalViews']),
+      // Owner dashboard responses have used `views`, `totalViews`, and (for
+      // raw property responses) `viewCount`. Keep the card in sync with the
+      // same normalized value used elsewhere in the owner experience.
+      totalViews: views,
       pendingVisits: _toInt(json['pendingVisits']),
       createdAt: _parseDate(json['createdAt']),
       views: views,

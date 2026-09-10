@@ -24,7 +24,7 @@ class VisitRequestModel extends VisitRequestEntity {
       tenantName: json['tenantName'] ?? '',
       tenantPhone: json['tenantPhone'] ?? '',
       visitDate:
-          DateTime.tryParse(json['visitDate']?.toString() ?? '') ??
+          DateTime.tryParse(json['visitDate']?.toString() ?? '')?.toLocal() ??
           DateTime.now(),
       status: json['status'] ?? 'PENDING',
       notes: json['notes'],

@@ -30,6 +30,20 @@ class BookingRepositoryImpl implements BookingRepository {
   }
 
   @override
+  Future<List<BookingEntity>> getOwnerBookings() async {
+    final response = await _apiClient.dio.get<Map<String, dynamic>>(
+      '/bookings/owner',
+    );
+    final responseData = response.data;
+    if (responseData == null) throw Exception('Empty booking requests response.');
+
+    return _extractList(responseData)
+        .whereType<Map>()
+        .map((json) => BookingModel.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
+  }
+
+  @override
   Future<BookingEntity> getBooking(String bookingId) async {
     final response = await _apiClient.dio.get<Map<String, dynamic>>(
       '/bookings/$bookingId',
@@ -75,6 +89,47 @@ class BookingRepositoryImpl implements BookingRepository {
       throw Exception('Invalid booking creation response.');
     }
 
+    return BookingModel.fromJson(Map<String, dynamic>.from(data));
+  }
+
+  @override
+  Future<BookingEntity> markPaymentPending(String bookingId) async {
+    final response = await _apiClient.dio.patch<Map<String, dynamic>>(
+      '/bookings/$bookingId/payment-pending',
+    );
+
+    final responseData = response.data;
+    if (responseData == null) {
+      throw Exception('Empty payment-status response.');
+    }
+
+    final data = _extractMap(responseData);
+    if (data is! Map) {
+      throw Exception('Invalid payment-status response.');
+    }
+
+    return BookingModel.fromJson(Map<String, dynamic>.from(data));
+  }
+
+  @override
+  Future<BookingEntity> approveBooking(String bookingId) =>
+      _updateBookingStatus(bookingId, 'approve');
+
+  @override
+  Future<BookingEntity> rejectBooking(String bookingId) =>
+      _updateBookingStatus(bookingId, 'reject');
+
+  Future<BookingEntity> _updateBookingStatus(
+    String bookingId,
+    String action,
+  ) async {
+    final response = await _apiClient.dio.patch<Map<String, dynamic>>(
+      '/bookings/$bookingId/$action',
+    );
+    final responseData = response.data;
+    if (responseData == null) throw Exception('Empty booking update response.');
+    final data = _extractMap(responseData);
+    if (data is! Map) throw Exception('Invalid booking update response.');
     return BookingModel.fromJson(Map<String, dynamic>.from(data));
   }
 

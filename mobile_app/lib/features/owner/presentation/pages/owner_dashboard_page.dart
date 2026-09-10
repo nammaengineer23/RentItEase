@@ -33,6 +33,11 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
       appBar: AppBar(
         title: Text(context.tr('ownerDashboard')),
         actions: [
+          IconButton(
+            tooltip: 'Booking requests',
+            onPressed: () => context.push('/owner/booking-requests'),
+            icon: const Icon(Icons.book_online_outlined),
+          ),
           PopupMenuButton<String>(
             tooltip: 'Notifications and activity',
             icon: const Icon(Icons.notifications_outlined),

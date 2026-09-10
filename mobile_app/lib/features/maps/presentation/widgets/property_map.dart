@@ -32,7 +32,10 @@ class _PropertyMapState extends ConsumerState<PropertyMap> {
     final latitude = widget.latitude;
     final longitude = widget.longitude;
 
-    if (latitude == null || longitude == null) {
+    // A zero coordinate is a legacy/missing value, not a valid property pin.
+    if (latitude == null ||
+        longitude == null ||
+        (latitude == 0 && longitude == 0)) {
       return Container(
         width: double.infinity,
         decoration: BoxDecoration(

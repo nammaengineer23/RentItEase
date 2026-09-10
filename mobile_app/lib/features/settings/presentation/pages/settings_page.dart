@@ -94,6 +94,9 @@ class _SettingsContent extends ConsumerWidget {
     }
   }
 
+  // Retained temporarily for source compatibility; the lifecycle-safe dialog
+  // below is the active implementation.
+  // ignore: unused_element
   Future<void> _showChangePasswordDialog(
     BuildContext context,
     WidgetRef ref,
@@ -570,7 +573,10 @@ class _SettingsContent extends ConsumerWidget {
               subtitle: Text(context.tr('updatePassword')),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                _showChangePasswordDialog(context, ref);
+                showDialog<void>(
+                  context: context,
+                  builder: (_) => const _ChangePasswordDialog(),
+                );
               },
             ),
           ),
@@ -630,6 +636,145 @@ class _SettingsContent extends ConsumerWidget {
 // ============================================================
 // Section Title
 // ============================================================
+
+class _ChangePasswordDialog extends ConsumerStatefulWidget {
+  const _ChangePasswordDialog();
+
+  @override
+  ConsumerState<_ChangePasswordDialog> createState() =>
+      _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
+  final _current = TextEditingController();
+  final _next = TextEditingController();
+  final _confirmation = TextEditingController();
+  bool _currentObscured = true;
+  bool _nextObscured = true;
+  bool _confirmationObscured = true;
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _current.dispose();
+    _next.dispose();
+    _confirmation.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final current = _current.text.trim();
+    final next = _next.text.trim();
+    final confirmation = _confirmation.text.trim();
+    final messenger = ScaffoldMessenger.of(context);
+    final passwordChangedMessage = context.tr('passwordChanged');
+    String? validationError;
+    if (current.isEmpty || next.isEmpty || confirmation.isEmpty) {
+      validationError = context.tr('fillPasswordFields');
+    } else if (next.length < 8) {
+      validationError = context.tr('passwordMinimum');
+    } else if (next != confirmation) {
+      validationError = context.tr('passwordMismatch');
+    }
+    if (validationError != null) {
+      messenger.showSnackBar(SnackBar(content: Text(validationError)));
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      await ref.read(settingsProvider.notifier).changePassword(
+            currentPassword: current,
+            newPassword: next,
+          );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
+        SnackBar(content: Text(passwordChangedMessage)),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      messenger.showSnackBar(
+        SnackBar(content: Text(userFriendlyError(error))),
+      );
+    }
+  }
+
+  InputDecoration _decoration(
+    String label,
+    bool obscured,
+    VoidCallback onToggle,
+  ) {
+    return InputDecoration(
+      labelText: label,
+      border: const OutlineInputBorder(),
+      suffixIcon: IconButton(
+        onPressed: onToggle,
+        icon: Icon(obscured ? Icons.visibility : Icons.visibility_off),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.tr('changePassword')),
+      content: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            controller: _current,
+            obscureText: _currentObscured,
+            decoration: _decoration(
+              context.tr('currentPassword'),
+              _currentObscured,
+              () => setState(() => _currentObscured = !_currentObscured),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _next,
+            obscureText: _nextObscured,
+            decoration: _decoration(
+              context.tr('newPassword'),
+              _nextObscured,
+              () => setState(() => _nextObscured = !_nextObscured),
+            ).copyWith(helperText: context.tr('minimum8Characters')),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _confirmation,
+            obscureText: _confirmationObscured,
+            onSubmitted: (_) => _loading ? null : _submit(),
+            decoration: _decoration(
+              context.tr('confirmNewPassword'),
+              _confirmationObscured,
+              () => setState(
+                () => _confirmationObscured = !_confirmationObscured,
+              ),
+            ),
+          ),
+        ]),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _loading ? null : () => Navigator.of(context).pop(),
+          child: Text(context.tr('cancel')),
+        ),
+        FilledButton(
+          onPressed: _loading ? null : _submit,
+          child: _loading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(context.tr('changePassword')),
+        ),
+      ],
+    );
+  }
+}
 
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle({required this.icon, required this.title});

@@ -91,11 +91,17 @@ class PropertyOwnerCard extends StatelessWidget {
 
                       Chip(
                         label: Text(
-                          property.isAvailable ? "Available" : "Occupied",
+                          !property.isVerified
+                              ? 'Pending approval'
+                              : (property.isAvailable
+                                    ? 'Available'
+                                    : 'Occupied'),
                         ),
-                        backgroundColor: property.isAvailable
-                            ? Colors.green.shade100
-                            : Colors.red.shade100,
+                        backgroundColor: !property.isVerified
+                            ? Colors.amber.shade100
+                            : (property.isAvailable
+                                  ? Colors.green.shade100
+                                  : Colors.red.shade100),
                       ),
                     ],
                   ),

@@ -338,8 +338,18 @@ class AuthenticationProvider extends ChangeNotifier {
     _errorMessage = null;
 
     try {
+      // Push cleanup is best-effort. An expired network session must never
+      // prevent the user from signing out locally.
       await _pushNotificationService.deactivate();
+    } catch (_) {
+      // Continue with token removal below.
+    }
+
+    try {
       await _repository.logout();
+    } catch (_) {
+      // AuthenticationService.logout clears stored tokens in its finally
+      // block, even when the server rejects an expired token.
     } finally {
       // Always clear local authentication state.
       //

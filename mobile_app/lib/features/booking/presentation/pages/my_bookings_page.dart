@@ -127,10 +127,9 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
                           _showBookingDetails(context, booking);
                         },
                         onPayNow:
-                            booking.status.toUpperCase() == 'PAYMENT_PENDING'
-                            ? () {
-                                context.push('/payment/${booking.id}');
-                              }
+                            booking.status.toUpperCase() == 'APPROVED' ||
+                                booking.status.toUpperCase() == 'PAYMENT_PENDING'
+                            ? () => _openPayment(context, booking)
                             : null,
                       );
                     },
@@ -142,6 +141,26 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _openPayment(BuildContext context, dynamic booking) async {
+    try {
+      if (booking.status.toUpperCase() == 'APPROVED') {
+        await ref.read(createBookingProvider).beginPayment(booking.id);
+      }
+
+      if (context.mounted) {
+        context.push('/payment/${booking.id}');
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to start payment. Please try again.'),
+          ),
+        );
+      }
+    }
   }
 
   void _showBookingDetails(BuildContext context, dynamic booking) {

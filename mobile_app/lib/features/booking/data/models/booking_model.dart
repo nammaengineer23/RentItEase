@@ -85,7 +85,8 @@ class BookingModel extends BookingEntity {
   }
 
   static DateTime _dateTime(dynamic value) {
-    return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+    return DateTime.tryParse(value?.toString() ?? '')?.toLocal() ??
+        DateTime.now();
   }
 
   static DateTime? _nullableDateTime(dynamic value) {
@@ -93,7 +94,7 @@ class BookingModel extends BookingEntity {
       return null;
     }
 
-    return DateTime.tryParse(value.toString());
+    return DateTime.tryParse(value.toString())?.toLocal();
   }
 
   static String _location(Map<String, dynamic> property) {
@@ -108,7 +109,7 @@ class BookingModel extends BookingEntity {
   }
 
   static String _formatTime(dynamic value) {
-    final date = DateTime.tryParse(value?.toString() ?? '');
+    final date = DateTime.tryParse(value?.toString() ?? '')?.toLocal();
 
     if (date == null) {
       return '';

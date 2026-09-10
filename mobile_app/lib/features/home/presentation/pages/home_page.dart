@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../notifications/providers/notifications_provider.dart';
@@ -20,6 +21,7 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   List<PropertyEntity>? _nearbyProperties;
+  String _nearbyCity = '';
 
   @override
   void initState() {
@@ -52,7 +54,24 @@ class _HomePageState extends ConsumerState<HomePage> {
             longitude: position.longitude,
             radius: 25,
           );
-      if (mounted) setState(() => _nearbyProperties = nearby);
+      String city = '';
+      try {
+        final placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+        city = placemarks.isEmpty
+            ? ''
+            : (placemarks.first.locality ?? placemarks.first.subAdministrativeArea ?? '');
+      } catch (_) {
+        // Nearby results are still useful when reverse geocoding is unavailable.
+      }
+      if (mounted) {
+        setState(() {
+          _nearbyProperties = nearby;
+          _nearbyCity = city.trim();
+        });
+      }
     } catch (_) {
       // The all-properties feed remains available when location is unavailable.
     }
@@ -137,19 +156,31 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ),
         data: (properties) {
-          final feed = (_nearbyProperties?.isNotEmpty == true)
-              ? _nearbyProperties!
-              : properties.where((property) => property.isAvailable).toList();
+          final nearby = _nearbyProperties ?? const <PropertyEntity>[];
+          final cityProperties = _nearbyCity.isEmpty
+              ? const <PropertyEntity>[]
+              : properties.where((property) =>
+                  property.isAvailable &&
+                  property.isVerified &&
+                  property.city.trim().toLowerCase() == _nearbyCity.toLowerCase()).toList();
+          final feed = [
+            ...nearby,
+            ...cityProperties.where((property) =>
+                !nearby.any((nearbyProperty) => nearbyProperty.id == property.id)),
+          ];
+          final visibleFeed = feed.isNotEmpty
+              ? feed
+              : properties.where((property) => property.isAvailable && property.isVerified).toList();
 
-          if (feed.isEmpty) {
+          if (visibleFeed.isEmpty) {
             return Center(child: Text(context.tr('noNearbyProperties')));
           }
 
           return PageView.builder(
             scrollDirection: Axis.vertical,
-            itemCount: feed.length,
+            itemCount: visibleFeed.length,
             itemBuilder: (context, index) {
-              final property = feed[index];
+              final property = visibleFeed[index];
               return SingleChildScrollView(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: PropertyCard(
