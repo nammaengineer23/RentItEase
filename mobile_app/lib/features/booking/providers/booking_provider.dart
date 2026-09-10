@@ -18,6 +18,12 @@ final tenantBookingsProvider = FutureProvider.autoDispose<List<BookingEntity>>((
 
 final bookingProvider = tenantBookingsProvider;
 
+final ownerBookingsProvider = FutureProvider.autoDispose<List<BookingEntity>>((
+  ref,
+) async {
+  return ref.read(bookingRepositoryProvider).getOwnerBookings();
+});
+
 final bookingByIdProvider = FutureProvider.autoDispose
     .family<BookingEntity, String>((ref, bookingId) async {
       final repository = ref.read(bookingRepositoryProvider);
@@ -65,6 +71,24 @@ class CreateBookingController {
     _ref.invalidate(tenantBookingsProvider);
     _ref.invalidate(bookingByIdProvider(bookingId));
 
+    return booking;
+  }
+
+  Future<BookingEntity> approve(String bookingId) async {
+    final booking = await _ref
+        .read(bookingRepositoryProvider)
+        .approveBooking(bookingId);
+    _ref.invalidate(ownerBookingsProvider);
+    _ref.invalidate(tenantBookingsProvider);
+    return booking;
+  }
+
+  Future<BookingEntity> reject(String bookingId) async {
+    final booking = await _ref
+        .read(bookingRepositoryProvider)
+        .rejectBooking(bookingId);
+    _ref.invalidate(ownerBookingsProvider);
+    _ref.invalidate(tenantBookingsProvider);
     return booking;
   }
 }

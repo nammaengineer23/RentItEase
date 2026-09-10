@@ -74,6 +74,14 @@ class ProfilePage extends ConsumerWidget {
     },
   ),
 
+                if (profile.role.trim().toUpperCase() == 'OWNER')
+                  ProfileMenuTile(
+                    icon: Icons.book_online_outlined,
+                    title: 'Booking Requests',
+                    subtitle: 'Approve or reject tenant bookings',
+                    onTap: () => context.push('/owner/booking-requests'),
+                  ),
+
                 if (profile.role.trim().toUpperCase() == 'USER')
                   ProfileMenuTile(
                     icon: Icons.storefront_outlined,

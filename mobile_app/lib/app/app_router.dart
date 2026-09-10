@@ -12,6 +12,7 @@ import '../features/authentication/presentation/pages/register_page.dart';
 import '../features/authentication/providers/authentication_provider.dart';
 
 import '../features/booking/presentation/pages/my_bookings_page.dart';
+import '../features/booking/presentation/pages/owner_booking_requests_page.dart';
 
 import '../features/chat/presentation/pages/chat_list_page.dart';
 import '../features/chat/presentation/pages/chat_page.dart';
@@ -480,6 +481,12 @@ class AppRouter {
             path: '/owner/dashboard',
             name: 'owner-dashboard',
             builder: (context, state) => const OwnerDashboardPage(),
+          ),
+
+          GoRoute(
+            path: '/owner/booking-requests',
+            name: 'owner-booking-requests',
+            builder: (context, state) => const OwnerBookingRequestsPage(),
           ),
 
           // Owner Properties
