@@ -55,7 +55,7 @@ class PropertyVisitModel extends PropertyVisit {
       tenantName: tenant['fullName']?.toString() ?? '',
 
       visitDate:
-          DateTime.tryParse(json['visitDate']?.toString() ?? '') ??
+          DateTime.tryParse(json['visitDate']?.toString() ?? '')?.toLocal() ??
           DateTime.now(),
 
       status: json['status']?.toString() ?? 'PENDING',
