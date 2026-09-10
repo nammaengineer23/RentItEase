@@ -17,4 +17,3 @@ export class OwnerMarketingConsentDto {
   @IsString()
   consentVersion?: string;
 }
-￿￿￿
