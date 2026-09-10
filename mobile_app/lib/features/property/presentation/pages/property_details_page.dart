@@ -425,8 +425,14 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () => context.push(
-                        '/chat',
-                        extra: {'propertyId': property.id},
+                        Uri(
+                          path: '/chat',
+                          queryParameters: {
+                            'propertyId': property.id,
+                            'userName': property.ownerName,
+                            'propertyTitle': property.title,
+                          },
+                        ).toString(),
                       ),
                       icon: const Icon(Icons.chat_bubble_outline),
                       label: Text(context.tr('chatWithOwner')),
@@ -488,8 +494,14 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
             },
             onContactOwner: () {
               context.push(
-                '/chat',
-                extra: {'propertyId': property.id},
+                Uri(
+                  path: '/chat',
+                  queryParameters: {
+                    'propertyId': property.id,
+                    'userName': property.ownerName,
+                    'propertyTitle': property.title,
+                  },
+                ).toString(),
               );
             },
           ),
@@ -498,3 +510,4 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
     );
   }
 }
+￿￿￿
