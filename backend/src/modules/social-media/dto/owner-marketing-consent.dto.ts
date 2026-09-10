@@ -13,9 +13,8 @@ export class OwnerMarketingConsentDto {
   @IsBoolean()
   approved!: boolean;
 
-  @IsBoolean()
-
   @IsOptional()
   @IsString()
   consentVersion?: string;
 }
+￿￿￿
