@@ -7,5 +7,8 @@ abstract class BookingRepository {
 
   Future<BookingEntity> createBooking({required String visitId, String? notes});
 
+  /// Moves an owner-approved booking into the tenant payment step.
+  Future<BookingEntity> markPaymentPending(String bookingId);
+
   Future<BookingEntity> cancelBooking(String bookingId);
 }

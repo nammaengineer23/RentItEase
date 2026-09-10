@@ -45,8 +45,10 @@ class BookingCard extends StatelessWidget {
       case 'CANCELLED':
         return BookingStatus.cancelled;
 
-      case 'PENDING':
       case 'PAYMENT_PENDING':
+        return BookingStatus.paymentPending;
+
+      case 'PENDING':
       default:
         return BookingStatus.pending;
     }
@@ -56,8 +58,10 @@ class BookingCard extends StatelessWidget {
     return '${visitDate.day}/${visitDate.month}/${visitDate.year}';
   }
 
-  bool get isPaymentPending {
-    return status.toUpperCase() == 'PAYMENT_PENDING';
+  bool get canPay {
+    final normalizedStatus = status.toUpperCase();
+    return normalizedStatus == 'APPROVED' ||
+        normalizedStatus == 'PAYMENT_PENDING';
   }
 
   @override
@@ -120,7 +124,7 @@ class BookingCard extends StatelessWidget {
                       icon: const Icon(Icons.arrow_forward),
                       label: const Text('View Details'),
                     ),
-                  if (isPaymentPending && onPayNow != null) ...[
+                  if (canPay && onPayNow != null) ...[
                     const SizedBox(width: 8),
                     FilledButton.icon(
                       onPressed: onPayNow,

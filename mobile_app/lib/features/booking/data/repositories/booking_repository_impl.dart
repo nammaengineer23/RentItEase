@@ -79,6 +79,25 @@ class BookingRepositoryImpl implements BookingRepository {
   }
 
   @override
+  Future<BookingEntity> markPaymentPending(String bookingId) async {
+    final response = await _apiClient.dio.patch<Map<String, dynamic>>(
+      '/bookings/$bookingId/payment-pending',
+    );
+
+    final responseData = response.data;
+    if (responseData == null) {
+      throw Exception('Empty payment-status response.');
+    }
+
+    final data = _extractMap(responseData);
+    if (data is! Map) {
+      throw Exception('Invalid payment-status response.');
+    }
+
+    return BookingModel.fromJson(Map<String, dynamic>.from(data));
+  }
+
+  @override
   Future<BookingEntity> cancelBooking(String bookingId) async {
     final response = await _apiClient.dio.patch<Map<String, dynamic>>(
       '/bookings/$bookingId/cancel',

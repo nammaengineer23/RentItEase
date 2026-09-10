@@ -57,4 +57,14 @@ class CreateBookingController {
 
     return booking;
   }
+
+  Future<BookingEntity> beginPayment(String bookingId) async {
+    final repository = _ref.read(bookingRepositoryProvider);
+    final booking = await repository.markPaymentPending(bookingId);
+
+    _ref.invalidate(tenantBookingsProvider);
+    _ref.invalidate(bookingByIdProvider(bookingId));
+
+    return booking;
+  }
 }
