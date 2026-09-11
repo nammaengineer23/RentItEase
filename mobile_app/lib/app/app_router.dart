@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,6 +21,7 @@ import '../features/chat/presentation/pages/chat_page.dart';
 import '../features/favorites/presentation/pages/favorites_page.dart';
 
 import '../features/home/presentation/pages/home_page.dart';
+import '../features/landing/presentation/pages/web_landing_page.dart';
 
 import '../features/maps/presentation/pages/map_page.dart';
 import '../features/maps/presentation/pages/map_picker_page.dart';
@@ -69,7 +71,7 @@ class AppRouter {
   AppRouter._();
 
   static final GoRouter router = GoRouter(
-    initialLocation: '/splash',
+    initialLocation: kIsWeb ? '/' : '/splash',
     debugLogDiagnostics: true,
 
     // ============================================================
@@ -83,6 +85,7 @@ class AppRouter {
       final location = state.matchedLocation;
       final role = auth.authResponse?.user.role.trim().toUpperCase();
       final publicPath = const {
+        '/',
         '/splash',
         '/onboarding',
         '/auth',
@@ -125,6 +128,12 @@ class AppRouter {
     },
 
     routes: [
+      GoRoute(
+        path: '/',
+        name: 'web-landing',
+        builder: (context, state) =>
+            kIsWeb ? const WebLandingPage() : const SplashPage(),
+      ),
       ShellRoute(
         builder: (context, state, child) =>
             AuthenticatedShell(location: state.uri.path, child: child),
