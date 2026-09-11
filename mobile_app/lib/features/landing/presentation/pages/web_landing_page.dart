@@ -126,7 +126,7 @@ class WebLandingPage extends StatelessWidget {
                   key: _howItWorksKey,
                   width: double.infinity,
                   child: const _ContentWidth(
-                    child: const Padding(
+                    child: Padding(
                       padding: EdgeInsets.fromLTRB(24, 80, 24, 80),
                       child: _HowItWorks(),
                     ),
@@ -172,7 +172,7 @@ class WebLandingPage extends StatelessWidget {
                   ),
                 ),
                 const _ContentWidth(
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 24, vertical: 28),
                     child: _Footer(),
                   ),
@@ -374,8 +374,8 @@ class _HowItWorks extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: 650),
-            child: Column(
+            constraints: const BoxConstraints(maxWidth: 650),
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
