@@ -1,4 +1,5 @@
 import '../../domain/entities/owner_property_entity.dart';
+import '../../../../core/utils/app_image_url.dart';
 
 class OwnerPropertyModel extends OwnerPropertyEntity {
   const OwnerPropertyModel({
@@ -42,6 +43,7 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
     final views = _toInt(
       json['views'] ?? json['totalViews'] ?? json['viewCount'],
     );
+    final directImageUrl = AppImageUrl.resolve(json['imageUrl']);
 
     return OwnerPropertyModel(
       id: json['id']?.toString() ?? '',
@@ -67,7 +69,7 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
       furnishing: json['furnishing']?.toString() ?? '',
       parking: json['parking'] as bool? ?? false,
       petFriendly: json['petFriendly'] as bool? ?? false,
-      imageUrl: json['imageUrl']?.toString() ?? _primaryImageUrl(json),
+      imageUrl: directImageUrl.isEmpty ? _primaryImageUrl(json) : directImageUrl,
       isAvailable: json['isAvailable'] as bool? ?? true,
       isVerified: json['isVerified'] as bool? ?? false,
       // Owner dashboard responses have used `views`, `totalViews`, and (for
@@ -164,7 +166,7 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
     if (images is! List) return const [];
     return images
         .whereType<Map>()
-        .map((image) => image['imageUrl']?.toString() ?? '')
+        .map((image) => AppImageUrl.resolve(image['imageUrl'] ?? image['url']))
         .where((url) => url.isNotEmpty)
         .toList();
   }

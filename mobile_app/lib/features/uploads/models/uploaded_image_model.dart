@@ -1,3 +1,5 @@
+import '../../../core/utils/app_image_url.dart';
+
 class UploadedImageModel {
   final String id;
   final String imageUrl;
@@ -18,7 +20,7 @@ class UploadedImageModel {
   factory UploadedImageModel.fromJson(Map<String, dynamic> json) {
     return UploadedImageModel(
       id: json['id'] ?? '',
-      imageUrl: json['imageUrl'] ?? json['url'] ?? '',
+      imageUrl: AppImageUrl.resolve(json['imageUrl'] ?? json['url']),
       fileName: json['fileName'] ?? '',
       contentType: json['contentType'] ?? '',
       size: json['size'] ?? 0,

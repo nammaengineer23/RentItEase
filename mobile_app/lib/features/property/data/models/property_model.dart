@@ -1,4 +1,5 @@
 import '../../domain/entities/property_entity.dart';
+import '../../../../core/utils/app_image_url.dart';
 
 class PropertyModel {
   const PropertyModel({
@@ -70,11 +71,12 @@ class PropertyModel {
     final imageUrls = images is List
         ? images
               .whereType<Map>()
-              .map((image) => image['imageUrl'] ?? image['url'])
-              .whereType<String>()
+              .map((image) => AppImageUrl.resolve(image['imageUrl'] ?? image['url']))
+              .where((url) => url.isNotEmpty)
               .toList()
         : (json['imageUrls'] as List<dynamic>?)
-                  ?.map((value) => value.toString())
+                  ?.map(AppImageUrl.resolve)
+                  .where((url) => url.isNotEmpty)
                   .toList() ??
               const <String>[];
 

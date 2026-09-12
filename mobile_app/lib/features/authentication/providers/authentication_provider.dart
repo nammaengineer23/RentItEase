@@ -386,6 +386,9 @@ class AuthenticationProvider extends ChangeNotifier {
 
   Future<void> _saveSession(AuthResponse response) async {
     await _repository.saveSession(response);
+    // Web starts at the public landing page instead of SplashPage, so a
+    // successful sign-in must mark session restoration complete here.
+    _sessionRestored = true;
     await _pushNotificationService.activate();
   }
 

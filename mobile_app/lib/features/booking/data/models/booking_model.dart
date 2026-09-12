@@ -1,4 +1,5 @@
 import '../../domain/entities/booking_entity.dart';
+import '../../../../core/utils/app_image_url.dart';
 
 class BookingModel extends BookingEntity {
   const BookingModel({
@@ -35,10 +36,9 @@ class BookingModel extends BookingEntity {
     if (images is List && images.isNotEmpty) {
       final primaryImage = _asMap(images.first);
 
-      imageUrl =
-          primaryImage['url']?.toString() ??
-          primaryImage['imageUrl']?.toString() ??
-          '';
+      imageUrl = AppImageUrl.resolve(
+        primaryImage['url'] ?? primaryImage['imageUrl'],
+      );
     }
 
     return BookingModel(

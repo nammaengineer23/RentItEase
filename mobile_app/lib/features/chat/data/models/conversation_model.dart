@@ -1,4 +1,5 @@
 import '../../domain/entities/conversation_entity.dart';
+import '../../../../core/utils/app_image_url.dart';
 
 class ConversationModel extends ConversationEntity {
   const ConversationModel({
@@ -27,7 +28,7 @@ class ConversationModel extends ConversationEntity {
 
       propertyTitle: property?['title']?.toString() ?? 'Property',
 
-      propertyImage: property?['imageUrl']?.toString(),
+      propertyImage: _imageUrl(property?['imageUrl'] ?? property?['url']),
 
       otherUserId: otherUser?['id']?.toString() ?? '',
 
@@ -39,6 +40,11 @@ class ConversationModel extends ConversationEntity {
           DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
           DateTime.now(),
     );
+  }
+
+  static String? _imageUrl(dynamic value) {
+    final url = AppImageUrl.resolve(value);
+    return url.isEmpty ? null : url;
   }
 
   Map<String, dynamic> toJson() {

@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 
+import '../../../../core/utils/app_image_url.dart';
+
 class PropertyImageRecord {
   const PropertyImageRecord({
     required this.id,
@@ -18,7 +20,7 @@ class PropertyImageRecord {
   factory PropertyImageRecord.fromJson(Map<String, dynamic> json) {
     return PropertyImageRecord(
       id: json['id']?.toString() ?? '',
-      imageUrl: json['imageUrl']?.toString() ?? '',
+      imageUrl: AppImageUrl.resolve(json['imageUrl'] ?? json['url']),
       section: json['section']?.toString() ?? 'OTHER',
       isPrimary: json['isPrimary'] == true,
     );
