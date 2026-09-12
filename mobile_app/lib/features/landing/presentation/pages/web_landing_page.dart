@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class WebLandingPage extends StatelessWidget {
   const WebLandingPage({super.key});
@@ -10,6 +11,8 @@ class WebLandingPage extends StatelessWidget {
   static const _green = Color(0xFF0D8A55);
   static const _mint = Color(0xFFD9F7E7);
   static const _line = Color(0xFFD9E4DD);
+  static const _androidReleaseUrl =
+      'https://github.com/nammaengineer23/RentItEase/actions/runs/34664262512';
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +146,7 @@ class WebLandingPage extends StatelessWidget {
                           final compact = constraints.maxWidth < 670;
                           final copy = const _ReleaseCopy();
                           final action = OutlinedButton(
-                            onPressed: () => _showEarlyAccessDialog(context),
+                            onPressed: _openAndroidDownload,
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.white,
                               side: const BorderSide(color: Color(0xFFB9D6C5)),
@@ -152,7 +155,7 @@ class WebLandingPage extends StatelessWidget {
                                 vertical: 18,
                               ),
                             ),
-                            child: const Text('Request early access'),
+                            child: const Text('Download Android APK'),
                           );
                           return compact
                               ? Column(
@@ -187,23 +190,10 @@ class WebLandingPage extends StatelessWidget {
 
   static final _howItWorksKey = GlobalKey();
 
-  void _showEarlyAccessDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Early access'),
-        content: const Text(
-          'The Android release download is being prepared. For early access, email support@rentitease.com.',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Got it'),
-          ),
-        ],
-      ),
-    );
-  }
+  Future<void> _openAndroidDownload() => launchUrl(
+        Uri.parse(_androidReleaseUrl),
+        webOnlyWindowName: '_blank',
+      );
 }
 
 class _ContentWidth extends StatelessWidget {
@@ -451,9 +441,9 @@ class _ReleaseCopy extends StatelessWidget {
         children: [
           Text('RENTITEASE FOR ANDROID', style: TextStyle(color: Color(0xFF8CE3B0), fontWeight: FontWeight.w800, letterSpacing: 1.1)),
           SizedBox(height: 12),
-          Text('The app is almost ready for you.', style: TextStyle(color: Colors.white, fontSize: 38, height: 1.08, fontWeight: FontWeight.w800, letterSpacing: -1.5)),
+          Text('Download the latest Android release.', style: TextStyle(color: Colors.white, fontSize: 38, height: 1.08, fontWeight: FontWeight.w800, letterSpacing: -1.5)),
           SizedBox(height: 12),
-          Text('We are preparing the signed Android release for direct download. Contact us for early access.', style: TextStyle(color: Color(0xFFC5DFCF), fontSize: 16, height: 1.5)),
+          Text('Get the signed APK from our latest build. The download opens in a new tab.', style: TextStyle(color: Color(0xFFC5DFCF), fontSize: 16, height: 1.5)),
         ],
       );
 }
