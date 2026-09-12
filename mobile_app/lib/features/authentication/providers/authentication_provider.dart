@@ -1,5 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../data/models/auth_response.dart';
@@ -242,22 +242,9 @@ class AuthenticationProvider extends ChangeNotifier {
     try {
       _errorMessage = null;
 
-      if (!_googleSignInInitialized) {
-        await GoogleSignIn.instance.initialize();
-        _googleSignInInitialized = true;
-      }
-
-      final googleAccount = await GoogleSignIn.instance.authenticate();
-      final googleAuthentication = googleAccount.authentication;
-      final googleIdToken = googleAuthentication.idToken;
-
-      if (googleIdToken == null || googleIdToken.isEmpty) {
-        throw Exception('Google did not return an ID token.');
-      }
-
-      final credential = GoogleAuthProvider.credential(idToken: googleIdToken);
-      final firebaseCredential = await FirebaseAuth.instance
-          .signInWithCredential(credential);
+      final firebaseCredential = kIsWeb
+          ? await FirebaseAuth.instance.signInWithPopup(GoogleAuthProvider())
+          : await _signInWithGoogleOnAndroid();
       final firebaseIdToken = await firebaseCredential.user?.getIdToken(true);
 
       if (firebaseIdToken == null || firebaseIdToken.isEmpty) {
@@ -280,6 +267,24 @@ class AuthenticationProvider extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  Future<UserCredential> _signInWithGoogleOnAndroid() async {
+    if (!_googleSignInInitialized) {
+      await GoogleSignIn.instance.initialize();
+      _googleSignInInitialized = true;
+    }
+
+    final googleAccount = await GoogleSignIn.instance.authenticate();
+    final googleIdToken = googleAccount.authentication.idToken;
+
+    if (googleIdToken == null || googleIdToken.isEmpty) {
+      throw Exception('Google did not return an ID token.');
+    }
+
+    return FirebaseAuth.instance.signInWithCredential(
+      GoogleAuthProvider.credential(idToken: googleIdToken),
+    );
   }
 
   Future<bool> completeGoogleRegistration(String phoneIdToken) async {
