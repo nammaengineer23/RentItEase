@@ -13,6 +13,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 import { FirebaseLoginDto } from './dto/firebase-login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -21,7 +22,6 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { RequestEmailOtpDto } from './dto/request-email-otp.dto';
 import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
-import { VerifiedRegisterDto } from './dto/verified-register.dto';
 import { PhoneOtpLoginDto } from './dto/phone-otp-login.dto';
 
 @ApiTags('Authentication')
@@ -61,10 +61,10 @@ export class AuthController {
 
   @Post('register')
   @ApiOperation({
-    summary: 'Create account after email and phone OTP verification',
+    summary: 'Create account with email and password',
   })
-  register(@Body() dto: VerifiedRegisterDto) {
-    return this.authService.registerVerified(dto);
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
   }
 
   @Post('login')
