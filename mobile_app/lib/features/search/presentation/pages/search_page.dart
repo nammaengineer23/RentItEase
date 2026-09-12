@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/search_entity.dart';
 import '../../providers/search_provider.dart';
+import '../../../property/domain/entities/property_entity.dart';
 import '../../../property/providers/property_provider.dart';
 import '../../../property/presentation/widgets/property_card.dart';
 import '../../../authentication/providers/authentication_provider.dart';
@@ -64,10 +66,39 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             longitude: position.longitude,
             radius: 25,
           );
-      if (properties.isEmpty) {
+
+      var city = properties.isEmpty ? '' : properties.first.city.trim();
+      if (city.isEmpty) {
+        try {
+          final placemarks = await placemarkFromCoordinates(
+            position.latitude,
+            position.longitude,
+          );
+          city = placemarks.isEmpty
+              ? ''
+              : (placemarks.first.locality ??
+                    placemarks.first.subAdministrativeArea ??
+                    '');
+        } catch (_) {
+          // Nearby listings remain useful when reverse geocoding is unavailable.
+        }
+      }
+
+      final List<PropertyEntity> cityProperties = city.trim().isEmpty
+          ? const []
+          : await ref.read(searchRepositoryProvider).search(
+            SearchEntity(city: city.trim(), limit: 50),
+          );
+      final resultIds = <String>{};
+      final rankedProperties = <PropertyEntity>[
+        ...properties,
+        ...cityProperties,
+      ].where((property) => resultIds.add(property.id)).toList();
+
+      if (rankedProperties.isEmpty) {
         await ref.read(searchProvider.notifier).search(const SearchEntity());
       } else {
-        ref.read(searchProvider.notifier).showNearby(properties);
+        ref.read(searchProvider.notifier).showNearby(rankedProperties);
       }
     } catch (_) {
       await ref.read(searchProvider.notifier).search(const SearchEntity());
