@@ -1,7 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
+import '../../../common/app_exception.dart';
 import '../data/models/auth_response.dart';
 import '../data/models/login_request.dart';
 import '../data/models/register_request.dart';
@@ -238,6 +241,7 @@ class AuthenticationProvider extends ChangeNotifier {
 
   Future<bool> signInWithGoogle() async {
     _setLoading(true);
+    var stage = 'Google account selection';
 
     try {
       _errorMessage = null;
@@ -245,6 +249,7 @@ class AuthenticationProvider extends ChangeNotifier {
       final firebaseCredential = kIsWeb
           ? await FirebaseAuth.instance.signInWithPopup(GoogleAuthProvider())
           : await _signInWithGoogleOnAndroid();
+      stage = 'Firebase account verification';
       final firebaseIdToken = await firebaseCredential.user?.getIdToken(true);
 
       if (firebaseIdToken == null || firebaseIdToken.isEmpty) {
@@ -252,6 +257,7 @@ class AuthenticationProvider extends ChangeNotifier {
       }
 
       _pendingGoogleIdToken = firebaseIdToken;
+      stage = 'RentItEase account sign-in';
       final response = await _repository.firebaseLogin(
         firebaseIdToken,
         createAccount: true,
@@ -261,8 +267,15 @@ class AuthenticationProvider extends ChangeNotifier {
       _pendingGoogleIdToken = null;
 
       return true;
-    } catch (error) {
-      _errorMessage = _googleErrorMessage(error);
+    } catch (error, stackTrace) {
+      // This contains only exception metadata, never an OAuth/Firebase token.
+      // It lets a release-device logcat show exactly which boundary failed.
+      debugPrint(
+        'Google sign-in failed during $stage: '
+        '${error.runtimeType}: $error',
+      );
+      debugPrintStack(stackTrace: stackTrace, label: 'Google sign-in failure');
+      _errorMessage = _googleErrorMessage(error, stage: stage);
       return false;
     } finally {
       _setLoading(false);
@@ -315,7 +328,36 @@ class AuthenticationProvider extends ChangeNotifier {
     }
   }
 
-  String _googleErrorMessage(Object error) {
+  String _googleErrorMessage(Object error, {required String stage}) {
+    if (error is FirebaseAuthException) {
+      switch (error.code) {
+        case 'network-request-failed':
+          return 'Unable to reach Firebase. Check your internet connection '
+              'and try again.';
+        case 'app-not-authorized':
+        case 'operation-not-allowed':
+          return 'Google sign-in is not enabled for this app. Please contact '
+              'support.';
+        case 'invalid-credential':
+        case 'invalid-user-token':
+        case 'user-token-expired':
+          return 'Your Google sign-in session expired. Please try again.';
+      }
+      return 'Google account selection succeeded, but Firebase could not '
+          'verify it (${error.code}). Please try again.';
+    }
+
+    if (error is DioException) {
+      final apiError = error.error;
+      final detail = apiError is ApiException ? apiError.message : null;
+      if (detail != null && detail.isNotEmpty) {
+        return 'Google account verified, but RentItEase sign-in could not '
+            'finish: $detail';
+      }
+      return 'Google account verified, but RentItEase sign-in could not '
+          'finish. Please try again.';
+    }
+
     final message = error.toString();
     final normalized = message.toLowerCase();
 
@@ -336,7 +378,8 @@ class AuthenticationProvider extends ChangeNotifier {
       return 'Your Google sign-in session expired. Please try again.';
     }
 
-    return 'Google sign-in could not be completed. Please try again.';
+    return 'Google sign-in could not be completed during $stage. Please try '
+        'again.';
   }
 
   Future<void> logout() async {
