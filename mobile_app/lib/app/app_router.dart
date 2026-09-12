@@ -98,6 +98,14 @@ class AppRouter {
         '/forgot-password',
       }.contains(location);
 
+      // A discarded web tab is rebuilt from its URL. Do not allow a protected
+      // page to request data until the persisted session has been restored.
+      if (!auth.isSessionRestored) return null;
+
+      if (!auth.isLoggedIn && !publicPath) {
+        return '/auth';
+      }
+
       if (location.startsWith('/admin/') && role != 'ADMIN') {
         return auth.isLoggedIn ? '/home' : '/auth';
       }
