@@ -58,53 +58,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final email = _emailController.text.trim().toLowerCase();
     final phone = _phoneController.text.trim();
 
-    final emailSent = await provider.requestSignupEmailOtp(email);
-    if (!mounted) return;
-    if (!emailSent) {
-      _showError(provider.errorMessage ?? context.tr('unableSendEmailOtp'));
-      return;
-    }
-
-    final emailOtp = await showOtpCodeDialog(
-      context,
-      title: context.tr('verifyEmail'),
-      destination: email,
-    );
-    if (emailOtp == null || !mounted) return;
-
-    final emailProof = await provider.verifySignupEmailOtp(email, emailOtp);
-    if (!mounted) return;
-    if (emailProof == null) {
-      _showError(
-        provider.errorMessage ?? context.tr('emailVerificationFailed'),
-      );
-      return;
-    }
-
-    String? phoneProof;
-    if (phone.isNotEmpty) {
-      try {
-        phoneProof = await FirebasePhoneOtpService().verifyPhone(
-          phoneNumber: '+91$phone',
-          requestCode: () => showOtpCodeDialog(
-            context,
-            title: context.tr('verifyPhoneNumber'),
-            destination: '+91 $phone',
-          ),
-        );
-      } catch (error) {
-        if (mounted) _showError(userFriendlyError(error));
-        return;
-      }
-    }
-
-    final success = await provider.registerVerified(
+    // Email and phone verification are intentionally deferred for the
+    // current release. Registration must not depend on an email provider or
+    // Firebase OTP response before an account can be created.
+    final success = await provider.register(
       fullName: _nameController.text.trim(),
       email: email,
       phone: phone.isEmpty ? null : phone,
       password: _passwordController.text,
-      emailVerificationToken: emailProof,
-      phoneIdToken: phoneProof,
     );
 
     if (!mounted) return;
