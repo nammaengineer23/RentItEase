@@ -61,7 +61,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final emailSent = await provider.requestSignupEmailOtp(email);
     if (!mounted) return;
     if (!emailSent) {
-      _showError(provider.errorMessage ?? context.tr('unableSendEmailOtp'));
+      _showError(
+        userFriendlyError(
+          provider.errorMessage ?? context.tr('unableSendEmailOtp'),
+        ),
+      );
       return;
     }
 

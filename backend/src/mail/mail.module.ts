@@ -12,7 +12,12 @@ import { MailService } from './mail.service';
       transport: {
         host: process.env.MAIL_HOST,
         port: Number(process.env.MAIL_PORT),
-        secure: false,
+        secure:
+          process.env.MAIL_SECURE?.toLowerCase() === 'true' ||
+          Number(process.env.MAIL_PORT) === 465,
+        connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 20_000,
         auth: {
           user: process.env.MAIL_USER,
           pass: process.env.MAIL_PASSWORD,

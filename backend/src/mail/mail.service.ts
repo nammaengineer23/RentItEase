@@ -1,19 +1,31 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../database/prisma.service';
 @Injectable()
 export class MailService {
   private transporter: nodemailer.Transporter;
+  private readonly logger = new Logger(MailService.name);
 
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
   ) {
+    const port = Number(this.configService.get<number>('MAIL_PORT'));
+    const secureSetting = this.configService
+        .get<string>('MAIL_SECURE')
+        ?.trim()
+        .toLowerCase();
     this.transporter = nodemailer.createTransport({
       host: this.configService.get<string>('MAIL_HOST'),
-      port: Number(this.configService.get<number>('MAIL_PORT')),
-      secure: false,
+      port,
+      // Port 465 uses direct TLS. Port 587 uses STARTTLS and must remain
+      // non-secure at connection time. MAIL_SECURE can override either.
+      secure:
+        secureSetting === undefined ? port === 465 : secureSetting === 'true',
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 20_000,
       auth: {
         user: this.configService.get<string>('MAIL_USER'),
         pass: this.configService.get<string>('MAIL_PASSWORD'),
@@ -48,11 +60,12 @@ export class MailService {
   // ==========================================
 
   async sendAuthenticationOtp(email: string, otp: string) {
-    await this.transporter.sendMail({
-      from: this.configService.get<string>('MAIL_FROM'),
-      to: email,
-      subject: 'Your RentItEase verification code',
-      html: `
+    try {
+      await this.transporter.sendMail({
+        from: this.configService.get<string>('MAIL_FROM'),
+        to: email,
+        subject: 'Your RentItEase verification code',
+        html: `
         <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto">
           <h2>Verify your RentItEase account</h2>
           <p>Enter this one-time code in the RentItEase app:</p>
@@ -63,7 +76,16 @@ export class MailService {
           <p>If you did not request it, you can ignore this email.</p>
         </div>
       `,
-    });
+      });
+    } catch (error) {
+      this.logger.error(
+        'Failed to send authentication OTP',
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new ServiceUnavailableException(
+        'Unable to send the verification email. Please try again shortly.',
+      );
+    }
   }
 
   // ==========================================
