@@ -94,6 +94,12 @@ import { StorageModule } from './storage/storage.module';
           otherwise: Joi.optional(),
         }),
 
+        SOCIAL_AUTOMATION_MODE: Joi.string()
+          .valid('DISABLED', 'GENERATE_ONLY')
+          .default('GENERATE_ONLY'),
+
+        SOCIAL_SCHEDULER_ENABLED: Joi.boolean().default(false),
+
         PORT: Joi.number().default(3000),
 
         NODE_ENV: Joi.string()
