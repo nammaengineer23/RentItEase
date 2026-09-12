@@ -10,6 +10,9 @@ import '../../../search/providers/search_provider.dart';
 import '../../../favorites/providers/favorites_provider.dart';
 import '../../../authentication/providers/authentication_provider.dart';
 import '../../../../core/network/dio_provider.dart';
+import '../../../../core/utils/app_error_message.dart';
+import '../../../chat/presentation/pages/chat_page.dart';
+import '../../../chat/providers/chat_provider.dart';
 import '../../../maps/presentation/widgets/property_map.dart';
 import '../../../property_visits/presentation/pages/book_visit_page.dart';
 import '../widgets/property_action_buttons.dart';
@@ -35,11 +38,48 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
   bool isLoading = true;
   bool isFavorite = false;
   bool isFavoriteLoading = true;
+  bool isOpeningChat = false;
   bool hasPremiumMembership = false;
   String ownerName = '';
   String ownerPhone = '';
 
   String? error;
+
+  Future<void> _openPropertyChat(PropertyEntity property) async {
+    if (isOpeningChat) return;
+    setState(() => isOpeningChat = true);
+
+    try {
+      // Create or return the existing conversation before navigating. This
+      // avoids entering a chat route without an active conversation and keeps
+      // the Property action consistent with opening chats from Profile.
+      final repository = ref.read(chatRepositoryProvider);
+      final conversation = await repository.createConversation(
+        propertyId: property.id,
+      );
+
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => ChatPage(
+            conversationId: conversation.conversationId,
+            userName: property.ownerName,
+            propertyTitle: property.title,
+            propertyImage: property.imageUrls.isNotEmpty
+                ? property.imageUrls.first
+                : null,
+          ),
+        ),
+      );
+    } catch (exception) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(userFriendlyError(exception))),
+      );
+    } finally {
+      if (mounted) setState(() => isOpeningChat = false);
+    }
+  }
 
   List<PropertyEntity> _navigationProperties() {
     final searchResults = ref.read(searchProvider).results;
@@ -424,18 +464,15 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () => context.push(
-                        Uri(
-                          path: '/chat',
-                          queryParameters: {
-                            'propertyId': property.id,
-                            'userName': property.ownerName,
-                            'propertyTitle': property.title,
-                          },
-                        ).toString(),
-                      ),
+                      onPressed: isOpeningChat
+                          ? null
+                          : () => _openPropertyChat(property),
                       icon: const Icon(Icons.chat_bubble_outline),
-                      label: Text(context.tr('chatWithOwner')),
+                      label: Text(
+                        isOpeningChat
+                            ? 'Opening chat...'
+                            : context.tr('chatWithOwner'),
+                      ),
                     ),
                   ),
 
@@ -492,18 +529,9 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                 ),
               );
             },
-            onContactOwner: () {
-              context.push(
-                Uri(
-                  path: '/chat',
-                  queryParameters: {
-                    'propertyId': property.id,
-                    'userName': property.ownerName,
-                    'propertyTitle': property.title,
-                  },
-                ).toString(),
-              );
-            },
+            onContactOwner: isOpeningChat
+                ? null
+                : () => _openPropertyChat(property),
           ),
         ),
       ),
