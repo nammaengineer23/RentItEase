@@ -68,6 +68,7 @@ class FavoritePropertyCard extends ConsumerWidget {
       child: Image.network(
         imageUrl,
         fit: BoxFit.cover,
+        webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) {
             return child;

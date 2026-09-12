@@ -49,7 +49,12 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
   bool _isAuthPath(RequestOptions options) =>
       options.path == ApiPaths.login ||
       options.path == ApiPaths.register ||
-      options.path == ApiPaths.refresh;
+      options.path == ApiPaths.refresh ||
+      // Firebase login establishes a new session. It must not inherit a
+      // stale bearer token from an earlier RentItEase session or trigger the
+      // token-refresh retry path when Firebase rejects its proof.
+      options.path == '/auth/firebase-login' ||
+      options.path == '/auth/login/phone-otp';
 
   @override
   Future<void> onRequest(
