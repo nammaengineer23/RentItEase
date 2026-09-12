@@ -1,8 +1,11 @@
 name: Flutter Android Build
 
 on:
-  # Temporarily manual-only. RC1 contains Flutter analysis, tests and APK build.
   workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   build:
