@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class WebLandingPage extends StatelessWidget {
   const WebLandingPage({super.key});
@@ -10,6 +11,8 @@ class WebLandingPage extends StatelessWidget {
   static const _green = Color(0xFF0D8A55);
   static const _mint = Color(0xFFD9F7E7);
   static const _line = Color(0xFFD9E4DD);
+  static const _androidReleaseUrl =
+      'https://github.com/nammaengineer23/RentItEase/actions/runs/34664262512';
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +54,16 @@ class WebLandingPage extends StatelessWidget {
                         curve: Curves.easeOut,
                       ),
                       child: const Text('How it works'),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: _openAndroidDownload,
+                      icon: const Icon(Icons.download_rounded, size: 18),
+                      label: const Text('Download Android App'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _deepGreen,
+                        side: const BorderSide(color: Color(0xFF8FB8A0)),
+                      ),
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
@@ -186,6 +199,11 @@ class WebLandingPage extends StatelessWidget {
   }
 
   static final _howItWorksKey = GlobalKey();
+
+  Future<void> _openAndroidDownload() => launchUrl(
+        Uri.parse(_androidReleaseUrl),
+        webOnlyWindowName: '_blank',
+      );
 
   void _showEarlyAccessDialog(BuildContext context) {
     showDialog<void>(
