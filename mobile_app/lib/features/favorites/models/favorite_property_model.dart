@@ -1,3 +1,5 @@
+import '../../../core/utils/app_image_url.dart';
+
 class FavoritePropertyModel {
   const FavoritePropertyModel({
     required this.id,
@@ -322,7 +324,7 @@ class FavoritePropertyModel {
     for (final candidate in candidates) {
       if (candidate is String &&
           candidate.trim().isNotEmpty) {
-        return candidate.trim();
+        return AppImageUrl.resolve(candidate);
       }
     }
 

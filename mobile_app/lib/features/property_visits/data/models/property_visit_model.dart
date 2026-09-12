@@ -1,4 +1,5 @@
 import '../../domain/entities/property_visit.dart';
+import '../../../../core/utils/app_image_url.dart';
 
 class PropertyVisitModel extends PropertyVisit {
   const PropertyVisitModel({
@@ -29,11 +30,9 @@ class PropertyVisitModel extends PropertyVisit {
     if (images.isNotEmpty) {
       final image = images.first as Map<String, dynamic>;
 
-      propertyImage =
-          image['url']?.toString() ??
-          image['imageUrl']?.toString() ??
-          image['secureUrl']?.toString() ??
-          '';
+      propertyImage = AppImageUrl.resolve(
+        image['url'] ?? image['imageUrl'] ?? image['secureUrl'],
+      );
     }
 
     return PropertyVisitModel(

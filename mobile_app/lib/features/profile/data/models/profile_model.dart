@@ -1,4 +1,5 @@
 import '../../domain/entities/profile_entity.dart';
+import '../../../../core/utils/app_image_url.dart';
 
 class ProfileModel extends ProfileEntity {
   const ProfileModel({
@@ -21,9 +22,7 @@ class ProfileModel extends ProfileEntity {
           '',
       email: json['email']?.toString() ?? '',
       phone: json['phone']?.toString() ?? '',
-      profileImage: _stringValue(
-        json['photoUrl'] ?? json['profileImage'],
-      ),
+      profileImage: _imageUrl(json['photoUrl'] ?? json['profileImage']),
       role: json['role']?.toString() ?? 'USER',
       isVerified: json['isVerified'] == true,
       isActive: json['isActive'] != false,
@@ -98,12 +97,9 @@ class ProfileModel extends ProfileEntity {
     );
   }
 
-  static String? _stringValue(dynamic value) {
-    if (value == null) return null;
-
-    final result = value.toString().trim();
-
-    return result.isEmpty ? null : result;
+  static String? _imageUrl(dynamic value) {
+    final url = AppImageUrl.resolve(value);
+    return url.isEmpty ? null : url;
   }
 
   static DateTime _parseDate(dynamic value) {
