@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app_router.dart';
 import 'app/app_theme.dart';
+import 'core/ui/app_scroll_behavior.dart';
+import 'features/authentication/providers/authentication_provider.dart';
 import 'features/settings/providers/settings_provider.dart';
 import 'features/legal/presentation/pages/legal_document_page.dart';
 import 'l10n/app_localizations.dart';
@@ -22,14 +24,20 @@ class RentItEaseApp extends ConsumerWidget {
       return LegalDocumentPage(path: legalPath);
     }
 
-    final settingsAsync = ref.watch(settingsProvider);
-
-    final darkMode = settingsAsync.valueOrNull?.darkMode ?? false;
-    final language = settingsAsync.valueOrNull?.language ?? 'en';
+    final auth = ref.watch(authenticationProvider);
+    // Do not issue an authenticated settings request while a visitor is on
+    // the public site or sign-in screen. This avoids unnecessary 401 retries
+    // and lets the mobile web app render immediately.
+    final userSettings = auth.isLoggedIn
+        ? ref.watch(settingsProvider).valueOrNull
+        : null;
+    final darkMode = userSettings?.darkMode ?? false;
+    final language = userSettings?.language ?? 'en';
 
     return MaterialApp.router(
       title: 'RentItEase',
       debugShowCheckedModeBanner: false,
+      scrollBehavior: const AppScrollBehavior(),
 
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

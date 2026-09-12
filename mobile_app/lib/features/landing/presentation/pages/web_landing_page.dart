@@ -30,59 +30,75 @@ class WebLandingPage extends StatelessWidget {
             title: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: _ContentWidth(
-                child: Row(
-                  children: [
-                    SvgPicture.asset(
-                      'assets/images/branding/rentitease_logo_512x512.svg',
-                      width: 42,
-                      height: 42,
-                    ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'RentItEase',
-                      style: TextStyle(
-                        color: _ink,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () => context.go('/about'),
-                      child: const Text('About'),
-                    ),
-                    TextButton(
-                      onPressed: () => context.go('/contact'),
-                      child: const Text('Contact'),
-                    ),
-                    TextButton(
-                      onPressed: () => context.go('/privacy'),
-                      child: const Text('Privacy'),
-                    ),
-                    TextButton(
-                      onPressed: () => context.go('/delete-account'),
-                      child: const Text('Delete account'),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      onPressed: _openAndroidDownload,
-                      icon: const Icon(Icons.download_rounded, size: 18),
-                      label: const Text('Download Android App'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: _deepGreen,
-                        side: const BorderSide(color: Color(0xFF8FB8A0)),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      onPressed: () => context.go('/auth'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: _deepGreen,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Open app'),
-                    ),
-                  ],
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxWidth < 840;
+                    return Row(
+                      children: [
+                        SvgPicture.asset(
+                          'assets/images/branding/rentitease_logo_512x512.svg',
+                          width: compact ? 34 : 42,
+                          height: compact ? 34 : 42,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'RentItEase',
+                          style: TextStyle(
+                            color: _ink,
+                            fontSize: compact ? 18 : 20,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (compact)
+                          const _WebNavigationMenu()
+                        else ...[
+                          TextButton(
+                            onPressed: () => context.go('/about'),
+                            child: const Text('About'),
+                          ),
+                          TextButton(
+                            onPressed: () => context.go('/contact'),
+                            child: const Text('Contact'),
+                          ),
+                          TextButton(
+                            onPressed: () => context.go('/privacy'),
+                            child: const Text('Privacy'),
+                          ),
+                          TextButton(
+                            onPressed: () => context.go('/delete-account'),
+                            child: const Text('Delete account'),
+                          ),
+                        ],
+                        const SizedBox(width: 8),
+                        if (compact)
+                          IconButton(
+                            onPressed: _openAndroidDownload,
+                            tooltip: 'Download Android App',
+                            icon: const Icon(Icons.download_rounded),
+                          )
+                        else
+                          OutlinedButton.icon(
+                            onPressed: _openAndroidDownload,
+                            icon: const Icon(Icons.download_rounded, size: 18),
+                            label: const Text('Download Android App'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _deepGreen,
+                              side: const BorderSide(color: Color(0xFF8FB8A0)),
+                            ),
+                          ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed: () => context.go('/auth'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _deepGreen,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Text(compact ? 'Open' : 'Open app'),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -232,6 +248,23 @@ class WebLandingPage extends StatelessWidget {
   }
 }
 
+class _WebNavigationMenu extends StatelessWidget {
+  const _WebNavigationMenu();
+
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<String>(
+        tooltip: 'More pages',
+        icon: const Icon(Icons.menu_rounded),
+        onSelected: (path) => context.go(path),
+        itemBuilder: (context) => const [
+          PopupMenuItem(value: '/about', child: Text('About')),
+          PopupMenuItem(value: '/contact', child: Text('Contact')),
+          PopupMenuItem(value: '/privacy', child: Text('Privacy')),
+          PopupMenuItem(value: '/delete-account', child: Text('Delete account')),
+        ],
+      );
+}
+
 class _ContentWidth extends StatelessWidget {
   const _ContentWidth({required this.child});
   final Widget child;
@@ -251,7 +284,9 @@ class _HeroCopy extends StatelessWidget {
   final VoidCallback onLearnMore;
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 520;
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
@@ -264,11 +299,11 @@ class _HeroCopy extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Find a place\nthat feels right.',
             style: TextStyle(
               color: WebLandingPage._ink,
-              fontSize: 64,
+              fontSize: compact ? 48 : 64,
               height: .98,
               fontWeight: FontWeight.w800,
               letterSpacing: -3.4,
@@ -311,6 +346,7 @@ class _HeroCopy extends StatelessWidget {
           ),
         ],
       );
+  }
 }
 
 class _HomePreview extends StatelessWidget {
@@ -596,13 +632,15 @@ class WebInfoPage extends StatelessWidget {
               ),
             ),
           ),
-          actions: [
-            TextButton(onPressed: () => context.go('/about'), child: const Text('About')),
-            TextButton(onPressed: () => context.go('/contact'), child: const Text('Contact')),
-            TextButton(onPressed: () => context.go('/privacy'), child: const Text('Privacy')),
-            TextButton(onPressed: () => context.go('/delete-account'), child: const Text('Delete account')),
-            const SizedBox(width: 12),
-          ],
+          actions: MediaQuery.sizeOf(context).width < 680
+              ? const [_WebNavigationMenu()]
+              : [
+                  TextButton(onPressed: () => context.go('/about'), child: const Text('About')),
+                  TextButton(onPressed: () => context.go('/contact'), child: const Text('Contact')),
+                  TextButton(onPressed: () => context.go('/privacy'), child: const Text('Privacy')),
+                  TextButton(onPressed: () => context.go('/delete-account'), child: const Text('Delete account')),
+                  const SizedBox(width: 12),
+                ],
         ),
         body: Center(
           child: ConstrainedBox(
@@ -614,9 +652,9 @@ class WebInfoPage extends StatelessWidget {
                 children: [
                   Text(
                     _title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: WebLandingPage._ink,
-                      fontSize: 44,
+                      fontSize: MediaQuery.sizeOf(context).width < 520 ? 34 : 44,
                       height: 1.1,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -2,
