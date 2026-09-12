@@ -4,6 +4,8 @@ class PropertyEntity {
     required this.title,
     required this.description,
     required this.rent,
+    this.dailyRentEnabled = false,
+    this.dailyRent,
     required this.city,
     required this.locality,
     required this.address,
@@ -35,6 +37,8 @@ class PropertyEntity {
   final String title;
   final String description;
   final double rent;
+  final bool dailyRentEnabled;
+  final double? dailyRent;
   final String city;
   final String locality;
   final String address;

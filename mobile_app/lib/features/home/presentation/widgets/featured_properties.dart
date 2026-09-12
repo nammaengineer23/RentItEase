@@ -83,7 +83,10 @@ class FeaturedProperties extends StatelessWidget {
                               const SizedBox(height: 12),
 
                               Text(
-                                '₹${property.rent.toStringAsFixed(0)} / month',
+                                property.dailyRentEnabled &&
+                                        (property.dailyRent ?? 0) > 0
+                                    ? '₹${property.rent.toStringAsFixed(0)} / month · ₹${property.dailyRent!.toStringAsFixed(0)} / day'
+                                    : '₹${property.rent.toStringAsFixed(0)} / month',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
