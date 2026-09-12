@@ -321,7 +321,10 @@ class AuthenticationProvider extends ChangeNotifier {
       _pendingGoogleIdToken = null;
       return true;
     } catch (error) {
-      _errorMessage = _googleErrorMessage(error);
+      _errorMessage = _googleErrorMessage(
+        error,
+        stage: 'RentItEase account setup',
+      );
       return false;
     } finally {
       _setLoading(false);

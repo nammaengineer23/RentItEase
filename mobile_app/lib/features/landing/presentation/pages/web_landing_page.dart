@@ -228,7 +228,7 @@ class WebLandingPage extends StatelessWidget {
         Uri.parse(_androidReleaseUrl),
         webOnlyWindowName: '_blank',
       );
-\n}
+}
 
 class _WebNavigationMenu extends StatelessWidget {
   const _WebNavigationMenu();
