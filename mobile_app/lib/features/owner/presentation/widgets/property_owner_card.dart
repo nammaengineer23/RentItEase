@@ -36,6 +36,7 @@ class PropertyOwnerCard extends StatelessWidget {
                   : Image.network(
                       property.imageUrl,
                       fit: BoxFit.cover,
+                      webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
                       loadingBuilder: (context, child, progress) =>
                           progress == null
                           ? child
