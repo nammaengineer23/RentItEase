@@ -58,7 +58,11 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
                         return _RetryImage(
                           onRetry: () {
                             PaintingBinding.instance.imageCache.evict(
-                              NetworkImage(imageUrl),
+                              NetworkImage(
+                                imageUrl,
+                                webHtmlElementStrategy:
+                                    WebHtmlElementStrategy.prefer,
+                              ),
                             );
                             setState(() => _failedImages.remove(imageUrl));
                           },
@@ -67,6 +71,11 @@ class _PropertyImageSliderState extends State<PropertyImageSlider> {
                       return Image.network(
                         imageUrl,
                         fit: BoxFit.cover,
+                        // Property photos are hosted at images.rentitease.com,
+                        // a different origin from rentitease.com. On web, use
+                        // an HTML image element so a missing CDN CORS header
+                        // never turns an otherwise available photo blank.
+                        webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
                         loadingBuilder: (context, child, loadingProgress) {
                           if (loadingProgress == null) {
                             return child;

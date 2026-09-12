@@ -36,6 +36,7 @@ class PropertyOwnerCard extends StatelessWidget {
                   : Image.network(
                       property.imageUrl,
                       fit: BoxFit.cover,
+                      webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
                       loadingBuilder: (context, child, progress) =>
                           progress == null
                           ? child
@@ -77,17 +78,21 @@ class PropertyOwnerCard extends StatelessWidget {
                   const SizedBox(height: 12),
 
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "₹${property.rent.toStringAsFixed(0)} / month",
+                      Expanded(
+                        child: Text(
+                          property.dailyRentEnabled &&
+                                  (property.dailyRent ?? 0) > 0
+                              ? '₹${property.rent.toStringAsFixed(0)} / month\n₹${property.dailyRent!.toStringAsFixed(0)} / day'
+                              : '₹${property.rent.toStringAsFixed(0)} / month',
                         style: const TextStyle(
                           color: Colors.green,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-
-                      const Spacer(),
+                      ),
 
                       Chip(
                         label: Text(

@@ -180,7 +180,7 @@ class WebLandingPage extends StatelessWidget {
                           final compact = constraints.maxWidth < 670;
                           final copy = const _ReleaseCopy();
                           final action = OutlinedButton(
-                            onPressed: () => _showEarlyAccessDialog(context),
+                            onPressed: _openAndroidDownload,
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.white,
                               side: const BorderSide(color: Color(0xFFB9D6C5)),
@@ -189,7 +189,7 @@ class WebLandingPage extends StatelessWidget {
                                 vertical: 18,
                               ),
                             ),
-                            child: const Text('Request early access'),
+                            child: const Text('Download Android App'),
                           );
                           return compact
                               ? Column(
@@ -228,24 +228,6 @@ class WebLandingPage extends StatelessWidget {
         Uri.parse(_androidReleaseUrl),
         webOnlyWindowName: '_blank',
       );
-
-  void _showEarlyAccessDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Early access'),
-        content: const Text(
-          'The Android release download is being prepared. For early access, email support@rentitease.com.',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Got it'),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _WebNavigationMenu extends StatelessWidget {
@@ -513,9 +495,9 @@ class _ReleaseCopy extends StatelessWidget {
         children: [
           Text('RENTITEASE FOR ANDROID', style: TextStyle(color: Color(0xFF8CE3B0), fontWeight: FontWeight.w800, letterSpacing: 1.1)),
           SizedBox(height: 12),
-          Text('The app is almost ready for you.', style: TextStyle(color: Colors.white, fontSize: 38, height: 1.08, fontWeight: FontWeight.w800, letterSpacing: -1.5)),
+          Text('RentItEase is ready for you.', style: TextStyle(color: Colors.white, fontSize: 38, height: 1.08, fontWeight: FontWeight.w800, letterSpacing: -1.5)),
           SizedBox(height: 12),
-          Text('We are preparing the signed Android release for direct download. Contact us for early access.', style: TextStyle(color: Color(0xFFC5DFCF), fontSize: 16, height: 1.5)),
+          Text('Download the signed Android app and start finding your next rental home today.', style: TextStyle(color: Color(0xFFC5DFCF), fontSize: 16, height: 1.5)),
         ],
       );
 }

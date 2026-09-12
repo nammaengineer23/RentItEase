@@ -52,6 +52,8 @@ class PropertyCard extends StatelessWidget {
                   /// Price
                   PropertyPrice(
                     rent: property.rent,
+                    dailyRentEnabled: property.dailyRentEnabled,
+                    dailyRent: property.dailyRent,
                     isAvailable: property.isAvailable,
                   ),
 

@@ -100,6 +100,13 @@ jobs:
           cp build/app/outputs/flutter-apk/app-release.apk \
             build/app/outputs/flutter-apk/RentItEase-release.apk
 
+      - name: Verify release APK signing certificate
+        run: |
+          APKSIGNER="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --print-certs \
+            build/app/outputs/flutter-apk/RentItEase-release.apk
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:

@@ -10,11 +10,24 @@ import 'features/settings/providers/settings_provider.dart';
 import 'features/legal/presentation/pages/legal_document_page.dart';
 import 'l10n/app_localizations.dart';
 
-class RentItEaseApp extends ConsumerWidget {
+class RentItEaseApp extends ConsumerStatefulWidget {
   const RentItEaseApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RentItEaseApp> createState() => _RentItEaseAppState();
+}
+
+class _RentItEaseAppState extends ConsumerState<RentItEaseApp> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(
+      () => ref.read(authenticationProvider).loadSavedSession(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Flutter's PWA service worker can serve the app shell for a navigation
     // that was originally a public legal URL. Render those URLs explicitly so
     // they can never fall through to the onboarding router.
@@ -25,6 +38,13 @@ class RentItEaseApp extends ConsumerWidget {
     }
 
     final auth = ref.watch(authenticationProvider);
+    if (!auth.isSessionRestored) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+      );
+    }
+
     // Do not issue an authenticated settings request while a visitor is on
     // the public site or sign-in screen. This avoids unnecessary 401 retries
     // and lets the mobile web app render immediately.
