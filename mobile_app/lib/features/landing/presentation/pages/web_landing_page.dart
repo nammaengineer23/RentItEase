@@ -12,7 +12,7 @@ class WebLandingPage extends StatelessWidget {
   static const _mint = Color(0xFFD9F7E7);
   static const _line = Color(0xFFD9E4DD);
   static const _androidReleaseUrl =
-      'https://github.com/nammaengineer23/RentItEase/actions/runs/34664262512';
+      'https://github.com/nammaengineer23/RentItEase/releases/latest/download/RentItEase-release.apk';
 
   @override
   Widget build(BuildContext context) {
