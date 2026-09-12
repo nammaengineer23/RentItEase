@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/entities/settings_entity.dart';
@@ -13,6 +14,19 @@ class SettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(settingsProvider, (_, next) {
+      if (!next.hasError || !_isExpiredSession(next.error)) {
+        return;
+      }
+
+      Future<void>(() async {
+        await ref.read(authenticationProvider).logout();
+        if (context.mounted) {
+          context.go('/auth');
+        }
+      });
+    });
+
     final auth = ref.watch(authenticationProvider);
     if (!auth.isSessionRestored) {
       return Scaffold(
@@ -40,6 +54,13 @@ class SettingsPage extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  bool _isExpiredSession(Object? error) {
+    final message = error.toString().toLowerCase();
+    return message.contains('401') ||
+        message.contains('unauthorized') ||
+        message.contains('session has expired');
   }
 }
 
