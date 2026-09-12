@@ -4,8 +4,11 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+
+# RC1 exercises the live production API with shared tenant/owner/admin
+# accounts and builds a signed Android artifact.  Keep it as the gate for
+# main and releases, rather than running it for every pull request.  PRs are
+# still covered by Backend CI and Flutter Android Build.
 
 concurrency:
   # All refs share production E2E accounts and data. Serialize runs to avoid

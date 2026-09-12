@@ -22,6 +22,7 @@
   >
 
   <meta name="author" content="RentItEase">
+  <link rel="canonical" href="https://rentitease.com/">
 
   <!-- Open Graph -->
   <meta property="og:title" content="RentItEase">
@@ -30,6 +31,34 @@
     content="Find, rent and manage properties easily with RentItEase."
   >
   <meta property="og:type" content="website">
+  <meta property="og:url" content="https://rentitease.com/">
+
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://rentitease.com/#organization",
+          "name": "RentItEase",
+          "url": "https://rentitease.com/",
+          "logo": "https://rentitease.com/icons/Icon-512.png",
+          "description": "RentItEase is a property rental platform for discovering, listing, and managing rental homes.",
+          "email": "support@rentitease.com"
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://rentitease.com/#website",
+          "name": "RentItEase",
+          "url": "https://rentitease.com/",
+          "description": "Find, rent, and manage properties with RentItEase.",
+          "publisher": {
+            "@id": "https://rentitease.com/#organization"
+          }
+        }
+      ]
+    }
+  </script>
 
   <!-- iOS -->
   <meta name="mobile-web-app-capable" content="yes">
