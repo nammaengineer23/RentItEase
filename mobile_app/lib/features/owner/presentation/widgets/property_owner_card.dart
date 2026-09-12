@@ -91,6 +91,7 @@ class PropertyOwnerCard extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      ),
 
                       Chip(
                         label: Text(
