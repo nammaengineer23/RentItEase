@@ -86,6 +86,10 @@ class AppRouter {
       final role = auth.authResponse?.user.role.trim().toUpperCase();
       final publicPath = const {
         '/',
+        '/about',
+        '/contact',
+        '/privacy',
+        '/delete-account',
         '/splash',
         '/onboarding',
         '/auth',
@@ -133,6 +137,34 @@ class AppRouter {
         name: 'web-landing',
         builder: (context, state) =>
             kIsWeb ? const WebLandingPage() : const SplashPage(),
+      ),
+      GoRoute(
+        path: '/about',
+        name: 'web-about',
+        builder: (context, state) => kIsWeb
+            ? const WebInfoPage(kind: WebInfoPageKind.about)
+            : const SplashPage(),
+      ),
+      GoRoute(
+        path: '/contact',
+        name: 'web-contact',
+        builder: (context, state) => kIsWeb
+            ? const WebInfoPage(kind: WebInfoPageKind.contact)
+            : const SplashPage(),
+      ),
+      GoRoute(
+        path: '/privacy',
+        name: 'web-privacy',
+        builder: (context, state) => kIsWeb
+            ? const WebInfoPage(kind: WebInfoPageKind.privacy)
+            : const SplashPage(),
+      ),
+      GoRoute(
+        path: '/delete-account',
+        name: 'web-delete-account',
+        builder: (context, state) => kIsWeb
+            ? const WebInfoPage(kind: WebInfoPageKind.deleteAccount)
+            : const SplashPage(),
       ),
       ShellRoute(
         builder: (context, state, child) =>

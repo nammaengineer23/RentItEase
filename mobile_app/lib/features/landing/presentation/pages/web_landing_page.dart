@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class WebLandingPage extends StatelessWidget {
   const WebLandingPage({super.key});
@@ -10,6 +11,8 @@ class WebLandingPage extends StatelessWidget {
   static const _green = Color(0xFF0D8A55);
   static const _mint = Color(0xFFD9F7E7);
   static const _line = Color(0xFFD9E4DD);
+  static const _androidReleaseUrl =
+      'https://github.com/nammaengineer23/RentItEase/actions/runs/34664262512';
 
   @override
   Widget build(BuildContext context) {
@@ -45,12 +48,30 @@ class WebLandingPage extends StatelessWidget {
                     ),
                     const Spacer(),
                     TextButton(
-                      onPressed: () => Scrollable.ensureVisible(
-                        _howItWorksKey.currentContext!,
-                        duration: const Duration(milliseconds: 380),
-                        curve: Curves.easeOut,
+                      onPressed: () => context.go('/about'),
+                      child: const Text('About'),
+                    ),
+                    TextButton(
+                      onPressed: () => context.go('/contact'),
+                      child: const Text('Contact'),
+                    ),
+                    TextButton(
+                      onPressed: () => context.go('/privacy'),
+                      child: const Text('Privacy'),
+                    ),
+                    TextButton(
+                      onPressed: () => context.go('/delete-account'),
+                      child: const Text('Delete account'),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: _openAndroidDownload,
+                      icon: const Icon(Icons.download_rounded, size: 18),
+                      label: const Text('Download Android App'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _deepGreen,
+                        side: const BorderSide(color: Color(0xFF8FB8A0)),
                       ),
-                      child: const Text('How it works'),
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
@@ -186,6 +207,11 @@ class WebLandingPage extends StatelessWidget {
   }
 
   static final _howItWorksKey = GlobalKey();
+
+  Future<void> _openAndroidDownload() => launchUrl(
+        Uri.parse(_androidReleaseUrl),
+        webOnlyWindowName: '_blank',
+      );
 
   void _showEarlyAccessDialog(BuildContext context) {
     showDialog<void>(
@@ -469,5 +495,193 @@ class _Footer extends StatelessWidget {
           Text('© 2026 RentItEase', style: TextStyle(color: Color(0xFF587064))),
           Text('support@rentitease.com', style: TextStyle(color: Color(0xFF587064))),
         ],
+      );
+}
+
+enum WebInfoPageKind { about, contact, privacy, deleteAccount }
+
+class WebInfoPage extends StatelessWidget {
+  const WebInfoPage({required this.kind, super.key});
+
+  final WebInfoPageKind kind;
+
+  String get _title => switch (kind) {
+        WebInfoPageKind.about => 'Rentals, made simpler.',
+        WebInfoPageKind.contact => 'Contact us',
+        WebInfoPageKind.privacy => 'Privacy Policy',
+        WebInfoPageKind.deleteAccount => 'Delete your RentItEase account',
+      };
+
+  String get _intro => switch (kind) {
+        WebInfoPageKind.about =>
+          'RentItEase helps tenants discover rental homes, arrange visits, and manage their rental journey in one place.',
+        WebInfoPageKind.contact =>
+          'We are here to help with RentItEase account, property, or app questions.',
+        WebInfoPageKind.privacy =>
+          'Last updated: 12 September 2026. This draft should be reviewed before public publication.',
+        WebInfoPageKind.deleteAccount =>
+          'You can request deletion of your account and associated personal data.',
+      };
+
+  List<_InfoSection> get _sections => switch (kind) {
+        WebInfoPageKind.about => const [
+            _InfoSection(
+              title: 'Our purpose',
+              body:
+                  'We want rental decisions to feel clearer through useful property details, a straightforward visit process, and one place to keep rental activity organised.',
+            ),
+            _InfoSection(
+              title: 'For tenants and owners',
+              body:
+                  'Tenants can explore homes and request visits. Property owners can manage listings, respond to requests, and follow property activity.',
+            ),
+          ],
+        WebInfoPageKind.contact => const [
+            _InfoSection(
+              title: 'Email support',
+              body:
+                  'For support, email support@rentitease.com. For general enquiries, email contact@rentitease.com.',
+            ),
+            _InfoSection(
+              title: 'Before you write',
+              body:
+                  'Please include the email address associated with your account and a short description of the issue. Never send your password or OTP.',
+            ),
+          ],
+        WebInfoPageKind.privacy => const [
+            _InfoSection(
+              title: 'Information we collect',
+              body:
+                  'RentItEase may collect account details, profile information, property and visit information, messages, and device or usage data needed to provide the service.',
+            ),
+            _InfoSection(
+              title: 'How we use information',
+              body:
+                  'We use information to operate the app, manage accounts and listings, support bookings and visits, provide customer support, improve the service, and meet legal obligations.',
+            ),
+            _InfoSection(
+              title: 'Your choices',
+              body:
+                  'You can request account deletion or privacy assistance by emailing support@rentitease.com.',
+            ),
+          ],
+        WebInfoPageKind.deleteAccount => const [
+            _InfoSection(
+              title: 'How to request deletion',
+              body:
+                  'Email support@rentitease.com from the email address on your account. Use the subject “RentItEase Account Deletion Request” and include your registered email address and mobile number, if available.',
+            ),
+            _InfoSection(
+              title: 'What happens next',
+              body:
+                  'For security, we may ask you to verify account ownership. We will then confirm the request and explain any information that must be retained for legal or operational reasons.',
+            ),
+          ],
+      };
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: const Color(0xFFFBFDFB),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFFFBFDFB),
+          surfaceTintColor: Colors.transparent,
+          title: TextButton(
+            onPressed: () => context.go('/'),
+            child: const Text(
+              'RentItEase',
+              style: TextStyle(
+                color: WebLandingPage._ink,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => context.go('/about'), child: const Text('About')),
+            TextButton(onPressed: () => context.go('/contact'), child: const Text('Contact')),
+            TextButton(onPressed: () => context.go('/privacy'), child: const Text('Privacy')),
+            TextButton(onPressed: () => context.go('/delete-account'), child: const Text('Delete account')),
+            const SizedBox(width: 12),
+          ],
+        ),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 72, 24, 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _title,
+                    style: const TextStyle(
+                      color: WebLandingPage._ink,
+                      fontSize: 44,
+                      height: 1.1,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -2,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _intro,
+                    style: const TextStyle(
+                      color: Color(0xFF395548),
+                      fontSize: 17,
+                      height: 1.55,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  ..._sections.map((section) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _InfoCard(section: section),
+                      )),
+                  const Divider(height: 48),
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: [
+                      TextButton(onPressed: () => context.go('/'), child: const Text('Home')),
+                      TextButton(onPressed: () => context.go('/about'), child: const Text('About')),
+                      TextButton(onPressed: () => context.go('/contact'), child: const Text('Contact')),
+                      TextButton(onPressed: () => context.go('/privacy'), child: const Text('Privacy Policy')),
+                      TextButton(onPressed: () => context.go('/delete-account'), child: const Text('Delete Account')),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+class _InfoSection {
+  const _InfoSection({required this.title, required this.body});
+  final String title;
+  final String body;
+}
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({required this.section});
+  final _InfoSection section;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: WebLandingPage._line),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(section.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Text(section.body, style: const TextStyle(color: Color(0xFF395548), height: 1.55)),
+          ],
+        ),
       );
 }
