@@ -318,6 +318,8 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                 children: [
                   PropertyPrice(
                     rent: property.rent,
+                    dailyRentEnabled: property.dailyRentEnabled,
+                    dailyRent: property.dailyRent,
                     isAvailable: property.isAvailable,
                   ),
 

@@ -7,6 +7,8 @@ class PropertyModel {
     required this.title,
     required this.description,
     required this.rent,
+    this.dailyRentEnabled = false,
+    this.dailyRent,
     required this.city,
     required this.locality,
     required this.address,
@@ -38,6 +40,8 @@ class PropertyModel {
   final String title;
   final String description;
   final double rent;
+  final bool dailyRentEnabled;
+  final double? dailyRent;
   final String city;
   final String locality;
   final String address;
@@ -85,6 +89,8 @@ class PropertyModel {
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
       rent: _double(json['rent'] ?? json['price']),
+      dailyRentEnabled: _bool(json['dailyRentEnabled']),
+      dailyRent: json['dailyRent'] == null ? null : _double(json['dailyRent']),
       city: json['city']?.toString() ?? '',
       locality: json['locality']?.toString() ?? '',
       address: json['address']?.toString() ?? '',
@@ -140,6 +146,8 @@ class PropertyModel {
       'title': title,
       'description': description,
       'rent': rent,
+      'dailyRentEnabled': dailyRentEnabled,
+      if (dailyRent != null) 'dailyRent': dailyRent,
       'city': city,
       'locality': locality,
       'address': address,
@@ -175,6 +183,8 @@ class PropertyModel {
     String? title,
     String? description,
     double? rent,
+    bool? dailyRentEnabled,
+    double? dailyRent,
     String? city,
     String? locality,
     String? address,
@@ -206,6 +216,8 @@ class PropertyModel {
       title: title ?? this.title,
       description: description ?? this.description,
       rent: rent ?? this.rent,
+      dailyRentEnabled: dailyRentEnabled ?? this.dailyRentEnabled,
+      dailyRent: dailyRent ?? this.dailyRent,
       city: city ?? this.city,
       locality: locality ?? this.locality,
       address: address ?? this.address,
@@ -240,6 +252,8 @@ class PropertyModel {
       title: title,
       description: description,
       rent: rent,
+      dailyRentEnabled: dailyRentEnabled,
+      dailyRent: dailyRent,
       city: city,
       locality: locality,
       address: address,
@@ -274,6 +288,8 @@ class PropertyModel {
       title: entity.title,
       description: entity.description,
       rent: entity.rent,
+      dailyRentEnabled: entity.dailyRentEnabled,
+      dailyRent: entity.dailyRent,
       city: entity.city,
       locality: entity.locality,
       address: entity.address,
