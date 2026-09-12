@@ -47,6 +47,20 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
 
   Future<void> _openPropertyChat(PropertyEntity property) async {
     if (isOpeningChat) return;
+
+    final currentUserId = ref
+        .read(authenticationProvider)
+        .authResponse
+        ?.user
+        .id
+        .trim();
+    if (currentUserId != null && currentUserId == property.ownerId) {
+      // Owners do not create conversations with themselves. Their Property
+      // action leads to the same participant-filtered chat list as Profile.
+      context.push('/chat-list');
+      return;
+    }
+
     setState(() => isOpeningChat = true);
 
     try {
