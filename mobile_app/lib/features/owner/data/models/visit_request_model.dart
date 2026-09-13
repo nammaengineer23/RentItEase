@@ -15,14 +15,37 @@ class VisitRequestModel extends VisitRequestEntity {
   });
 
   factory VisitRequestModel.fromJson(Map<String, dynamic> json) {
+    final property = json['property'] is Map
+        ? Map<String, dynamic>.from(json['property'] as Map)
+        : const <String, dynamic>{};
+    final tenant = json['tenant'] is Map
+        ? Map<String, dynamic>.from(json['tenant'] as Map)
+        : const <String, dynamic>{};
+    final images = property['images'];
+    final primaryImage =
+        images is List && images.isNotEmpty && images.first is Map
+        ? Map<String, dynamic>.from(images.first as Map)
+        : const <String, dynamic>{};
+
     return VisitRequestModel(
       id: json['id']?.toString() ?? '',
-      propertyId: json['propertyId']?.toString() ?? '',
-      propertyTitle: json['propertyTitle'] ?? '',
-      propertyImage: json['propertyImage'] ?? '',
-      tenantId: json['tenantId']?.toString() ?? '',
-      tenantName: json['tenantName'] ?? '',
-      tenantPhone: json['tenantPhone'] ?? '',
+      propertyId:
+          json['propertyId']?.toString() ?? property['id']?.toString() ?? '',
+      propertyTitle:
+          json['propertyTitle']?.toString() ??
+          property['title']?.toString() ??
+          '',
+      propertyImage:
+          json['propertyImage']?.toString() ??
+          primaryImage['imageUrl']?.toString() ??
+          '',
+      tenantId: json['tenantId']?.toString() ?? tenant['id']?.toString() ?? '',
+      tenantName:
+          json['tenantName']?.toString() ??
+          tenant['fullName']?.toString() ??
+          '',
+      tenantPhone:
+          json['tenantPhone']?.toString() ?? tenant['phone']?.toString() ?? '',
       visitDate:
           DateTime.tryParse(json['visitDate']?.toString() ?? '')?.toLocal() ??
           DateTime.now(),
