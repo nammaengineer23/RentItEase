@@ -141,6 +141,13 @@ class AdminNotifier extends StateNotifier<AdminState> {
     );
   }
 
+  Future<void> updateMembershipStatus(String id, String action) async {
+    await _action(
+      () => _api.updateMembershipStatus(id, action),
+      loadMemberships,
+    );
+  }
+
   Future<void> loadSocialMedia() async {
     await _load(
       () async => state = state.copyWith(
