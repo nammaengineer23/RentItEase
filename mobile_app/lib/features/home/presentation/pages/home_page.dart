@@ -205,10 +205,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         ),
                   onContactOwner: property.ownerId == currentUserId
                       ? null
-                      : () => context.push(
-                          '/chat',
-                          extra: {'propertyId': property.id},
-                        ),
+                      : () => _openPropertyChat(property),
                 ),
               );
             },
@@ -221,5 +218,20 @@ class _HomePageState extends ConsumerState<HomePage> {
   Future<void> _openProperty(PropertyEntity property) async {
     await context.push('/property/${property.id}');
     await ref.read(propertyProvider.notifier).refreshProperty(property.id);
+  }
+
+  void _openPropertyChat(PropertyEntity property) {
+    context.push(
+      Uri(
+        path: '/chat',
+        queryParameters: {
+          'propertyId': property.id,
+          'userName': property.ownerName,
+          'propertyTitle': property.title,
+          if (property.imageUrls.isNotEmpty)
+            'propertyImage': property.imageUrls.first,
+        },
+      ).toString(),
+    );
   }
 }
