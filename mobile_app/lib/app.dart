@@ -17,13 +17,35 @@ class RentItEaseApp extends ConsumerStatefulWidget {
   ConsumerState<RentItEaseApp> createState() => _RentItEaseAppState();
 }
 
-class _RentItEaseAppState extends ConsumerState<RentItEaseApp> {
+class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     Future.microtask(
       () => ref.read(authenticationProvider).loadSavedSession(),
     );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !mounted) return;
+
+    // Android can preserve the Flutter navigation state while discarding the
+    // rendered surface. Rebuilding and refreshing GoRouter on resume restores
+    // the current page instead of leaving a blank frame. Navigation is not
+    // reset, so forms and the user's current route remain intact.
+    setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) AppRouter.router.refresh();
+    });
   }
 
   @override
