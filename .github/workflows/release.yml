@@ -6,17 +6,17 @@ on:
       tag:
         description: "Release tag (for example v1.0.0)"
         required: true
-        default: "v1.0.1"
+        default: "v1.0.2"
         type: string
       release_name:
         description: "Release title"
         required: true
-        default: "RentItEase v1.0.1"
+        default: "RentItEase v1.0.2"
         type: string
       build_number:
         description: "Android version code (increase for every new release)"
         required: true
-        default: "2"
+        default: "3"
         type: string
 
 permissions:
@@ -101,7 +101,7 @@ jobs:
             --release \
             --build-number="$BUILD_NUMBER" \
             --dart-define=API_BASE_URL="$API_BASE_URL" \
-            --dart-define=ENABLE_GOOGLE_SIGN_IN=true \
+            --dart-define=ENABLE_GOOGLE_SIGN_IN=false \
             --dart-define=ENABLE_PHONE_OTP=false
 
           cp build/app/outputs/flutter-apk/app-release.apk \
