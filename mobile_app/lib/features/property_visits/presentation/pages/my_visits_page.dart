@@ -95,8 +95,7 @@ class _MyVisitsPageState extends ConsumerState<MyVisitsPage> {
                     _selectedStatus == 'ALL' ||
                     visit.status.toUpperCase() == _selectedStatus,
               )
-              .toList()
-            ..sort((a, b) => b.visitDate.compareTo(a.visitDate));
+              .toList();
           if (visibleVisits.isEmpty) {
             return RefreshIndicator(
               onRefresh: () {
