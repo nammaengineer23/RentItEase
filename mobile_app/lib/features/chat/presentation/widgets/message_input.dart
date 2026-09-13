@@ -9,6 +9,7 @@ class MessageInput extends StatefulWidget {
     this.onFile,
     this.onVoice,
     this.onTyping,
+    this.enabled = true,
   });
 
   final ValueChanged<String> onSend;
@@ -17,6 +18,7 @@ class MessageInput extends StatefulWidget {
   final VoidCallback? onFile;
   final VoidCallback? onVoice;
   final ValueChanged<bool>? onTyping;
+  final bool enabled;
 
   @override
   State<MessageInput> createState() => _MessageInputState();
@@ -28,6 +30,7 @@ class _MessageInputState extends State<MessageInput> {
   final FocusNode _focusNode = FocusNode();
 
   void _sendMessage() {
+    if (!widget.enabled) return;
     final text = _controller.text.trim();
 
     if (text.isEmpty) return;
@@ -166,12 +169,13 @@ class _MessageInputState extends State<MessageInput> {
         child: Row(
           children: [
             IconButton(
-              onPressed: _showEmojiPicker,
+              onPressed: widget.enabled ? _showEmojiPicker : null,
               icon: const Icon(Icons.emoji_emotions_outlined),
             ),
 
             Expanded(
               child: TextField(
+                enabled: widget.enabled,
                 controller: _controller,
                 focusNode: _focusNode,
                 minLines: 1,
@@ -200,7 +204,7 @@ class _MessageInputState extends State<MessageInput> {
             ),
 
             IconButton(
-              onPressed: _showAttachmentSheet,
+              onPressed: widget.enabled ? _showAttachmentSheet : null,
               icon: const Icon(Icons.attach_file),
             ),
 
@@ -210,12 +214,12 @@ class _MessageInputState extends State<MessageInput> {
                   ? FloatingActionButton.small(
                       key: const ValueKey('send'),
                       elevation: 0,
-                      onPressed: _sendMessage,
+                      onPressed: widget.enabled ? _sendMessage : null,
                       child: const Icon(Icons.send),
                     )
                   : IconButton(
                       key: const ValueKey('mic'),
-                      onPressed: widget.onVoice,
+                      onPressed: widget.enabled ? widget.onVoice : null,
                       icon: const Icon(Icons.mic),
                     ),
             ),
