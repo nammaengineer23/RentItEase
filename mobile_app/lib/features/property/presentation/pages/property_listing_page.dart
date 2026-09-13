@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../authentication/providers/authentication_provider.dart';
 import '../../domain/entities/property_entity.dart';
 import '../../providers/property_provider.dart';
 import '../widgets/property_card.dart';
@@ -14,6 +15,11 @@ class PropertyListingPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final propertyState = ref.watch(propertyProvider);
+    final currentUserId = ref
+        .watch(authenticationProvider)
+        .authResponse
+        ?.user
+        .id;
 
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('properties')), centerTitle: true),
@@ -62,25 +68,35 @@ class PropertyListingPage extends ConsumerWidget {
 
                   onTap: () => _openDetails(context, property),
 
-                  onBookVisit: () {
-                    context.push(
-                      '/book-visit/${property.id}',
-                      extra: {
-                        'propertyTitle': property.title,
-                        'propertyImage': property.imageUrls.isNotEmpty
-                            ? property.imageUrls.first
-                            : '',
-                        'ownerName': property.ownerName,
-                      },
-                    );
-                  },
+                  onBookVisit: property.ownerId == currentUserId
+                      ? null
+                      : () {
+                          context.push(
+                            '/book-visit/${property.id}',
+                            extra: {
+                              'propertyTitle': property.title,
+                              'propertyImage': property.imageUrls.isNotEmpty
+                                  ? property.imageUrls.first
+                                  : '',
+                              'ownerName': property.ownerName,
+                            },
+                          );
+                        },
 
-                  onContactOwner: () {
-                    context.push(
-                      '/chat',
-                      extra: {'propertyId': property.id},
-                    );
-                  },
+                  onContactOwner: property.ownerId == currentUserId
+                      ? null
+                      : () => context.push(
+                          Uri(
+                            path: '/chat',
+                            queryParameters: {
+                              'propertyId': property.id,
+                              'userName': property.ownerName,
+                              'propertyTitle': property.title,
+                              if (property.imageUrls.isNotEmpty)
+                                'propertyImage': property.imageUrls.first,
+                            },
+                          ).toString(),
+                        ),
                 );
               },
             ),
