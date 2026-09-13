@@ -19,6 +19,7 @@ class PropertyPrice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasDailyRent = dailyRentEnabled && (dailyRent ?? 0) > 0;
+    final colors = Theme.of(context).colorScheme;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -29,10 +30,10 @@ class PropertyPrice extends StatelessWidget {
             children: [
               Text(
                 '₹${rent.toStringAsFixed(0)} ${context.tr('perMonth')}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: colors.onSurface,
                 ),
               ),
               if (hasDailyRent) ...[
@@ -46,7 +47,9 @@ class PropertyPrice extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: isAvailable ? Colors.green.shade50 : Colors.red.shade50,
+            color: isAvailable
+                ? colors.primaryContainer
+                : colors.errorContainer,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -54,7 +57,9 @@ class PropertyPrice extends StatelessWidget {
                 ? context.tr('availableNow')
                 : context.tr('occupied'),
             style: TextStyle(
-              color: isAvailable ? Colors.green.shade700 : Colors.red.shade700,
+              color: isAvailable
+                  ? colors.onPrimaryContainer
+                  : colors.onErrorContainer,
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),
