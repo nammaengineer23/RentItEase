@@ -22,6 +22,7 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   List<PropertyEntity>? _nearbyProperties;
   String _nearbyCity = '';
+  Position? _currentPosition;
 
   @override
   void initState() {
@@ -70,6 +71,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         setState(() {
           _nearbyProperties = nearby;
           _nearbyCity = city.trim();
+          _currentPosition = position;
         });
       }
     } catch (_) {
@@ -162,20 +164,32 @@ class _HomePageState extends ConsumerState<HomePage> {
         ),
         data: (properties) {
           final nearby = _nearbyProperties ?? const <PropertyEntity>[];
-          final cityProperties = _nearbyCity.isEmpty
-              ? const <PropertyEntity>[]
-              : properties.where((property) =>
-                  property.isAvailable &&
-                  property.isVerified &&
-                  property.city.trim().toLowerCase() == _nearbyCity.toLowerCase()).toList();
-          final feed = [
-            ...nearby,
-            ...cityProperties.where((property) =>
-                !nearby.any((nearbyProperty) => nearbyProperty.id == property.id)),
-          ];
-          final visibleFeed = feed.isNotEmpty
-              ? feed
-              : properties.where((property) => property.isAvailable && property.isVerified).toList();
+          final available = properties
+              .where((property) => property.isAvailable && property.isVerified)
+              .toList();
+          final nearbyIds = nearby.map((property) => property.id).toSet();
+          final cityProperties = available
+              .where(
+                (property) =>
+                    !nearbyIds.contains(property.id) &&
+                    _nearbyCity.isNotEmpty &&
+                    property.city.trim().toLowerCase() ==
+                        _nearbyCity.toLowerCase(),
+              )
+              .toList()
+            ..sort(_compareByDistance);
+          final cityIds = cityProperties.map((property) => property.id).toSet();
+          final remaining = available
+              .where(
+                (property) =>
+                    !nearbyIds.contains(property.id) &&
+                    !cityIds.contains(property.id),
+              )
+              .toList()
+            ..sort(_compareByDistance);
+          final visibleFeed = _nearbyProperties == null
+              ? available
+              : [...nearby, ...cityProperties, ...remaining];
 
           if (visibleFeed.isEmpty) {
             return Center(child: Text(context.tr('noNearbyProperties')));
@@ -212,6 +226,26 @@ class _HomePageState extends ConsumerState<HomePage> {
           );
         },
       ),
+    );
+  }
+
+  int _compareByDistance(PropertyEntity first, PropertyEntity second) {
+    final position = _currentPosition;
+    if (position == null) return 0;
+    return _distanceFrom(position, first).compareTo(
+      _distanceFrom(position, second),
+    );
+  }
+
+  double _distanceFrom(Position position, PropertyEntity property) {
+    if (property.latitude == 0 && property.longitude == 0) {
+      return double.infinity;
+    }
+    return Geolocator.distanceBetween(
+      position.latitude,
+      position.longitude,
+      property.latitude,
+      property.longitude,
     );
   }
 
