@@ -41,7 +41,10 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
   int _selectedIndexForRole(String? role) {
     if (role == 'OWNER') {
       if (widget.location.startsWith('/owner/analytics')) return 2;
-      if (widget.location.startsWith('/owner/visit-requests')) return 3;
+      if (widget.location.startsWith('/owner/visit-requests') ||
+          widget.location.startsWith('/owner/visits')) {
+        return 3;
+      }
       if (widget.location.startsWith('/profile') ||
           widget.location.startsWith('/settings')) {
         return 4;
