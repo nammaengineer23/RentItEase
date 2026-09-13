@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/app_error_message.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../booking/providers/booking_provider.dart';
 import '../../domain/entities/property_visit.dart';
@@ -70,7 +71,7 @@ class _MyVisitsPageState extends ConsumerState<MyVisitsPage> {
 
                   const SizedBox(height: 16),
 
-                  Text(error.toString(), textAlign: TextAlign.center),
+                  Text(userFriendlyError(error), textAlign: TextAlign.center),
 
                   const SizedBox(height: 20),
 
@@ -248,7 +249,7 @@ class _MyVisitsPageState extends ConsumerState<MyVisitsPage> {
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
+        SnackBar(content: Text(userFriendlyError(error))),
       );
     }
   }
