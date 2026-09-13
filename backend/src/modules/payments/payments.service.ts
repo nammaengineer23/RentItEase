@@ -145,16 +145,24 @@ import {
         booking.payment.status !== PaymentStatus.FAILED &&
         booking.payment.status !== PaymentStatus.REFUNDED
       ) {
+        const amount = Number(booking.payment.amount);
         return {
           success: true,
           message: 'Existing payment order found.',
           data: {
             paymentId: booking.payment.id,
+            bookingId: booking.id,
             razorpayOrderId: booking.payment.razorpayOrderId,
-            amount: Number(booking.payment.amount),
+            amount,
+            amountInPaise: Math.round(amount * 100),
             currency: booking.payment.currency,
             status: booking.payment.status,
             keyId: process.env.RAZORPAY_KEY_ID,
+            customer: {
+              name: booking.tenant.fullName,
+              email: booking.tenant.email,
+              phone: booking.tenant.phone,
+            },
           },
         };
       }
