@@ -5,5 +5,5 @@ const enableGoogleSignIn = bool.fromEnvironment(
 
 const enablePhoneOtp = bool.fromEnvironment(
   'ENABLE_PHONE_OTP',
-  defaultValue: false,
+  defaultValue: true,
 );
