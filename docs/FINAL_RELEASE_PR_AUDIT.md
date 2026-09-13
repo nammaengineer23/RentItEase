@@ -42,9 +42,9 @@ This PR owns only the remaining or defensively required changes:
    Decimal payloads in the app.
 7. Publish a distinct v1.0.1+2 APK from the `API_BASE_URL` secret and record the
    source commit in release notes.
-8. Hide Google Sign-In and Phone OTP only in the website-sideloaded APK while
-   Play Integrity/Play distribution is unavailable. Debug, web, and Play builds
-   keep their existing feature defaults.
+8. Keep Google Sign-In available while hiding Phone OTP in the
+   website-sideloaded APK. Email/password registration does not require an OTP,
+   and the registration phone number remains optional.
 
 ## Existing safeguards retained
 
