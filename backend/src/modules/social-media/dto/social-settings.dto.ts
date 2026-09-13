@@ -3,7 +3,6 @@ import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
 export enum SocialAutomationMode {
   DISABLED = 'DISABLED',
   GENERATE_ONLY = 'GENERATE_ONLY',
-  AUTO_PUBLISH = 'AUTO_PUBLISH',
 }
 
 export class SocialSettingsDto {
