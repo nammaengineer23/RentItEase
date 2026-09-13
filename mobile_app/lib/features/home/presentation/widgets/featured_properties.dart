@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../property/domain/entities/property_entity.dart';
 import '../../../property/presentation/widgets/property_image_slider.dart';
+import '../../../property/presentation/widgets/daily_rent_badge.dart';
 
 class FeaturedProperties extends StatelessWidget {
   const FeaturedProperties({super.key, required this.properties, this.onTap});
@@ -83,16 +84,20 @@ class FeaturedProperties extends StatelessWidget {
                               const SizedBox(height: 12),
 
                               Text(
-                                property.dailyRentEnabled &&
-                                        (property.dailyRent ?? 0) > 0
-                                    ? '₹${property.rent.toStringAsFixed(0)} / month · ₹${property.dailyRent!.toStringAsFixed(0)} / day'
-                                    : '₹${property.rent.toStringAsFixed(0)} / month',
+                                '₹${property.rent.toStringAsFixed(0)} / month',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
+                              if (property.dailyRentEnabled &&
+                                  (property.dailyRent ?? 0) > 0) ...[
+                                const SizedBox(height: 8),
+                                DailyRentBadge(
+                                  dailyRent: property.dailyRent!,
+                                ),
+                              ],
                             ],
                           ),
                         ),

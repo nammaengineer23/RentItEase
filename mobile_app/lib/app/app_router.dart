@@ -55,7 +55,6 @@ import '../features/property/presentation/pages/property_page.dart';
 
 import '../features/property_visits/presentation/pages/book_visit_page.dart';
 import '../features/property_visits/presentation/pages/my_visits_page.dart';
-import '../features/property_visits/presentation/pages/owner_visit_requests_page.dart';
 
 import '../features/reviews/presentation/pages/reviews_page.dart';
 
@@ -453,7 +452,7 @@ class AppRouter {
           GoRoute(
             path: '/owner/visit-requests',
             name: 'owner-visit-requests',
-            builder: (context, state) => const OwnerVisitRequestsPage(),
+            redirect: (context, state) => '/owner/visits',
           ),
 
           // ============================================================

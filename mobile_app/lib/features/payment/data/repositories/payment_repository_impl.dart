@@ -22,9 +22,8 @@ class PaymentRepositoryImpl implements PaymentRepository {
       throw Exception('Empty payment order response.');
     }
 
-    final data = responseData['data'];
-
-    if (data is! Map<String, dynamic>) {
+    final data = _extractMap(responseData);
+    if (data == null) {
       throw Exception('Invalid payment order response.');
     }
 
@@ -54,9 +53,8 @@ class PaymentRepositoryImpl implements PaymentRepository {
       throw Exception('Empty payment verification response.');
     }
 
-    final data = responseData['data'];
-
-    if (data is! Map<String, dynamic>) {
+    final data = _extractMap(responseData);
+    if (data == null) {
       throw Exception('Invalid payment verification response.');
     }
 
@@ -75,12 +73,22 @@ class PaymentRepositoryImpl implements PaymentRepository {
       throw Exception('Empty payment response.');
     }
 
-    final data = responseData['data'];
-
-    if (data is! Map<String, dynamic>) {
+    final data = _extractMap(responseData);
+    if (data == null) {
       throw Exception('Invalid payment response.');
     }
 
     return PaymentModel.fromPaymentResponse(data);
+  }
+
+  Map<String, dynamic>? _extractMap(dynamic value) {
+    dynamic current = value;
+    for (var depth = 0; depth < 5; depth++) {
+      if (current is! Map) return null;
+      final map = Map<String, dynamic>.from(current);
+      if (!map.containsKey('data') || map['data'] is! Map) return map;
+      current = map['data'];
+    }
+    return current is Map ? Map<String, dynamic>.from(current) : null;
   }
 }

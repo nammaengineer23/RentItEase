@@ -125,7 +125,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                                 value: '${state.summary?.pendingVisits ?? 0}',
                                 icon: Icons.event,
                                 onTap: () =>
-                                    context.push('/owner/visit-requests'),
+                                    context.push('/owner/visits'),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -181,7 +181,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                           title: context.tr('pendingVisits'),
                           value: '${state.summary?.pendingVisits ?? 0}',
                           icon: Icons.event,
-                          onTap: () => context.push('/owner/visit-requests'),
+                          onTap: () => context.push('/owner/visits'),
                         ),
                         const SizedBox(height: 12),
                         DashboardCard(
@@ -255,7 +255,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
   void _openActivity(BuildContext context, String type) {
     final value = type.trim().toUpperCase();
     if (value.contains('VISIT')) {
-      context.push('/owner/visit-requests');
+      context.push('/owner/visits');
     } else if (value.contains('PROPERTY')) {
       context.push('/owner/properties');
     } else {

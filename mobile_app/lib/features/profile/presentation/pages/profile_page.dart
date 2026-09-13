@@ -101,7 +101,7 @@ class ProfilePage extends ConsumerWidget {
                       : 'View booked property visits',
                   onTap: () {
                     if (profile.role.trim().toUpperCase() == 'OWNER') {
-                      context.push('/owner/visit-requests');
+                      context.push('/owner/visits');
                       return;
                     }
                     Navigator.push(

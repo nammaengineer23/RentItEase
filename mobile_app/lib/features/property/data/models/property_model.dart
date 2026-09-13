@@ -108,7 +108,7 @@ class PropertyModel {
       isVerified: _bool(json['isVerified']),
       rating: _double(json['averageRating'] ?? json['rating']),
       totalReviews: _int(json['totalReviews']),
-      views: _int(json['views'] ?? json['totalViews']),
+      views: _int(json['views'] ?? json['totalViews'] ?? json['viewCount']),
       imageUrls: imageUrls,
       ownerId: (json['ownerId'] ?? owner['id'])?.toString() ?? '',
       ownerName: (json['ownerName'] ?? owner['fullName'])?.toString() ?? '',

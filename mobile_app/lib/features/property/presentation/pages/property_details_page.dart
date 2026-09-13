@@ -169,6 +169,9 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
 
       if (!mounted) return;
 
+      ref.read(propertyProvider.notifier).updateCachedProperty(result);
+      ref.read(searchProvider.notifier).updateCachedProperty(result);
+
       setState(() {
         property = result;
         isLoading = false;
@@ -308,13 +311,16 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
           SliverAppBar(
             expandedHeight: 320,
             pinned: true,
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             elevation: 0,
 
             leading: CircleAvatar(
-              backgroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.surface,
               child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
                 onPressed: () {
                   Navigator.pop(context);
                 },
@@ -335,7 +341,7 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                 ),
               ],
               CircleAvatar(
-                backgroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 child: IconButton(
                   tooltip: isFavorite
                       ? context.tr('removeFromFavorites')
@@ -432,7 +438,10 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
 
                   Text(
                     property.description,
-                    style: const TextStyle(color: Colors.grey, height: 1.6),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      height: 1.6,
+                    ),
                   ),
 
                   const SizedBox(height: 30),
@@ -449,7 +458,7 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
 
                   Card(
                     elevation: 0,
-                    color: Colors.grey.shade100,
+                    color: Theme.of(context).colorScheme.surfaceContainerHigh,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),

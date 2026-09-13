@@ -293,14 +293,17 @@ export class AuthService {
 
     await this.saveRefreshToken(user.id, tokens.refreshToken);
 
-    try {
-      await this.mailService.sendWelcomeEmail(user.email, user.fullName);
-    } catch (error) {
-      this.logger.error(
-        'Failed to send welcome email',
-        error instanceof Error ? error.stack : undefined,
-      );
-    }
+    // Account creation must not wait for the external SMTP server. A slow or
+    // unavailable mail provider previously caused the mobile request to hit
+    // its 30-second timeout even though the user had already been created.
+    void this.mailService
+      .sendWelcomeEmail(user.email, user.fullName)
+      .catch((error: unknown) => {
+        this.logger.error(
+          'Failed to send welcome email',
+          error instanceof Error ? error.stack : undefined,
+        );
+      });
 
     return {
       success: true,

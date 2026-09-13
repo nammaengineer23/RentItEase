@@ -76,6 +76,16 @@ class SearchNotifier extends StateNotifier<SearchState> {
 
   Future<void> refresh() => search(state.filters);
 
+  void updateCachedProperty(PropertyEntity property) {
+    state = state.copyWith(
+      results: [
+        for (final item in state.results)
+          if (item.id == property.id) property else item,
+      ],
+      error: null,
+    );
+  }
+
   Future<void> loadMore() async {
     if (state.isLoading || _loadingMore || !state.hasMore) return;
     _loadingMore = true;
