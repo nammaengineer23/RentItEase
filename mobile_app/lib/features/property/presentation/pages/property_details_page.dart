@@ -169,6 +169,9 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
 
       if (!mounted) return;
 
+      ref.read(propertyProvider.notifier).updateCachedProperty(result);
+      ref.read(searchProvider.notifier).updateCachedProperty(result);
+
       setState(() {
         property = result;
         isLoading = false;
