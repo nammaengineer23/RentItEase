@@ -16,12 +16,16 @@ class PaymentModel extends PaymentEntity {
   });
 
   factory PaymentModel.fromOrderResponse(Map<String, dynamic> json) {
+    final amount = _toDouble(json['amount']);
+    final amountInPaise = _toInt(json['amountInPaise']);
     return PaymentModel(
       paymentId: json['paymentId']?.toString() ?? '',
       bookingId: json['bookingId']?.toString() ?? '',
       razorpayOrderId: json['razorpayOrderId']?.toString() ?? '',
-      amount: _toDouble(json['amount']),
-      amountInPaise: _toInt(json['amountInPaise']),
+      amount: amount,
+      amountInPaise: amountInPaise > 0
+          ? amountInPaise
+          : (amount * 100).round(),
       currency: json['currency']?.toString() ?? 'INR',
       status: json['status']?.toString() ?? 'CREATED',
       keyId: json['keyId']?.toString(),
