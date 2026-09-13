@@ -85,14 +85,37 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       }
 
       final List<PropertyEntity> cityProperties = city.trim().isEmpty
-          ? const []
+          ? <PropertyEntity>[]
           : await ref.read(searchRepositoryProvider).search(
             SearchEntity(city: city.trim(), limit: 50),
           );
+      final allProperties = await ref.read(searchRepositoryProvider).search(
+        const SearchEntity(availableOnly: true, limit: 100),
+      );
+      cityProperties.sort(
+        (first, second) => _distanceFrom(position, first).compareTo(
+          _distanceFrom(position, second),
+        ),
+      );
+      final cityIds = cityProperties.map((property) => property.id).toSet();
+      final nearbyIds = properties.map((property) => property.id).toSet();
+      final remaining = allProperties
+          .where(
+            (property) =>
+                !nearbyIds.contains(property.id) &&
+                !cityIds.contains(property.id),
+          )
+          .toList()
+        ..sort(
+          (first, second) => _distanceFrom(position, first).compareTo(
+            _distanceFrom(position, second),
+          ),
+        );
       final resultIds = <String>{};
       final rankedProperties = <PropertyEntity>[
         ...properties,
         ...cityProperties,
+        ...remaining,
       ].where((property) => resultIds.add(property.id)).toList();
 
       if (rankedProperties.isEmpty) {
@@ -107,6 +130,18 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         setState(() => _isPreparingInitialSearch = false);
       }
     }
+  }
+
+  double _distanceFrom(Position position, PropertyEntity property) {
+    if (property.latitude == 0 && property.longitude == 0) {
+      return double.infinity;
+    }
+    return Geolocator.distanceBetween(
+      position.latitude,
+      position.longitude,
+      property.latitude,
+      property.longitude,
+    );
   }
 
   @override
