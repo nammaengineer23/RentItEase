@@ -101,7 +101,7 @@ jobs:
             --release \
             --build-number="$BUILD_NUMBER" \
             --dart-define=API_BASE_URL="$API_BASE_URL" \
-            --dart-define=ENABLE_GOOGLE_SIGN_IN=false \
+            --dart-define=ENABLE_GOOGLE_SIGN_IN=true \
             --dart-define=ENABLE_PHONE_OTP=false
 
           cp build/app/outputs/flutter-apk/app-release.apk \
