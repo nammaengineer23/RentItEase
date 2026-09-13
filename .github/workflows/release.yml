@@ -94,9 +94,11 @@ jobs:
       - name: Build signed release APK
         env:
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
           BUILD_NUMBER: ${{ inputs.build_number }}
         run: |
           test -n "$API_BASE_URL"
+          test -n "$MAPS_API_KEY"
           flutter build apk \
             --release \
             --build-number="$BUILD_NUMBER" \
