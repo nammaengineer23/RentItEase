@@ -59,21 +59,26 @@ class _FeatureItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: colors.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: colors.outlineVariant),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: Colors.blueGrey),
+          Icon(icon, size: 18, color: colors.primary),
           const SizedBox(width: 6),
           Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            style: TextStyle(
+              color: colors.onSurface,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
