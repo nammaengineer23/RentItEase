@@ -8,17 +8,53 @@ import '../../domain/entities/property_visit.dart';
 import '../../providers/property_visit_provider.dart';
 import '../widgets/visit_card.dart';
 
-class MyVisitsPage extends ConsumerWidget {
+class MyVisitsPage extends ConsumerStatefulWidget {
   const MyVisitsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyVisitsPage> createState() => _MyVisitsPageState();
+}
+
+class _MyVisitsPageState extends ConsumerState<MyVisitsPage> {
+  static const _statuses = [
+    'ALL',
+    'PENDING',
+    'APPROVED',
+    'COMPLETED',
+    'REJECTED',
+    'CANCELLED',
+  ];
+
+  String _selectedStatus = 'ALL';
+
+  @override
+  Widget build(BuildContext context) {
     final visitsState = ref.watch(propertyVisitProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('myPropertyVisits'))),
 
-      body: visitsState.when(
+      body: Column(
+        children: [
+          SizedBox(
+            height: 52,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              scrollDirection: Axis.horizontal,
+              itemCount: _statuses.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final status = _statuses[index];
+                return ChoiceChip(
+                  label: Text(status[0] + status.substring(1).toLowerCase()),
+                  selected: _selectedStatus == status,
+                  onSelected: (_) => setState(() => _selectedStatus = status),
+                );
+              },
+            ),
+          ),
+          Expanded(
+            child: visitsState.when(
         loading: () {
           return const Center(child: CircularProgressIndicator());
         },
@@ -53,7 +89,15 @@ class MyVisitsPage extends ConsumerWidget {
         },
 
         data: (List<PropertyVisit> visits) {
-          if (visits.isEmpty) {
+          final visibleVisits = visits
+              .where(
+                (visit) =>
+                    _selectedStatus == 'ALL' ||
+                    visit.status.toUpperCase() == _selectedStatus,
+              )
+              .toList()
+            ..sort((a, b) => b.visitDate.compareTo(a.visitDate));
+          if (visibleVisits.isEmpty) {
             return RefreshIndicator(
               onRefresh: () {
                 return ref
@@ -87,10 +131,10 @@ class MyVisitsPage extends ConsumerWidget {
             child: ListView.builder(
               padding: const EdgeInsets.only(top: 10, bottom: 20),
 
-              itemCount: visits.length,
+              itemCount: visibleVisits.length,
 
               itemBuilder: (context, index) {
-                final visit = visits[index];
+                final visit = visibleVisits[index];
 
                 return VisitCard(
                   visit: visit,
@@ -159,6 +203,9 @@ class MyVisitsPage extends ConsumerWidget {
             ),
           );
         },
+      ),
+          ),
+        ],
       ),
     );
   }

@@ -82,6 +82,11 @@ class _HomePageState extends ConsumerState<HomePage> {
     final propertyState = ref.watch(propertyProvider);
 
     final notificationState = ref.watch(notificationsProvider);
+    final currentUserId = ref
+        .watch(authenticationProvider)
+        .authResponse
+        ?.user
+        .id;
 
     return Scaffold(
       appBar: AppBar(
@@ -186,18 +191,24 @@ class _HomePageState extends ConsumerState<HomePage> {
                 child: PropertyCard(
                   property: property,
                   onTap: () => _openProperty(property),
-                  onBookVisit: () => context.push(
-                    '/book-visit/${property.id}',
-                    extra: {
-                      'propertyTitle': property.title,
-                      'propertyImage': property.imageUrls.isNotEmpty
-                          ? property.imageUrls.first
-                          : '',
-                      'ownerName': property.ownerName,
-                    },
-                  ),
-                  onContactOwner: () =>
-                      context.push('/chat', extra: {'propertyId': property.id}),
+                  onBookVisit: property.ownerId == currentUserId
+                      ? null
+                      : () => context.push(
+                          '/book-visit/${property.id}',
+                          extra: {
+                            'propertyTitle': property.title,
+                            'propertyImage': property.imageUrls.isNotEmpty
+                                ? property.imageUrls.first
+                                : '',
+                            'ownerName': property.ownerName,
+                          },
+                        ),
+                  onContactOwner: property.ownerId == currentUserId
+                      ? null
+                      : () => context.push(
+                          '/chat',
+                          extra: {'propertyId': property.id},
+                        ),
                 ),
               );
             },
@@ -207,7 +218,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  void _openProperty(PropertyEntity property) {
-    context.push('/property/${property.id}');
+  Future<void> _openProperty(PropertyEntity property) async {
+    await context.push('/property/${property.id}');
+    await ref.read(propertyProvider.notifier).refreshProperty(property.id);
   }
 }

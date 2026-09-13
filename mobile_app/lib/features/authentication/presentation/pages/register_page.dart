@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/app_error_message.dart';
+import '../../../../core/config/auth_features.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../l10n/app_localizations.dart';
@@ -275,10 +276,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
                   const SizedBox(height: 20),
 
-                  SocialLoginButton(
-                    isLoading: provider.isLoading,
-                    onPressed: _googleRegister,
-                  ),
+                  if (enableGoogleSignIn)
+                    SocialLoginButton(
+                      isLoading: provider.isLoading,
+                      onPressed: _googleRegister,
+                    ),
 
                   const SizedBox(height: 20),
 
