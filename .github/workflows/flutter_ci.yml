@@ -116,7 +116,9 @@ jobs:
         run: |
           flutter build apk \
             --release \
-            --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1
+            --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1 \
+            --dart-define=ENABLE_GOOGLE_SIGN_IN=true \
+            --dart-define=ENABLE_PHONE_OTP=false
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4

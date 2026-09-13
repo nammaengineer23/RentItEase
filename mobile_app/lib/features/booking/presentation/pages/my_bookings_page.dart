@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/app_error_message.dart';
 import '../../providers/booking_provider.dart';
 import '../widgets/booking_card.dart';
 import 'package:go_router/go_router.dart';
@@ -251,7 +252,7 @@ class _ErrorView extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, size: 56),
             const SizedBox(height: 16),
-            Text(error.toString(), textAlign: TextAlign.center),
+            Text(userFriendlyError(error), textAlign: TextAlign.center),
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: onRetry,

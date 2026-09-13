@@ -34,7 +34,7 @@ export class PropertiesController {
   // Create Property
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.USER, UserRole.OWNER)
+  @Roles(UserRole.OWNER)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Create Property',
@@ -45,7 +45,7 @@ export class PropertiesController {
 
   @Post('ai-suggestion')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.USER, UserRole.OWNER)
+  @Roles(UserRole.OWNER)
   @ApiBearerAuth()
   suggestListing(@Body() body: any) {
     return this.propertiesService.suggestListingText(body);

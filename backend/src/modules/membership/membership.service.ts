@@ -10,6 +10,7 @@ import Razorpay from 'razorpay';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
+import { serializePrisma } from '../../common/utils/prisma-response.util';
 
 @Injectable()
 export class MembershipService {
@@ -195,7 +196,7 @@ export class MembershipService {
   }
 
   async getUserMemberships(userId: string) {
-    return this.prisma.membership.findMany({
+    const memberships = await this.prisma.membership.findMany({
       where: { userId },
       include: {
         plan: true,
@@ -204,6 +205,7 @@ export class MembershipService {
         createdAt: 'desc',
       },
     });
+    return serializePrisma(memberships);
   }
 
   async getMembership(id: string) {
@@ -226,7 +228,7 @@ export class MembershipService {
       throw new NotFoundException('Membership not found');
     }
 
-    return membership;
+    return serializePrisma(membership);
   }
 
   async getActiveMembership(userId: string) {
@@ -255,7 +257,7 @@ export class MembershipService {
       },
     });
 
-    return membership;
+    return serializePrisma(membership);
   }
 
   // ============================================================
@@ -621,7 +623,8 @@ export class MembershipService {
     }
 
     const secret = process.env.RAZORPAY_KEY_SECRET;
-    if (!secret) throw new BadRequestException('Premium payment is not configured');
+    if (!secret)
+      throw new BadRequestException('Premium payment is not configured');
     const signature = createHmac('sha256', secret)
       .update(`${body.razorpayOrderId}|${body.razorpayPaymentId}`)
       .digest('hex');

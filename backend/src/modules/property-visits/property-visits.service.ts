@@ -229,8 +229,10 @@ export class PropertyVisitsService {
         },
       },
 
+      // The visit inbox is an activity feed. Newly created requests must be
+      // visible immediately, even when their scheduled visit date is later.
       orderBy: {
-        visitDate: 'asc',
+        createdAt: 'desc',
       },
     });
 
@@ -287,7 +289,7 @@ export class PropertyVisitsService {
       },
 
       orderBy: {
-        visitDate: 'asc',
+        createdAt: 'desc',
       },
     });
 
@@ -622,7 +624,7 @@ export class PropertyVisitsService {
     // ============================================================
     // Notifications
     // ============================================================
-    
+
     // Email must never block visit completion.
     void this.mailService
       .sendVisitCompletedEmail(
@@ -636,7 +638,7 @@ export class PropertyVisitsService {
           error?.message || error,
         );
       });
-    
+
     // In-app notification
     try {
       await this.notificationsService.createNotification(
@@ -651,7 +653,7 @@ export class PropertyVisitsService {
         error?.message || error,
       );
     }
-    
+
     // Push notification must never block visit completion.
     void this.pushNotificationsService
       .sendToUser(
@@ -670,13 +672,13 @@ export class PropertyVisitsService {
           error?.message || error,
         );
       });
-    
+
     return {
       success: true,
       message: 'Visit completed successfully.',
       data: serializePrisma(updatedVisit),
     };
-    }
+  }
 
   // ============================================================
   // Cancel

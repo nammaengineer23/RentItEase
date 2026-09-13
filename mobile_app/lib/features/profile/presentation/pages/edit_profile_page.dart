@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/utils/app_error_message.dart';
 import '../../providers/profile_provider.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
@@ -88,10 +89,191 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   String? validatePhone(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Please enter phone number';
+      return null;
     }
 
-    if (value.length != 10) {
+    if (!RegExp(r'^[6-9]\d{9}
+      return 'Enter a valid 10 digit phone number';
+    }
+
+    return null;
+  }
+
+  Future<void> saveProfile() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      isSaving = true;
+    });
+
+    try {
+      if (selectedProfileImage != null) {
+        await ref
+            .read(profileProvider.notifier)
+            .uploadImage(selectedProfileImage!.path);
+      }
+
+      final photoUrl = ref.read(profileProvider).valueOrNull?.profileImage;
+
+      await ref
+          .read(profileProvider.notifier)
+          .updateProfile(
+            fullName: nameController.text.trim(),
+            phone: phoneController.text.trim(),
+            photoUrl: photoUrl,
+          );
+
+      await ref.read(profileProvider.notifier).loadProfile();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully')),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(userFriendlyError(e))));
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSaving = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    phoneController.dispose();
+    emailController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = ref.watch(profileProvider).value;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Edit Profile')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    radius: 55,
+                    backgroundImage: selectedProfileImage != null
+                        ? FileImage(selectedProfileImage!)
+                        : profile?.profileImage != null &&
+                                profile!.profileImage!.isNotEmpty
+                            ? NetworkImage(profile.profileImage!)
+                            : null,
+                    child: selectedProfileImage == null &&
+                            (profile?.profileImage == null ||
+                                profile!.profileImage!.isEmpty)
+                        ? const Icon(Icons.person, size: 55)
+                        : null,
+                  ),
+                  Positioned(
+                    right: -4,
+                    bottom: -4,
+                    child: IconButton.filled(
+                      tooltip: 'Change profile image',
+                      onPressed: isSaving ? null : pickProfileImage,
+                      icon: const Icon(Icons.camera_alt),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              TextButton.icon(
+                onPressed: isSaving ? null : pickProfileImage,
+                icon: const Icon(Icons.image_outlined),
+                label: const Text('Change Profile Image'),
+              ),
+
+              const SizedBox(height: 30),
+
+              TextFormField(
+                controller: nameController,
+                validator: validateName,
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
+                  prefixIcon: Icon(Icons.person),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              TextFormField(
+                controller: emailController,
+                enabled: false,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              TextFormField(
+                controller: phoneController,
+                validator: validatePhone,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Phone Number',
+                  prefixIcon: Icon(Icons.phone),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+
+              const SizedBox(height: 35),
+
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: isSaving ? null : saveProfile,
+                  child: isSaving
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Save Changes',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+).hasMatch(value.trim())) {
       return 'Enter a valid 10 digit phone number';
     }
 
