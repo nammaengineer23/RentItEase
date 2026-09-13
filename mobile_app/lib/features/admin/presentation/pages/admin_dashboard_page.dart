@@ -668,6 +668,34 @@ class _PropertiesView extends ConsumerWidget {
 class _PremiumView extends ConsumerWidget {
   const _PremiumView();
 
+  Future<void> _showDetails(
+    BuildContext context,
+    Map<String, dynamic> membership,
+  ) async {
+    final user = _section(membership, 'user');
+    final plan = _section(membership, 'plan');
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Membership details'),
+        content: SelectableText(
+          'Member: ${_text(user, 'fullName')}\n'
+          'Email: ${_text(user, 'email')}\n'
+          'Plan: ${_text(plan, 'name')}\n'
+          'Status: ${_text(membership, 'status')}\n'
+          'Starts: ${_text(membership, 'startDate')}\n'
+          'Ends: ${_text(membership, 'endDate')}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(adminProvider);
@@ -682,6 +710,8 @@ class _PremiumView extends ConsumerWidget {
           final membership = state.memberships[index];
           final user = _section(membership, 'user');
           final plan = _section(membership, 'plan');
+          final id = _text(membership, 'id');
+          final status = _text(membership, 'status').toUpperCase();
           return Card(
             child: ListTile(
               leading: const CircleAvatar(
@@ -693,6 +723,59 @@ class _PremiumView extends ConsumerWidget {
                 'Ends ${_text(membership, 'endDate')}',
               ),
               isThreeLine: true,
+              onTap: () => _showDetails(context, membership),
+              trailing: PopupMenuButton<String>(
+                tooltip: 'Manage membership',
+                onSelected: (action) async {
+                  if (action == 'details') {
+                    await _showDetails(context, membership);
+                    return;
+                  }
+                  final label = switch (action) {
+                    'activate' => 'Activate membership?',
+                    'renew' => 'Renew membership for another plan period?',
+                    'expire' => 'Mark membership as expired?',
+                    _ => 'Cancel membership?',
+                  };
+                  if (!await _confirm(context, label, 'Member: ${_text(user, 'fullName')}')) {
+                    return;
+                  }
+                  if (!context.mounted) return;
+                  await _runAction(
+                    context,
+                    () => ref
+                        .read(adminProvider.notifier)
+                        .updateMembershipStatus(id, action),
+                    'Membership updated',
+                  );
+                },
+                itemBuilder: (_) => [
+                  if (status == 'PENDING' || status == 'EXPIRED')
+                    const PopupMenuItem(
+                      value: 'activate',
+                      child: Text('Activate'),
+                    ),
+                  if (status == 'ACTIVE' || status == 'EXPIRED')
+                    const PopupMenuItem(
+                      value: 'renew',
+                      child: Text('Renew'),
+                    ),
+                  if (status == 'ACTIVE')
+                    const PopupMenuItem(
+                      value: 'expire',
+                      child: Text('Mark expired'),
+                    ),
+                  if (status == 'ACTIVE' || status == 'PENDING')
+                    const PopupMenuItem(
+                      value: 'cancel',
+                      child: Text('Cancel membership'),
+                    ),
+                  const PopupMenuItem(
+                    value: 'details',
+                    child: Text('View details'),
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -731,13 +814,16 @@ class _SocialMediaView extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final property = consentedProperties[index];
                 final consent = _section(property, 'socialMarketingConsent');
+                final owner = _section(property, 'owner');
                 return Card(
                   child: ListTile(
                     leading: const Icon(Icons.campaign_outlined),
                     title: Text(_text(property, 'title')),
                     subtitle: Text(
-                      'Consent active • Platforms: ${_text(consent, 'platforms')}',
+                      'Consent active • Owner: ${_text(owner, 'fullName')}\n'
+                      'Consent version: ${_text(consent, 'consentVersion')}',
                     ),
+                    isThreeLine: true,
                     trailing: const Icon(
                       Icons.check_circle,
                       color: Colors.green,
