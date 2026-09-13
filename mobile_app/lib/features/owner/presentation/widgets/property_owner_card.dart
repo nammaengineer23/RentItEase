@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/owner_property_entity.dart';
+import '../../../property/presentation/widgets/daily_rent_badge.dart';
 
 class PropertyOwnerCard extends StatelessWidget {
   const PropertyOwnerCard({
@@ -81,17 +82,24 @@ class PropertyOwnerCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
-                          property.dailyRentEnabled &&
-                                  (property.dailyRent ?? 0) > 0
-                              ? '₹${property.rent.toStringAsFixed(0)} / month\n₹${property.dailyRent!.toStringAsFixed(0)} / day'
-                              : '₹${property.rent.toStringAsFixed(0)} / month',
-                        style: const TextStyle(
-                          color: Colors.green,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '₹${property.rent.toStringAsFixed(0)} / month',
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (property.dailyRentEnabled &&
+                                (property.dailyRent ?? 0) > 0) ...[
+                              const SizedBox(height: 8),
+                              DailyRentBadge(dailyRent: property.dailyRent!),
+                            ],
+                          ],
                         ),
-                      ),
                       ),
 
                       Chip(
