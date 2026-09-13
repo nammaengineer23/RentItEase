@@ -16,6 +16,7 @@ class PropertyLocation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -37,17 +38,17 @@ class PropertyLocation extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: locality,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: colors.onSurface,
                       ),
                     ),
                     TextSpan(
                       text: ', $city',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey.shade700,
+                        color: colors.onSurfaceVariant,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -67,7 +68,10 @@ class PropertyLocation extends StatelessWidget {
             child: Text(
               '${latitude!.toStringAsFixed(6)}, '
               '${longitude!.toStringAsFixed(6)}',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 12,
+                color: colors.onSurfaceVariant,
+              ),
             ),
           ),
         ],
