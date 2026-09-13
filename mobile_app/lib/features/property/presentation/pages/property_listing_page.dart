@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/app_error_message.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../authentication/providers/authentication_provider.dart';
-import '../../domain/entities/property_entity.dart';
 import '../../providers/property_provider.dart';
 import '../widgets/property_card.dart';
 
@@ -34,7 +34,7 @@ class PropertyListingPage extends ConsumerWidget {
               children: [
                 const Icon(Icons.error_outline, color: Colors.red, size: 60),
                 const SizedBox(height: 20),
-                Text(error.toString(), textAlign: TextAlign.center),
+                Text(userFriendlyError(error), textAlign: TextAlign.center),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
@@ -66,7 +66,12 @@ class PropertyListingPage extends ConsumerWidget {
                 return PropertyCard(
                   property: property,
 
-                  onTap: () => _openDetails(context, property),
+                  onTap: () async {
+                    await context.push('/property/${property.id}');
+                    await ref
+                        .read(propertyProvider.notifier)
+                        .refreshProperty(property.id);
+                  },
 
                   onBookVisit: property.ownerId == currentUserId
                       ? null
@@ -106,7 +111,4 @@ class PropertyListingPage extends ConsumerWidget {
     );
   }
 
-  void _openDetails(BuildContext context, PropertyEntity property) {
-    context.push('/property/${property.id}');
-  }
 }
