@@ -11,6 +11,7 @@ class ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
 
@@ -31,7 +32,8 @@ class ProfileHeader extends StatelessWidget {
           CircleAvatar(
             radius: 50,
 
-            backgroundColor: Colors.white,
+            backgroundColor: colors.surface,
+            foregroundColor: colors.primary,
 
             backgroundImage: profile.profileImage != null
                 ? NetworkImage(profile.profileImage!)
@@ -41,10 +43,11 @@ class ProfileHeader extends StatelessWidget {
                 ? Text(
                     profile.fullName.substring(0, 1).toUpperCase(),
 
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 38,
 
                       fontWeight: FontWeight.bold,
+                      color: colors.primary,
                     ),
                   )
                 : null,
@@ -55,12 +58,19 @@ class ProfileHeader extends StatelessWidget {
           Text(
             profile.fullName,
 
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: colors.onPrimaryContainer,
+            ),
           ),
 
           const SizedBox(height: 6),
 
-          Text(profile.email, style: TextStyle(color: Colors.grey.shade700)),
+          Text(
+            profile.email,
+            style: TextStyle(color: colors.onPrimaryContainer),
+          ),
 
           const SizedBox(height: 12),
 
@@ -91,6 +101,11 @@ class ProfileHeader extends StatelessWidget {
 
           OutlinedButton.icon(
             onPressed: onEdit,
+
+            style: OutlinedButton.styleFrom(
+              foregroundColor: colors.onPrimaryContainer,
+              side: BorderSide(color: colors.onPrimaryContainer),
+            ),
 
             icon: const Icon(Icons.edit),
 
