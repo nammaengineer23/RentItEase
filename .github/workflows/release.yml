@@ -6,17 +6,17 @@ on:
       tag:
         description: "Release tag (for example v1.0.0)"
         required: true
-        default: "v1.0.2"
+        default: "v1.0.3"
         type: string
       release_name:
         description: "Release title"
         required: true
-        default: "RentItEase v1.0.2"
+        default: "RentItEase v1.0.3"
         type: string
       build_number:
         description: "Android version code (increase for every new release)"
         required: true
-        default: "3"
+        default: "4"
         type: string
 
 permissions:
@@ -88,6 +88,26 @@ jobs:
             echo "storePassword=$ANDROID_STORE_PASSWORD"
           } > android/key.properties
 
+          SIGNING_SHA1="$(
+            keytool -list -v \
+              -keystore android/app/upload-keystore.jks \
+              -alias "$ANDROID_KEY_ALIAS" \
+              -storepass "$ANDROID_STORE_PASSWORD" \
+              | awk -F': ' '/SHA1:/{gsub(":", "", $2); print tolower($2); exit}'
+          )"
+          test -n "$SIGNING_SHA1"
+          jq -e --arg sha "$SIGNING_SHA1" '
+            .client[].oauth_client[]?
+            | select(
+                .client_type == 1
+                and .android_info.package_name == "com.rentitease.app"
+                and (.android_info.certificate_hash | ascii_downcase) == $sha
+              )
+          ' android/app/google-services.json > /dev/null || {
+            echo "Release signing SHA-1 is not registered in Firebase."
+            exit 1
+          }
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -103,7 +123,7 @@ jobs:
             --release \
             --build-number="$BUILD_NUMBER" \
             --dart-define=API_BASE_URL="$API_BASE_URL" \
-            --dart-define=ENABLE_GOOGLE_SIGN_IN=false \
+            --dart-define=ENABLE_GOOGLE_SIGN_IN=true \
             --dart-define=ENABLE_PHONE_OTP=false
 
           cp build/app/outputs/flutter-apk/app-release.apk \
@@ -127,3 +147,5 @@ jobs:
           body: |
             Android release built from commit `${{ github.sha }}`.
             Production API is supplied by the `API_BASE_URL` release secret.
+            Google Sign-In is enabled and the APK signing certificate was
+            verified against the Firebase Android configuration during build.
