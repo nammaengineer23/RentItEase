@@ -16,7 +16,9 @@ class ConversationModel extends ConversationEntity {
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
     final property = json['property'] as Map<String, dynamic>?;
 
-    final otherUser = json['otherUser'] as Map<String, dynamic>?;
+    final otherUser =
+        json['otherUser'] as Map<String, dynamic>? ??
+        json['owner'] as Map<String, dynamic>?;
 
     final lastMessageData = json['lastMessage'] as Map<String, dynamic>?;
 

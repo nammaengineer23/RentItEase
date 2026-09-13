@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/utils/app_error_message.dart';
 import '../../providers/profile_provider.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
@@ -88,10 +89,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   String? validatePhone(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Please enter phone number';
+      return null;
     }
 
-    if (value.length != 10) {
+    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(value.trim())) {
       return 'Enter a valid 10 digit phone number';
     }
 
@@ -138,7 +139,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      ).showSnackBar(SnackBar(content: Text(userFriendlyError(e))));
     } finally {
       if (mounted) {
         setState(() {

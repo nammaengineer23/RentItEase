@@ -28,18 +28,39 @@ export class PropertiesService {
     amenities?: string[];
   }) {
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new ServiceUnavailableException('AI suggestions are not configured.');
+    if (!apiKey)
+      throw new ServiceUnavailableException(
+        'AI suggestions are not configured.',
+      );
     const prompt = `Create a concise rental property title and an honest 2-sentence description. Return JSON only with title and description. Details: ${JSON.stringify(input)}`;
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.5, max_tokens: 180, messages: [{ role: 'user', content: prompt }] }),
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        temperature: 0.5,
+        max_tokens: 180,
+        messages: [{ role: 'user', content: prompt }],
+      }),
     });
-    if (!response.ok) throw new ServiceUnavailableException('Unable to generate AI suggestion.');
-    const body = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+    if (!response.ok)
+      throw new ServiceUnavailableException(
+        'Unable to generate AI suggestion.',
+      );
+    const body = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
     const content = body.choices?.[0]?.message?.content;
-    if (!content) throw new ServiceUnavailableException('AI returned no suggestion.');
-    try { return JSON.parse(content.replace(/^```json\s*|\s*```$/g, '')); } catch { throw new ServiceUnavailableException('AI returned invalid suggestion.'); }
+    if (!content)
+      throw new ServiceUnavailableException('AI returned no suggestion.');
+    try {
+      return JSON.parse(content.replace(/^```json\s*|\s*```$/g, ''));
+    } catch {
+      throw new ServiceUnavailableException('AI returned invalid suggestion.');
+    }
   }
 
   // ===========================
@@ -238,6 +259,7 @@ export class PropertiesService {
           owner: {
             select: {
               id: true,
+              fullName: true,
             },
           },
 
@@ -336,6 +358,7 @@ export class PropertiesService {
             owner: {
               select: {
                 id: true,
+                fullName: true,
               },
             },
           },
@@ -556,6 +579,7 @@ export class PropertiesService {
         owner: {
           select: {
             id: true,
+            fullName: true,
           },
         },
 
@@ -624,6 +648,7 @@ export class PropertiesService {
         owner: {
           select: {
             id: true,
+            fullName: true,
           },
         },
 
@@ -794,6 +819,7 @@ export class PropertiesService {
         owner: {
           select: {
             id: true,
+            fullName: true,
           },
         },
 

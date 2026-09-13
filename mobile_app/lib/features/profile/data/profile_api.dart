@@ -39,7 +39,7 @@ class ProfileApi {
     try {
       final data = <String, dynamic>{
         'fullName': fullName.trim(),
-        'phone': phone.trim(),
+        if (phone.trim().isNotEmpty) 'phone': phone.trim(),
       };
 
       if (photoUrl != null && photoUrl.trim().isNotEmpty) {

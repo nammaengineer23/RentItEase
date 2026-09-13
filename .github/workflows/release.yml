@@ -6,17 +6,17 @@ on:
       tag:
         description: "Release tag (for example v1.0.0)"
         required: true
-        default: "v1.0.0"
+        default: "v1.0.1"
         type: string
       release_name:
         description: "Release title"
         required: true
-        default: "RentItEase v1.0.0"
+        default: "RentItEase v1.0.1"
         type: string
       build_number:
         description: "Android version code (increase for every new release)"
         required: true
-        default: "1"
+        default: "2"
         type: string
 
 permissions:
@@ -32,6 +32,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Record release source
+        run: |
+          echo "RENTITEASE_RELEASE_SHA=$GITHUB_SHA"
+          echo "$GITHUB_SHA" > RELEASE_COMMIT.txt
 
       - name: Validate build number
         env:
@@ -88,14 +93,16 @@ jobs:
 
       - name: Build signed release APK
         env:
-          API_BASE_URL: ${{ secrets.E2E_BASE_URL }}/api/v1
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
           BUILD_NUMBER: ${{ inputs.build_number }}
         run: |
           test -n "$API_BASE_URL"
           flutter build apk \
             --release \
             --build-number="$BUILD_NUMBER" \
-            --dart-define=API_BASE_URL="$API_BASE_URL"
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=ENABLE_GOOGLE_SIGN_IN=true \
+            --dart-define=ENABLE_PHONE_OTP=false
 
           cp build/app/outputs/flutter-apk/app-release.apk \
             build/app/outputs/flutter-apk/RentItEase-release.apk
@@ -115,3 +122,6 @@ jobs:
           generate_release_notes: true
           files: mobile_app/build/app/outputs/flutter-apk/RentItEase-release.apk
           fail_on_unmatched_files: true
+          body: |
+            Android release built from commit `${{ github.sha }}`.
+            Production API is supplied by the `API_BASE_URL` release secret.

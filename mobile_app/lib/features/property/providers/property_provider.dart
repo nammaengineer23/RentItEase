@@ -46,6 +46,21 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
     return _repository.getProperty(id);
   }
 
+  /// Refresh a single card after the details endpoint records a property view.
+  Future<void> refreshProperty(String id) async {
+    try {
+      final property = await _repository.getProperty(id);
+      state.whenData((properties) {
+        state = AsyncData([
+          for (final item in properties)
+            if (item.id == id) property else item,
+        ]);
+      });
+    } catch (_) {
+      // Keep the existing list usable if this best-effort card refresh fails.
+    }
+  }
+
   //==========================================================
   // Featured
   //==========================================================

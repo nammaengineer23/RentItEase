@@ -42,6 +42,44 @@ class _PremiumMembershipPageState
     return value;
   }
 
+  String _money(dynamic value, {num fallback = 99}) {
+    num amount = fallback;
+    if (value is num) {
+      amount = value;
+    } else if (value is String) {
+      amount = num.tryParse(value) ?? fallback;
+    } else if (value is Map) {
+      // Older backend releases exposed decimal.js internals as
+      // {s: sign, e: exponent, d: digits}. Keep the release client readable
+      // while the API serializer is rolled out.
+      final sign = value['s'] is num ? (value['s'] as num).toInt() : 1;
+      final exponent = value['e'] is num ? (value['e'] as num).toInt() : 0;
+      final digits = value['d'];
+      if (digits is List && digits.isNotEmpty) {
+        final coefficient = digits.map((item) => item.toString()).join();
+        final parsed = num.tryParse(coefficient);
+        if (parsed != null) {
+          amount = sign * parsed * _powerOfTen(exponent - coefficient.length + 1);
+        }
+      }
+    }
+    return amount % 1 == 0 ? amount.toInt().toString() : amount.toStringAsFixed(2);
+  }
+
+  num _powerOfTen(int exponent) {
+    num result = 1;
+    if (exponent >= 0) {
+      for (var index = 0; index < exponent; index++) {
+        result *= 10;
+      }
+    } else {
+      for (var index = 0; index > exponent; index--) {
+        result /= 10;
+      }
+    }
+    return result;
+  }
+
   Future<void> _load() async {
     try {
       final response = await ref.read(dioProvider).get('/membership/me');
@@ -171,7 +209,7 @@ class _PremiumMembershipPageState
 <p><strong>Membership:</strong> $membershipId</p>
 <p><strong>Date:</strong> ${invoice['invoiceDate'] ?? ''}</p>
 <p><strong>Status:</strong> ${invoice['status'] ?? ''}</p>
-<p><strong>Total:</strong> INR ${invoice['totalAmount'] ?? 0}</p>
+<p><strong>Total:</strong> INR ${_money(invoice['totalAmount'], fallback: 0)}</p>
 <p>${invoice['description'] ?? ''}</p>
 </body></html>''');
       _show('Invoice downloaded to ${file.path}');
@@ -303,7 +341,7 @@ class _PremiumMembershipPageState
                           title: Text(
                             membership['isTrial'] == true
                                 ? 'Free 30-day trial'
-                                : 'Premium purchase • ₹${membership['amount'] ?? 99}',
+                                : 'Premium purchase • ₹${_money(membership['amount'])}',
                           ),
                           subtitle: Text(
                             '${membership['status'] ?? ''} • ${membership['endDate'] ?? ''}',

@@ -96,12 +96,16 @@ class ChatNotifier extends StateNotifier<ChatState> {
       final messages = await _repository.getMessages(
         conversationId: id,
       );
-      await _repository.markAsRead(conversationId: id);
-
       state = state.copyWith(
         messages: messages,
         isLoadingMessages: false,
       );
+      try {
+        await _repository.markAsRead(conversationId: id);
+      } catch (_) {
+        // Reading messages succeeded; a read-receipt failure must not hide
+        // the conversation or prevent the user from replying.
+      }
     } catch (error) {
       state = state.copyWith(
         isLoadingMessages: false,
@@ -132,10 +136,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
       final messages = await _repository.getMessages(
         conversationId: conversation.conversationId,
       );
-      await _repository.markAsRead(
-        conversationId: conversation.conversationId,
-      );
-
       final conversations = [
         conversation,
         ...state.conversations.where(
@@ -149,6 +149,14 @@ class ChatNotifier extends StateNotifier<ChatState> {
         messages: messages,
         isLoadingMessages: false,
       );
+      try {
+        await _repository.markAsRead(
+          conversationId: conversation.conversationId,
+        );
+      } catch (_) {
+        // Keep the successfully opened conversation usable if updating its
+        // read receipt fails temporarily.
+      }
     } catch (error) {
       state = state.copyWith(
         isLoadingMessages: false,

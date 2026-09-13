@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/utils/app_error_message.dart';
+import '../../../../core/config/auth_features.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 import '../../providers/authentication_provider.dart';
@@ -212,7 +213,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                 const SizedBox(height: 12),
 
-                SegmentedButton<bool>(
+                if (enablePhoneOtp) SegmentedButton<bool>(
                   segments: [
                     ButtonSegment(
                       value: false,
@@ -303,10 +304,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                 const SizedBox(height: 12),
 
-                SocialLoginButton(
-                  isLoading: provider.isLoading,
-                  onPressed: _googleLogin,
-                ),
+                if (enableGoogleSignIn)
+                  SocialLoginButton(
+                    isLoading: provider.isLoading,
+                    onPressed: _googleLogin,
+                  ),
 
                 const SizedBox(height: 16),
 

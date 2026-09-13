@@ -435,22 +435,41 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           child: PropertyCard(
                             property: property,
-                            onTap: () =>
-                                context.push('/property/${property.id}'),
-                            onBookVisit: () => context.push(
-                              '/book-visit/${property.id}',
-                              extra: {
-                                'propertyTitle': property.title,
-                                'propertyImage': property.imageUrls.isNotEmpty
-                                    ? property.imageUrls.first
-                                    : '',
-                                'ownerName': property.ownerName,
-                              },
-                            ),
+                            onTap: () async {
+                              await context.push('/property/${property.id}');
+                              if (mounted) {
+                                await ref
+                                    .read(searchProvider.notifier)
+                                    .refresh();
+                              }
+                            },
+                            onBookVisit: property.ownerId == currentUserId
+                                ? null
+                                : () => context.push(
+                                    '/book-visit/${property.id}',
+                                    extra: {
+                                      'propertyTitle': property.title,
+                                      'propertyImage':
+                                          property.imageUrls.isNotEmpty
+                                          ? property.imageUrls.first
+                                          : '',
+                                      'ownerName': property.ownerName,
+                                    },
+                                  ),
                             onContactOwner: property.ownerId == currentUserId
                                 ? null
                                 : () => context.push(
-                                    '/chat?propertyId=${property.id}',
+                                    Uri(
+                                      path: '/chat',
+                                      queryParameters: {
+                                        'propertyId': property.id,
+                                        'userName': property.ownerName,
+                                        'propertyTitle': property.title,
+                                        if (property.imageUrls.isNotEmpty)
+                                          'propertyImage':
+                                              property.imageUrls.first,
+                                      },
+                                    ).toString(),
                                   ),
                           ),
                         ),

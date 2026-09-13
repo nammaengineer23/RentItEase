@@ -156,6 +156,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             ),
           Expanded(child: _buildMessages(state, currentUserId)),
           MessageInput(
+            enabled:
+                !state.isLoadingMessages &&
+                state.activeConversationId?.isNotEmpty == true,
             onSend: (text) async {
               final sent = await ref
                   .read(chatProvider.notifier)
