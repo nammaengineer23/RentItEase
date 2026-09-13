@@ -101,6 +101,14 @@ class AdminApi {
     return _list(await _dio.get<dynamic>('/admin/billing/memberships'));
   }
 
+  Future<void> updateMembershipStatus(String id, String action) async {
+    const allowedActions = {'activate', 'cancel', 'expire', 'renew'};
+    if (!allowedActions.contains(action)) {
+      throw ArgumentError.value(action, 'action', 'Unsupported membership action');
+    }
+    await _dio.patch<void>('/admin/billing/memberships/$id/$action');
+  }
+
   Future<List<Map<String, dynamic>>> getSocialProperties() async {
     return _list(await _dio.get<dynamic>('/admin/social-media/properties'));
   }
