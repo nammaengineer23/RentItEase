@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../l10n/app_localizations.dart';
+import 'daily_rent_badge.dart';
 
 class PropertyPrice extends StatelessWidget {
   final double rent;
@@ -35,15 +36,8 @@ class PropertyPrice extends StatelessWidget {
                 ),
               ),
               if (hasDailyRent) ...[
-                const SizedBox(height: 2),
-                Text(
-                  '₹${dailyRent!.toStringAsFixed(0)} / day',
-                  style: TextStyle(
-                    color: Colors.green.shade700,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                const SizedBox(height: 7),
+                DailyRentBadge(dailyRent: dailyRent!),
               ],
             ],
           ),
