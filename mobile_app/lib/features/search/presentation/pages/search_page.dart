@@ -459,7 +459,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             onContactOwner: property.ownerId == currentUserId
                                 ? null
                                 : () => context.push(
-                                    '/chat?propertyId=${property.id}',
+                                    Uri(
+                                      path: '/chat',
+                                      queryParameters: {
+                                        'propertyId': property.id,
+                                        'userName': property.ownerName,
+                                        'propertyTitle': property.title,
+                                        if (property.imageUrls.isNotEmpty)
+                                          'propertyImage':
+                                              property.imageUrls.first,
+                                      },
+                                    ).toString(),
                                   ),
                           ),
                         ),
