@@ -96,7 +96,7 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
               role == 'OWNER' ? '/owner/dashboard' : '/home',
               '/search',
               role == 'OWNER' ? '/owner/analytics' : '/favorites',
-              role == 'OWNER' ? '/owner/visit-requests' : '/my-bookings',
+              role == 'OWNER' ? '/owner/visits' : '/my-bookings',
               '/profile',
             ];
 
