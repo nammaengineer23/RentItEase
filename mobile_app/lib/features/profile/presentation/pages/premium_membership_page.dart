@@ -69,9 +69,13 @@ class _PremiumMembershipPageState
   num _powerOfTen(int exponent) {
     num result = 1;
     if (exponent >= 0) {
-      for (var index = 0; index < exponent; index++) result *= 10;
+      for (var index = 0; index < exponent; index++) {
+        result *= 10;
+      }
     } else {
-      for (var index = 0; index > exponent; index--) result /= 10;
+      for (var index = 0; index > exponent; index--) {
+        result /= 10;
+      }
     }
     return result;
   }
