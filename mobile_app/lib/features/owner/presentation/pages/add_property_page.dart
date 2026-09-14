@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,6 +11,7 @@ import '../../../maps/presentation/pages/map_picker_page.dart';
 import '../../../maps/providers/maps_provider.dart';
 import '../widgets/sectioned_property_image_picker.dart';
 import '../../data/api/property_image_api.dart';
+import '../../data/api/property_video_api.dart';
 import '../../domain/entities/owner_property_entity.dart';
 import '../../providers/owner_provider.dart';
 
@@ -50,6 +52,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   bool loading = false;
   LocationModel? selectedLocation;
   Map<String, List<File>> selectedImagesBySection = const {};
+  PlatformFile? selectedVideo;
   List<Map<String, dynamic>> _amenities = const [];
   final Set<String> _selectedAmenityIds = {};
 
@@ -101,6 +104,28 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     if (location == null || !mounted) return;
 
     _applyLocation(location);
+  }
+
+  Future<void> _pickVideo() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['mp4', 'mov', 'm4v'],
+      allowMultiple: false,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty || !mounted) return;
+
+    final video = result.files.single;
+    if (video.size > 100 * 1024 * 1024) {
+      _showError('The property video must not exceed 100 MB.');
+      return;
+    }
+    if (video.bytes == null && video.path == null) {
+      _showError('The selected video could not be read.');
+      return;
+    }
+
+    setState(() => selectedVideo = video);
   }
 
   Future<void> _saveProperty() async {
@@ -204,6 +229,13 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
         await PropertyImageApi(ref.read(dioProvider)).uploadSectionImages(
           propertyId: createdProperty.id,
           imagesBySection: selectedImagesBySection,
+        );
+      }
+
+      if (selectedVideo != null) {
+        await PropertyVideoApi(ref.read(dioProvider)).uploadVideo(
+          propertyId: createdProperty.id,
+          video: selectedVideo!,
         );
       }
 
@@ -666,6 +698,33 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
             ),
 
             const SizedBox(height: 16),
+
+            Text(
+              'Video tour (optional)',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            const Text('One MP4, MOV or M4V video • up to 60 seconds • 100 MB'),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: loading ? null : _pickVideo,
+              icon: const Icon(Icons.video_call_outlined),
+              label: Text(
+                selectedVideo == null
+                    ? 'Select video tour'
+                    : 'Selected: ${selectedVideo!.name}',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (selectedVideo != null)
+              TextButton.icon(
+                onPressed: loading
+                    ? null
+                    : () => setState(() => selectedVideo = null),
+                icon: const Icon(Icons.close),
+                label: const Text('Remove selected video'),
+              ),
+            const SizedBox(height: 20),
 
             Text(
               context.tr('propertyPhotos'),
