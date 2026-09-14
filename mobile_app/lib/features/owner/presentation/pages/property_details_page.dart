@@ -71,10 +71,10 @@ class _OwnerPropertyDetailsPageState
           ),
         ),
       );
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Could not update property status. Please try again.'),
           backgroundColor: Colors.red,
         ),
