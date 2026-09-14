@@ -107,21 +107,15 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   }
 
   Future<void> _pickVideo() async {
-    final result = await FilePicker.platform.pickFiles(
+    final video = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: const ['mp4', 'mov', 'm4v'],
-      allowMultiple: false,
-      withData: true,
     );
-    if (result == null || result.files.isEmpty || !mounted) return;
+    if (video == null || !mounted) return;
 
-    final video = result.files.single;
-    if (video.size > 100 * 1024 * 1024) {
+    final size = await video.length();
+    if (size == null || size > 100 * 1024 * 1024) {
       _showError('The property video must not exceed 100 MB.');
-      return;
-    }
-    if (video.bytes == null && video.path == null) {
-      _showError('The selected video could not be read.');
       return;
     }
 
