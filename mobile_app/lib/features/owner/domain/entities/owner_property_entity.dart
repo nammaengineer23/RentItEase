@@ -24,6 +24,7 @@ class OwnerPropertyEntity {
     required this.parking,
     required this.petFriendly,
     required this.imageUrl,
+    this.videoUrl = '',
     required this.isAvailable,
     required this.isVerified,
     required this.totalViews,
@@ -68,6 +69,7 @@ class OwnerPropertyEntity {
   final bool petFriendly;
 
   final String imageUrl;
+  final String videoUrl;
 
   final bool isAvailable;
   final bool isVerified;
