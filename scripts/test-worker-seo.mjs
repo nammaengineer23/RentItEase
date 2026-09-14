@@ -27,6 +27,15 @@ const property = {
 };
 
 globalThis.fetch = async (url) => {
+  if (String(url).includes('/releases/latest/download/')) {
+    return new Response('signed-apk', {
+      headers: {
+        'content-type': 'application/octet-stream',
+        'content-length': '10',
+        'accept-ranges': 'bytes',
+      },
+    });
+  }
   if (String(url).includes('/properties/property-1')) {
     return Response.json({ data: { property } });
   }
@@ -58,6 +67,7 @@ const checks = [
   ['/about', 200, 'About RentItEase'],
   ['/privacy', 200, 'Privacy Policy'],
   ['/download', 200, 'apk_download'],
+  ['/downloads/RentItEase.apk', 200, 'signed-apk'],
   ['/rentals/bangalore', 200, 'Green View Home'],
   ['/property/property-1', 200, 'Green View Home in HSR Layout, Bangalore'],
   ['/sitemap-properties.xml', 200, '/property/property-2'],
@@ -77,6 +87,22 @@ for (const [path, status, expected] of checks) {
   if (response.status !== status || !output.includes(expected)) {
     throw new Error(`${path}: expected status ${status} and ${expected}`);
   }
+}
+
+const apkResponse = await worker.fetch(
+  new Request('https://rentitease.com/downloads/RentItEase.apk', {
+    headers: { range: 'bytes=0-9' },
+  }),
+  env,
+);
+if (
+  apkResponse.headers.get('content-disposition') !==
+    'attachment; filename="RentItEase.apk"' ||
+  apkResponse.headers.get('content-type') !==
+    'application/vnd.android.package-archive' ||
+  apkResponse.headers.get('accept-ranges') !== 'bytes'
+) {
+  throw new Error('Website APK response headers are invalid.');
 }
 
 console.log('Cloudflare SEO route checks passed.');

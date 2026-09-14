@@ -1,8 +1,9 @@
 const effectiveDate = 'August 31, 2026';
 const siteUrl = 'https://rentitease.com';
 const apiUrl = 'https://api.rentitease.com/api/v1';
-const androidReleaseUrl =
+const githubAndroidReleaseUrl =
   'https://github.com/nammaengineer23/RentItEase/releases/latest/download/RentItEase-release.apk';
+const androidDownloadUrl = `${siteUrl}/downloads/RentItEase.apk`;
 
 const legalContent = {
   '/contact': {
@@ -115,8 +116,44 @@ async function cityPage(env) {
 
 function downloadPage(env) {
   const description = 'Download the latest signed RentItEase Android APK and start searching verified rental properties.';
-  const body = `<p>${description}</p><h2>Install RentItEase for Android</h2><p>Download the current APK from the official RentItEase GitHub Release. Android may ask you to allow installation from your browser or file manager.</p><p><a class="button" href="${androidReleaseUrl}" rel="noopener" onclick="window.gtag?.('event','apk_download',{method:'github_release'})">Download latest Android APK</a></p><p class="muted">For your security, install RentItEase only from rentitease.com or the official RentItEase GitHub repository.</p>`;
-  return staticPage({ path: '/download', title: 'Download RentItEase for Android', description, body, env, schema: { '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'RentItEase', operatingSystem: 'Android', applicationCategory: 'LifestyleApplication', downloadUrl: androidReleaseUrl, offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' } } });
+  const body = `<p>${description}</p><h2>Install RentItEase for Android</h2><p>Download the current signed APK directly from the RentItEase website. Android may ask you to allow installation from your browser or file manager.</p><p><a class="button" href="${androidDownloadUrl}" onclick="window.gtag?.('event','apk_download',{method:'rentitease_website'})">Download latest Android APK</a></p><p class="muted">For your security, install RentItEase only from rentitease.com.</p>`;
+  return staticPage({ path: '/download', title: 'Download RentItEase for Android', description, body, env, schema: { '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'RentItEase', operatingSystem: 'Android', applicationCategory: 'LifestyleApplication', downloadUrl: androidDownloadUrl, offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' } } });
+}
+
+async function androidApk(request) {
+  if (!['GET', 'HEAD'].includes(request.method)) {
+    return new Response('Method not allowed.', {
+      status: 405,
+      headers: { allow: 'GET, HEAD' },
+    });
+  }
+
+  const upstreamHeaders = new Headers({ accept: 'application/vnd.android.package-archive' });
+  const range = request.headers.get('range');
+  if (range) upstreamHeaders.set('range', range);
+
+  const upstream = await fetch(githubAndroidReleaseUrl, {
+    method: request.method,
+    headers: upstreamHeaders,
+    redirect: 'follow',
+    cf: { cacheEverything: true, cacheTtl: 3600 },
+  });
+  if (!upstream.ok) return Response.redirect(githubAndroidReleaseUrl, 302);
+
+  const headers = new Headers({
+    'content-type': 'application/vnd.android.package-archive',
+    'content-disposition': 'attachment; filename="RentItEase.apk"',
+    'cache-control': 'public, max-age=3600',
+    'x-content-type-options': 'nosniff',
+  });
+  for (const name of ['content-length', 'content-range', 'accept-ranges', 'etag', 'last-modified']) {
+    const value = upstream.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+  return new Response(request.method === 'HEAD' ? null : upstream.body, {
+    status: upstream.status,
+    headers,
+  });
 }
 
 function replaceTag(html, expression, replacement) {
@@ -220,6 +257,7 @@ export default {
     if (path === '/terms-of-service') return Response.redirect(`${siteUrl}/terms`, 301);
     if (path === '/rentals/bengaluru') return Response.redirect(`${siteUrl}/rentals/bangalore`, 301);
     if (path === '/download') return htmlResponse(downloadPage(env));
+    if (path === '/downloads/RentItEase.apk') return androidApk(request);
     if (path === '/rentals/bangalore') return htmlResponse(await cityPage(env));
     if (path === '/sitemap-properties.xml') return propertySitemap();
     const propertyMatch = path.match(/^\/property\/([^/]+)$/);

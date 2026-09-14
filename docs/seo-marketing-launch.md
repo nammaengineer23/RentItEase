@@ -28,7 +28,7 @@ The deployment workflow passes these values to the Flutter landing page and Clou
 GA4 automatically receives page views after `GA_MEASUREMENT_ID` is configured. The download page also emits:
 
 - Event: `apk_download`
-- Parameter: `method=github_release`
+- Parameter: `method=rentitease_website`
 
 Mark `apk_download` as a key event in GA4. Registration, chat, visit, booking, and payment conversions require consent-aware analytics inside the authenticated Flutter application and should be introduced separately from public website analytics.
 
