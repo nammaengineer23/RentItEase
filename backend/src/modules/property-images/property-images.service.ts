@@ -136,6 +136,120 @@ export class PropertyImagesService {
   }
 
   // =====================================
+  // Property Video Tour
+  // =====================================
+
+  async uploadVideo(
+    propertyId: string,
+    file: Express.Multer.File,
+    user: any,
+  ) {
+    const property = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found.');
+    }
+
+    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException(
+        'You are not allowed to update this property video.',
+      );
+    }
+
+    if (!file) {
+      throw new BadRequestException('No video uploaded.');
+    }
+
+    const allowedMimeTypes = [
+      'video/mp4',
+      'video/quicktime',
+      'video/x-m4v',
+    ];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Only MP4, MOV and M4V videos are allowed.',
+      );
+    }
+
+    if (file.size > 100 * 1024 * 1024) {
+      throw new BadRequestException(
+        'The property video must not exceed 100 MB.',
+      );
+    }
+
+    const uploaded = await this.storageService.uploadImage(
+      file,
+      'property-videos',
+    );
+
+    try {
+      const updated = await this.prisma.property.update({
+        where: { id: propertyId },
+        data: {
+          videoUrl: uploaded.imageUrl,
+          videoPublicId: uploaded.publicId,
+        },
+        select: {
+          id: true,
+          videoUrl: true,
+        },
+      });
+
+      if (property.videoPublicId) {
+        await this.storageService.deleteImage(property.videoPublicId);
+      }
+
+      return {
+        success: true,
+        message: property.videoUrl
+          ? 'Property video replaced successfully.'
+          : 'Property video uploaded successfully.',
+        data: updated,
+      };
+    } catch (error) {
+      await this.storageService.deleteImage(uploaded.publicId).catch(() => {
+        // Preserve the original database error.
+      });
+      throw error;
+    }
+  }
+
+  async deleteVideo(propertyId: string, user: any) {
+    const property = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found.');
+    }
+
+    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException(
+        'You are not allowed to delete this property video.',
+      );
+    }
+
+    await this.prisma.property.update({
+      where: { id: propertyId },
+      data: {
+        videoUrl: null,
+        videoPublicId: null,
+      },
+    });
+
+    if (property.videoPublicId) {
+      await this.storageService.deleteImage(property.videoPublicId);
+    }
+
+    return {
+      success: true,
+      message: 'Property video deleted successfully.',
+    };
+  }
+
+  // =====================================
   // Get Images
   // =====================================
 
