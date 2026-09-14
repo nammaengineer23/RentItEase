@@ -550,28 +550,29 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
           ? null
           : SafeArea(
               child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: PropertyActionButtons(
-            onBookVisit: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BookVisitPage(
-                    propertyId: property.id,
-                    propertyTitle: property.title,
-                    propertyImage: property.imageUrls.isNotEmpty
-                        ? property.imageUrls.first
-                        : '',
-                    ownerName: property.ownerName,
-                  ),
-                ),
-              );
-            },
-            onContactOwner: isOpeningChat
-                ? null
-                : () => _openPropertyChat(property),
+                padding: const EdgeInsets.all(16),
+                child: PropertyActionButtons(
+                  onBookVisit: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BookVisitPage(
+                          propertyId: property.id,
+                          propertyTitle: property.title,
+                          propertyImage: property.imageUrls.isNotEmpty
+                              ? property.imageUrls.first
+                              : '',
+                          ownerName: property.ownerName,
+                        ),
+                      ),
+                    );
+                  },
+                  onContactOwner: isOpeningChat
+                      ? null
+                      : () => _openPropertyChat(property),
                 ),
               ),
+            ),
     );
   }
 }
