@@ -252,7 +252,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
   // ============================================================
 
   it('05 Membership → activation → expiry → renewal', async () => {
-    expect(tenantId).toBeTruthy();
+    expect(ownerId).toBeTruthy();
     expect(ownerToken).toBeTruthy();
 
     // ----------------------------------------------------------
@@ -309,11 +309,11 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
     // membership already exists for the user.
     // ----------------------------------------------------------
 
-    const cleared = await clearActiveMemberships(tenantId, ownerToken);
+    const cleared = await clearActiveMemberships(ownerId, ownerToken);
 
     if (cleared > 0) {
       console.log(
-        `Release workflow: expired ${cleared} existing active membership(s) for tenant ${tenantId}`,
+        `Release workflow: expired ${cleared} existing active membership(s) for owner ${ownerId}`,
       );
     }
 
@@ -322,7 +322,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
     // ----------------------------------------------------------
 
     const membership = await request(apiUrl())
-      .post(`/membership/users/${tenantId}`)
+      .post(`/membership/users/${ownerId}`)
       .set(auth(ownerToken))
       .send({
         planId,
@@ -336,7 +336,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
     membershipId = membershipData?.id ?? '';
 
     expect(membershipId).toBeTruthy();
-    expect(membershipData?.userId).toBe(tenantId);
+    expect(membershipData?.userId).toBe(ownerId);
     expect(membershipData?.planId).toBe(planId);
     expect(membershipData?.status).toBe('PENDING');
 
