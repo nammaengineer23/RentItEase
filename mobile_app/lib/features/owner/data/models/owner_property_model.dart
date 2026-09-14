@@ -27,6 +27,7 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
     required super.parking,
     required super.petFriendly,
     required super.imageUrl,
+    super.videoUrl,
     required super.isAvailable,
     required super.isVerified,
     required super.totalViews,
@@ -70,6 +71,7 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
       parking: json['parking'] as bool? ?? false,
       petFriendly: json['petFriendly'] as bool? ?? false,
       imageUrl: directImageUrl.isEmpty ? _primaryImageUrl(json) : directImageUrl,
+      videoUrl: AppImageUrl.resolve(json['videoUrl']),
       isAvailable: json['isAvailable'] as bool? ?? true,
       isVerified: json['isVerified'] as bool? ?? false,
       // Owner dashboard responses have used `views`, `totalViews`, and (for
@@ -112,6 +114,7 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
       'parking': parking,
       'petFriendly': petFriendly,
       'imageUrl': imageUrl,
+      'videoUrl': videoUrl,
       'isAvailable': isAvailable,
       'isVerified': isVerified,
       'totalViews': totalViews,
