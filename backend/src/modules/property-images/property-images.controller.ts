@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Request,
+  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -20,7 +21,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 
 import { PropertyImageSection } from '@prisma/client';
@@ -111,6 +112,54 @@ export class PropertyImagesController {
       section,
       req.user,
     );
+  }
+
+  // ==========================================
+  // Property Video Tour
+  // ==========================================
+
+  @Post(':propertyId/video')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload or replace the property video tour' })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 100 * 1024 * 1024 },
+      fileFilter: (_request, file, callback) => {
+        const allowedMimeTypes = [
+          'video/mp4',
+          'video/quicktime',
+          'video/x-m4v',
+        ];
+        const allowed = allowedMimeTypes.includes(file.mimetype);
+        callback(
+          allowed
+            ? null
+            : new Error('Only MP4, MOV and M4V videos are allowed.'),
+          allowed,
+        );
+      },
+    }),
+  )
+  uploadVideo(
+    @Param('propertyId') propertyId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: any,
+  ) {
+    return this.propertyImagesService.uploadVideo(propertyId, file, req.user);
+  }
+
+  @Delete(':propertyId/video')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete the property video tour' })
+  deleteVideo(
+    @Param('propertyId') propertyId: string,
+    @Request() req: any,
+  ) {
+    return this.propertyImagesService.deleteVideo(propertyId, req.user);
   }
 
   // ==========================================
