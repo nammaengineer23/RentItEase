@@ -179,6 +179,18 @@ export class PropertyImagesService {
       );
     }
 
+    const durationSeconds = this.readMp4DurationSeconds(file.buffer);
+    if (durationSeconds == null) {
+      throw new BadRequestException(
+        'Could not read the video duration. Use a standard MP4, MOV or M4V file.',
+      );
+    }
+    if (durationSeconds > 60) {
+      throw new BadRequestException(
+        'The property video must not exceed 60 seconds.',
+      );
+    }
+
     const uploaded = await this.storageService.uploadImage(
       file,
       'property-videos',
@@ -472,4 +484,31 @@ export class PropertyImagesService {
       message: 'Image deleted successfully.',
     };
   }
+  private readMp4DurationSeconds(buffer: Buffer): number | null {
+    const marker = Buffer.from('mvhd');
+    const markerOffset = buffer.indexOf(marker);
+    if (markerOffset < 0 || markerOffset + 36 > buffer.length) {
+      return null;
+    }
+
+    const version = buffer.readUInt8(markerOffset + 4);
+    const timescaleOffset = markerOffset + (version === 1 ? 24 : 16);
+    const durationOffset = markerOffset + (version === 1 ? 28 : 20);
+
+    if (durationOffset + (version === 1 ? 8 : 4) > buffer.length) {
+      return null;
+    }
+
+    const timescale = buffer.readUInt32BE(timescaleOffset);
+    if (timescale === 0) return null;
+
+    const duration =
+      version === 1
+        ? Number(buffer.readBigUInt64BE(durationOffset))
+        : buffer.readUInt32BE(durationOffset);
+
+    if (!Number.isFinite(duration) || duration <= 0) return null;
+    return duration / timescale;
+  }
+
 }
