@@ -21,6 +21,8 @@ class OwnerPropertyDetailsPage extends ConsumerStatefulWidget {
 class _OwnerPropertyDetailsPageState
     extends ConsumerState<OwnerPropertyDetailsPage> {
   late final Future<OwnerPropertyModel> _propertyFuture;
+  bool? _availabilityOverride;
+  bool _updatingAvailability = false;
 
   OwnerPropertyModel get property => widget.property;
 
@@ -42,6 +44,43 @@ class _OwnerPropertyDetailsPageState
 
     if (changed == true && context.mounted) {
       Navigator.pop(context, true);
+    }
+  }
+
+  Future<void> _updateAvailability(bool isAvailable) async {
+    if (_updatingAvailability) return;
+
+    setState(() => _updatingAvailability = true);
+    try {
+      await ref.read(dioProvider).patch(
+        '/properties/${property.id}',
+        data: {'isAvailable': isAvailable},
+      );
+      if (!mounted) return;
+
+      setState(() => _availabilityOverride = isAvailable);
+      await ref.read(ownerProvider.notifier).loadMyProperties();
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isAvailable
+                ? 'Property marked as Available.'
+                : 'Property marked as Occupied.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not update property status. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _updatingAvailability = false);
     }
   }
 
@@ -129,6 +168,8 @@ class _OwnerPropertyDetailsPageState
         future: _propertyFuture,
         builder: (context, snapshot) {
           final detail = snapshot.data ?? property;
+          final isAvailable =
+              _availabilityOverride ?? detail.isAvailable;
           return ListView(
             children: [
               AspectRatio(
@@ -169,16 +210,26 @@ class _OwnerPropertyDetailsPageState
                       ),
                     ),
                     const SizedBox(height: 20),
-                    _InfoTile(
-                      icon: detail.isVerified
-                          ? Icons.verified
-                          : Icons.pending_outlined,
-                      title: 'Status',
-                      value: detail.isVerified
-                          ? (detail.isAvailable
-                                ? 'Verified • Visible'
-                                : 'Verified • Hidden')
-                          : 'Pending verification',
+                    Card(
+                      child: SwitchListTile(
+                        secondary: Icon(
+                          isAvailable
+                              ? Icons.check_circle_outline
+                              : Icons.home_work_outlined,
+                        ),
+                        title: const Text('Property status'),
+                        subtitle: Text(
+                          detail.isVerified
+                              ? (isAvailable
+                                    ? 'Available for rent'
+                                    : 'Occupied')
+                              : 'Pending verification',
+                        ),
+                        value: isAvailable,
+                        onChanged: _updatingAvailability
+                            ? null
+                            : _updateAvailability,
+                      ),
                     ),
                     if (detail.imageUrls.length > 1) ...[
                       const SizedBox(height: 16),
