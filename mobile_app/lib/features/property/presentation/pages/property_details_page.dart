@@ -302,6 +302,17 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
       );
     }
 
+    final currentUserId = ref
+        .watch(authenticationProvider)
+        .authResponse
+        ?.user
+        .id
+        .trim();
+    final isOwnProperty =
+        currentUserId != null &&
+        currentUserId.isNotEmpty &&
+        currentUserId == property.ownerId.trim();
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -535,8 +546,10 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
       // ==========================================================
       // Bottom Actions
       // ==========================================================
-      bottomNavigationBar: SafeArea(
-        child: Padding(
+      bottomNavigationBar: isOwnProperty
+          ? null
+          : SafeArea(
+              child: Padding(
           padding: const EdgeInsets.all(16),
           child: PropertyActionButtons(
             onBookVisit: () {
@@ -557,9 +570,8 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
             onContactOwner: isOpeningChat
                 ? null
                 : () => _openPropertyChat(property),
-          ),
-        ),
-      ),
+                ),
+              ),
     );
   }
 }
