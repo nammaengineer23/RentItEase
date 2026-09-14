@@ -114,7 +114,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     if (video == null || !mounted) return;
 
     final size = await video.length();
-    if (size == null || size > 100 * 1024 * 1024) {
+    if (size > 100 * 1024 * 1024) {
       _showError('The property video must not exceed 100 MB.');
       return;
     }
@@ -693,9 +693,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
 
             const SizedBox(height: 16),
 
-            Text(
+            const Text(
               'Video tour (optional)',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
             const Text('One MP4, MOV or M4V video • up to 60 seconds • 100 MB'),
