@@ -13,7 +13,7 @@ class PropertyVideoApi {
     required PlatformFile video,
   }) async {
     final size = await video.length();
-    if (size == null || size > 100 * 1024 * 1024) {
+    if (size > 100 * 1024 * 1024) {
       throw const FormatException(
         'The property video must not exceed 100 MB.',
       );
