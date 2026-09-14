@@ -204,7 +204,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     if (video == null || !mounted) return;
 
     final size = await video.length();
-    if (size == null || size > 100 * 1024 * 1024) {
+    if (size > 100 * 1024 * 1024) {
       _showError('The property video must not exceed 100 MB.');
       return;
     }
