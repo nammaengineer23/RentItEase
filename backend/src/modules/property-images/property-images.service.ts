@@ -184,8 +184,9 @@ export class PropertyImagesService {
       'property-videos',
     );
 
+    let updated;
     try {
-      const updated = await this.prisma.property.update({
+      updated = await this.prisma.property.update({
         where: { id: propertyId },
         data: {
           videoUrl: uploaded.imageUrl,
@@ -196,24 +197,26 @@ export class PropertyImagesService {
           videoUrl: true,
         },
       });
-
-      if (property.videoPublicId) {
-        await this.storageService.deleteImage(property.videoPublicId);
-      }
-
-      return {
-        success: true,
-        message: property.videoUrl
-          ? 'Property video replaced successfully.'
-          : 'Property video uploaded successfully.',
-        data: updated,
-      };
     } catch (error) {
       await this.storageService.deleteImage(uploaded.publicId).catch(() => {
         // Preserve the original database error.
       });
       throw error;
     }
+
+    if (property.videoPublicId) {
+      await this.storageService.deleteImage(property.videoPublicId).catch(() => {
+        // The new video is already active; stale-object cleanup can be retried.
+      });
+    }
+
+    return {
+      success: true,
+      message: property.videoUrl
+        ? 'Property video replaced successfully.'
+        : 'Property video uploaded successfully.',
+      data: updated,
+    };
   }
 
   async deleteVideo(propertyId: string, user: any) {
