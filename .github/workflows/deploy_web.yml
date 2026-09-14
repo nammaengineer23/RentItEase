@@ -47,7 +47,18 @@ jobs:
           FACEBOOK_PAGE_URL: ${{ vars.FACEBOOK_PAGE_URL }}
           INSTAGRAM_PROFILE_URL: ${{ vars.INSTAGRAM_PROFILE_URL }}
           YOUTUBE_CHANNEL_URL: ${{ vars.YOUTUBE_CHANNEL_URL }}
+          GOOGLE_MAPS_WEB_API_KEY: ${{ secrets.GOOGLE_MAPS_WEB_API_KEY }}
         run: |
+          test -n "$GOOGLE_MAPS_WEB_API_KEY" || {
+            echo "GOOGLE_MAPS_WEB_API_KEY is required for the web location picker."
+            exit 1
+          }
+          sed -i "s|GOOGLE_MAPS_WEB_API_KEY_PLACEHOLDER|$GOOGLE_MAPS_WEB_API_KEY|g" web/index.html
+          grep -q "GOOGLE_MAPS_WEB_API_KEY_PLACEHOLDER" web/index.html && {
+            echo "Google Maps web key injection failed."
+            exit 1
+          }
+
           flutter build web \
             --release \
             --dart-define=API_BASE_URL=https://api.rentitease.com/api/v1 \
