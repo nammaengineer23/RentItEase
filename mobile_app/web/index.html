@@ -181,6 +181,12 @@
     .seo-features article{padding:24px;border:1px solid #d9e4dd;border-radius:16px;background:#fff}
     .seo-features h2{font-size:20px}
     .seo-footer{max-width:1120px;margin:auto;padding:28px 24px;border-top:1px solid #d9e4dd}
+    .app-loading{min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;background:#f8fbf9}
+    .app-loading img{border-radius:24px;box-shadow:0 10px 30px rgba(18,59,42,.12)}
+    .app-loading h1{margin:24px 0 8px;font-size:clamp(28px,6vw,40px);line-height:1.15}
+    .app-loading p{max-width:460px;margin:0;color:#52655b}
+    .app-loading button{margin-top:24px;padding:12px 24px;border:0;border-radius:12px;background:#123b2a;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+    .app-loading button[hidden]{display:none}
     @media(max-width:720px){.seo-features{grid-template-columns:1fr}.seo-header nav{display:none}.seo-hero{padding:56px 24px}}
   </style>
 
@@ -192,20 +198,56 @@
         '/rentals/bangalore', '/rentals/bengaluru'
       ]);
       const path = window.location.pathname.replace(/\/$/, '') || '/';
-      if (!publicPaths.has(path)) {
+      const isPublicPage = publicPaths.has(path);
+      if (!isPublicPage) {
         document.querySelector('meta[name="robots"]')
           ?.setAttribute('content', 'noindex, follow');
+
+        // App routes can take a moment to download and initialise on a cold
+        // mobile connection. Show a useful branded state instead of briefly
+        // displaying the marketing homepage or an empty screen.
+        const content = document.getElementById('seo-content');
+        if (content) {
+          content.innerHTML = `
+            <section class="app-loading" role="status" aria-live="polite">
+              <img src="icons/Icon-192.png" width="96" height="96" alt="RentItEase">
+              <h1>Opening RentItEase</h1>
+              <p id="app-loading-message">Loading your rental experience…</p>
+              <button id="app-loading-retry" type="button" hidden>Retry</button>
+            </section>`;
+        }
       }
 
       const removeSeoContent = () => document.getElementById('seo-content')?.remove();
       window.addEventListener('flutter-first-frame', removeSeoContent, { once: true });
-      const observer = new MutationObserver(() => {
-        if (document.querySelector('flt-scene-host')) {
-          removeSeoContent();
-          observer.disconnect();
+
+      // Creating <flt-scene-host> does not mean Flutter has painted a frame.
+      // Removing the fallback at that point caused the reported blank page on
+      // slower devices. Keep it visible until flutter-first-frame is emitted.
+      if (!isPublicPage) {
+        window.setTimeout(() => {
+          if (!document.getElementById('seo-content')) return;
+          const message = document.getElementById('app-loading-message');
+          const retry = document.getElementById('app-loading-retry');
+          if (message) {
+            message.textContent = 'This is taking longer than expected. Check your connection and try again.';
+          }
+          if (retry) {
+            retry.hidden = false;
+            retry.addEventListener('click', () => window.location.reload(), { once: true });
+          }
+        }, 15000);
+      }
+
+      window.addEventListener('error', () => {
+        const message = document.getElementById('app-loading-message');
+        const retry = document.getElementById('app-loading-retry');
+        if (message) message.textContent = 'RentItEase could not finish loading. Please try again.';
+        if (retry) {
+          retry.hidden = false;
+          retry.addEventListener('click', () => window.location.reload(), { once: true });
         }
-      });
-      observer.observe(document.documentElement, { childList: true, subtree: true });
+      }, { once: true });
     })();
   </script>
   <script src="flutter_bootstrap.js" async></script>
