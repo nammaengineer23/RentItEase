@@ -87,9 +87,6 @@ jobs:
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
 
-      # Shared release test property used by legacy suites.
-      E2E_PROPERTY_ID: ${{ secrets.E2E_PROPERTY_ID }}
-
       # Optional integrations
       E2E_RAZORPAY_KEY_SECRET: ${{ secrets.E2E_RAZORPAY_KEY_SECRET }}
 
@@ -123,7 +120,6 @@ jobs:
           test -n "$E2E_OWNER_PASSWORD" && echo "E2E_OWNER_PASSWORD: configured" || (echo "E2E_OWNER_PASSWORD: MISSING" && exit 1)
           test -n "$E2E_ADMIN_EMAIL" && echo "E2E_ADMIN_EMAIL: configured" || (echo "E2E_ADMIN_EMAIL: MISSING" && exit 1)
           test -n "$E2E_ADMIN_PASSWORD" && echo "E2E_ADMIN_PASSWORD: configured" || (echo "E2E_ADMIN_PASSWORD: MISSING" && exit 1)
-          test -n "$E2E_PROPERTY_ID" && echo "E2E_PROPERTY_ID: configured" || (echo "E2E_PROPERTY_ID: MISSING" && exit 1)
 
       - name: Wait for production deployment to stabilize
         run: |

@@ -11,7 +11,6 @@ const required = [
   'E2E_API_PREFIX',
   'E2E_TENANT_PASSWORD',
   'E2E_OWNER_PASSWORD',
-  'E2E_PROPERTY_ID',
 ];
 
 // Backward-compatible login handling:
@@ -67,6 +66,6 @@ console.log(`Base URL: ${process.env.E2E_BASE_URL}`);
 console.log(`API Prefix: ${process.env.E2E_API_PREFIX}`);
 console.log(`Tenant login: ${process.env.E2E_TENANT_EMAIL}`);
 console.log(`Owner login: ${process.env.E2E_OWNER_EMAIL}`);
-console.log(`Property ID: ${process.env.E2E_PROPERTY_ID}`);
+console.log('Property fixtures: created by each E2E suite');
 console.log('==============================================');
 console.log('');

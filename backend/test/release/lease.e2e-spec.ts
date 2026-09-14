@@ -16,15 +16,16 @@ describe('Release E2E • Lease', () => {
   // When this test creates a new lease, the expected status is ACTIVE.
   let expectedLeaseStatus = 'ACTIVE';
 
-  let propertyId = process.env.E2E_PROPERTY_ID!;
+  // Production E2E data is cleaned between releases. Start without a shared
+  // property and create an isolated approved fixture when no reusable paid
+  // booking exists.
+  let propertyId = '';
 
   // ============================================================
   // 1. LOGIN
   // ============================================================
 
   it('1. tenant + owner login', async () => {
-    expect(propertyId).toBeTruthy();
-
     const tenant = await login(
       process.env.E2E_TENANT_EMAIL!,
       process.env.E2E_TENANT_PASSWORD!,
