@@ -6,17 +6,17 @@ on:
       tag:
         description: "Release tag (for example v1.0.0)"
         required: true
-        default: "v1.0.3"
+        default: "v1.0.4"
         type: string
       release_name:
         description: "Release title"
         required: true
-        default: "RentItEase v1.0.3"
+        default: "RentItEase v1.0.4"
         type: string
       build_number:
         description: "Android version code (increase for every new release)"
         required: true
-        default: "4"
+        default: "5"
         type: string
 
 permissions:

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../common/app_exception.dart';
+import '../../../core/config/auth_features.dart';
 import '../data/models/auth_response.dart';
 import '../data/models/login_request.dart';
 import '../data/models/register_request.dart';
@@ -284,7 +285,9 @@ class AuthenticationProvider extends ChangeNotifier {
 
   Future<UserCredential> _signInWithGoogleOnAndroid() async {
     if (!_googleSignInInitialized) {
-      await GoogleSignIn.instance.initialize();
+      await GoogleSignIn.instance.initialize(
+        serverClientId: googleServerClientId,
+      );
       _googleSignInInitialized = true;
     }
 
