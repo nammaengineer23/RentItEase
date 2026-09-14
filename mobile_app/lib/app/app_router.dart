@@ -83,7 +83,8 @@ class AppRouter {
 
       final location = state.matchedLocation;
       final role = auth.authResponse?.user.role.trim().toUpperCase();
-      final publicPath = const {
+      final publicPath = (kIsWeb && location.startsWith('/property/')) ||
+          const {
         '/',
         '/about',
         '/contact',

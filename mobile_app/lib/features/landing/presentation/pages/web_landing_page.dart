@@ -11,8 +11,14 @@ class WebLandingPage extends StatelessWidget {
   static const _green = Color(0xFF0D8A55);
   static const _mint = Color(0xFFD9F7E7);
   static const _line = Color(0xFFD9E4DD);
-  static const _androidReleaseUrl =
-      'https://github.com/nammaengineer23/RentItEase/releases/latest/download/RentItEase-release.apk';
+  static const _androidReleaseUrl = 'https://rentitease.com/download';
+  static const _facebookPageUrl = String.fromEnvironment('FACEBOOK_PAGE_URL');
+  static const _instagramProfileUrl = String.fromEnvironment(
+    'INSTAGRAM_PROFILE_URL',
+  );
+  static const _youtubeChannelUrl = String.fromEnvironment(
+    'YOUTUBE_CHANNEL_URL',
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -506,14 +512,53 @@ class _Footer extends StatelessWidget {
   const _Footer();
 
   @override
-  Widget build(BuildContext context) => const Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        runSpacing: 12,
-        children: [
-          Text('© 2026 RentItEase', style: TextStyle(color: Color(0xFF587064))),
-          Text('support@rentitease.com', style: TextStyle(color: Color(0xFF587064))),
-        ],
-      );
+  Widget build(BuildContext context) {
+    final socialLinks = <(String, String)>[
+      ('Facebook', WebLandingPage._facebookPageUrl),
+      ('Instagram', WebLandingPage._instagramProfileUrl),
+      ('YouTube', WebLandingPage._youtubeChannelUrl),
+    ].where((entry) => entry.$2.startsWith('https://')).toList();
+
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      runSpacing: 12,
+      children: [
+        const Text(
+          '© 2026 RentItEase',
+          style: TextStyle(color: Color(0xFF587064)),
+        ),
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 4,
+          children: [
+            TextButton(
+              onPressed: () => launchUrl(
+                Uri.parse('https://rentitease.com/rentals/bangalore'),
+              ),
+              child: const Text('Bangalore Rentals'),
+            ),
+            ...socialLinks.map(
+              (entry) => TextButton(
+                onPressed: () => launchUrl(
+                  Uri.parse(entry.$2),
+                  webOnlyWindowName: '_blank',
+                ),
+                child: Text(entry.$1),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                'support@rentitease.com',
+                style: TextStyle(color: Color(0xFF587064)),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
 enum WebInfoPageKind { about, contact, privacy, deleteAccount }
