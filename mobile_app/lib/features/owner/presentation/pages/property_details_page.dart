@@ -6,6 +6,7 @@ import '../../../../core/network/dio_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/owner_property_model.dart';
 import '../../providers/owner_provider.dart';
+import '../../../property/presentation/widgets/property_video_tour.dart';
 import 'edit_property_page.dart';
 
 class OwnerPropertyDetailsPage extends ConsumerStatefulWidget {
@@ -231,6 +232,18 @@ class _OwnerPropertyDetailsPageState
                             : _updateAvailability,
                       ),
                     ),
+                    if (detail.videoUrl.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Video tour',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      PropertyVideoTour(videoUrl: detail.videoUrl),
+                    ],
                     if (detail.imageUrls.length > 1) ...[
                       const SizedBox(height: 16),
                       SizedBox(
