@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../features/authentication/providers/authentication_provider.dart';
 import '../features/home/presentation/widgets/bottom_navigation.dart';
+import '../core/navigation/route_persistence_service.dart';
 import '../core/network/dio_provider.dart';
 import '../l10n/app_localizations.dart';
 
@@ -26,6 +30,20 @@ class AuthenticatedShell extends ConsumerStatefulWidget {
 
 class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
   DateTime? _lastBackPress;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(RoutePersistenceService.save(widget.location));
+  }
+
+  @override
+  void didUpdateWidget(covariant AuthenticatedShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.location != widget.location) {
+      unawaited(RoutePersistenceService.save(widget.location));
+    }
+  }
 
   static const _publicPaths = {
     '/splash',
@@ -81,7 +99,13 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
         .trim()
         .toUpperCase();
 
-    if (role == 'ADMIN') return widget.child;
+    if (role == 'ADMIN') {
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) => _handleBack(role),
+        child: widget.child,
+      );
+    }
 
     return PopScope(
       canPop: false,
@@ -113,7 +137,11 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
       return;
     }
 
-    final root = role == 'OWNER' ? '/owner/dashboard' : '/home';
+    final root = switch (role) {
+      'ADMIN' => '/admin/dashboard',
+      'OWNER' => '/owner/dashboard',
+      _ => '/home',
+    };
     if (widget.location != root) {
       context.go(root);
       return;
@@ -128,7 +156,9 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
         await _showRatingPrompt(preferences);
         return;
       }
-      SystemNavigator.pop();
+      if (!kIsWeb) {
+        SystemNavigator.pop();
+      }
       return;
     }
 
