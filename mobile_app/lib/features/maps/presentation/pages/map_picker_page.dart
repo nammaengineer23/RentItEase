@@ -25,10 +25,25 @@ class _MapPickerPageState extends ConsumerState<MapPickerPage> {
   @override
   void initState() {
     super.initState();
+    Future.microtask(_loadCurrentLocation);
+  }
 
-    Future.microtask(() {
-      ref.read(mapsProvider).fetchCurrentLocation();
-    });
+  Future<void> _loadCurrentLocation() async {
+    final provider = ref.read(mapsProvider);
+    await provider.fetchCurrentLocation();
+
+    if (!mounted) return;
+
+    selectedMarker = Marker(
+      markerId: const MarkerId('selected_location'),
+      position: LatLng(provider.latitude, provider.longitude),
+    );
+
+    await _moveCamera(provider.latitude, provider.longitude);
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -38,19 +53,22 @@ class _MapPickerPageState extends ConsumerState<MapPickerPage> {
   }
 
   Future<void> _moveCamera(double lat, double lng) async {
-    if (_mapController == null) return;
+    final controller = _mapController;
+    if (controller == null) return;
 
-    await _mapController!.animateCamera(
+    await controller.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(target: LatLng(lat, lng), zoom: 17),
       ),
     );
   }
 
-  void _selectLocation(LatLng position) async {
+  Future<void> _selectLocation(LatLng position) async {
     await ref
         .read(mapsProvider)
         .updateLocationFromMap(position.latitude, position.longitude);
+
+    if (!mounted) return;
 
     setState(() {
       selectedMarker = Marker(
@@ -71,52 +89,37 @@ class _MapPickerPageState extends ConsumerState<MapPickerPage> {
         title: const Text('Select Property Location'),
         centerTitle: true,
       ),
-
       body: Stack(
         children: [
-          //------------------------------------------------
-          // Google Map
-          //------------------------------------------------
           GoogleMap(
             initialCameraPosition: CameraPosition(
               target: LatLng(provider.latitude, provider.longitude),
               zoom: provider.zoom,
             ),
-
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
-
             zoomControlsEnabled: false,
-
             compassEnabled: true,
-
             mapToolbarEnabled: false,
-
             markers: {?selectedMarker},
-
-            onMapCreated: (controller) {
+            onMapCreated: (controller) async {
               _mapController = controller;
 
               if (!_controller.isCompleted) {
                 _controller.complete(controller);
               }
-            },
 
+              if (provider.selectedLocation != null) {
+                await _moveCamera(provider.latitude, provider.longitude);
+              }
+            },
             onTap: _selectLocation,
           ),
-
-          //------------------------------------------------
-          // Current Location Button
-          //------------------------------------------------
           Positioned(
             right: 16,
             bottom: 170,
             child: CurrentLocationButton(mapController: _mapController),
           ),
-
-          //------------------------------------------------
-          // Selected Address Card
-          //------------------------------------------------
           if (provider.selectedLocation != null)
             Positioned(
               left: 16,
@@ -140,16 +143,12 @@ class _MapPickerPageState extends ConsumerState<MapPickerPage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-
                       const SizedBox(height: 10),
-
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Icon(Icons.location_on, color: Colors.red),
-
                           const SizedBox(width: 8),
-
                           Expanded(
                             child: Text(
                               provider.selectedLocation!.address,
@@ -158,17 +157,13 @@ class _MapPickerPageState extends ConsumerState<MapPickerPage> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 8),
-
                       Text(
                         '${provider.selectedLocation!.city}, '
                         '${provider.selectedLocation!.state}',
                         style: TextStyle(color: Colors.grey.shade700),
                       ),
-
                       const SizedBox(height: 20),
-
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -187,14 +182,33 @@ class _MapPickerPageState extends ConsumerState<MapPickerPage> {
                 ),
               ),
             ),
-
-          //------------------------------------------------
-          // Loading Overlay
-          //------------------------------------------------
-          if (provider.isLoading)
-            Container(
-              color: Colors.black26,
-              child: const Center(child: CircularProgressIndicator()),
+          if (provider.isLoading && provider.selectedLocation == null)
+            const Positioned(
+              top: 16,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Card(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 10),
+                        Text('Finding your location...'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
         ],
       ),
