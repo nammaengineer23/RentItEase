@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,6 +10,7 @@ import '../../../maps/models/location_model.dart';
 import '../../../maps/presentation/pages/map_picker_page.dart';
 import '../../../maps/providers/maps_provider.dart';
 import '../../data/api/property_image_api.dart';
+import '../../data/api/property_video_api.dart';
 import '../../data/models/owner_property_model.dart';
 import '../../providers/owner_provider.dart';
 import '../widgets/sectioned_property_image_picker.dart';
@@ -50,6 +52,8 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
 
   bool loading = false;
   bool imagesLoading = true;
+  bool videoLoading = false;
+  late String videoUrl;
   LocationModel? selectedLocation;
   Map<String, List<File>> newImagesBySection = const {};
   Map<String, List<PropertyImageRecord>> existingImagesBySection = const {};
@@ -89,6 +93,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     petFriendly = property.petFriendly;
     isAvailable = property.isAvailable;
     dailyRentEnabled = property.dailyRentEnabled;
+    videoUrl = property.videoUrl;
 
     if (property.latitude != null && property.longitude != null) {
       selectedLocation = LocationModel(
@@ -189,6 +194,58 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
       MaterialPageRoute(builder: (_) => const MapPickerPage()),
     );
     if (location != null && mounted) _applyLocation(location);
+  }
+
+  Future<void> _pickAndUploadVideo() async {
+    final video = await FilePicker.pickFile(
+      type: FileType.custom,
+      allowedExtensions: const ['mp4', 'mov', 'm4v'],
+    );
+    if (video == null || !mounted) return;
+
+    final size = await video.length();
+    if (size > 100 * 1024 * 1024) {
+      _showError('The property video must not exceed 100 MB.');
+      return;
+    }
+
+    setState(() => videoLoading = true);
+    try {
+      final url = await PropertyVideoApi(
+        ref.read(dioProvider),
+      ).uploadVideo(propertyId: widget.property.id, video: video);
+      if (!mounted) return;
+      setState(() => videoUrl = url);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Property video uploaded successfully.')),
+      );
+    } catch (_) {
+      if (mounted) {
+        _showError(
+          'Video upload failed. Use an MP4, MOV or M4V up to 60 seconds and 100 MB.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => videoLoading = false);
+    }
+  }
+
+  Future<void> _deleteVideo() async {
+    setState(() => videoLoading = true);
+    try {
+      await PropertyVideoApi(
+        ref.read(dioProvider),
+      ).deleteVideo(widget.property.id);
+      if (!mounted) return;
+      setState(() => videoUrl = '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Property video deleted.')),
+      );
+    } catch (_) {
+      if (mounted) _showError('Could not delete the property video.');
+    } finally {
+      if (mounted) setState(() => videoLoading = false);
+    }
   }
 
   Future<void> _deleteExistingImage(PropertyImageRecord image) async {
@@ -575,6 +632,53 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
               onChanged: loading
                   ? null
                   : (value) => setState(() => isAvailable = value),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Video tour',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 6),
+            const Text('One MP4, MOV or M4V video • up to 60 seconds • 100 MB'),
+            const SizedBox(height: 10),
+            Card(
+              child: ListTile(
+                leading: videoLoading
+                    ? const SizedBox.square(
+                        dimension: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        videoUrl.isEmpty
+                            ? Icons.video_call_outlined
+                            : Icons.check_circle_outline,
+                      ),
+                title: Text(
+                  videoUrl.isEmpty
+                      ? 'No video tour uploaded'
+                      : 'Video tour ready',
+                ),
+                subtitle: Text(
+                  videoUrl.isEmpty
+                      ? 'Add a short walkthrough for tenants.'
+                      : 'Upload another video to replace the current one.',
+                ),
+                trailing: videoUrl.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Delete video',
+                        onPressed: videoLoading ? null : _deleteVideo,
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                onTap: videoLoading ? null : _pickAndUploadVideo,
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: videoLoading ? null : _pickAndUploadVideo,
+              icon: const Icon(Icons.upload_file),
+              label: Text(
+                videoUrl.isEmpty ? 'Upload video tour' : 'Replace video tour',
+              ),
             ),
             const SizedBox(height: 24),
             Text(

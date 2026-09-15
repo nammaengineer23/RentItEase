@@ -28,6 +28,7 @@ class PropertyModel {
     this.totalReviews = 0,
     required this.views,
     required this.imageUrls,
+    this.videoUrl = '',
     required this.ownerId,
     required this.ownerName,
     required this.ownerPhone,
@@ -61,6 +62,7 @@ class PropertyModel {
   final int totalReviews;
   final int views;
   final List<String> imageUrls;
+  final String videoUrl;
   final String ownerId;
   final String ownerName;
   final String ownerPhone;
@@ -110,6 +112,7 @@ class PropertyModel {
       totalReviews: _int(json['totalReviews']),
       views: _int(json['views'] ?? json['totalViews'] ?? json['viewCount']),
       imageUrls: imageUrls,
+      videoUrl: AppImageUrl.resolve(json['videoUrl']),
       ownerId: (json['ownerId'] ?? owner['id'])?.toString() ?? '',
       ownerName: (json['ownerName'] ?? owner['fullName'])?.toString() ?? '',
       ownerPhone: (json['ownerPhone'] ?? owner['phone'])?.toString() ?? '',
@@ -168,6 +171,7 @@ class PropertyModel {
       'totalReviews': totalReviews,
       'views': views,
       'imageUrls': imageUrls,
+      'videoUrl': videoUrl,
       'ownerId': ownerId,
       'ownerName': ownerName,
       'ownerPhone': ownerPhone,
@@ -204,6 +208,7 @@ class PropertyModel {
     int? totalReviews,
     int? views,
     List<String>? imageUrls,
+    String? videoUrl,
     String? ownerId,
     String? ownerName,
     String? ownerPhone,
@@ -237,6 +242,7 @@ class PropertyModel {
       totalReviews: totalReviews ?? this.totalReviews,
       views: views ?? this.views,
       imageUrls: imageUrls ?? this.imageUrls,
+      videoUrl: videoUrl ?? this.videoUrl,
       ownerId: ownerId ?? this.ownerId,
       ownerName: ownerName ?? this.ownerName,
       ownerPhone: ownerPhone ?? this.ownerPhone,
@@ -273,6 +279,7 @@ class PropertyModel {
       totalReviews: totalReviews,
       views: views,
       imageUrls: imageUrls,
+      videoUrl: videoUrl,
       ownerId: ownerId,
       ownerName: ownerName,
       ownerPhone: ownerPhone,
@@ -309,6 +316,7 @@ class PropertyModel {
       totalReviews: entity.totalReviews,
       views: entity.views,
       imageUrls: entity.imageUrls,
+      videoUrl: entity.videoUrl,
       ownerId: entity.ownerId,
       ownerName: entity.ownerName,
       ownerPhone: entity.ownerPhone,

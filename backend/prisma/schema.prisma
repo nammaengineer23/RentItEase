@@ -129,6 +129,8 @@ model Property {
   longitude              Decimal?                @db.Decimal(9, 6)
   displayOrder           Int                     @default(0)
   viewCount              Int                     @default(0)
+  videoUrl               String?
+  videoPublicId          String?
   bookings               Booking[]
   conversations          Conversation[]
   favorites              Favorite[]

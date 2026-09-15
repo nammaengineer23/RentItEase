@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../common/app_exception.dart';
 import '../../../core/config/auth_features.dart';
+import '../../../core/navigation/route_persistence_service.dart';
 import '../data/models/auth_response.dart';
 import '../data/models/login_request.dart';
 import '../data/models/register_request.dart';
@@ -37,6 +38,7 @@ class AuthenticationProvider extends ChangeNotifier {
   AuthResponse? _authResponse;
   bool _googleSignInInitialized = false;
   bool _sessionRestored = false;
+  Future<void>? _sessionRestoreFuture;
   String? _pendingGoogleIdToken;
 
   bool get isLoading => _isLoading;
@@ -414,12 +416,17 @@ class AuthenticationProvider extends ChangeNotifier {
       // even when the backend request fails.
       _authResponse = null;
       _isLoading = false;
+      await RoutePersistenceService.clear();
 
       notifyListeners();
     }
   }
 
-  Future<void> loadSavedSession() async {
+  Future<void> loadSavedSession() {
+    return _sessionRestoreFuture ??= _restoreSavedSession();
+  }
+
+  Future<void> _restoreSavedSession() async {
     try {
       _authResponse = await _repository.restoreSession();
       if (_authResponse != null) {
