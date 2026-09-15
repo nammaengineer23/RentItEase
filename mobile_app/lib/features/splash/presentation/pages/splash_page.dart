@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/navigation/route_persistence_service.dart';
 import '../../../onboarding/services/onboarding_service.dart';
 import '../../../authentication/providers/authentication_provider.dart';
 
@@ -23,8 +24,6 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   }
 
   Future<void> _initialize() async {
-    await Future.delayed(const Duration(seconds: 2));
-
     final completed = await _onboardingService.isOnboardingCompleted();
 
     if (!mounted) return;
@@ -34,11 +33,12 @@ class _SplashPageState extends ConsumerState<SplashPage> {
       return;
     }
 
-    await ref.read(authenticationProvider).loadSavedSession();
+    final auth = ref.read(authenticationProvider);
+    if (!auth.isSessionRestored) {
+      await auth.loadSavedSession();
+    }
 
     if (!mounted) return;
-
-    final auth = ref.read(authenticationProvider);
 
     if (!auth.isLoggedIn) {
       context.go('/auth');
@@ -46,6 +46,13 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     }
 
     final role = auth.authResponse?.user.role.trim().toUpperCase();
+    final previousRoute = await RoutePersistenceService.loadForRole(role);
+    if (!mounted) return;
+    if (previousRoute != null) {
+      context.go(previousRoute);
+      return;
+    }
+
     switch (role) {
       case 'ADMIN':
         context.go('/admin/dashboard');
