@@ -255,7 +255,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                       onChanged: _ownerRequestSubmitted || _submittingOwnerRequest
                           ? null
                           : (value) {
-                              if (value) void _requestOwnerAccess();
+                              if (value) {
+                                _requestOwnerAccess();
+                              }
                             },
                     ),
                   ),
