@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
@@ -29,20 +30,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _useOtp = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final provider = ref.read(authenticationProvider);
-      await provider.loadRememberMePreference();
-      if (!mounted) return;
-      final rememberedEmail = provider.rememberedEmail;
-      if (rememberedEmail != null && rememberedEmail.isNotEmpty) {
-        _emailController.text = rememberedEmail;
-      }
-    });
-  }
+  bool _rememberedEmailApplied = false;
 
   @override
   void dispose() {
@@ -211,6 +199,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     final provider = ref.watch(authenticationProvider);
 
+    if (!_rememberedEmailApplied && provider.rememberPreferenceLoaded) {
+      _rememberedEmailApplied = true;
+      final email = provider.rememberedEmail;
+      if (email != null && email.isNotEmpty && _emailController.text.isEmpty) {
+        _emailController.text = email;
+        _emailController.selection = TextSelection.collapsed(
+          offset: email.length,
+        );
+      }
+    }
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -221,38 +220,34 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               child: Column(
                 children: [
                   const SizedBox(height: 12),
-
                   AuthHeader(
                     title: context.tr('welcomeBack'),
                     subtitle: context.tr('loginSubtitle'),
                   ),
-
                   const SizedBox(height: 12),
-
-                  if (enablePhoneOtp) SegmentedButton<bool>(
-                    segments: [
-                      ButtonSegment(
-                        value: false,
-                        icon: const Icon(Icons.password),
-                        label: Text(context.tr('password')),
-                      ),
-                      ButtonSegment(
-                        value: true,
-                        icon: const Icon(Icons.sms_outlined),
-                        label: Text(context.tr('otp')),
-                      ),
-                    ],
-                    selected: {_useOtp},
-                    onSelectionChanged: (selection) {
-                      setState(() {
-                        _useOtp = selection.first;
-                        _emailController.clear();
-                      });
-                    },
-                  ),
-
+                  if (enablePhoneOtp)
+                    SegmentedButton<bool>(
+                      segments: [
+                        ButtonSegment(
+                          value: false,
+                          icon: const Icon(Icons.password),
+                          label: Text(context.tr('password')),
+                        ),
+                        ButtonSegment(
+                          value: true,
+                          icon: const Icon(Icons.sms_outlined),
+                          label: Text(context.tr('otp')),
+                        ),
+                      ],
+                      selected: {_useOtp},
+                      onSelectionChanged: (selection) {
+                        setState(() {
+                          _useOtp = selection.first;
+                          _emailController.clear();
+                        });
+                      },
+                    ),
                   const SizedBox(height: 12),
-
                   CustomTextField(
                     controller: _emailController,
                     hintText: _useOtp
@@ -281,7 +276,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       return null;
                     },
                   ),
-
                   if (!_useOtp) ...[
                     const SizedBox(height: 10),
                     CustomTextField(
@@ -316,25 +310,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       onForgotPassword: () => context.push('/forgot-password'),
                     ),
                   ],
-
                   const SizedBox(height: 12),
-
                   CustomButton(
                     text: _useOtp ? context.tr('sendOtp') : context.tr('login'),
                     isLoading: provider.isLoading,
                     onPressed: _login,
                   ),
-
                   const SizedBox(height: 12),
-
                   if (enableGoogleSignIn)
                     SocialLoginButton(
                       isLoading: provider.isLoading,
                       onPressed: _googleLogin,
                     ),
-
                   const SizedBox(height: 16),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
