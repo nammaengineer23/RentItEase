@@ -36,7 +36,12 @@ export class SocialMediaActivityController {
   async cancel(@Param('postId') postId: string, @Req() req: any) {
     const post = await this.prisma.socialMediaPost.findUnique({ where: { id: postId } });
     if (!post) throw new BadRequestException('Social post not found.');
-    if (![SocialPostStatus.PENDING, SocialPostStatus.READY, SocialPostStatus.FAILED].includes(post.status)) {
+    const cancellableStatuses: SocialPostStatus[] = [
+      SocialPostStatus.PENDING,
+      SocialPostStatus.READY,
+      SocialPostStatus.FAILED,
+    ];
+    if (!cancellableStatuses.includes(post.status)) {
       throw new BadRequestException(`A ${post.status.toLowerCase()} post cannot be cancelled.`);
     }
     const updated = await this.prisma.socialMediaPost.update({
