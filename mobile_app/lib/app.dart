@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app_router.dart';
 import 'app/app_theme.dart';
+import 'core/navigation/route_persistence_service.dart';
 import 'core/ui/app_scroll_behavior.dart';
 import 'features/authentication/providers/authentication_provider.dart';
 import 'features/settings/providers/settings_provider.dart';
@@ -23,9 +25,25 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    Future.microtask(
-      () => ref.read(authenticationProvider).loadSavedSession(),
-    );
+    Future.microtask(_restoreSessionAndRoute);
+  }
+
+  Future<void> _restoreSessionAndRoute() async {
+    final auth = ref.read(authenticationProvider);
+    await auth.loadSavedSession();
+
+    if (!mounted || !kIsWeb || !auth.isLoggedIn) return;
+
+    final startupPath = Uri.base.path.replaceFirst(RegExp(r'/$'), '');
+    if (startupPath.isNotEmpty) return;
+
+    final role = auth.authResponse?.user.role.trim().toUpperCase();
+    final previousRoute = await RoutePersistenceService.loadForRole(role);
+    if (!mounted || previousRoute == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) AppRouter.router.go(previousRoute);
+    });
   }
 
   @override

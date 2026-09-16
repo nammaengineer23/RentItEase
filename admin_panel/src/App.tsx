@@ -10,16 +10,15 @@ import { VisitsPage } from "./pages/VisitsPage";
 import { AdminLayout } from "./layouts/AdminLayout";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { BillingPage } from "./pages/BillingPage";
+import { PremiumManagementPage } from "./pages/PremiumManagementPage";
 import { SocialMediaPage } from "./pages/SocialMediaPage";
 import { OwnerRequestsPage } from "./pages/OwnerRequestsPage";
-
 
 export default function App() {
   return (
     <AdminAuthProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-
         <Route element={<ProtectedRoute />}>
           <Route element={<AdminLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
@@ -30,11 +29,10 @@ export default function App() {
             <Route path="/visits" element={<VisitsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/billing" element={<BillingPage />} />
+            <Route path="/premium-memberships" element={<PremiumManagementPage />} />
             <Route path="/social-media" element={<SocialMediaPage />} />
-            
           </Route>
         </Route>
-
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </AdminAuthProvider>

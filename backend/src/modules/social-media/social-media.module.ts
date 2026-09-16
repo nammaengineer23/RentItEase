@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { SocialMediaController } from './social-media.controller';
+import { SocialMediaActivityController } from './social-media-activity.controller';
 import { OwnerSocialMediaController } from './owner-social-media.controller';
 import { SocialMediaService } from './social-media.service';
 import { FacebookService } from './publishing/facebook.service';
@@ -16,7 +17,7 @@ import { CampaignSchedulerService } from './campaigns/campaign-scheduler.service
 
 @Module({
   imports: [PrismaModule],
-  controllers: [SocialMediaController, OwnerSocialMediaController],
+  controllers: [SocialMediaController, SocialMediaActivityController, OwnerSocialMediaController],
   providers: [
     SocialMediaService,
     SocialMediaProcessor,

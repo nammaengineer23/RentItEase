@@ -25,6 +25,7 @@ class PropertyEntity {
     this.totalReviews = 0,
     required this.views,
     required this.imageUrls,
+    this.videoUrl = '',
     required this.ownerId,
     required this.ownerName,
     required this.ownerPhone,
@@ -58,6 +59,7 @@ class PropertyEntity {
   final int totalReviews;
   final int views;
   final List<String> imageUrls;
+  final String videoUrl;
   final String ownerId;
   final String ownerName;
   final String ownerPhone;

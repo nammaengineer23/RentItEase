@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
@@ -29,6 +30,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _useOtp = false;
+  bool _rememberedEmailApplied = false;
 
   @override
   void dispose() {
@@ -53,6 +55,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     if (!mounted) return;
     if (success) {
+      TextInput.finishAutofillContext(shouldSave: true);
       _openAuthenticatedHome(provider);
       return;
     }
@@ -196,133 +199,142 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     final provider = ref.watch(authenticationProvider);
 
+    if (!_rememberedEmailApplied && provider.rememberPreferenceLoaded) {
+      _rememberedEmailApplied = true;
+      final email = provider.rememberedEmail;
+      if (email != null && email.isNotEmpty && _emailController.text.isEmpty) {
+        _emailController.text = email;
+        _emailController.selection = TextSelection.collapsed(
+          offset: email.length,
+        );
+      }
+    }
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Form(
             key: _formKey,
-            child: Column(
-              children: [
-                const SizedBox(height: 12),
-
-                AuthHeader(
-                  title: context.tr('welcomeBack'),
-                  subtitle: context.tr('loginSubtitle'),
-                ),
-
-                const SizedBox(height: 12),
-
-                if (enablePhoneOtp) SegmentedButton<bool>(
-                  segments: [
-                    ButtonSegment(
-                      value: false,
-                      icon: const Icon(Icons.password),
-                      label: Text(context.tr('password')),
-                    ),
-                    ButtonSegment(
-                      value: true,
-                      icon: const Icon(Icons.sms_outlined),
-                      label: Text(context.tr('otp')),
-                    ),
-                  ],
-                  selected: {_useOtp},
-                  onSelectionChanged: (selection) {
-                    setState(() {
-                      _useOtp = selection.first;
-                      _emailController.clear();
-                    });
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
-                CustomTextField(
-                  controller: _emailController,
-                  hintText: _useOtp
-                      ? '10-digit mobile number'
-                      : context.tr('emailOrMobile'),
-                  prefixIcon: _useOtp
-                      ? Icons.phone_outlined
-                      : Icons.email_outlined,
-                  keyboardType: _useOtp
-                      ? TextInputType.phone
-                      : TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return _useOtp
-                          ? 'Enter your 10-digit mobile number.'
-                          : context.tr('enterEmail');
-                    }
-                    if (_useOtp &&
-                        !RegExp(r'^\d{10}$').hasMatch(value.trim())) {
-                      return 'Enter a valid 10-digit mobile number.';
-                    }
-                    return null;
-                  },
-                ),
-
-                if (!_useOtp) ...[
-                  const SizedBox(height: 10),
-                  CustomTextField(
-                    controller: _passwordController,
-                    hintText: context.tr('password'),
-                    prefixIcon: Icons.lock_outline,
-                    obscureText: provider.obscurePassword,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        provider.obscurePassword
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
-                      onPressed: () {
-                        ref
-                            .read(authenticationProvider)
-                            .togglePasswordVisibility();
+            child: AutofillGroup(
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  AuthHeader(
+                    title: context.tr('welcomeBack'),
+                    subtitle: context.tr('loginSubtitle'),
+                  ),
+                  const SizedBox(height: 12),
+                  if (enablePhoneOtp)
+                    SegmentedButton<bool>(
+                      segments: [
+                        ButtonSegment(
+                          value: false,
+                          icon: const Icon(Icons.password),
+                          label: Text(context.tr('password')),
+                        ),
+                        ButtonSegment(
+                          value: true,
+                          icon: const Icon(Icons.sms_outlined),
+                          label: Text(context.tr('otp')),
+                        ),
+                      ],
+                      selected: {_useOtp},
+                      onSelectionChanged: (selection) {
+                        setState(() {
+                          _useOtp = selection.first;
+                          _emailController.clear();
+                        });
                       },
                     ),
+                  const SizedBox(height: 12),
+                  CustomTextField(
+                    controller: _emailController,
+                    hintText: _useOtp
+                        ? '10-digit mobile number'
+                        : context.tr('emailOrMobile'),
+                    prefixIcon: _useOtp
+                        ? Icons.phone_outlined
+                        : Icons.email_outlined,
+                    keyboardType: _useOtp
+                        ? TextInputType.phone
+                        : TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: _useOtp
+                        ? const [AutofillHints.telephoneNumber]
+                        : const [AutofillHints.username, AutofillHints.email],
                     validator: (value) {
-                      if (!_useOtp && (value == null || value.isEmpty)) {
-                        return context.tr('enterPassword');
+                      if (value == null || value.isEmpty) {
+                        return _useOtp
+                            ? 'Enter your 10-digit mobile number.'
+                            : context.tr('enterEmail');
+                      }
+                      if (_useOtp &&
+                          !RegExp(r'^\d{10}$').hasMatch(value.trim())) {
+                        return 'Enter a valid 10-digit mobile number.';
                       }
                       return null;
                     },
                   ),
-                  const SizedBox(height: 6),
-                  RememberMe(
-                    onForgotPassword: () => context.push('/forgot-password'),
-                  ),
-                ],
-
-                const SizedBox(height: 12),
-
-                CustomButton(
-                  text: _useOtp ? context.tr('sendOtp') : context.tr('login'),
-                  isLoading: provider.isLoading,
-                  onPressed: _login,
-                ),
-
-                const SizedBox(height: 12),
-
-                if (enableGoogleSignIn)
-                  SocialLoginButton(
-                    isLoading: provider.isLoading,
-                    onPressed: _googleLogin,
-                  ),
-
-                const SizedBox(height: 16),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(context.tr('noAccount')),
-                    TextButton(
-                      onPressed: widget.onRegister,
-                      child: Text(context.tr('signUp')),
+                  if (!_useOtp) ...[
+                    const SizedBox(height: 10),
+                    CustomTextField(
+                      controller: _passwordController,
+                      hintText: context.tr('password'),
+                      prefixIcon: Icons.lock_outline,
+                      obscureText: provider.obscurePassword,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const [AutofillHints.password],
+                      onFieldSubmitted: (_) => _login(),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          provider.obscurePassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          ref
+                              .read(authenticationProvider)
+                              .togglePasswordVisibility();
+                        },
+                      ),
+                      validator: (value) {
+                        if (!_useOtp && (value == null || value.isEmpty)) {
+                          return context.tr('enterPassword');
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 6),
+                    RememberMe(
+                      onForgotPassword: () => context.push('/forgot-password'),
                     ),
                   ],
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  CustomButton(
+                    text: _useOtp ? context.tr('sendOtp') : context.tr('login'),
+                    isLoading: provider.isLoading,
+                    onPressed: _login,
+                  ),
+                  const SizedBox(height: 12),
+                  if (enableGoogleSignIn)
+                    SocialLoginButton(
+                      isLoading: provider.isLoading,
+                      onPressed: _googleLogin,
+                    ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(context.tr('noAccount')),
+                      TextButton(
+                        onPressed: widget.onRegister,
+                        child: Text(context.tr('signUp')),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

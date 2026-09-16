@@ -136,6 +136,135 @@ export class PropertyImagesService {
   }
 
   // =====================================
+  // Property Video Tour
+  // =====================================
+
+  async uploadVideo(
+    propertyId: string,
+    file: Express.Multer.File,
+    user: any,
+  ) {
+    const property = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found.');
+    }
+
+    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException(
+        'You are not allowed to update this property video.',
+      );
+    }
+
+    if (!file) {
+      throw new BadRequestException('No video uploaded.');
+    }
+
+    const allowedMimeTypes = [
+      'video/mp4',
+      'video/quicktime',
+      'video/x-m4v',
+    ];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Only MP4, MOV and M4V videos are allowed.',
+      );
+    }
+
+    if (file.size > 100 * 1024 * 1024) {
+      throw new BadRequestException(
+        'The property video must not exceed 100 MB.',
+      );
+    }
+
+    const durationSeconds = this.readMp4DurationSeconds(file.buffer);
+    if (durationSeconds == null) {
+      throw new BadRequestException(
+        'Could not read the video duration. Use a standard MP4, MOV or M4V file.',
+      );
+    }
+    if (durationSeconds > 60) {
+      throw new BadRequestException(
+        'The property video must not exceed 60 seconds.',
+      );
+    }
+
+    const uploaded = await this.storageService.uploadImage(
+      file,
+      'property-videos',
+    );
+
+    let updated;
+    try {
+      updated = await this.prisma.property.update({
+        where: { id: propertyId },
+        data: {
+          videoUrl: uploaded.imageUrl,
+          videoPublicId: uploaded.publicId,
+        },
+        select: {
+          id: true,
+          videoUrl: true,
+        },
+      });
+    } catch (error) {
+      await this.storageService.deleteImage(uploaded.publicId).catch(() => {
+        // Preserve the original database error.
+      });
+      throw error;
+    }
+
+    if (property.videoPublicId) {
+      await this.storageService.deleteImage(property.videoPublicId).catch(() => {
+        // The new video is already active; stale-object cleanup can be retried.
+      });
+    }
+
+    return {
+      success: true,
+      message: property.videoUrl
+        ? 'Property video replaced successfully.'
+        : 'Property video uploaded successfully.',
+      data: updated,
+    };
+  }
+
+  async deleteVideo(propertyId: string, user: any) {
+    const property = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found.');
+    }
+
+    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException(
+        'You are not allowed to delete this property video.',
+      );
+    }
+
+    await this.prisma.property.update({
+      where: { id: propertyId },
+      data: {
+        videoUrl: null,
+        videoPublicId: null,
+      },
+    });
+
+    if (property.videoPublicId) {
+      await this.storageService.deleteImage(property.videoPublicId);
+    }
+
+    return {
+      success: true,
+      message: 'Property video deleted successfully.',
+    };
+  }
+
+  // =====================================
   // Get Images
   // =====================================
 
@@ -355,4 +484,31 @@ export class PropertyImagesService {
       message: 'Image deleted successfully.',
     };
   }
+  private readMp4DurationSeconds(buffer: Buffer): number | null {
+    const marker = Buffer.from('mvhd');
+    const markerOffset = buffer.indexOf(marker);
+    if (markerOffset < 0 || markerOffset + 36 > buffer.length) {
+      return null;
+    }
+
+    const version = buffer.readUInt8(markerOffset + 4);
+    const timescaleOffset = markerOffset + (version === 1 ? 24 : 16);
+    const durationOffset = markerOffset + (version === 1 ? 28 : 20);
+
+    if (durationOffset + (version === 1 ? 8 : 4) > buffer.length) {
+      return null;
+    }
+
+    const timescale = buffer.readUInt32BE(timescaleOffset);
+    if (timescale === 0) return null;
+
+    const duration =
+      version === 1
+        ? Number(buffer.readBigUInt64BE(durationOffset))
+        : buffer.readUInt32BE(durationOffset);
+
+    if (!Number.isFinite(duration) || duration <= 0) return null;
+    return duration / timescale;
+  }
+
 }
