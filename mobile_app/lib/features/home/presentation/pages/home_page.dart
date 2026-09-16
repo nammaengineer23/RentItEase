@@ -4,12 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
+import '../../../../core/network/dio_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../notifications/providers/notifications_provider.dart';
 import '../../../authentication/providers/authentication_provider.dart';
 import '../../../property/domain/entities/property_entity.dart';
 import '../../../property/providers/property_provider.dart';
-
 import '../../../property/presentation/widgets/property_card.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -23,6 +23,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   List<PropertyEntity>? _nearbyProperties;
   String _nearbyCity = '';
   Position? _currentPosition;
+  bool _ownerRequestSubmitted = false;
+  bool _submittingOwnerRequest = false;
 
   @override
   void initState() {
@@ -30,7 +32,6 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     Future.microtask(() {
       ref.read(notificationsProvider.notifier).loadNotifications();
-
       ref.read(propertyProvider.notifier).loadProperties();
       _loadNearbyProperties();
     });
@@ -63,7 +64,9 @@ class _HomePageState extends ConsumerState<HomePage> {
         );
         city = placemarks.isEmpty
             ? ''
-            : (placemarks.first.locality ?? placemarks.first.subAdministrativeArea ?? '');
+            : (placemarks.first.locality ??
+                placemarks.first.subAdministrativeArea ??
+                '');
       } catch (_) {
         // Nearby results are still useful when reverse geocoding is unavailable.
       }
@@ -79,16 +82,59 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
   }
 
+  Future<void> _requestOwnerAccess() async {
+    if (_ownerRequestSubmitted || _submittingOwnerRequest) return;
+
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Become an Owner'),
+            content: const Text(
+              'Send a request to the RentItEase admin team? You can list and manage properties after the request is approved.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Send request'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed || !mounted) return;
+
+    setState(() => _submittingOwnerRequest = true);
+    try {
+      await ref.read(dioProvider).patch('/users/request-owner');
+      if (!mounted) return;
+      setState(() => _ownerRequestSubmitted = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Owner request sent. Pending admin approval.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to submit request: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _submittingOwnerRequest = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final propertyState = ref.watch(propertyProvider);
-
     final notificationState = ref.watch(notificationsProvider);
-    final currentUserId = ref
-        .watch(authenticationProvider)
-        .authResponse
-        ?.user
-        .id;
+    final authState = ref.watch(authenticationProvider);
+    final currentUserId = authState.authResponse?.user.id;
+    final currentRole = authState.authResponse?.user.role.trim().toUpperCase();
 
     return Scaffold(
       appBar: AppBar(
@@ -191,38 +237,63 @@ class _HomePageState extends ConsumerState<HomePage> {
               ? available
               : [...nearby, ...cityProperties, ...remaining];
 
-          if (visibleFeed.isEmpty) {
-            return Center(child: Text(context.tr('noNearbyProperties')));
-          }
-
-          return PageView.builder(
-            scrollDirection: Axis.vertical,
-            itemCount: visibleFeed.length,
-            itemBuilder: (context, index) {
-              final property = visibleFeed[index];
-              return SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: PropertyCard(
-                  property: property,
-                  onTap: () => _openProperty(property),
-                  onBookVisit: property.ownerId == currentUserId
-                      ? null
-                      : () => context.push(
-                          '/book-visit/${property.id}',
-                          extra: {
-                            'propertyTitle': property.title,
-                            'propertyImage': property.imageUrls.isNotEmpty
-                                ? property.imageUrls.first
-                                : '',
-                            'ownerName': property.ownerName,
-                          },
-                        ),
-                  onContactOwner: property.ownerId == currentUserId
-                      ? null
-                      : () => _openPropertyChat(property),
+          return Column(
+            children: [
+              if (currentRole == 'USER')
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                  child: Card(
+                    child: SwitchListTile.adaptive(
+                      secondary: const Icon(Icons.storefront_outlined),
+                      title: const Text('Become an Owner'),
+                      subtitle: Text(
+                        _ownerRequestSubmitted
+                            ? 'Owner request pending admin approval'
+                            : 'List and manage your rental properties',
+                      ),
+                      value: _ownerRequestSubmitted,
+                      onChanged: _ownerRequestSubmitted || _submittingOwnerRequest
+                          ? null
+                          : (value) {
+                              if (value) void _requestOwnerAccess();
+                            },
+                    ),
+                  ),
                 ),
-              );
-            },
+              Expanded(
+                child: visibleFeed.isEmpty
+                    ? Center(child: Text(context.tr('noNearbyProperties')))
+                    : PageView.builder(
+                        scrollDirection: Axis.vertical,
+                        itemCount: visibleFeed.length,
+                        itemBuilder: (context, index) {
+                          final property = visibleFeed[index];
+                          return SingleChildScrollView(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: PropertyCard(
+                              property: property,
+                              onTap: () => _openProperty(property),
+                              onBookVisit: property.ownerId == currentUserId
+                                  ? null
+                                  : () => context.push(
+                                        '/book-visit/${property.id}',
+                                        extra: {
+                                          'propertyTitle': property.title,
+                                          'propertyImage': property.imageUrls.isNotEmpty
+                                              ? property.imageUrls.first
+                                              : '',
+                                          'ownerName': property.ownerName,
+                                        },
+                                      ),
+                              onContactOwner: property.ownerId == currentUserId
+                                  ? null
+                                  : () => _openPropertyChat(property),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
           );
         },
       ),
