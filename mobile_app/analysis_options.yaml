@@ -4,3 +4,4 @@ linter:
   rules:
     avoid_print: false
     prefer_const_constructors: true
+    curly_braces_in_flow_control_structures: false
