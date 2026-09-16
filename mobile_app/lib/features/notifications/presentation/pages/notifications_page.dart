@@ -16,14 +16,12 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   void initState() {
     super.initState();
 
+    // Always refresh when the bell page opens. Previously this only fetched
+    // when the in-memory list was empty, so notifications created after the
+    // first load could remain invisible until a manual pull-to-refresh.
     Future.microtask(() {
       if (!mounted) return;
-
-      final state = ref.read(notificationsProvider);
-
-      if (!state.isLoading && state.notifications.isEmpty) {
-        ref.read(notificationsProvider.notifier).loadNotifications();
-      }
+      ref.read(notificationsProvider.notifier).loadNotifications();
     });
   }
 
