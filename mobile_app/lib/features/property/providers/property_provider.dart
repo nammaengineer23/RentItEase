@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/cache/property_cache.dart';
 import '../data/repositories/property_repository_impl.dart';
 import '../domain/entities/property_entity.dart';
 
@@ -7,26 +8,42 @@ final propertyRepositoryProvider = Provider<PropertyRepositoryImpl>(
   (ref) => PropertyRepositoryImpl(),
 );
 
+final propertyCacheProvider = Provider<PropertyCache>((ref) => PropertyCache());
+
 class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
-  PropertyNotifier(this._repository) : super(const AsyncLoading()) {
+  PropertyNotifier(this._repository, this._cache) : super(const AsyncLoading()) {
     loadProperties();
   }
 
   final PropertyRepositoryImpl _repository;
+  final PropertyCache _cache;
+  bool _hasUsableData = false;
 
   //==========================================================
-  // Load All Properties
+  // Load All Properties - cache first, API refresh second
   //==========================================================
 
-  Future<void> loadProperties() async {
+  Future<void> loadProperties({bool showLoading = true}) async {
+    if (!_hasUsableData) {
+      final cached = await _cache.readProperties();
+      if (cached.isNotEmpty) {
+        _hasUsableData = true;
+        state = AsyncData(cached);
+      } else if (showLoading) {
+        state = const AsyncLoading();
+      }
+    }
+
     try {
-      state = const AsyncLoading();
-
       final properties = await _repository.getProperties();
-
+      _hasUsableData = true;
       state = AsyncData(properties);
+      await _cache.writeProperties(properties);
     } catch (error, stackTrace) {
-      state = AsyncError(error, stackTrace);
+      // Cached/current data remains usable when a background refresh fails.
+      if (!_hasUsableData) {
+        state = AsyncError(error, stackTrace);
+      }
     }
   }
 
@@ -35,7 +52,7 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
   //==========================================================
 
   Future<void> refresh() async {
-    await loadProperties();
+    await loadProperties(showLoading: false);
   }
 
   //==========================================================
@@ -48,10 +65,13 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
 
   void updateCachedProperty(PropertyEntity property) {
     state.whenData((properties) {
-      state = AsyncData([
+      final updated = [
         for (final item in properties)
           if (item.id == property.id) property else item,
-      ]);
+      ];
+      _hasUsableData = true;
+      state = AsyncData(updated);
+      _cache.writeProperties(updated);
     });
   }
 
@@ -139,8 +159,7 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
 
   Future<void> addProperty(Map<String, dynamic> data) async {
     await _repository.createProperty(data);
-
-    await loadProperties();
+    await loadProperties(showLoading: false);
   }
 
   //==========================================================
@@ -149,8 +168,7 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
 
   Future<void> updateProperty(String id, Map<String, dynamic> data) async {
     await _repository.updateProperty(id, data);
-
-    await loadProperties();
+    await loadProperties(showLoading: false);
   }
 
   //==========================================================
@@ -159,8 +177,7 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
 
   Future<void> deleteProperty(String id) async {
     await _repository.deleteProperty(id);
-
-    await loadProperties();
+    await loadProperties(showLoading: false);
   }
 
   //==========================================================
@@ -173,13 +190,11 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
 
   Future<void> addToFavorites(String propertyId) async {
     await _repository.addToFavorites(propertyId);
-
     state.whenData((_) {});
   }
 
   Future<void> removeFromFavorites(String propertyId) async {
     await _repository.removeFromFavorites(propertyId);
-
     state.whenData((_) {});
   }
 
@@ -190,5 +205,8 @@ class PropertyNotifier extends StateNotifier<AsyncValue<List<PropertyEntity>>> {
 
 final propertyProvider =
     StateNotifierProvider<PropertyNotifier, AsyncValue<List<PropertyEntity>>>(
-      (ref) => PropertyNotifier(ref.read(propertyRepositoryProvider)),
+      (ref) => PropertyNotifier(
+        ref.read(propertyRepositoryProvider),
+        ref.read(propertyCacheProvider),
+      ),
     );
