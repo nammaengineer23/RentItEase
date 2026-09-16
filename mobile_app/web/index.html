@@ -2,37 +2,18 @@
 <html lang="en-IN">
 <head>
   <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <meta
-    name="description"
-    content="Discover verified rental homes and apartments in India with RentItEase. Search properties, contact owners, schedule visits, and manage rentals in one place."
-  >
-
-  <meta
-    name="keywords"
-    content="RentItEase, rental properties India, houses for rent, apartments for rent, verified rental homes, property rental app"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Discover verified rental homes and apartments in India with RentItEase. Search properties, contact owners, schedule visits, and manage rentals in one place.">
+  <meta name="keywords" content="RentItEase, rental properties India, houses for rent, apartments for rent, verified rental homes, property rental app">
   <meta name="author" content="RentItEase">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="theme-color" content="#123B2A">
   <link rel="canonical" href="https://rentitease.com/">
-
-  <!-- Open Graph -->
   <meta property="og:site_name" content="RentItEase">
   <meta property="og:title" content="RentItEase | Verified Rental Homes and Properties in India">
-  <meta
-    property="og:description"
-    content="Discover verified rental homes, connect with owners, schedule property visits, and manage your rental journey with RentItEase."
-  >
+  <meta property="og:description" content="Discover verified rental homes, connect with owners, schedule property visits, and manage your rental journey with RentItEase.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://rentitease.com/">
   <meta property="og:image" content="https://rentitease.com/social-share.png">
@@ -40,218 +21,52 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="RentItEase rental property platform">
   <meta property="og:locale" content="en_IN">
-
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="RentItEase | Verified Rental Homes in India">
-  <meta
-    name="twitter:description"
-    content="Find verified rental properties, contact owners, and schedule visits with RentItEase."
-  >
+  <meta name="twitter:description" content="Find verified rental properties, contact owners, and schedule visits with RentItEase.">
   <meta name="twitter:image" content="https://rentitease.com/social-share.png">
-
   <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "Organization",
-          "@id": "https://rentitease.com/#organization",
-          "name": "RentItEase",
-          "url": "https://rentitease.com/",
-          "logo": "https://rentitease.com/icons/Icon-512.png",
-          "description": "RentItEase is a property rental platform for discovering, listing, and managing rental homes.",
-          "email": "support@rentitease.com",
-          "areaServed": "IN"
-        },
-        {
-          "@type": "WebSite",
-          "@id": "https://rentitease.com/#website",
-          "name": "RentItEase",
-          "url": "https://rentitease.com/",
-          "description": "Find, rent, and manage properties with RentItEase.",
-          "publisher": {
-            "@id": "https://rentitease.com/#organization"
-          }
-        },
-        {
-          "@type": "SoftwareApplication",
-          "name": "RentItEase",
-          "operatingSystem": "Android, Web",
-          "applicationCategory": "LifestyleApplication",
-          "url": "https://rentitease.com/",
-          "downloadUrl": "https://rentitease.com/downloads/RentItEase.apk",
-          "description": "A rental property platform for finding verified homes, contacting owners, scheduling visits, and managing rentals.",
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "INR"
-          },
-          "publisher": {
-            "@id": "https://rentitease.com/#organization"
-          }
-        }
-      ]
-    }
+    {"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://rentitease.com/#organization","name":"RentItEase","url":"https://rentitease.com/","logo":"https://rentitease.com/icons/Icon-512.png","description":"RentItEase is a property rental platform for discovering, listing, and managing rental homes.","email":"support@rentitease.com","areaServed":"IN"},{"@type":"WebSite","@id":"https://rentitease.com/#website","name":"RentItEase","url":"https://rentitease.com/","description":"Find, rent, and manage properties with RentItEase.","publisher":{"@id":"https://rentitease.com/#organization"}},{"@type":"SoftwareApplication","name":"RentItEase","operatingSystem":"Android, Web","applicationCategory":"LifestyleApplication","url":"https://rentitease.com/","downloadUrl":"https://rentitease.com/downloads/RentItEase.apk","description":"A rental property platform for finding verified homes, contacting owners, scheduling visits, and managing rentals.","offers":{"@type":"Offer","price":"0","priceCurrency":"INR"},"publisher":{"@id":"https://rentitease.com/#organization"}}]}
   </script>
-
-  <!-- iOS -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta
-    name="apple-mobile-web-app-status-bar-style"
-    content="default"
-  >
-  <meta
-    name="apple-mobile-web-app-title"
-    content="RentItEase"
-  >
-
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="RentItEase">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png">
-
   <title>RentItEase | Verified Rental Homes and Properties in India</title>
-
   <link rel="manifest" href="manifest.json">
+  <style>
+    html,body{margin:0;min-height:100%;background:#fbfdfb;color:#10251b;font:16px/1.6 Arial,sans-serif}
+    .seo-content{min-height:100vh;background:#fbfdfb;color:#10251b}
+    .seo-header{max-width:1120px;margin:auto;padding:22px 24px;display:flex;align-items:center;justify-content:space-between}.seo-brand{color:#123b2a;font-size:22px;font-weight:800;text-decoration:none}.seo-header nav,.seo-footer{display:flex;flex-wrap:wrap;gap:20px}.seo-header a,.seo-footer a{color:#165c3d}.seo-hero{padding:80px 24px;text-align:center;background:linear-gradient(135deg,#f5fff8,#d4f4e2)}.seo-hero>*{max-width:760px;margin-left:auto;margin-right:auto}.seo-kicker{color:#0d8a55;font-weight:700;text-transform:uppercase;letter-spacing:.08em}.seo-hero h1{font-size:clamp(36px,6vw,64px);line-height:1.08;margin-top:12px;margin-bottom:22px}.seo-action{display:inline-block;margin-top:18px;padding:14px 22px;border-radius:12px;background:#123b2a;color:#fff;text-decoration:none;font-weight:700}.seo-secondary-action{display:inline-block;margin:18px 0 0 10px;padding:13px 21px;border:1px solid #123b2a;border-radius:12px;color:#123b2a;text-decoration:none;font-weight:700}.seo-features{max-width:1120px;margin:0 auto;padding:64px 24px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px}.seo-features article{padding:24px;border:1px solid #d9e4dd;border-radius:16px;background:#fff}.seo-features h2{font-size:20px}.seo-footer{max-width:1120px;margin:auto;padding:28px 24px;border-top:1px solid #d9e4dd}
+    .app-loading{position:fixed;inset:0;z-index:2147483647;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;background:#f8fbf9}.app-loading img{width:96px;height:96px;border-radius:24px;box-shadow:0 10px 30px rgba(18,59,42,.12)}.app-loading h1{margin:24px 0 8px;font-size:clamp(28px,6vw,40px);line-height:1.15}.app-loading p{max-width:460px;margin:0;color:#52655b}.app-loading-progress{width:min(280px,72vw);height:4px;margin-top:24px;overflow:hidden;border-radius:99px;background:#dce9e1}.app-loading-progress::after{content:"";display:block;width:45%;height:100%;border-radius:inherit;background:#123b2a;animation:load 1.1s ease-in-out infinite alternate}.app-loading button{margin-top:24px;padding:12px 24px;border:0;border-radius:12px;background:#123b2a;color:#fff;font:inherit;font-weight:700;cursor:pointer}.app-loading button[hidden]{display:none}@keyframes load{from{transform:translateX(-15%)}to{transform:translateX(135%)}}@media(max-width:720px){.seo-features{grid-template-columns:1fr}.seo-header nav{display:none}.seo-hero{padding:56px 24px}}
+  </style>
 </head>
-
 <body>
   <main id="seo-content" class="seo-content">
-    <header class="seo-header">
-      <a class="seo-brand" href="/" aria-label="RentItEase home">RentItEase</a>
-      <nav aria-label="Main navigation">
-        <a href="/about">About</a>
-        <a href="/contact">Contact</a>
-        <a href="/privacy">Privacy</a>
-      </nav>
-    </header>
-
-    <section class="seo-hero">
-      <p class="seo-kicker">Verified rental properties</p>
-      <h1>Find a rental home that feels right</h1>
-      <p>
-        Discover houses and apartments for rent across India. RentItEase helps
-        tenants search verified listings, connect with property owners, schedule
-        visits, and manage the rental journey in one convenient place.
-      </p>
-      <a class="seo-action" href="/auth">Search rental properties</a>
-      <a class="seo-secondary-action" href="/download">Download Android app</a>
-    </section>
-
-    <section class="seo-features" aria-label="RentItEase features">
-      <article>
-        <h2>Discover verified homes</h2>
-        <p>Browse useful property details, availability, rent, amenities, photos, and locations.</p>
-      </article>
-      <article>
-        <h2>Connect with owners</h2>
-        <p>Chat with property owners and arrange a convenient visit from the RentItEase app.</p>
-      </article>
-      <article>
-        <h2>Manage your rental</h2>
-        <p>Keep visits, bookings, payments, invoices, and rental information together.</p>
-      </article>
-    </section>
-
-    <footer class="seo-footer">
-      <a href="/about">About RentItEase</a>
-      <a href="/contact">Contact and Support</a>
-      <a href="/privacy">Privacy Policy</a>
-      <a href="/terms">Terms of Service</a>
-      <a href="/delete-account">Delete Account</a>
-      <a href="/download">Download App</a>
-      <a href="/rentals/bangalore">Bangalore Rentals</a>
-    </footer>
+    <header class="seo-header"><a class="seo-brand" href="/" aria-label="RentItEase home">RentItEase</a><nav aria-label="Main navigation"><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy</a></nav></header>
+    <section class="seo-hero"><p class="seo-kicker">Verified rental properties</p><h1>Find a rental home that feels right</h1><p>Discover houses and apartments for rent across India. RentItEase helps tenants search verified listings, connect with property owners, schedule visits, and manage the rental journey in one convenient place.</p><a class="seo-action" href="/auth">Search rental properties</a><a class="seo-secondary-action" href="/download">Download Android app</a></section>
+    <section class="seo-features" aria-label="RentItEase features"><article><h2>Discover verified homes</h2><p>Browse useful property details, availability, rent, amenities, photos, and locations.</p></article><article><h2>Connect with owners</h2><p>Chat with property owners and arrange a convenient visit from the RentItEase app.</p></article><article><h2>Manage your rental</h2><p>Keep visits, bookings, payments, invoices, and rental information together.</p></article></section>
+    <footer class="seo-footer"><a href="/about">About RentItEase</a><a href="/contact">Contact and Support</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Service</a><a href="/delete-account">Delete Account</a><a href="/download">Download App</a><a href="/rentals/bangalore">Bangalore Rentals</a></footer>
   </main>
-
-  <style>
-    .seo-content{min-height:100vh;background:#fbfdfb;color:#10251b;font:16px/1.6 Arial,sans-serif}
-    .seo-header{max-width:1120px;margin:auto;padding:22px 24px;display:flex;align-items:center;justify-content:space-between}
-    .seo-brand{color:#123b2a;font-size:22px;font-weight:800;text-decoration:none}
-    .seo-header nav,.seo-footer{display:flex;flex-wrap:wrap;gap:20px}
-    .seo-header a,.seo-footer a{color:#165c3d}
-    .seo-hero{padding:80px 24px;text-align:center;background:linear-gradient(135deg,#f5fff8,#d4f4e2)}
-    .seo-hero>*{max-width:760px;margin-left:auto;margin-right:auto}
-    .seo-kicker{color:#0d8a55;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
-    .seo-hero h1{font-size:clamp(36px,6vw,64px);line-height:1.08;margin-top:12px;margin-bottom:22px}
-    .seo-action{display:inline-block;margin-top:18px;padding:14px 22px;border-radius:12px;background:#123b2a;color:#fff;text-decoration:none;font-weight:700}
-    .seo-secondary-action{display:inline-block;margin:18px 0 0 10px;padding:13px 21px;border:1px solid #123b2a;border-radius:12px;color:#123b2a;text-decoration:none;font-weight:700}
-    .seo-features{max-width:1120px;margin:0 auto;padding:64px 24px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-    .seo-features article{padding:24px;border:1px solid #d9e4dd;border-radius:16px;background:#fff}
-    .seo-features h2{font-size:20px}
-    .seo-footer{max-width:1120px;margin:auto;padding:28px 24px;border-top:1px solid #d9e4dd}
-    .app-loading{min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;background:#f8fbf9}
-    .app-loading img{border-radius:24px;box-shadow:0 10px 30px rgba(18,59,42,.12)}
-    .app-loading h1{margin:24px 0 8px;font-size:clamp(28px,6vw,40px);line-height:1.15}
-    .app-loading p{max-width:460px;margin:0;color:#52655b}
-    .app-loading button{margin-top:24px;padding:12px 24px;border:0;border-radius:12px;background:#123b2a;color:#fff;font:inherit;font-weight:700;cursor:pointer}
-    .app-loading button[hidden]{display:none}
-    @media(max-width:720px){.seo-features{grid-template-columns:1fr}.seo-header nav{display:none}.seo-hero{padding:56px 24px}}
-  </style>
-
   <script>
     (() => {
-      const publicPaths = new Set([
-        '/', '/about', '/contact', '/privacy', '/privacy-policy',
-        '/terms', '/terms-of-service', '/delete-account', '/download',
-        '/rentals/bangalore', '/rentals/bengaluru'
-      ]);
-      const path = window.location.pathname.replace(/\/$/, '') || '/';
-      const isPublicPage = publicPaths.has(path);
-      if (!isPublicPage) {
-        document.querySelector('meta[name="robots"]')
-          ?.setAttribute('content', 'noindex, follow');
-
-        // App routes can take a moment to download and initialise on a cold
-        // mobile connection. Show a useful branded state instead of briefly
-        // displaying the marketing homepage or an empty screen.
-        const content = document.getElementById('seo-content');
-        if (content) {
-          content.innerHTML = `
-            <section class="app-loading" role="status" aria-live="polite">
-              <img src="icons/Icon-192.png" width="96" height="96" alt="RentItEase">
-              <h1>Opening RentItEase</h1>
-              <p id="app-loading-message">Loading your rental experience…</p>
-              <button id="app-loading-retry" type="button" hidden>Retry</button>
-            </section>`;
-        }
+      const publicPaths=new Set(['/','/about','/contact','/privacy','/privacy-policy','/terms','/terms-of-service','/delete-account','/download','/rentals/bangalore','/rentals/bengaluru']);
+      const path=window.location.pathname.replace(/\/$/,'')||'/';
+      const isPublicPage=publicPaths.has(path);
+      if(!isPublicPage){
+        document.querySelector('meta[name="robots"]')?.setAttribute('content','noindex, follow');
+        const content=document.getElementById('seo-content');
+        if(content){content.innerHTML='<section class="app-loading" role="status" aria-live="polite"><img src="icons/Icon-192.png" width="96" height="96" alt="RentItEase"><h1>RentItEase</h1><p id="app-loading-message">Opening your saved page…</p><div class="app-loading-progress" aria-hidden="true"></div><button id="app-loading-retry" type="button" hidden>Retry</button></section>';}
       }
-
-      const removeSeoContent = () => document.getElementById('seo-content')?.remove();
-      window.addEventListener('flutter-first-frame', removeSeoContent, { once: true });
-
-      // Creating <flt-scene-host> does not mean Flutter has painted a frame.
-      // Removing the fallback at that point caused the reported blank page on
-      // slower devices. Keep it visible until flutter-first-frame is emitted.
-      if (!isPublicPage) {
-        window.setTimeout(() => {
-          if (!document.getElementById('seo-content')) return;
-          const message = document.getElementById('app-loading-message');
-          const retry = document.getElementById('app-loading-retry');
-          if (message) {
-            message.textContent = 'This is taking longer than expected. Check your connection and try again.';
-          }
-          if (retry) {
-            retry.hidden = false;
-            retry.addEventListener('click', () => window.location.reload(), { once: true });
-          }
-        }, 15000);
-      }
-
-      window.addEventListener('error', () => {
-        const message = document.getElementById('app-loading-message');
-        const retry = document.getElementById('app-loading-retry');
-        if (message) message.textContent = 'RentItEase could not finish loading. Please try again.';
-        if (retry) {
-          retry.hidden = false;
-          retry.addEventListener('click', () => window.location.reload(), { once: true });
-        }
-      }, { once: true });
+      const removeFallback=()=>document.getElementById('seo-content')?.remove();
+      window.addEventListener('flutter-first-frame',removeFallback,{once:true});
+      if(!isPublicPage){window.setTimeout(()=>{if(!document.getElementById('seo-content'))return;const message=document.getElementById('app-loading-message');const retry=document.getElementById('app-loading-retry');if(message)message.textContent='This is taking longer than expected. Check your connection and try again.';if(retry){retry.hidden=false;retry.onclick=()=>window.location.reload();}},12000);}
+      window.addEventListener('error',()=>{const message=document.getElementById('app-loading-message');const retry=document.getElementById('app-loading-retry');if(message)message.textContent='RentItEase could not finish loading. Please try again.';if(retry){retry.hidden=false;retry.onclick=()=>window.location.reload();}},{once:true});
     })();
   </script>
-  <!-- Injected during deployment from the referrer-restricted web Maps key. -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_WEB_API_KEY_PLACEHOLDER"></script>
+  <!-- Google Maps JS is intentionally not loaded here. The Flutter Google Maps web plugin loads the Maps API when a map is used; blocking the initial page on Maps made cold starts slower. -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
