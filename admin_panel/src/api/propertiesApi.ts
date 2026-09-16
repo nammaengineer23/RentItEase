@@ -34,9 +34,12 @@ export interface AdminPropertyDetails extends AdminPropertyListItem {
   parking?: boolean;
   petFriendly?: boolean;
   securityDeposit?: number | string;
+  dailyRentEnabled?: boolean;
+  dailyRent?: number | string | null;
   landmark?: string | null;
   latitude?: number | string | null;
   longitude?: number | string | null;
+  videoUrl?: string | null;
   updatedAt?: string;
 
   images?: Array<{
