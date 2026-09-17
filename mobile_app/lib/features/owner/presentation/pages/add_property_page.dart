@@ -63,6 +63,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
       final response = await ref.read(dioProvider).get('/amenities');
       dynamic value = response.data;
       while (value is Map && value.containsKey('data')) value = value['data'];
+      if (value is Map && value['amenities'] is List) value = value['amenities'];
       if (value is! List) throw const FormatException('Unexpected amenities response.');
       final items = value.whereType<Map>().map(Map<String, dynamic>.from).where((a) => a['id'] != null).toList();
       if (mounted) setState(() { _amenities = items; _amenitiesLoading = false; });
@@ -143,11 +144,25 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   Widget _text(TextEditingController c, String label, {TextInputType? keyboard, int maxLines = 1, String? Function(String?)? validator}) => Padding(padding: const EdgeInsets.only(bottom: 16), child: TextFormField(controller: c, keyboardType: keyboard, maxLines: maxLines, decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()), validator: validator ?? _required));
 
   Widget _amenitiesSection() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    const Text('Amenities', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), const SizedBox(height: 8),
+    Row(children: [const Expanded(child: Text('Amenities', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))), if (!_amenitiesLoading && _amenitiesError == null && _amenities.isNotEmpty) Text('${_selectedAmenityIds.length} selected', style: Theme.of(context).textTheme.bodySmall)]),
+    const SizedBox(height: 4),
+    const Text('Select all amenities available at this property.'),
+    const SizedBox(height: 8),
     if (_amenitiesLoading) const Row(children: [SizedBox(width: 18,height:18,child:CircularProgressIndicator(strokeWidth:2)),SizedBox(width:10),Text('Loading amenities…')])
     else if (_amenitiesError != null) Row(children: [Expanded(child: Text(_amenitiesError!)), TextButton.icon(onPressed: _loadAmenities, icon: const Icon(Icons.refresh), label: const Text('Retry'))])
     else if (_amenities.isEmpty) Row(children: [const Expanded(child: Text('No amenities are available right now.')), TextButton(onPressed: _loadAmenities, child: const Text('Retry'))])
-    else Wrap(spacing: 8, runSpacing: 8, children: _amenities.map((a) { final id=a['id'].toString(); return FilterChip(label: Text(a['name']?.toString() ?? 'Amenity'), selected: _selectedAmenityIds.contains(id), onSelected: loading ? null : (v) => setState(() => v ? _selectedAmenityIds.add(id) : _selectedAmenityIds.remove(id))); }).toList()),
+    else ..._amenities.map((a) {
+      final id = a['id'].toString();
+      final name = a['name']?.toString().trim();
+      final selected = _selectedAmenityIds.contains(id);
+      return SwitchListTile.adaptive(
+        contentPadding: EdgeInsets.zero,
+        dense: true,
+        title: Text(name == null || name.isEmpty ? 'Amenity' : name),
+        value: selected,
+        onChanged: loading ? null : (value) => setState(() { if (value) { _selectedAmenityIds.add(id); } else { _selectedAmenityIds.remove(id); } }),
+      );
+    }),
     const SizedBox(height: 16),
   ]);
 
