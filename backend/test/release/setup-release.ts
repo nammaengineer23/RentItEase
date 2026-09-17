@@ -1,6 +1,46 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
+// Release E2E runs against the live Railway API. A deployment/proxy can
+// occasionally return a short-lived gateway error even though the API is
+// healthy before and after the request. Retry only infrastructure failures;
+// application 4xx/5xx responses still fail immediately.
+const supertest = require('supertest') as any;
+const testPrototype = supertest.Test?.prototype as any;
+
+if (testPrototype && !testPrototype.__rentItEaseTransientRetryInstalled) {
+  const originalEnd = testPrototype.end;
+
+  testPrototype.end = function patchedEnd(callback: any) {
+    if (!this.__rentItEaseTransientRetryConfigured) {
+      this.__rentItEaseTransientRetryConfigured = true;
+      this.retry(3, (error: any, response: any) => {
+        const status = response?.status;
+        const transientGatewayError = [502, 503, 504].includes(status);
+        const transientNetworkError =
+          !response &&
+          Boolean(error) &&
+          ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN'].includes(
+            error?.code,
+          );
+        const shouldRetry = transientGatewayError || transientNetworkError;
+
+        if (shouldRetry) {
+          console.warn(
+            `[release-e2e] transient ${status ?? error?.code ?? 'network error'}; retrying request`,
+          );
+        }
+
+        return shouldRetry;
+      });
+    }
+
+    return originalEnd.call(this, callback);
+  };
+
+  testPrototype.__rentItEaseTransientRetryInstalled = true;
+}
+
 // Load the same E2E environment file used by the normal E2E tests.
 dotenv.config({
   path: path.resolve(__dirname, '../.env.e2e'),
@@ -67,5 +107,6 @@ console.log(`API Prefix: ${process.env.E2E_API_PREFIX}`);
 console.log(`Tenant login: ${process.env.E2E_TENANT_EMAIL}`);
 console.log(`Owner login: ${process.env.E2E_OWNER_EMAIL}`);
 console.log('Property fixtures: created by each E2E suite');
+console.log('Transient gateway retry: 3 retries for 502/503/504 and network resets');
 console.log('==============================================');
 console.log('');
