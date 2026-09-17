@@ -1,0 +1,1 @@
+Expected: when the web app returns from background/minimized state, rebuild the current route and session rather than displaying a stale black surface.
