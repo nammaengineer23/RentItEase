@@ -28,8 +28,26 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
   String _query = '';
   String _selectedStatus = 'ALL';
 
-  String _normalizeStatus(String status) =>
-      status.trim().toUpperCase().replaceAll(' ', '_').replaceAll('-', '_');
+  String _normalizeStatus(String status) {
+    var value = status.trim();
+    if (value.contains('.')) value = value.split('.').last;
+    value = value
+        .replaceAllMapped(
+          RegExp(r'([a-z0-9])([A-Z])'),
+          (match) => '${match.group(1)}_${match.group(2)}',
+        )
+        .toUpperCase()
+        .replaceAll(RegExp(r'[\s-]+'), '_');
+
+    // Keep filtering compatible with older API/payment status spellings.
+    return switch (value) {
+      'PAYMENTPENDING' || 'AWAITING_PAYMENT' => 'PAYMENT_PENDING',
+      'PAYMENT_SUCCESS' || 'PAYMENT_SUCCESSFUL' || 'SUCCESS' => 'PAID',
+      'CONFIRMED' => 'APPROVED',
+      'CANCELED' => 'CANCELLED',
+      _ => value,
+    };
+  }
 
   String _statusLabel(String status) {
     if (status == 'ALL') return 'All';
@@ -77,9 +95,13 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
               itemBuilder: (context, index) {
                 final status = _statuses[index];
                 return ChoiceChip(
+                  key: ValueKey('booking-filter-$status'),
                   label: Text(_statusLabel(status)),
                   selected: _selectedStatus == status,
-                  onSelected: (_) => setState(() => _selectedStatus = status),
+                  onSelected: (selected) {
+                    if (!selected && _selectedStatus == status) return;
+                    setState(() => _selectedStatus = status);
+                  },
                 );
               },
             ),
@@ -105,11 +127,12 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
                       query.isEmpty ||
                       booking.propertyTitle.toLowerCase().contains(query) ||
                       booking.ownerName.toLowerCase().contains(query) ||
-                      booking.status.toLowerCase().contains(query) ||
+                      normalizedStatus.toLowerCase().contains(query) ||
+                      _statusLabel(normalizedStatus).toLowerCase().contains(query) ||
                       booking.location.toLowerCase().contains(query);
-                  return matchesQuery &&
-                      (_selectedStatus == 'ALL' ||
-                          normalizedStatus == _selectedStatus);
+                  final matchesStatus = _selectedStatus == 'ALL' ||
+                      normalizedStatus == _selectedStatus;
+                  return matchesQuery && matchesStatus;
                 }).toList();
 
                 if (visibleBookings.isEmpty) {
@@ -128,6 +151,7 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
                     await ref.read(tenantBookingsProvider.future);
                   },
                   child: ListView.builder(
+                    key: ValueKey('bookings-${_selectedStatus.toLowerCase()}'),
                     padding: const EdgeInsets.only(top: 12, bottom: 24),
                     itemCount: visibleBookings.length,
                     itemBuilder: (context, index) {
@@ -141,7 +165,7 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
                         visitDate: booking.visitDate,
                         visitTime: booking.visitTime,
                         ownerName: booking.ownerName,
-                        status: booking.status,
+                        status: bookingStatus,
                         monthlyRent: booking.monthlyRent,
                         securityDeposit: booking.securityDeposit,
                         onTap: () {
