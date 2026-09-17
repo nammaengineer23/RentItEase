@@ -1,1 +1,1 @@
-Expected: when the web app returns from background/minimized state, rebuild the current route and session rather than displaying a stale black surface.
+Web corrections in PR #65: resume refresh, admin record search, cross-platform booking and Premium invoice downloads. Existing PR #64 download/home/search/filter/media/map/payment fixes are retained for regression verification before merge.
