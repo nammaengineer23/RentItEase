@@ -67,14 +67,10 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
           widget.location.startsWith('/settings')) {
         return 4;
       }
-      if (widget.location.startsWith('/search')) {
-        return 1;
-      }
+      if (widget.location.startsWith('/search')) return 1;
       return 0;
     }
-    if (widget.location.startsWith('/search')) {
-      return 1;
-    }
+    if (widget.location.startsWith('/my-visits')) return 1;
     if (widget.location.startsWith('/favorites')) return 2;
     if (widget.location.startsWith('/my-bookings') ||
         widget.location.startsWith('/payment')) {
@@ -118,7 +114,7 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
           onTap: (index) {
             final destinations = <String>[
               role == 'OWNER' ? '/owner/dashboard' : '/home',
-              '/search',
+              role == 'OWNER' ? '/search' : '/my-visits',
               role == 'OWNER' ? '/owner/analytics' : '/favorites',
               role == 'OWNER' ? '/owner/visits' : '/my-bookings',
               '/profile',
@@ -156,9 +152,7 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
         await _showRatingPrompt(preferences);
         return;
       }
-      if (!kIsWeb) {
-        SystemNavigator.pop();
-      }
+      if (!kIsWeb) SystemNavigator.pop();
       return;
     }
 
@@ -227,19 +221,17 @@ class _AuthenticatedShellState extends ConsumerState<AuthenticatedShell> {
 
     if (action == 'submit') {
       try {
-        await ref
-            .read(dioProvider)
-            .post(
-              '/app-feedback',
-              data: {
-                'rating': rating,
-                'comment': commentController.text.trim(),
-                'platform': 'android',
-              },
-            );
+        await ref.read(dioProvider).post(
+          '/app-feedback',
+          data: {
+            'rating': rating,
+            'comment': commentController.text.trim(),
+            'platform': kIsWeb ? 'web' : 'android',
+          },
+        );
         await preferences.setBool('app_rating_submitted', true);
 
-        if (rating >= 4) {
+        if (rating >= 4 && !kIsWeb) {
           await launchUrl(
             Uri.parse('market://details?id=com.rentitease.app'),
             mode: LaunchMode.externalApplication,
