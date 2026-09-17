@@ -3,6 +3,7 @@ class LocationModel {
     required this.latitude,
     required this.longitude,
     this.address = '',
+    this.locality = '',
     this.city = '',
     this.state = '',
     this.country = '',
@@ -13,6 +14,7 @@ class LocationModel {
   final double longitude;
 
   final String address;
+  final String locality;
   final String city;
   final String state;
   final String country;
@@ -25,6 +27,7 @@ class LocationModel {
       latitude: latitude,
       longitude: longitude,
       address: json['address'] ?? '',
+      locality: json['locality'] ?? '',
       city: json['city'] ?? '',
       state: json['state'] ?? '',
       country: json['country'] ?? '',
@@ -47,6 +50,7 @@ class LocationModel {
       'latitude': latitude,
       'longitude': longitude,
       'address': address,
+      'locality': locality,
       'city': city,
       'state': state,
       'country': country,
@@ -58,6 +62,7 @@ class LocationModel {
     double? latitude,
     double? longitude,
     String? address,
+    String? locality,
     String? city,
     String? state,
     String? country,
@@ -67,6 +72,7 @@ class LocationModel {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       address: address ?? this.address,
+      locality: locality ?? this.locality,
       city: city ?? this.city,
       state: state ?? this.state,
       country: country ?? this.country,

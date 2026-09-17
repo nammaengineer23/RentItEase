@@ -19,7 +19,6 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
   @override
   void initState() {
     super.initState();
-
     Future.microtask(() {
       ref.read(ownerProvider.notifier).loadMyProperties();
     });
@@ -46,9 +45,7 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('myProperties'))),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          context.push('/owner/add-property');
-        },
+        onPressed: () => context.push('/owner/add-property'),
         icon: const Icon(Icons.add),
         label: Text(context.tr('addProperty')),
       ),
@@ -57,128 +54,122 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
         child: state.loading
             ? const Center(child: CircularProgressIndicator())
             : state.error != null
-            ? ListView(
-                children: [
-                  const SizedBox(height: 120),
-                  const Icon(Icons.error_outline, size: 70, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: Text(state.error!, textAlign: TextAlign.center),
-                  ),
-                ],
-              )
-            : state.properties.isEmpty
-            ? ListView(
-              children: [
-                  const SizedBox(height: 120),
-                  const Icon(Icons.home_work_outlined, size: 80, color: Colors.grey),
-                  const SizedBox(height: 20),
-                  Center(
-                    child: Text(
-                      context.tr('noPropertiesFound'),
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ),
-                ],
-              )
-            : Column(
-                children: [
-                  SizedBox(
-                    height: 58,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      children: [
-                        for (final key in const [
-                          'all',
-                          'pending',
-                          'available',
-                          'occupied',
-                          'visited',
-                          'completed',
-                        ])
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: ChoiceChip(
-                              label: Text(
-                                key == 'pending'
-                                    ? 'Pending approval'
-                                    : context.tr(key),
-                              ),
-                              selected: _status == key,
-                              onSelected: (_) =>
-                                  setState(() => _status = key),
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      const SizedBox(height: 120),
+                      const Icon(Icons.error_outline, size: 70, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Center(child: Text(state.error!, textAlign: TextAlign.center)),
+                    ],
+                  )
+                : state.properties.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          const SizedBox(height: 120),
+                          const Icon(Icons.home_work_outlined, size: 80, color: Colors.grey),
+                          const SizedBox(height: 20),
+                          Center(
+                            child: Text(
+                              context.tr('noPropertiesFound'),
+                              style: const TextStyle(fontSize: 18),
                             ),
                           ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: properties.isEmpty
-                        ? Center(
-                            child: Text(context.tr('noStatusProperties')),
-                          )
-                        : PageView.builder(
-                scrollDirection: Axis.vertical,
-                itemCount: properties.length,
-                itemBuilder: (context, index) {
-                  final property = properties[index];
-
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                    child: PropertyOwnerCard(
-                      property: property,
-                      onTap: () {
-                        context.push('/owner/property-details', extra: property);
-                      },
-                      onEdit: () {
-                        context.push('/owner/edit-property', extra: property);
-                      },
-                      onDelete: () async {
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: Text(context.tr('deleteProperty')),
-                          content: Text(context.tr('deletePropertyQuestion')),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
-                              child: Text(context.tr('cancel')),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          SizedBox(
+                            height: 58,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              children: [
+                                for (final key in const [
+                                  'all',
+                                  'pending',
+                                  'available',
+                                  'occupied',
+                                  'visited',
+                                  'completed',
+                                ])
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    child: ChoiceChip(
+                                      label: Text(
+                                        key == 'pending'
+                                            ? 'Pending approval'
+                                            : context.tr(key),
+                                      ),
+                                      selected: _status == key,
+                                      onSelected: (_) => setState(() => _status = key),
+                                    ),
+                                  ),
+                              ],
                             ),
-                            FilledButton(
-                              onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
-                              child: Text(context.tr('delete')),
-                            ),
-                          ],
-                        ),
-                      );
-
-                      if (confirm != true) {
-                        return;
-                      }
-
-                      await ref
-                          .read(ownerProvider.notifier)
-                          .deleteProperty(property.id);
-
-                      if (!context.mounted) {
-                        return;
-                      }
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(context.tr('propertyDeleted')),
-                        ),
-                      );
-                      },
-                    ),
-                  );
-                },
-              ),
-                  ),
-                ],
-              ),
+                          ),
+                          Expanded(
+                            child: properties.isEmpty
+                                ? ListView(
+                                    physics: const AlwaysScrollableScrollPhysics(),
+                                    children: [
+                                      const SizedBox(height: 120),
+                                      Center(child: Text(context.tr('noStatusProperties'))),
+                                    ],
+                                  )
+                                : ListView.separated(
+                                    physics: const AlwaysScrollableScrollPhysics(),
+                                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                                    itemCount: properties.length,
+                                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                                    itemBuilder: (context, index) {
+                                      final property = properties[index];
+                                      return PropertyOwnerCard(
+                                        property: property,
+                                        onTap: () => context.push(
+                                          '/owner/property-details',
+                                          extra: property,
+                                        ),
+                                        onEdit: () => context.push(
+                                          '/owner/edit-property',
+                                          extra: property,
+                                        ),
+                                        onDelete: () => _deleteProperty(context, property.id),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ],
+                      ),
       ),
+    );
+  }
+
+  Future<void> _deleteProperty(BuildContext context, String propertyId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(context.tr('deleteProperty')),
+        content: Text(context.tr('deletePropertyQuestion')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
+            child: Text(context.tr('cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
+            child: Text(context.tr('delete')),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    await ref.read(ownerProvider.notifier).deleteProperty(propertyId);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.tr('propertyDeleted'))),
     );
   }
 }

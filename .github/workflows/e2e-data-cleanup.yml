@@ -1,0 +1,62 @@
+name: RentItEase - Automatic E2E Data Cleanup
+
+on:
+  workflow_run:
+    workflows: ["RentItEase - Release E2E / RC1"]
+    types: [completed]
+  workflow_dispatch:
+
+# Separate workflow_run cleanup executes even when RC1 fails or is cancelled.
+# It removes only explicitly marked E2E fixtures through authenticated APIs.
+# The configured tenant, owner and admin test accounts are never deleted.
+concurrency:
+  group: rentitease-production-e2e-cleanup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    name: Remove marked production E2E fixtures
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+      E2E_API_PREFIX: /api/v1
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - name: Checkout cleanup code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify cleanup configuration
+        shell: bash
+        run: |
+          test -n "$E2E_BASE_URL" || (echo "E2E_BASE_URL: MISSING" && exit 1)
+          test -n "$E2E_ADMIN_EMAIL" || (echo "E2E_ADMIN_EMAIL: MISSING" && exit 1)
+          test -n "$E2E_ADMIN_PASSWORD" || (echo "E2E_ADMIN_PASSWORD: MISSING" && exit 1)
+          echo "Automatic E2E cleanup configuration: OK"
+      - name: Wait for production API
+        shell: bash
+        run: |
+          curl --fail --silent --show-error \
+            --retry 12 --retry-delay 5 --retry-all-errors \
+            "${E2E_BASE_URL%/}${E2E_API_PREFIX}/health"
+      - name: Delete explicitly marked E2E fixtures
+        working-directory: backend
+        run: node test/release/cleanup-e2e-data.js
+      - name: Cleanup summary
+        if: always()
+        run: |
+          echo "=============================================="
+          echo " RentItEase E2E cleanup finished"
+          echo " Trigger: ${{ github.event_name }}"
+          echo " Source RC1 conclusion: ${{ github.event.workflow_run.conclusion || 'manual' }}"
+          echo " Dedicated E2E accounts are preserved"
+          echo "=============================================="

@@ -1,31 +1,59 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../auth/AuthContext";
+import { AdminSearchResult, searchAdminRecords } from "../api/adminSearchApi";
 
 const navItems = [
-  { label: "Dashboard", path: "/dashboard", keywords: "overview stats activity" },
-  { label: "Users", path: "/users", keywords: "user tenant owner admin name email phone role" },
-  { label: "Properties", path: "/properties", keywords: "property listing title location city owner status approval" },
-  { label: "Owner Requests", path: "/owner-requests", keywords: "owner request approval pending user" },
-  { label: "Reviews", path: "/reviews", keywords: "review rating comment property user moderation" },
-  { label: "Visits", path: "/visits", keywords: "visit tenant owner property date status booking" },
-  { label: "Analytics", path: "/analytics", keywords: "analytics metrics reports performance" },
-  { label: "Premium Memberships", path: "/premium-memberships", keywords: "premium membership plan subscription trial member" },
-  { label: "Billing", path: "/billing", keywords: "billing invoice payment razorpay transaction" },
-  { label: "Social Media", path: "/social-media", keywords: "social media post facebook instagram youtube platform publish schedule" },
+  { label: "Dashboard", path: "/dashboard" },
+  { label: "Users", path: "/users" },
+  { label: "Properties", path: "/properties" },
+  { label: "Owner Requests", path: "/owner-requests" },
+  { label: "Reviews", path: "/reviews" },
+  { label: "Visits", path: "/visits" },
+  { label: "Analytics", path: "/analytics" },
+  { label: "Premium Memberships", path: "/premium-memberships" },
+  { label: "Billing", path: "/billing" },
+  { label: "Social Media", path: "/social-media" },
 ];
 
 export function AdminLayout() {
   const { user, signOut } = useAdminAuth();
   const navigate = useNavigate();
   const [globalSearch, setGlobalSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<AdminSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
 
-  const searchResults = useMemo(() => {
-    const query = globalSearch.trim().toLowerCase();
-    if (!query) return [];
-    return navItems.filter((item) =>
-      `${item.label} ${item.keywords}`.toLowerCase().includes(query),
-    );
+  useEffect(() => {
+    const query = globalSearch.trim();
+    if (query.length < 2) {
+      setSearchResults([]);
+      setSearching(false);
+      setSearchError("");
+      return;
+    }
+
+    let cancelled = false;
+    setSearching(true);
+    setSearchError("");
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await searchAdminRecords(query);
+        if (!cancelled) setSearchResults(response.results ?? []);
+      } catch (error) {
+        if (!cancelled) {
+          setSearchResults([]);
+          setSearchError(error instanceof Error ? error.message : "Search failed.");
+        }
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [globalSearch]);
 
   function handleSignOut() {
@@ -33,14 +61,16 @@ export function AdminLayout() {
     navigate("/login", { replace: true });
   }
 
-  function openResult(path: string) {
+  function openResult(result: AdminSearchResult) {
+    const query = globalSearch.trim();
     setGlobalSearch("");
-    navigate(path);
+    setSearchResults([]);
+    navigate(`${result.path}?search=${encodeURIComponent(query)}&record=${encodeURIComponent(result.id)}`);
   }
 
   function submitGlobalSearch(event: FormEvent) {
     event.preventDefault();
-    if (searchResults.length > 0) openResult(searchResults[0].path);
+    if (searchResults.length > 0) openResult(searchResults[0]);
   }
 
   return (
@@ -71,21 +101,27 @@ export function AdminLayout() {
               <input
                 value={globalSearch}
                 onChange={(event) => setGlobalSearch(event.target.value)}
-                placeholder="Search admin modules…"
-                aria-label="Search admin modules"
+                placeholder="Search users, properties, visits, invoices…"
+                aria-label="Search RentItEase admin records"
                 autoComplete="off"
               />
               {globalSearch && (
                 <button type="button" className="admin-global-search-clear" onClick={() => setGlobalSearch("")} aria-label="Clear search">×</button>
               )}
-              {globalSearch.trim() && (
+              {globalSearch.trim().length >= 2 && (
                 <div className="admin-global-search-results">
-                  {searchResults.length > 0 ? searchResults.map((item) => (
-                    <button type="button" key={item.path} onClick={() => openResult(item.path)}>
-                      <strong>{item.label}</strong>
-                      <span>{item.keywords.split(" ").slice(0, 5).join(" · ")}</span>
+                  {searching ? (
+                    <div className="admin-global-search-empty">Searching records…</div>
+                  ) : searchError ? (
+                    <div className="admin-global-search-empty">{searchError}</div>
+                  ) : searchResults.length > 0 ? searchResults.map((item) => (
+                    <button type="button" key={`${item.type}-${item.id}`} onClick={() => openResult(item)}>
+                      <strong>{item.title}</strong>
+                      <span>{item.type.replaceAll("_", " ")} · {item.subtitle}</span>
                     </button>
-                  )) : <div className="admin-global-search-empty">No admin module matches “{globalSearch.trim()}”.</div>}
+                  )) : (
+                    <div className="admin-global-search-empty">No matching records found.</div>
+                  )}
                 </div>
               )}
             </form>
