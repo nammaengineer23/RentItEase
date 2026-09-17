@@ -3,143 +3,107 @@ import 'package:dio/dio.dart';
 import '../models/notification_model.dart';
 
 class NotificationsApi {
-NotificationsApi(this._dio);
+  NotificationsApi(this._dio);
 
-final Dio _dio;
+  final Dio _dio;
 
-// =========================================
-// Get All Notifications
-// GET /notifications
-// =========================================
+  Future<List<NotificationModel>> getNotifications() async {
+    try {
+      final response = await _dio.get('/notifications');
+      final list = _extractNotifications(response.data);
 
-Future<List<NotificationModel>> getNotifications() async {
-try {
-final response = await _dio.get('/notifications');
-
-  final data = response.data;
-
-  List<dynamic> list;
-
-  if (data is List) {
-    // Supports a raw list response.
-    list = data;
-  } else if (data is Map<String, dynamic>) {
-    // Backend currently returns:
-    // {
-    //   total: ...,
-    //   unread: ...,
-    //   notifications: [...]
-    // }
-    final notifications = data['notifications'];
-
-    if (notifications is List) {
-      list = notifications;
-    } else if (data['data'] is List) {
-      // Compatibility with a wrapped `data` response.
-      list = data['data'];
-    } else {
-      list = const [];
-    }
-  } else {
-    list = const [];
-  }
-
-  return list
-      .whereType<Map>()
-      .map(
-        (item) => NotificationModel.fromJson(
-          Map<String, dynamic>.from(item),
-        ),
-      )
-      .toList();
-} on DioException catch (e) {
-  throw Exception(
-    e.response?.data?.toString() ??
-        'Failed to load notifications.',
-  );
-}
-
-}
-
-// =========================================
-// Get Unread Notification Count
-// GET /notifications/unread-count
-// =========================================
-
-Future<int> getUnreadCount() async {
-try {
-final response = await _dio.get('/notifications/unread-count');
-
-
-  final data = response.data;
-
-  if (data is Map<String, dynamic>) {
-    final unread = data['unread'];
-
-    if (unread is int) {
-      return unread;
-    }
-
-    if (unread is num) {
-      return unread.toInt();
+      return list
+          .whereType<Map>()
+          .map(
+            (item) => NotificationModel.fromJson(
+              Map<String, dynamic>.from(item),
+            ),
+          )
+          .where((notification) => notification.id.isNotEmpty)
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data?.toString() ?? 'Failed to load notifications.',
+      );
     }
   }
 
-  return 0;
-} on DioException catch (e) {
-  throw Exception(
-    e.response?.data?.toString() ??
-        'Failed to load unread notification count.',
-  );
-}
+  Future<int> getUnreadCount() async {
+    try {
+      final response = await _dio.get('/notifications/unread-count');
+      return _extractUnreadCount(response.data);
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data?.toString() ??
+            'Failed to load unread notification count.',
+      );
+    }
+  }
 
-}
+  Future<void> markAsRead(String id) async {
+    try {
+      await _dio.patch('/notifications/$id/read');
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data?.toString() ??
+            'Failed to mark notification as read.',
+      );
+    }
+  }
 
-// =========================================
-// Mark Notification Read
-// PATCH /notifications/:id/read
-// =========================================
+  Future<void> markAllAsRead() async {
+    try {
+      await _dio.patch('/notifications/read-all');
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data?.toString() ??
+            'Failed to mark all notifications as read.',
+      );
+    }
+  }
 
-Future<void> markAsRead(String id) async {
-try {
-await _dio.patch('/notifications/$id/read');
-} on DioException catch (e) {
-throw Exception(
-e.response?.data?.toString() ??
-'Failed to mark notification as read.',
-);
-}
-}
+  Future<void> deleteNotification(String id) async {
+    try {
+      await _dio.delete('/notifications/$id');
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data?.toString() ?? 'Failed to delete notification.',
+      );
+    }
+  }
 
-// =========================================
-// Mark All Notifications Read
-// PATCH /notifications/read-all
-// =========================================
+  static List<dynamic> _extractNotifications(dynamic response) {
+    dynamic value = response;
 
-Future<void> markAllAsRead() async {
-try {
-await _dio.patch('/notifications/read-all');
-} on DioException catch (e) {
-throw Exception(
-e.response?.data?.toString() ??
-'Failed to mark all notifications as read.',
-);
-}
-}
+    for (var depth = 0; depth < 6; depth++) {
+      if (value is List) return value;
+      if (value is! Map) break;
 
-// =========================================
-// Delete Notification
-// DELETE /notifications/:id
-// =========================================
+      final notifications = value['notifications'];
+      if (notifications is List) return notifications;
 
-Future<void> deleteNotification(String id) async {
-try {
-await _dio.delete('/notifications/$id');
-} on DioException catch (e) {
-throw Exception(
-e.response?.data?.toString() ??
-'Failed to delete notification.',
-);
-}
-}
+      if (!value.containsKey('data')) break;
+      value = value['data'];
+    }
+
+    return const [];
+  }
+
+  static int _extractUnreadCount(dynamic response) {
+    dynamic value = response;
+
+    for (var depth = 0; depth < 6; depth++) {
+      if (value is! Map) break;
+
+      final unread = value['unread'] ?? value['unreadCount'];
+      if (unread is num) return unread.toInt();
+      final parsed = int.tryParse(unread?.toString() ?? '');
+      if (parsed != null) return parsed;
+
+      if (!value.containsKey('data')) break;
+      value = value['data'];
+    }
+
+    return 0;
+  }
 }
