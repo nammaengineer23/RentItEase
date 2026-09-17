@@ -204,7 +204,7 @@ class _PremiumMembershipPageState extends ConsumerState<PremiumMembershipPage> {
             const SizedBox(height: 16), const Text('• View protected owner contact details'), const Text('• Access Premium-only properties'), const Text('• Receive a downloadable purchase invoice'),
           ]))),
           const SizedBox(height: 16),
-          if (activeMembership != null) Card(child: ListTile(leading: const Icon(Icons.verified, color: Colors.green), title: const Text('Premium active'), subtitle: Text('Valid until ${activeMembership['endDate'] ?? ''}'), trailing: IconButton(tooltip: 'Download invoice', onPressed: () => _downloadInvoice(activeMembership!['id'].toString()), icon: const Icon(Icons.download))))
+          if (activeMembership != null) Card(child: ListTile(leading: const Icon(Icons.verified, color: Colors.green), title: const Text('Premium active'), subtitle: Text('Valid until ${activeMembership['endDate'] ?? ''}'), trailing: IconButton(tooltip: 'Download invoice', onPressed: () => _downloadInvoice(activeMembership['id'].toString()), icon: const Icon(Icons.download))))
           else FilledButton.icon(onPressed: _processing ? null : _requestPremium, icon: _processing ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.workspace_premium_outlined), label: Text(hasTrial ? 'Buy Premium for ₹99' : 'Start 30-Day Free Trial')),
           if (_memberships.isNotEmpty) ...[
             const SizedBox(height: 24), Text('Membership and invoice history', style: Theme.of(context).textTheme.titleLarge), const SizedBox(height: 8),
