@@ -4,9 +4,19 @@ import path from 'path';
 // Release E2E runs against the live Railway API. A deployment/proxy can
 // occasionally return a short-lived gateway error even though the API is
 // healthy before and after the request. Retry only infrastructure failures;
-// application 4xx/5xx responses still fail immediately.
+// application errors still fail immediately. Backoff is intentional: rapid
+// retries all land inside the same short Railway/proxy outage.
 const supertest = require('supertest') as any;
 const testPrototype = supertest.Test?.prototype as any;
+const transientRetryDelaysMs = [2_000, 4_000, 8_000, 15_000];
+
+function sleepSync(ms: number) {
+  // Keep retry ordering inside superagent's synchronous retry decision hook.
+  // This is test-only code, so blocking the Jest worker is preferable to
+  // issuing another production request before the gateway has recovered.
+  const signal = new Int32Array(new SharedArrayBuffer(4));
+  Atomics.wait(signal, 0, 0, ms);
+}
 
 if (testPrototype && !testPrototype.__rentItEaseTransientRetryInstalled) {
   const originalEnd = testPrototype.end;
@@ -14,7 +24,9 @@ if (testPrototype && !testPrototype.__rentItEaseTransientRetryInstalled) {
   testPrototype.end = function patchedEnd(callback: any) {
     if (!this.__rentItEaseTransientRetryConfigured) {
       this.__rentItEaseTransientRetryConfigured = true;
-      this.retry(3, (error: any, response: any) => {
+      let retryAttempt = 0;
+
+      this.retry(transientRetryDelaysMs.length, (error: any, response: any) => {
         const status = response?.status;
         const transientGatewayError = [502, 503, 504].includes(status);
         const transientNetworkError =
@@ -26,9 +38,15 @@ if (testPrototype && !testPrototype.__rentItEaseTransientRetryInstalled) {
         const shouldRetry = transientGatewayError || transientNetworkError;
 
         if (shouldRetry) {
+          const delayMs =
+            transientRetryDelaysMs[
+              Math.min(retryAttempt, transientRetryDelaysMs.length - 1)
+            ];
+          retryAttempt += 1;
           console.warn(
-            `[release-e2e] transient ${status ?? error?.code ?? 'network error'}; retrying request`,
+            `[release-e2e] transient ${status ?? error?.code ?? 'network error'}; retry ${retryAttempt}/${transientRetryDelaysMs.length} in ${delayMs / 1000}s`,
           );
+          sleepSync(delayMs);
         }
 
         return shouldRetry;
@@ -107,6 +125,6 @@ console.log(`API Prefix: ${process.env.E2E_API_PREFIX}`);
 console.log(`Tenant login: ${process.env.E2E_TENANT_EMAIL}`);
 console.log(`Owner login: ${process.env.E2E_OWNER_EMAIL}`);
 console.log('Property fixtures: created by each E2E suite');
-console.log('Transient gateway retry: 3 retries for 502/503/504 and network resets');
+console.log('Transient gateway retry: 4 retries with 2s/4s/8s/15s backoff for 502/503/504 and network resets');
 console.log('==============================================');
 console.log('');
