@@ -57,15 +57,15 @@ class AppTheme {
         letterSpacing: -0.65,
       ),
       headlineSmall: base.textTheme.headlineSmall?.copyWith(
-        fontWeight: FontWeight.w750,
+        fontWeight: FontWeight.w700,
         letterSpacing: -0.4,
       ),
       titleLarge: base.textTheme.titleLarge?.copyWith(
-        fontWeight: FontWeight.w750,
+        fontWeight: FontWeight.w700,
         letterSpacing: -0.25,
       ),
       titleMedium: base.textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.w650,
+        fontWeight: FontWeight.w600,
       ),
       bodyLarge: base.textTheme.bodyLarge?.copyWith(height: 1.5),
       bodyMedium: base.textTheme.bodyMedium?.copyWith(height: 1.45),
@@ -95,7 +95,7 @@ class AppTheme {
         actionsIconTheme: IconThemeData(color: scheme.onSurface),
         titleTextStyle: textTheme.titleLarge?.copyWith(
           color: scheme.onSurface,
-          fontWeight: FontWeight.w750,
+          fontWeight: FontWeight.w700,
         ),
       ),
       cardTheme: CardThemeData(
@@ -219,8 +219,8 @@ class AppTheme {
                 ? scheme.primary
                 : scheme.onSurfaceVariant,
             fontWeight: states.contains(WidgetState.selected)
-                ? FontWeight.w750
-                : FontWeight.w550,
+                ? FontWeight.w700
+                : FontWeight.w500,
           ),
         ),
       ),
@@ -257,7 +257,7 @@ class AppTheme {
         backgroundColor: isDark ? const Color(0xFFE1E9E3) : const Color(0xFF203028),
         contentTextStyle: TextStyle(
           color: isDark ? const Color(0xFF18211C) : Colors.white,
-          fontWeight: FontWeight.w550,
+          fontWeight: FontWeight.w500,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
@@ -289,7 +289,7 @@ class AppTheme {
         labelColor: scheme.primary,
         unselectedLabelColor: scheme.onSurfaceVariant,
         labelStyle: textTheme.labelLarge,
-        unselectedLabelStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w550),
+        unselectedLabelStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500),
         dividerColor: Colors.transparent,
         indicatorSize: TabBarIndicatorSize.label,
         indicator: UnderlineTabIndicator(
