@@ -1,1 +1,0 @@
-Scope: admin record search, web resume reliability, invoice downloads, notifications.
