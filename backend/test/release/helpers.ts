@@ -105,6 +105,11 @@ export function statusOk(res: Response, expected: number[] = [200, 201, 204]) {
   }
 }
 
+/** A stable marker used by automatic cleanup to distinguish test listings. */
+export function e2eMarker() {
+  return `[E2E:${process.env.E2E_RUN_ID ?? process.env.GITHUB_RUN_ID ?? Date.now()}]`;
+}
+
 /** Creates a pending listing and publishes it through the same admin approval
  * path used in production, so E2E tests never depend on retained test data. */
 export async function createApprovedE2EProperty(
@@ -116,7 +121,7 @@ export async function createApprovedE2EProperty(
     .post('/properties')
     .set(auth(ownerToken))
     .send({
-      title: `[E2E:${process.env.E2E_RUN_ID ?? Date.now()}] ${label} Property`,
+      title: `${e2eMarker()} ${label} Property`,
       description: '[E2E] Isolated property generated for release verification.',
       price: 25000,
       address: '123 Release Test Road', locality: 'HSR Layout', city: 'Bangalore',
