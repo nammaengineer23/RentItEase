@@ -1,1 +1,0 @@
-Web resume regression fixed on this branch. Remove this note before merge if desired.
