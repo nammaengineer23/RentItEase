@@ -56,10 +56,6 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed || !mounted) return;
 
-    // Android can preserve the Flutter navigation state while discarding the
-    // rendered surface. Rebuilding and refreshing GoRouter on resume restores
-    // the current page instead of leaving a blank frame. Navigation is not
-    // reset, so forms and the user's current route remain intact.
     setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) AppRouter.router.refresh();
@@ -68,26 +64,33 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
 
   @override
   Widget build(BuildContext context) {
-    // Flutter's PWA service worker can serve the app shell for a navigation
-    // that was originally a public legal URL. Render those URLs explicitly so
-    // they can never fall through to the onboarding router.
     final legalPath = Uri.base.path.replaceFirst(RegExp(r'/$'), '');
-    if (const {'/about', '/contact', '/privacy-policy', '/terms', '/terms-of-service', '/delete-account'}
-        .contains(legalPath)) {
+    if (const {
+      '/about',
+      '/contact',
+      '/privacy-policy',
+      '/terms',
+      '/terms-of-service',
+      '/delete-account',
+    }.contains(legalPath)) {
       return LegalDocumentPage(path: legalPath);
     }
 
     final auth = ref.watch(authenticationProvider);
-    if (!auth.isSessionRestored) {
+
+    // Web session restoration performs storage and network work. It must not
+    // replace the entire application with an indefinite spinner while those
+    // operations finish. Render the public/router shell immediately on web;
+    // when restoration completes the provider notification rebuilds the app
+    // with the authenticated session and _restoreSessionAndRoute restores the
+    // user's last safe route.
+    if (!kIsWeb && !auth.isSessionRestored) {
       return const MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(body: Center(child: CircularProgressIndicator())),
       );
     }
 
-    // Do not issue an authenticated settings request while a visitor is on
-    // the public site or sign-in screen. This avoids unnecessary 401 retries
-    // and lets the mobile web app render immediately.
     final userSettings = auth.isLoggedIn
         ? ref.watch(settingsProvider).valueOrNull
         : null;
@@ -98,7 +101,6 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
       title: 'RentItEase',
       debugShowCheckedModeBanner: false,
       scrollBehavior: const AppScrollBehavior(),
-
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: darkMode ? ThemeMode.dark : ThemeMode.light,
@@ -110,7 +112,6 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-
       routerConfig: AppRouter.router,
     );
   }
