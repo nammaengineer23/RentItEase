@@ -16,8 +16,10 @@ class MyBookingsPage extends ConsumerStatefulWidget {
 class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
   static const _statuses = [
     'ALL',
-    'PAYMENT_PENDING',
+    'PENDING',
     'APPROVED',
+    'PAYMENT_PENDING',
+    'PAID',
     'COMPLETED',
     'CANCELLED',
     'REJECTED',
@@ -25,6 +27,19 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
   final _searchController = TextEditingController();
   String _query = '';
   String _selectedStatus = 'ALL';
+
+  String _normalizeStatus(String status) =>
+      status.trim().toUpperCase().replaceAll(' ', '_').replaceAll('-', '_');
+
+  String _statusLabel(String status) {
+    if (status == 'ALL') return 'All';
+    return status
+        .split('_')
+        .map((part) => part.isEmpty
+            ? part
+            : '${part[0]}${part.substring(1).toLowerCase()}')
+        .join(' ');
+  }
 
   @override
   void dispose() {
@@ -62,9 +77,7 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
               itemBuilder: (context, index) {
                 final status = _statuses[index];
                 return ChoiceChip(
-                  label: Text(
-                    status == 'ALL' ? 'All' : status.replaceAll('_', ' '),
-                  ),
+                  label: Text(_statusLabel(status)),
                   selected: _selectedStatus == status,
                   onSelected: (_) => setState(() => _selectedStatus = status),
                 );
@@ -87,6 +100,7 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
 
                 final query = _query.toLowerCase();
                 final visibleBookings = bookings.where((booking) {
+                  final normalizedStatus = _normalizeStatus(booking.status);
                   final matchesQuery =
                       query.isEmpty ||
                       booking.propertyTitle.toLowerCase().contains(query) ||
@@ -95,17 +109,22 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
                       booking.location.toLowerCase().contains(query);
                   return matchesQuery &&
                       (_selectedStatus == 'ALL' ||
-                          booking.status.toUpperCase() == _selectedStatus);
+                          normalizedStatus == _selectedStatus);
                 }).toList();
 
                 if (visibleBookings.isEmpty) {
-                  return const Center(child: Text('No matching bookings.'));
+                  return Center(
+                    child: Text(
+                      _selectedStatus == 'ALL'
+                          ? 'No matching bookings.'
+                          : 'No ${_statusLabel(_selectedStatus).toLowerCase()} bookings.',
+                    ),
+                  );
                 }
 
                 return RefreshIndicator(
                   onRefresh: () async {
                     ref.invalidate(tenantBookingsProvider);
-
                     await ref.read(tenantBookingsProvider.future);
                   },
                   child: ListView.builder(
@@ -113,6 +132,7 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
                     itemCount: visibleBookings.length,
                     itemBuilder: (context, index) {
                       final booking = visibleBookings[index];
+                      final bookingStatus = _normalizeStatus(booking.status);
 
                       return BookingCard(
                         bookingId: booking.id,
@@ -127,9 +147,8 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
                         onTap: () {
                           _showBookingDetails(context, booking);
                         },
-                        onPayNow:
-                            booking.status.toUpperCase() == 'APPROVED' ||
-                                booking.status.toUpperCase() == 'PAYMENT_PENDING'
+                        onPayNow: bookingStatus == 'APPROVED' ||
+                                bookingStatus == 'PAYMENT_PENDING'
                             ? () => _openPayment(context, booking)
                             : null,
                       );
@@ -146,7 +165,7 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
 
   Future<void> _openPayment(BuildContext context, dynamic booking) async {
     try {
-      if (booking.status.toUpperCase() == 'APPROVED') {
+      if (_normalizeStatus(booking.status) == 'APPROVED') {
         await ref.read(createBookingProvider).beginPayment(booking.id);
       }
 
@@ -197,7 +216,7 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
                   '₹${booking.securityDeposit.toStringAsFixed(2)}',
                 ),
                 const SizedBox(height: 8),
-                Text('Status: ${booking.status}'),
+                Text('Status: ${_statusLabel(_normalizeStatus(booking.status))}'),
               ],
             ),
           ),

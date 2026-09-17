@@ -40,16 +40,20 @@ class HomeBottomNavigation extends StatelessWidget {
         ),
         NavigationDestination(
           icon: AppSvgIcon(
-            'assets/images/icons/feature/search.svg',
+            ownerMode
+                ? 'assets/images/icons/feature/search.svg'
+                : 'assets/images/icons/feature/bookings.svg',
             size: 24,
             color: colorScheme.onSurfaceVariant,
           ),
           selectedIcon: AppSvgIcon(
-            'assets/images/icons/feature/search.svg',
+            ownerMode
+                ? 'assets/images/icons/feature/search.svg'
+                : 'assets/images/icons/feature/bookings.svg',
             size: 26,
             color: colorScheme.primary,
           ),
-          label: context.tr('search'),
+          label: context.tr(ownerMode ? 'search' : 'visits'),
         ),
         NavigationDestination(
           icon: AppSvgIcon(
