@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -21,6 +23,9 @@ class RentItEaseApp extends ConsumerStatefulWidget {
 
 class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
     with WidgetsBindingObserver {
+  DateTime? _backgroundedAt;
+  bool _resumeRefreshInProgress = false;
+
   @override
   void initState() {
     super.initState();
@@ -54,12 +59,49 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed || !mounted) return;
+    if (!mounted) return;
 
-    setState(() {});
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) AppRouter.router.refresh();
-    });
+    switch (state) {
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        _backgroundedAt ??= DateTime.now();
+        break;
+      case AppLifecycleState.resumed:
+        unawaited(_refreshAfterResume());
+        break;
+      case AppLifecycleState.detached:
+        break;
+    }
+  }
+
+  Future<void> _refreshAfterResume() async {
+    if (_resumeRefreshInProgress || !mounted) return;
+    _resumeRefreshInProgress = true;
+
+    try {
+      final wasBackgrounded = _backgroundedAt != null;
+      _backgroundedAt = null;
+
+      if (kIsWeb && wasBackgrounded) {
+        // Flutter web can return with a stale/black surface after the browser
+        // tab or installed web app has been backgrounded. Re-establish the
+        // saved session, force a visual frame and refresh the current route so
+        // the page is rebuilt without losing the user's navigation position.
+        await ref.read(authenticationProvider).loadSavedSession();
+        if (!mounted) return;
+        WidgetsBinding.instance.ensureVisualUpdate();
+        WidgetsBinding.instance.scheduleWarmUpFrame();
+      }
+
+      if (!mounted) return;
+      setState(() {});
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) AppRouter.router.refresh();
+      });
+    } finally {
+      _resumeRefreshInProgress = false;
+    }
   }
 
   @override
