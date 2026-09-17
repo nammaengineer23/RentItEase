@@ -20,21 +20,28 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
+  final _searchController = TextEditingController();
   List<PropertyEntity>? _nearbyProperties;
   String _nearbyCity = '';
   Position? _currentPosition;
+  String _query = '';
   bool _ownerRequestSubmitted = false;
   bool _submittingOwnerRequest = false;
 
   @override
   void initState() {
     super.initState();
-
     Future.microtask(() {
       ref.read(notificationsProvider.notifier).loadNotifications();
       ref.read(propertyProvider.notifier).loadProperties();
       _loadNearbyProperties();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadNearbyProperties() async {
@@ -44,14 +51,10 @@ class _HomePageState extends ConsumerState<HomePage> {
         permission = await Geolocator.requestPermission();
       }
       if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        return;
-      }
+          permission == LocationPermission.deniedForever) return;
 
       final position = await Geolocator.getCurrentPosition();
-      final nearby = await ref
-          .read(propertyProvider.notifier)
-          .getNearbyProperties(
+      final nearby = await ref.read(propertyProvider.notifier).getNearbyProperties(
             latitude: position.latitude,
             longitude: position.longitude,
             radius: 25,
@@ -67,9 +70,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             : (placemarks.first.locality ??
                 placemarks.first.subAdministrativeArea ??
                 '');
-      } catch (_) {
-        // Nearby results are still useful when reverse geocoding is unavailable.
-      }
+      } catch (_) {}
       if (mounted) {
         setState(() {
           _nearbyProperties = nearby;
@@ -77,14 +78,11 @@ class _HomePageState extends ConsumerState<HomePage> {
           _currentPosition = position;
         });
       }
-    } catch (_) {
-      // The all-properties feed remains available when location is unavailable.
-    }
+    } catch (_) {}
   }
 
   Future<void> _requestOwnerAccess() async {
     if (_ownerRequestSubmitted || _submittingOwnerRequest) return;
-
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
@@ -105,18 +103,14 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ) ??
         false;
-
     if (!confirmed || !mounted) return;
-
     setState(() => _submittingOwnerRequest = true);
     try {
       await ref.read(dioProvider).patch('/users/request-owner');
       if (!mounted) return;
       setState(() => _ownerRequestSubmitted = true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Owner request sent. Pending admin approval.'),
-        ),
+        const SnackBar(content: Text('Owner request sent. Pending admin approval.')),
       );
     } catch (error) {
       if (!mounted) return;
@@ -142,23 +136,15 @@ class _HomePageState extends ConsumerState<HomePage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'RentItEase',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-            ),
-            Text(
-              context.tr('findPerfectHome'),
-              style: const TextStyle(fontSize: 14),
-            ),
+            const Text('RentItEase', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
+            Text(context.tr('findPerfectHome'), style: const TextStyle(fontSize: 14)),
           ],
         ),
         actions: [
           Stack(
             children: [
               IconButton(
-                onPressed: () {
-                  context.push('/notifications');
-                },
+                onPressed: () => context.push('/notifications'),
                 icon: const Icon(Icons.notifications_none),
               ),
               if (notificationState.unreadCount > 0)
@@ -167,10 +153,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   top: 8,
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
+                    decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
                     child: Text(
                       notificationState.unreadCount.toString(),
                       style: const TextStyle(color: Colors.white, fontSize: 10),
@@ -200,9 +183,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               Text(error.toString(), textAlign: TextAlign.center),
               const SizedBox(height: 12),
               ElevatedButton(
-                onPressed: () {
-                  ref.read(propertyProvider.notifier).loadProperties();
-                },
+                onPressed: () => ref.read(propertyProvider.notifier).loadProperties(),
                 child: Text(context.tr('retry')),
               ),
             ],
@@ -215,33 +196,75 @@ class _HomePageState extends ConsumerState<HomePage> {
               .toList();
           final nearbyIds = nearby.map((property) => property.id).toSet();
           final cityProperties = available
-              .where(
-                (property) =>
-                    !nearbyIds.contains(property.id) &&
-                    _nearbyCity.isNotEmpty &&
-                    property.city.trim().toLowerCase() ==
-                        _nearbyCity.toLowerCase(),
-              )
+              .where((property) =>
+                  !nearbyIds.contains(property.id) &&
+                  _nearbyCity.isNotEmpty &&
+                  property.city.trim().toLowerCase() == _nearbyCity.toLowerCase())
               .toList()
             ..sort(_compareByDistance);
           final cityIds = cityProperties.map((property) => property.id).toSet();
           final remaining = available
-              .where(
-                (property) =>
-                    !nearbyIds.contains(property.id) &&
-                    !cityIds.contains(property.id),
-              )
+              .where((property) =>
+                  !nearbyIds.contains(property.id) && !cityIds.contains(property.id))
               .toList()
             ..sort(_compareByDistance);
-          final visibleFeed = _nearbyProperties == null
+          final rankedFeed = _nearbyProperties == null
               ? available
               : [...nearby, ...cityProperties, ...remaining];
+          final normalizedQuery = _query.trim().toLowerCase();
+          final visibleFeed = normalizedQuery.isEmpty
+              ? rankedFeed
+              : rankedFeed.where((property) {
+                  return property.title.toLowerCase().contains(normalizedQuery) ||
+                      property.city.toLowerCase().contains(normalizedQuery) ||
+                      property.locality.toLowerCase().contains(normalizedQuery) ||
+                      property.propertyType.toLowerCase().contains(normalizedQuery) ||
+                      property.ownerName.toLowerCase().contains(normalizedQuery);
+                }).toList();
 
           return Column(
             children: [
               if (currentRole == 'USER')
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          textInputAction: TextInputAction.search,
+                          onChanged: (value) => setState(() => _query = value),
+                          decoration: InputDecoration(
+                            hintText: context.tr('searchPropertyHint'),
+                            prefixIcon: const Icon(Icons.search),
+                            suffixIcon: _query.isEmpty
+                                ? null
+                                : IconButton(
+                                    tooltip: context.tr('clear'),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() => _query = '');
+                                    },
+                                    icon: const Icon(Icons.close),
+                                  ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filledTonal(
+                        tooltip: context.tr('filters'),
+                        onPressed: () => context.push('/search?filters=1'),
+                        icon: const Icon(Icons.tune),
+                      ),
+                    ],
+                  ),
+                ),
+              if (currentRole == 'USER')
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
                   child: Card(
                     child: SwitchListTile.adaptive(
                       secondary: const Icon(Icons.storefront_outlined),
@@ -255,23 +278,22 @@ class _HomePageState extends ConsumerState<HomePage> {
                       onChanged: _ownerRequestSubmitted || _submittingOwnerRequest
                           ? null
                           : (value) {
-                              if (value) {
-                                _requestOwnerAccess();
-                              }
+                              if (value) _requestOwnerAccess();
                             },
                     ),
                   ),
                 ),
               Expanded(
                 child: visibleFeed.isEmpty
-                    ? Center(child: Text(context.tr('noNearbyProperties')))
-                    : PageView.builder(
-                        scrollDirection: Axis.vertical,
+                    ? Center(child: Text(context.tr('noPropertiesFound')))
+                    : ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        physics: const AlwaysScrollableScrollPhysics(),
                         itemCount: visibleFeed.length,
                         itemBuilder: (context, index) {
                           final property = visibleFeed[index];
-                          return SingleChildScrollView(
-                            padding: const EdgeInsets.only(bottom: 8),
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
                             child: PropertyCard(
                               property: property,
                               onTap: () => _openProperty(property),
@@ -305,15 +327,11 @@ class _HomePageState extends ConsumerState<HomePage> {
   int _compareByDistance(PropertyEntity first, PropertyEntity second) {
     final position = _currentPosition;
     if (position == null) return 0;
-    return _distanceFrom(position, first).compareTo(
-      _distanceFrom(position, second),
-    );
+    return _distanceFrom(position, first).compareTo(_distanceFrom(position, second));
   }
 
   double _distanceFrom(Position position, PropertyEntity property) {
-    if (property.latitude == 0 && property.longitude == 0) {
-      return double.infinity;
-    }
+    if (property.latitude == 0 && property.longitude == 0) return double.infinity;
     return Geolocator.distanceBetween(
       position.latitude,
       position.longitude,
@@ -335,8 +353,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           'propertyId': property.id,
           'userName': property.ownerName,
           'propertyTitle': property.title,
-          if (property.imageUrls.isNotEmpty)
-            'propertyImage': property.imageUrls.first,
+          if (property.imageUrls.isNotEmpty) 'propertyImage': property.imageUrls.first,
         },
       ).toString(),
     );

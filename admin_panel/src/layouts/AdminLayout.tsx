@@ -1,26 +1,46 @@
+import { FormEvent, useMemo, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../auth/AuthContext";
 
 const navItems = [
-  { label: "Dashboard", path: "/dashboard" },
-  { label: "Users", path: "/users" },
-  { label: "Properties", path: "/properties" },
-  { label: "Owner Requests", path: "/owner-requests" },
-  { label: "Reviews", path: "/reviews" },
-  { label: "Visits", path: "/visits" },
-  { label: "Analytics", path: "/analytics" },
-  { label: "Premium Memberships", path: "/premium-memberships" },
-  { label: "Billing", path: "/billing" },
-  { label: "Social Media", path: "/social-media" },
+  { label: "Dashboard", path: "/dashboard", keywords: "overview stats activity" },
+  { label: "Users", path: "/users", keywords: "user tenant owner admin name email phone role" },
+  { label: "Properties", path: "/properties", keywords: "property listing title location city owner status approval" },
+  { label: "Owner Requests", path: "/owner-requests", keywords: "owner request approval pending user" },
+  { label: "Reviews", path: "/reviews", keywords: "review rating comment property user moderation" },
+  { label: "Visits", path: "/visits", keywords: "visit tenant owner property date status booking" },
+  { label: "Analytics", path: "/analytics", keywords: "analytics metrics reports performance" },
+  { label: "Premium Memberships", path: "/premium-memberships", keywords: "premium membership plan subscription trial member" },
+  { label: "Billing", path: "/billing", keywords: "billing invoice payment razorpay transaction" },
+  { label: "Social Media", path: "/social-media", keywords: "social media post facebook instagram youtube platform publish schedule" },
 ];
 
 export function AdminLayout() {
   const { user, signOut } = useAdminAuth();
   const navigate = useNavigate();
+  const [globalSearch, setGlobalSearch] = useState("");
+
+  const searchResults = useMemo(() => {
+    const query = globalSearch.trim().toLowerCase();
+    if (!query) return [];
+    return navItems.filter((item) =>
+      `${item.label} ${item.keywords}`.toLowerCase().includes(query),
+    );
+  }, [globalSearch]);
 
   function handleSignOut() {
     signOut();
     navigate("/login", { replace: true });
+  }
+
+  function openResult(path: string) {
+    setGlobalSearch("");
+    navigate(path);
+  }
+
+  function submitGlobalSearch(event: FormEvent) {
+    event.preventDefault();
+    if (searchResults.length > 0) openResult(searchResults[0].path);
   }
 
   return (
@@ -43,7 +63,35 @@ export function AdminLayout() {
         </div>
       </aside>
       <main className="main-content">
-        <header className="topbar"><div><h1>Administration</h1><p>Manage RentItEase from one place.</p></div><span className="role-badge">ADMIN</span></header>
+        <header className="topbar">
+          <div><h1>Administration</h1><p>Manage RentItEase from one place.</p></div>
+          <div className="topbar-actions">
+            <form className="admin-global-search" onSubmit={submitGlobalSearch} role="search">
+              <span className="admin-global-search-icon" aria-hidden="true">⌕</span>
+              <input
+                value={globalSearch}
+                onChange={(event) => setGlobalSearch(event.target.value)}
+                placeholder="Search admin modules…"
+                aria-label="Search admin modules"
+                autoComplete="off"
+              />
+              {globalSearch && (
+                <button type="button" className="admin-global-search-clear" onClick={() => setGlobalSearch("")} aria-label="Clear search">×</button>
+              )}
+              {globalSearch.trim() && (
+                <div className="admin-global-search-results">
+                  {searchResults.length > 0 ? searchResults.map((item) => (
+                    <button type="button" key={item.path} onClick={() => openResult(item.path)}>
+                      <strong>{item.label}</strong>
+                      <span>{item.keywords.split(" ").slice(0, 5).join(" · ")}</span>
+                    </button>
+                  )) : <div className="admin-global-search-empty">No admin module matches “{globalSearch.trim()}”.</div>}
+                </div>
+              )}
+            </form>
+            <span className="role-badge">ADMIN</span>
+          </div>
+        </header>
         <Outlet />
       </main>
     </div>

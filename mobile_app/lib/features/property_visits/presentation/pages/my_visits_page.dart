@@ -26,7 +26,15 @@ class _MyVisitsPageState extends ConsumerState<MyVisitsPage> {
     'CANCELLED',
   ];
 
+  final _searchController = TextEditingController();
   String _selectedStatus = 'ALL';
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,9 +42,30 @@ class _MyVisitsPageState extends ConsumerState<MyVisitsPage> {
 
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('myPropertyVisits'))),
-
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: TextField(
+              controller: _searchController,
+              textInputAction: TextInputAction.search,
+              onChanged: (value) => setState(() => _query = value),
+              decoration: InputDecoration(
+                hintText: 'Search visits by property, owner, status or notes',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Clear search',
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _query = '');
+                        },
+                        icon: const Icon(Icons.close),
+                      ),
+              ),
+            ),
+          ),
           SizedBox(
             height: 52,
             child: ListView.separated(
@@ -56,154 +85,125 @@ class _MyVisitsPageState extends ConsumerState<MyVisitsPage> {
           ),
           Expanded(
             child: visitsState.when(
-        loading: () {
-          return const Center(child: CircularProgressIndicator());
-        },
-
-        error: (error, _) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 70, color: Colors.red),
-
-                  const SizedBox(height: 16),
-
-                  Text(userFriendlyError(error), textAlign: TextAlign.center),
-
-                  const SizedBox(height: 20),
-
-                  ElevatedButton(
-                    onPressed: () {
-                      ref
-                          .read(propertyVisitProvider.notifier)
-                          .refreshMyVisits();
-                    },
-                    child: Text(context.tr('retry')),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 70, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text(userFriendlyError(error), textAlign: TextAlign.center),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () => ref
+                            .read(propertyVisitProvider.notifier)
+                            .refreshMyVisits(),
+                        child: Text(context.tr('retry')),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          );
-        },
+              data: (List<PropertyVisit> visits) {
+                final query = _query.trim().toLowerCase();
+                final visibleVisits = visits.where((visit) {
+                  final status = visit.status.toUpperCase();
+                  final matchesStatus =
+                      _selectedStatus == 'ALL' || status == _selectedStatus;
+                  final matchesQuery = query.isEmpty ||
+                      visit.id.toLowerCase().contains(query) ||
+                      visit.propertyTitle.toLowerCase().contains(query) ||
+                      visit.ownerName.toLowerCase().contains(query) ||
+                      visit.tenantName.toLowerCase().contains(query) ||
+                      status.toLowerCase().contains(query) ||
+                      (visit.notes?.toLowerCase().contains(query) ?? false);
+                  return matchesStatus && matchesQuery;
+                }).toList();
 
-        data: (List<PropertyVisit> visits) {
-          final visibleVisits = visits
-              .where(
-                (visit) =>
-                    _selectedStatus == 'ALL' ||
-                    visit.status.toUpperCase() == _selectedStatus,
-              )
-              .toList();
-          if (visibleVisits.isEmpty) {
-            return RefreshIndicator(
-              onRefresh: () {
-                return ref
-                    .read(propertyVisitProvider.notifier)
-                    .refreshMyVisits();
-              },
-              child: ListView(
-                children: [
-                  const SizedBox(height: 120),
-
-                  const Icon(Icons.event_busy, size: 90, color: Colors.grey),
-
-                  const SizedBox(height: 20),
-
-                  Center(
-                    child: Text(
-                      context.tr('noVisitsBooked'),
-                      style: const TextStyle(fontSize: 18),
+                if (visibleVisits.isEmpty) {
+                  return RefreshIndicator(
+                    onRefresh: () => ref
+                        .read(propertyVisitProvider.notifier)
+                        .refreshMyVisits(),
+                    child: ListView(
+                      children: [
+                        const SizedBox(height: 120),
+                        const Icon(Icons.event_busy, size: 90, color: Colors.grey),
+                        const SizedBox(height: 20),
+                        Center(
+                          child: Text(
+                            query.isEmpty
+                                ? context.tr('noVisitsBooked')
+                                : 'No visits match your search.',
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                        ),
+                      ],
                     ),
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () => ref
+                      .read(propertyVisitProvider.notifier)
+                      .refreshMyVisits(),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(top: 10, bottom: 20),
+                    itemCount: visibleVisits.length,
+                    itemBuilder: (context, index) {
+                      final visit = visibleVisits[index];
+                      return VisitCard(
+                        visit: visit,
+                        isOwner: false,
+                        onCancel: visit.status == 'PENDING'
+                            ? () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    title: Text(context.tr('cancelVisit')),
+                                    content: Text(context.tr('cancelVisitQuestion')),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, false),
+                                        child: Text(context.tr('no')),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () => Navigator.pop(context, true),
+                                        child: Text(context.tr('yes')),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm != true) return;
+                                try {
+                                  await ref
+                                      .read(propertyVisitProvider.notifier)
+                                      .cancelVisit(visit.id);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(context.tr('visitCancelled'))),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(e.toString())),
+                                    );
+                                  }
+                                }
+                              }
+                            : null,
+                        onCreateBooking: visit.status == 'APPROVED'
+                            ? () => _createBooking(context, ref, visit)
+                            : null,
+                      );
+                    },
                   ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () {
-              return ref.read(propertyVisitProvider.notifier).refreshMyVisits();
-            },
-
-            child: ListView.builder(
-              padding: const EdgeInsets.only(top: 10, bottom: 20),
-
-              itemCount: visibleVisits.length,
-
-              itemBuilder: (context, index) {
-                final visit = visibleVisits[index];
-
-                return VisitCard(
-                  visit: visit,
-
-                  isOwner: false,
-
-                  onCancel: visit.status == "PENDING"
-                      ? () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (_) {
-                              return AlertDialog(
-                                title: Text(context.tr('cancelVisit')),
-                                content: Text(
-                                  context.tr('cancelVisitQuestion'),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context, false);
-                                    },
-                                    child: Text(context.tr('no')),
-                                  ),
-
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pop(context, true);
-                                    },
-                                    child: Text(context.tr('yes')),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-
-                          if (confirm != true) {
-                            return;
-                          }
-
-                          try {
-                            await ref
-                                .read(propertyVisitProvider.notifier)
-                                .cancelVisit(visit.id);
-
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(context.tr('visitCancelled')),
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(e.toString())),
-                              );
-                            }
-                          }
-                        }
-                      : null,
-                  onCreateBooking: visit.status == 'APPROVED'
-                      ? () => _createBooking(context, ref, visit)
-                      : null,
                 );
               },
             ),
-          );
-        },
-      ),
           ),
         ],
       ),
@@ -219,9 +219,7 @@ class _MyVisitsPageState extends ConsumerState<MyVisitsPage> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Create booking?'),
-        content: Text(
-          'Create a booking request for ${visit.propertyTitle}?',
-        ),
+        content: Text('Create a booking request for ${visit.propertyTitle}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -236,12 +234,9 @@ class _MyVisitsPageState extends ConsumerState<MyVisitsPage> {
     );
 
     if (confirmed != true || !context.mounted) return;
-
     try {
       await ref.read(createBookingProvider).create(visitId: visit.id);
-
       if (!context.mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Booking created successfully.')),
       );

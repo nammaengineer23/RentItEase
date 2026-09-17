@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,follow">
+  <meta name="theme-color" content="#123B2A">
+  <title>Downloading RentItEase</title>
+  <style>
+    html,body{margin:0;min-height:100%;font-family:Arial,sans-serif;background:#f8fbf9;color:#10251b}
+    main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;text-align:center}
+    section{max-width:520px}
+    h1{margin:0 0 12px;font-size:32px}p{color:#52655b;line-height:1.6}
+    a{display:inline-block;margin-top:16px;padding:14px 20px;border-radius:12px;background:#123b2a;color:white;text-decoration:none;font-weight:700}
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <h1>RentItEase</h1>
+      <p>Your Android APK download is starting. You will return to the RentItEase home page automatically.</p>
+      <a id="download" href="https://github.com/nammaengineer23/RentItEase/releases/latest/download/RentItEase-release.apk">Download again</a>
+    </section>
+  </main>
+  <script>
+    (() => {
+      const apk = 'https://github.com/nammaengineer23/RentItEase/releases/latest/download/RentItEase-release.apk';
+      const frame = document.createElement('iframe');
+      frame.hidden = true;
+      frame.setAttribute('aria-hidden', 'true');
+      frame.src = apk;
+      document.body.appendChild(frame);
+      window.setTimeout(() => window.location.replace('/'), 1800);
+    })();
+  </script>
+</body>
+</html>
