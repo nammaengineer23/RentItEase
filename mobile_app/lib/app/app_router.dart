@@ -32,7 +32,7 @@ import '../features/notifications/presentation/pages/notifications_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 
 import '../features/owner/data/models/owner_property_model.dart';
-import '../features/owner/data/repositories/owner_repository.dart';
+import '../features/owner/providers/owner_provider.dart';
 import '../features/owner/presentation/pages/add_property_page.dart';
 import '../features/owner/presentation/pages/edit_property_page.dart';
 import '../features/owner/presentation/pages/my_properties_page.dart';
