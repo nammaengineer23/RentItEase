@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { Membership } from '../api/billingApi';
 import {
   createPremiumPlanConfig,
@@ -15,6 +16,7 @@ const date = (value?: string | null) => value ? new Date(value).toLocaleDateStri
 const money = (value: number | string) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(value));
 
 export function PremiumManagementPage() {
+  const [searchParams] = useSearchParams();
   const [plans, setPlans] = useState<PremiumPlanConfig[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [planDialog, setPlanDialog] = useState<PremiumPlanConfig | 'new' | null>(null);
@@ -35,6 +37,13 @@ export function PremiumManagementPage() {
     } catch (e) { setError(e instanceof Error ? e.message : 'Unable to load premium management.'); }
   }
   useEffect(() => { void load(); }, []);
+
+  useEffect(() => {
+    const recordId = searchParams.get('record');
+    if (!recordId) return;
+    const match = memberships.find((membership) => membership.id === recordId);
+    if (match) openMembership(match);
+  }, [searchParams, memberships]);
 
   const activePlans = useMemo(() => plans.filter((p) => p.isActive), [plans]);
 
