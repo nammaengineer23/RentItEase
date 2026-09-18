@@ -32,6 +32,7 @@ import '../features/notifications/presentation/pages/notifications_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 
 import '../features/owner/data/models/owner_property_model.dart';
+import '../features/owner/data/repositories/owner_repository.dart';
 import '../features/owner/presentation/pages/add_property_page.dart';
 import '../features/owner/presentation/pages/edit_property_page.dart';
 import '../features/owner/presentation/pages/my_properties_page.dart';
@@ -692,6 +693,44 @@ class _RouteErrorPage extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+class _OwnerPropertyRouteLoader extends ConsumerWidget {
+  const _OwnerPropertyRouteLoader({
+    required this.propertyId,
+    required this.edit,
+  });
+
+  final String propertyId;
+  final bool edit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (propertyId.isEmpty) {
+      return const _RouteErrorPage(message: 'Owner property ID is missing.');
+    }
+
+    return FutureBuilder<OwnerPropertyModel>(
+      future: ref.read(ownerRepositoryProvider).getProperty(propertyId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError || !snapshot.hasData) {
+          return const _RouteErrorPage(
+            message: 'Owner property could not be loaded.',
+          );
+        }
+        final property = snapshot.data!;
+        return edit
+            ? EditPropertyPage(property: property)
+            : OwnerPropertyDetailsPage(property: property);
+      },
     );
   }
 }
