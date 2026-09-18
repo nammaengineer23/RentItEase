@@ -570,18 +570,18 @@ class AppRouter {
           // );
           // ============================================================
           GoRoute(
-            path: '/owner/property-details',
+            path: '/owner/property-details/:id',
             name: 'owner-property-details',
             builder: (context, state) {
               final property = state.extra;
-
-              if (property is! OwnerPropertyModel) {
-                return const _RouteErrorPage(
-                  message: 'Owner property not found.',
-                );
+              final propertyId = state.pathParameters['id'] ?? '';
+              if (property is OwnerPropertyModel) {
+                return OwnerPropertyDetailsPage(property: property);
               }
-
-              return OwnerPropertyDetailsPage(property: property);
+              return _OwnerPropertyRouteLoader(
+                propertyId: propertyId,
+                edit: false,
+              );
             },
           ),
 
@@ -596,18 +596,18 @@ class AppRouter {
           // );
           // ============================================================
           GoRoute(
-            path: '/owner/edit-property',
+            path: '/owner/edit-property/:id',
             name: 'owner-edit-property',
             builder: (context, state) {
               final property = state.extra;
-
-              if (property is! OwnerPropertyModel) {
-                return const _RouteErrorPage(
-                  message: 'Owner property not found.',
-                );
+              final propertyId = state.pathParameters['id'] ?? '';
+              if (property is OwnerPropertyModel) {
+                return EditPropertyPage(property: property);
               }
-
-              return EditPropertyPage(property: property);
+              return _OwnerPropertyRouteLoader(
+                propertyId: propertyId,
+                edit: true,
+              );
             },
           ),
 
