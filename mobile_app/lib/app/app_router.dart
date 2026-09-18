@@ -90,6 +90,7 @@ class AppRouter {
         '/about',
         '/contact',
         '/privacy',
+        '/terms',
         '/delete-account',
         '/splash',
         '/onboarding',
@@ -166,6 +167,13 @@ class AppRouter {
         name: 'web-privacy',
         builder: (context, state) => kIsWeb
             ? const WebInfoPage(kind: WebInfoPageKind.privacy)
+            : const SplashPage(),
+      ),
+      GoRoute(
+        path: '/terms',
+        name: 'web-terms',
+        builder: (context, state) => kIsWeb
+            ? const WebInfoPage(kind: WebInfoPageKind.terms)
             : const SplashPage(),
       ),
       GoRoute(
