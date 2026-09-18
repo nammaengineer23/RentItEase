@@ -221,6 +221,7 @@ export class OwnerDashboardService {
         locality: property.locality,
         price: Number(property.price),
         isAvailable: property.isAvailable,
+        isVerified: property.isVerified,
         averageRating,
         totalReviews,
         totalFavorites: property.favorites.length,
