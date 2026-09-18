@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   activateAdminMembership,
   activateAdminPremiumListing,
@@ -64,6 +65,7 @@ function badgeClass(value: string) {
 }
 
 export function BillingPage() {
+  const [searchParams] = useSearchParams();
   const [tab, setTab] = useState<Tab>("overview");
   const [overview, setOverview] = useState<BillingOverview | null>(null);
   const [plans, setPlans] = useState<MembershipPlan[]>([]);
@@ -109,6 +111,16 @@ export function BillingPage() {
   useEffect(() => {
     void loadAll();
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    const recordId = searchParams.get("record");
+    if (!recordId) return;
+    if (invoices.some((item) => item.id === recordId)) setTab("invoices");
+    else if (memberships.some((item) => item.id === recordId)) setTab("memberships");
+    else if (premium.some((item) => item.id === recordId)) setTab("premium");
+    else if (payments.some((item) => item.id === recordId)) setTab("payments");
+  }, [searchParams, loading, invoices, memberships, premium, payments]);
 
   const activePlanCount = useMemo(
     () => plans.filter((item) => item.isActive).length,
