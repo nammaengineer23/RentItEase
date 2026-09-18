@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   approveVisit,
   cancelVisit,
@@ -26,6 +27,7 @@ function statusClass(status: VisitStatus): string {
 }
 
 export function VisitsPage() {
+  const [searchParams] = useSearchParams();
   const [visits, setVisits] = useState<AdminVisit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -43,6 +45,18 @@ export function VisitsPage() {
   }
 
   useEffect(() => { void loadVisits(); }, []);
+
+  useEffect(() => {
+    const query = searchParams.get('search');
+    if (query) setSearch(query);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const recordId = searchParams.get('record');
+    if (!recordId || loading) return;
+    const match = visits.find((visit) => visit.id === recordId);
+    if (match) setSelectedVisit(match);
+  }, [searchParams, loading, visits]);
 
   const filteredVisits = useMemo(() => {
     const query = search.trim().toLowerCase();
