@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { deleteReview, getReviews, updateReview, type AdminReview } from '../api/reviewsApi';
 
 function formatDate(value: string): string {
@@ -11,6 +12,7 @@ function Stars({ rating }: { rating: number }) {
 }
 
 export function ReviewsPage() {
+  const [searchParams] = useSearchParams();
   const [reviews, setReviews] = useState<AdminReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -28,6 +30,18 @@ export function ReviewsPage() {
   }
 
   useEffect(() => { void loadReviews(); }, []);
+
+  useEffect(() => {
+    const query = searchParams.get('search');
+    if (query) setSearch(query);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const recordId = searchParams.get('record');
+    if (!recordId || loading) return;
+    const match = reviews.find((review) => review.id === recordId);
+    if (match) openReview(match);
+  }, [searchParams, loading, reviews]);
 
   const filteredReviews = useMemo(() => {
     const q = search.trim().toLowerCase();
