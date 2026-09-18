@@ -53,6 +53,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
   bool loading = false;
   bool imagesLoading = true;
   bool videoLoading = false;
+  bool detailsLoading = true;
   late String videoUrl;
   LocationModel? selectedLocation;
   Map<String, List<File>> newImagesBySection = const {};
@@ -107,7 +108,60 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
       );
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadImages());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadFullProperty();
+      _loadImages();
+    });
+  }
+
+  Future<void> _loadFullProperty() async {
+    try {
+      final property = await ref
+          .read(ownerRepositoryProvider)
+          .getProperty(widget.property.id);
+      if (!mounted) return;
+      setState(() {
+        descriptionController.text = property.description;
+        rentController.text = property.rent.toString();
+        dailyRentController.text = property.dailyRent?.toString() ?? '';
+        securityDepositController.text = property.securityDeposit.toString();
+        addressController.text = property.address;
+        localityController.text = property.locality;
+        landmarkController.text = property.landmark;
+        cityController.text = property.city;
+        stateController.text = property.stateName;
+        countryController.text = property.country;
+        pincodeController.text = property.pincode;
+        bedroomsController.text = property.bedrooms.toString();
+        bathroomsController.text = property.bathrooms.toString();
+        areaController.text = property.area.toString();
+        propertyType = _displayPropertyType(property.propertyType);
+        furnishing = _displayFurnishing(property.furnishing);
+        parking = property.parking;
+        petFriendly = property.petFriendly;
+        isAvailable = property.isAvailable;
+        dailyRentEnabled = property.dailyRentEnabled;
+        videoUrl = property.videoUrl;
+        if (property.latitude != null && property.longitude != null) {
+          selectedLocation = LocationModel(
+            latitude: property.latitude!,
+            longitude: property.longitude!,
+            address: property.address,
+            locality: property.locality,
+            city: property.city,
+            state: property.stateName,
+            country: property.country,
+            postalCode: property.pincode,
+          );
+        }
+        detailsLoading = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => detailsLoading = false);
+        _showError('Could not load the latest property details.');
+      }
+    }
   }
 
   String _displayPropertyType(String value) {
@@ -435,7 +489,9 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
 
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('editProperty'))),
-      body: Form(
+      body: detailsLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
