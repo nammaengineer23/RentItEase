@@ -170,13 +170,29 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     else ..._amenities.map((a) {
       final id = a['id'].toString();
       final name = a['name']?.toString().trim();
-      final selected = _selectedAmenityIds.contains(id);
+      final normalizedName = (name ?? '').toLowerCase();
+      final selected = normalizedName == 'parking' ||
+              normalizedName == 'covered parking'
+          ? parking
+          : normalizedName == 'pet friendly'
+              ? petFriendly
+              : _selectedAmenityIds.contains(id);
       return SwitchListTile.adaptive(
         contentPadding: EdgeInsets.zero,
         dense: true,
         title: Text(name == null || name.isEmpty ? 'Amenity' : name),
         value: selected,
-        onChanged: loading ? null : (value) => setState(() { if (value) { _selectedAmenityIds.add(id); } else { _selectedAmenityIds.remove(id); } }),
+        onChanged: loading ? null : (value) => setState(() {
+          if (normalizedName == 'parking' || normalizedName == 'covered parking') {
+            parking = value;
+          } else if (normalizedName == 'pet friendly') {
+            petFriendly = value;
+          } else if (value) {
+            _selectedAmenityIds.add(id);
+          } else {
+            _selectedAmenityIds.remove(id);
+          }
+        }),
       );
     }),
     const SizedBox(height: 16),
@@ -196,7 +212,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     _text(areaController, context.tr('areaSqFt'), keyboard: const TextInputType.numberWithOptions(decimal:true), validator:_number), _amenitiesSection(),
     Text(context.tr('propertyLocation'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), OutlinedButton.icon(onPressed:loading?null:_pickLocation,icon:const Icon(Icons.location_on_outlined),label:Text(selectedLocation==null?context.tr('gettingCurrentLocation'):context.tr('changeLocationMap'))), if(selectedLocation!=null) Padding(padding:const EdgeInsets.only(top:8,bottom:16),child:Text('${context.tr('coordinates')}: ${selectedLocation!.latitude.toStringAsFixed(6)}, ${selectedLocation!.longitude.toStringAsFixed(6)}')),
     _text(addressController,context.tr('address')), _text(localityController,context.tr('locality')), _text(landmarkController,context.tr('landmark'),validator:(_)=>null), _text(cityController,context.tr('city')), _text(stateController,context.tr('state')), _text(countryController,context.tr('country')), _text(pincodeController,context.tr('pincode'),keyboard:TextInputType.number),
-    SwitchListTile(contentPadding:EdgeInsets.zero,title:Text(context.tr('parking')),value:parking,onChanged:(v)=>setState(()=>parking=v)), SwitchListTile(contentPadding:EdgeInsets.zero,title:Text(context.tr('petFriendly')),value:petFriendly,onChanged:(v)=>setState(()=>petFriendly=v)), SwitchListTile(contentPadding:EdgeInsets.zero,title:const Text('Allow promotional content'),subtitle:const Text('RentItEase may prepare marketing content after approval. It will never publish automatically.'),value:socialMarketingConsent,onChanged:(v)=>setState(()=>socialMarketingConsent=v)),
+    SwitchListTile(contentPadding:EdgeInsets.zero,title:const Text('Allow promotional content'),subtitle:const Text('RentItEase may prepare marketing content after approval. It will never publish automatically.'),value:socialMarketingConsent,onChanged:(v)=>setState(()=>socialMarketingConsent=v)),
     const SizedBox(height:16), const Text('Video tour (optional)',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const Text('One MP4, MOV or M4V video • up to 60 seconds • 100 MB'), OutlinedButton.icon(onPressed:loading?null:_pickVideo,icon:const Icon(Icons.video_call_outlined),label:Text(selectedVideo==null?'Select video tour':'Selected: ${selectedVideo!.name}',overflow:TextOverflow.ellipsis)), if(selectedVideo!=null) TextButton.icon(onPressed:loading?null:()=>setState(()=>selectedVideo=null),icon:const Icon(Icons.close),label:const Text('Remove selected video')),
     const SizedBox(height:16), Text(context.tr('propertyPhotos'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), SectionedPropertyImagePicker(onImagesChanged:(v)=>selectedImagesBySection=v), const SizedBox(height:24), SizedBox(height:52,child:FilledButton.icon(onPressed:loading?null:_saveProperty,icon:loading?const SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Icon(Icons.save),label:Text(loading?context.tr('creatingProperty'):context.tr('createProperty')))), const SizedBox(height:24),
   ])));
