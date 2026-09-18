@@ -75,6 +75,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   void _applyLocation(LocationModel location) => setState(() {
     selectedLocation = location;
     if (location.address.isNotEmpty) addressController.text = location.address;
+    if (location.locality.isNotEmpty) localityController.text = location.locality;
     if (location.city.isNotEmpty) cityController.text = location.city;
     if (location.state.isNotEmpty) stateController.text = location.state;
     if (location.country.isNotEmpty) countryController.text = location.country;
