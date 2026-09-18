@@ -1226,14 +1226,95 @@ Future<void> _showPropertyDetails(
     final property = await notifier.getProperty(id);
     if (!context.mounted) return;
     final owner = _section(property, 'owner');
-    await _showDetails(context, 'Property Details', {
-      'Title': _text(property, 'title'),
-      'Location': '${_text(property, 'locality')}, ${_text(property, 'city')}',
-      'Price': '₹${_number(property, 'price')}',
-      'Owner': _text(owner, 'fullName'),
-      'Owner Email': _text(owner, 'email'),
-      'Status': property['isAvailable'] == true ? 'Visible' : 'Hidden',
-    });
+    final images = property['images'] is List
+        ? List<Map<String, dynamic>>.from(
+            (property['images'] as List).whereType<Map>().map(
+                  (item) => Map<String, dynamic>.from(item),
+                ),
+          )
+        : <Map<String, dynamic>>[];
+    final amenities = property['amenities'] is List
+        ? (property['amenities'] as List)
+            .map((item) => item is Map ? _section(Map<String, dynamic>.from(item), 'amenity') : const <String, dynamic>{})
+            .map((item) => _text(item, 'name'))
+            .where((name) => name.isNotEmpty)
+            .join(', ')
+        : '';
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: FractionallySizedBox(
+          heightFactor: 0.92,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            children: [
+              Text('Property approval review',
+                  style: Theme.of(sheetContext).textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              if (images.isNotEmpty) ...[
+                SizedBox(
+                  height: 220,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: images.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    itemBuilder: (_, index) => ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        _text(images[index], 'imageUrl'),
+                        width: 300,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            const SizedBox(width: 300, child: Icon(Icons.broken_image_outlined)),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (_text(property, 'videoUrl').isNotEmpty)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.videocam_outlined),
+                  title: const Text('Video tour attached'),
+                  subtitle: SelectableText(_text(property, 'videoUrl')),
+                ),
+              ...{
+                'Title': _text(property, 'title'),
+                'Description': _text(property, 'description'),
+                'Property type': _text(property, 'propertyType'),
+                'Monthly rent': '₹${_text(property, 'price')}',
+                'Security deposit': '₹${_text(property, 'securityDeposit')}',
+                'Bedrooms': _text(property, 'bedrooms'),
+                'Bathrooms': _text(property, 'bathrooms'),
+                'Area': '${_text(property, 'area')} sq ft',
+                'Furnishing': _text(property, 'furnishing'),
+                'Address': _text(property, 'address'),
+                'Locality': _text(property, 'locality'),
+                'Landmark': _text(property, 'landmark'),
+                'City': _text(property, 'city'),
+                'State': _text(property, 'state'),
+                'Country': _text(property, 'country'),
+                'Pincode': _text(property, 'pincode'),
+                'Amenities': amenities,
+                'Parking': property['parking'] == true ? 'Yes' : 'No',
+                'Pet friendly': property['petFriendly'] == true ? 'Yes' : 'No',
+                'Owner': _text(owner, 'fullName'),
+                'Owner email': _text(owner, 'email'),
+                'Owner phone': _text(owner, 'phone'),
+                'Approval': property['isVerified'] == true ? 'Approved' : 'Pending approval',
+              }.entries.map((entry) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(entry.key),
+                    subtitle: Text(entry.value.isEmpty ? '—' : entry.value),
+                  )),
+            ],
+          ),
+        ),
+      ),
+    );
   } catch (error) {
     if (context.mounted) _showError(context, error);
   }
