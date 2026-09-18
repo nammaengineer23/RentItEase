@@ -32,6 +32,7 @@ import '../features/notifications/presentation/pages/notifications_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 
 import '../features/owner/data/models/owner_property_model.dart';
+import '../features/owner/domain/entities/owner_property_entity.dart';
 import '../features/owner/providers/owner_provider.dart';
 import '../features/owner/presentation/pages/add_property_page.dart';
 import '../features/owner/presentation/pages/edit_property_page.dart';
@@ -721,7 +722,7 @@ class _OwnerPropertyRouteLoader extends ConsumerWidget {
       return const _RouteErrorPage(message: 'Owner property ID is missing.');
     }
 
-    return FutureBuilder<OwnerPropertyModel>(
+    return FutureBuilder<OwnerPropertyEntity>(
       future: ref.read(ownerRepositoryProvider).getProperty(propertyId),
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
