@@ -9,6 +9,8 @@ import '../../providers/admin_provider.dart';
 final _adminUserQueryProvider = StateProvider<String>((_) => '');
 final _adminUserRoleProvider = StateProvider<String>((_) => 'ALL');
 final _adminUserStatusProvider = StateProvider<String>((_) => 'ALL');
+final _adminPremiumQueryProvider = StateProvider<String>((_) => '');
+final _adminPremiumStatusProvider = StateProvider<String>((_) => 'ALL');
 
 class AdminDashboardPage extends ConsumerStatefulWidget {
   const AdminDashboardPage({super.key, this.loadOnStart = true});
@@ -699,15 +701,71 @@ class _PremiumView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(adminProvider);
+    final query = ref.watch(_adminPremiumQueryProvider).trim().toLowerCase();
+    final statusFilter = ref.watch(_adminPremiumStatusProvider);
+    final memberships = state.memberships.where((membership) {
+      final user = _section(membership, 'user');
+      final plan = _section(membership, 'plan');
+      final status = _text(membership, 'status').toUpperCase();
+      final matchesQuery = query.isEmpty ||
+          _text(user, 'fullName').toLowerCase().contains(query) ||
+          _text(user, 'email').toLowerCase().contains(query) ||
+          _text(plan, 'name').toLowerCase().contains(query) ||
+          status.toLowerCase().contains(query);
+      return matchesQuery && (statusFilter == 'ALL' || status == statusFilter);
+    }).toList();
     return _AdminRefreshView(
       error: state.error,
       empty: state.memberships.isEmpty,
       onRefresh: ref.read(adminProvider.notifier).loadMemberships,
       child: ListView.builder(
         padding: const EdgeInsets.all(12),
-        itemCount: state.memberships.length,
+        itemCount: memberships.length + 1,
         itemBuilder: (context, index) {
-          final membership = state.memberships[index];
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                children: [
+                  TextField(
+                    onChanged: (value) =>
+                        ref.read(_adminPremiumQueryProvider.notifier).state = value,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.search),
+                      hintText: 'Search member, email, plan or status',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final filter in const [
+                          ('ALL', 'All'),
+                          ('ACTIVE', 'Active'),
+                          ('PENDING', 'Pending'),
+                          ('EXPIRED', 'Expired'),
+                          ('CANCELLED', 'Cancelled'),
+                        ])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(filter.$2),
+                              selected: statusFilter == filter.$1,
+                              onSelected: (_) => ref
+                                  .read(_adminPremiumStatusProvider.notifier)
+                                  .state = filter.$1,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          final membership = memberships[index - 1];
           final user = _section(membership, 'user');
           final plan = _section(membership, 'plan');
           final id = _text(membership, 'id');
