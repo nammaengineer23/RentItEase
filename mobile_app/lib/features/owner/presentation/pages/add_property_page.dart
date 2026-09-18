@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/network/dio_provider.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -221,7 +222,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     const SizedBox(height:24),
     const Text('Consent & Terms', style: TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
     SwitchListTile(contentPadding:EdgeInsets.zero,title:const Text('Allow promotional content'),subtitle:const Text('RentItEase may prepare marketing content after approval. It will never publish automatically.'),value:socialMarketingConsent,onChanged:loading?null:(v)=>setState(()=>socialMarketingConsent=v)),
-    CheckboxListTile(contentPadding:EdgeInsets.zero,controlAffinity:ListTileControlAffinity.leading,title:const Text('I agree to the Terms & Conditions'),subtitle:const Text('Required to submit this property listing.'),value:termsAccepted,onChanged:loading?null:(v)=>setState(()=>termsAccepted=v??false)),
+    CheckboxListTile(contentPadding:EdgeInsets.zero,controlAffinity:ListTileControlAffinity.leading,title:const Text('I agree to the Terms & Conditions'),subtitle:TextButton(style:TextButton.styleFrom(padding:EdgeInsets.zero,alignment:Alignment.centerLeft),onPressed:()=>launchUrl(Uri.parse('https://rentitease.com/terms')),child:const Text('Read Terms & Conditions • Required to submit this listing')),value:termsAccepted,onChanged:loading?null:(v)=>setState(()=>termsAccepted=v??false)),
     const SizedBox(height:16), SizedBox(height:52,child:FilledButton.icon(onPressed:loading?null:_saveProperty,icon:loading?const SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Icon(Icons.save),label:Text(loading?context.tr('creatingProperty'):context.tr('createProperty')))), const SizedBox(height:24),
   ])));
 
