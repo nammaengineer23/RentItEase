@@ -60,6 +60,7 @@ export class AmenitiesService {
         'Gated Community',
         'Gym',
         'Power Backup',
+        'Pet Friendly',
         'Security',
         'Swimming Pool',
         'Wi-Fi',
