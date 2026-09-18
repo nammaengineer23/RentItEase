@@ -911,16 +911,116 @@ class _PremiumView extends ConsumerWidget {
 class _SocialMediaView extends ConsumerWidget {
   const _SocialMediaView();
 
+  Future<String?> _choosePlatform(BuildContext context) =>
+      showDialog<String>(
+        context: context,
+        builder: (dialogContext) => SimpleDialog(
+          title: const Text('Select platform'),
+          children: const [
+            SimpleDialogOption(
+              child: ListTile(
+                leading: Icon(Icons.camera_alt_outlined),
+                title: Text('Instagram'),
+              ),
+            ),
+          ],
+        ),
+      );
+
+  Future<String?> _platformDialog(BuildContext context) async {
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Select platform'),
+        children: [
+          for (final platform in const ['INSTAGRAM', 'FACEBOOK', 'YOUTUBE'])
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(dialogContext, platform),
+              child: Text(platform),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _generate(
+    BuildContext context,
+    AdminNotifier notifier,
+    String propertyId,
+  ) async {
+    try {
+      await notifier.generateSocialMedia(
+        propertyId,
+        const ['INSTAGRAM', 'FACEBOOK', 'YOUTUBE'],
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Social-media content generated')),
+      );
+      await notifier.loadSocialMedia();
+    } catch (error) {
+      if (context.mounted) _showError(context, error);
+    }
+  }
+
+  Future<void> _publish(
+    BuildContext context,
+    AdminNotifier notifier,
+    String propertyId,
+  ) async {
+    final platform = await _platformDialog(context);
+    if (platform == null || !context.mounted) return;
+    await _runAction(
+      context,
+      () => notifier.publishSocialMedia(propertyId, platform),
+      'Published to ${platform.toLowerCase()}',
+    );
+  }
+
+  Future<void> _schedule(
+    BuildContext context,
+    AdminNotifier notifier,
+    String propertyId,
+  ) async {
+    final platform = await _platformDialog(context);
+    if (platform == null || !context.mounted) return;
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (date == null || !context.mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (time == null || !context.mounted) return;
+    final scheduledAt = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    await _runAction(
+      context,
+      () => notifier.scheduleSocialMedia(propertyId, platform, scheduledAt),
+      'Social-media post scheduled',
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(adminProvider);
+    final notifier = ref.read(adminProvider.notifier);
     final consentedProperties = state.socialProperties.where((property) {
       return _section(property, 'socialMarketingConsent')['approved'] == true;
     }).toList();
     return _AdminRefreshView(
       error: state.error,
       empty: consentedProperties.isEmpty,
-      onRefresh: ref.read(adminProvider.notifier).loadSocialMedia,
+      onRefresh: notifier.loadSocialMedia,
       child: consentedProperties.isEmpty
           ? ListView(
               children: const [
@@ -939,18 +1039,50 @@ class _SocialMediaView extends ConsumerWidget {
                 final property = consentedProperties[index];
                 final consent = _section(property, 'socialMarketingConsent');
                 final owner = _section(property, 'owner');
+                final propertyId = _text(property, 'id');
                 return Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.campaign_outlined),
-                    title: Text(_text(property, 'title')),
-                    subtitle: Text(
-                      'Consent active • Owner: ${_text(owner, 'fullName')}\n'
-                      'Consent version: ${_text(consent, 'consentVersion')}',
-                    ),
-                    isThreeLine: true,
-                    trailing: const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _text(property, 'title'),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Consent active • Owner: ${_text(owner, 'fullName')}\n'
+                          'Consent version: ${_text(consent, 'consentVersion')}',
+                        ),
+                        const SizedBox(height: 14),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            FilledButton.icon(
+                              onPressed: () =>
+                                  _generate(context, notifier, propertyId),
+                              icon: const Icon(Icons.auto_awesome),
+                              label: const Text('Generate'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () =>
+                                  _publish(context, notifier, propertyId),
+                              icon: const Icon(Icons.publish_outlined),
+                              label: const Text('Publish'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () =>
+                                  _schedule(context, notifier, propertyId),
+                              icon: const Icon(Icons.schedule_outlined),
+                              label: const Text('Schedule'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 );
