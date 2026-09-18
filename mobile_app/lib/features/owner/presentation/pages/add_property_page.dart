@@ -43,7 +43,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   String propertyType = 'House';
   String furnishing = 'Semi Furnished';
   bool parking = false, petFriendly = false, dailyRentEnabled = false;
-  bool socialMarketingConsent = false, aiSuggesting = false, loading = false;
+  bool socialMarketingConsent = false, termsAccepted = false, aiSuggesting = false, loading = false;
   bool _amenitiesLoading = true;
   String? _amenitiesError;
   LocationModel? selectedLocation;
@@ -136,6 +136,10 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   void _showError(String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 
   Future<void> _saveProperty() async {
+    if (!termsAccepted) {
+      _showError('Please accept the Terms & Conditions to create a property.');
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     final rent = double.tryParse(rentController.text.trim());
     final dailyRent = double.tryParse(dailyRentController.text.trim());
@@ -212,9 +216,13 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     _text(areaController, context.tr('areaSqFt'), keyboard: const TextInputType.numberWithOptions(decimal:true), validator:_number), _amenitiesSection(),
     Text(context.tr('propertyLocation'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), OutlinedButton.icon(onPressed:loading?null:_pickLocation,icon:const Icon(Icons.location_on_outlined),label:Text(selectedLocation==null?context.tr('gettingCurrentLocation'):context.tr('changeLocationMap'))), if(selectedLocation!=null) Padding(padding:const EdgeInsets.only(top:8,bottom:16),child:Text('${context.tr('coordinates')}: ${selectedLocation!.latitude.toStringAsFixed(6)}, ${selectedLocation!.longitude.toStringAsFixed(6)}')),
     _text(addressController,context.tr('address')), _text(localityController,context.tr('locality')), _text(landmarkController,context.tr('landmark'),validator:(_)=>null), _text(cityController,context.tr('city')), _text(stateController,context.tr('state')), _text(countryController,context.tr('country')), _text(pincodeController,context.tr('pincode'),keyboard:TextInputType.number),
-    SwitchListTile(contentPadding:EdgeInsets.zero,title:const Text('Allow promotional content'),subtitle:const Text('RentItEase may prepare marketing content after approval. It will never publish automatically.'),value:socialMarketingConsent,onChanged:(v)=>setState(()=>socialMarketingConsent=v)),
     const SizedBox(height:16), const Text('Video tour (optional)',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const Text('One MP4, MOV or M4V video • up to 60 seconds • 100 MB'), OutlinedButton.icon(onPressed:loading?null:_pickVideo,icon:const Icon(Icons.video_call_outlined),label:Text(selectedVideo==null?'Select video tour':'Selected: ${selectedVideo!.name}',overflow:TextOverflow.ellipsis)), if(selectedVideo!=null) TextButton.icon(onPressed:loading?null:()=>setState(()=>selectedVideo=null),icon:const Icon(Icons.close),label:const Text('Remove selected video')),
-    const SizedBox(height:16), Text(context.tr('propertyPhotos'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), SectionedPropertyImagePicker(onImagesChanged:(v)=>selectedImagesBySection=v), const SizedBox(height:24), SizedBox(height:52,child:FilledButton.icon(onPressed:loading?null:_saveProperty,icon:loading?const SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Icon(Icons.save),label:Text(loading?context.tr('creatingProperty'):context.tr('createProperty')))), const SizedBox(height:24),
+    const SizedBox(height:16), Text(context.tr('propertyPhotos'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), SectionedPropertyImagePicker(onImagesChanged:(v)=>selectedImagesBySection=v),
+    const SizedBox(height:24),
+    const Text('Consent & Terms', style: TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
+    SwitchListTile(contentPadding:EdgeInsets.zero,title:const Text('Allow promotional content'),subtitle:const Text('RentItEase may prepare marketing content after approval. It will never publish automatically.'),value:socialMarketingConsent,onChanged:loading?null:(v)=>setState(()=>socialMarketingConsent=v)),
+    CheckboxListTile(contentPadding:EdgeInsets.zero,controlAffinity:ListTileControlAffinity.leading,title:const Text('I agree to the Terms & Conditions'),subtitle:const Text('Required to submit this property listing.'),value:termsAccepted,onChanged:loading?null:(v)=>setState(()=>termsAccepted=v??false)),
+    const SizedBox(height:16), SizedBox(height:52,child:FilledButton.icon(onPressed:loading?null:_saveProperty,icon:loading?const SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Icon(Icons.save),label:Text(loading?context.tr('creatingProperty'):context.tr('createProperty')))), const SizedBox(height:24),
   ])));
 
   @override
