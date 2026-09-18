@@ -18,19 +18,17 @@
   <main>
     <section>
       <h1>RentItEase</h1>
-      <p>Your Android APK download is starting. You will return to the RentItEase home page automatically.</p>
+      <p>Your Android APK download is starting. Keep this page open until your browser shows the download.</p>
       <a id="download" href="https://github.com/nammaengineer23/RentItEase/releases/latest/download/RentItEase-release.apk">Download again</a>
     </section>
   </main>
   <script>
     (() => {
       const apk = 'https://github.com/nammaengineer23/RentItEase/releases/latest/download/RentItEase-release.apk';
-      const frame = document.createElement('iframe');
-      frame.hidden = true;
-      frame.setAttribute('aria-hidden', 'true');
-      frame.src = apk;
-      document.body.appendChild(frame);
-      window.setTimeout(() => window.location.replace('/'), 1800);
+      // Navigate directly to the release asset. Redirecting this page back to
+      // the home screen on a timer can cancel the GitHub redirect/download on
+      // mobile browsers before it has started.
+      window.location.assign(apk);
     })();
   </script>
 </body>
