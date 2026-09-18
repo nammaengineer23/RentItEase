@@ -194,11 +194,44 @@ import {
       membershipId: string,
       user: { id: string; role: string },
     ) {
-      const invoice = await this.prisma.invoice.findFirst({
+      let invoice = await this.prisma.invoice.findFirst({
         where: { membershipId, status: InvoiceStatus.PAID },
         include: { membership: { include: { plan: true } } },
       });
-      if (!invoice) throw new NotFoundException('Premium invoice not found');
+
+      // Older/test memberships can pre-date Premium invoice creation. Build
+      // the missing invoice from the membership so history remains
+      // downloadable instead of exposing a broken download action.
+      if (!invoice) {
+        const membership = await this.prisma.membership.findUnique({
+          where: { id: membershipId },
+          include: { plan: true },
+        });
+        if (!membership)
+          throw new NotFoundException('Premium membership not found');
+        if (user.role !== 'ADMIN' && membership.userId !== user.id) {
+          throw new BadRequestException('Invoice access denied');
+        }
+        const amount = membership.amount ?? new Prisma.Decimal(0);
+        invoice = await this.prisma.invoice.upsert({
+          where: { invoiceNumber: `RIE-PREM-${membership.id}` },
+          update: { membershipId: membership.id },
+          create: {
+            invoiceNumber: `RIE-PREM-${membership.id}`,
+            userId: membership.userId,
+            membershipId: membership.id,
+            amount,
+            taxAmount: new Prisma.Decimal(0),
+            totalAmount: amount,
+            currency: 'INR',
+            status: InvoiceStatus.PAID,
+            description: membership.isTrial
+              ? 'Complimentary 30-day RentItEase Premium trial'
+              : 'RentItEase Premium membership - 30 days',
+          },
+          include: { membership: { include: { plan: true } } },
+        });
+      }
       if (user.role !== 'ADMIN' && invoice.userId !== user.id) {
         throw new BadRequestException('Invoice access denied');
       }
