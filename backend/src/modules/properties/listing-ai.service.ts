@@ -12,13 +12,14 @@ export class ListingAiService {
     }
 
     const model = process.env.OPENAI_LISTING_MODEL || 'gpt-4o-mini';
+    const endpoint = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
     let lastError: unknown;
 
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30000);
       try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        const response = await fetch(`${endpoint.replace(/\/$/, '')}/chat/completions`, {
           method: 'POST',
           signal: controller.signal,
           headers: {
@@ -62,7 +63,11 @@ export class ListingAiService {
           );
 
           if (response.status === 401 || response.status === 403) {
-            throw new ServiceUnavailableException('AI suggestions are temporarily unavailable.');
+            throw new ServiceUnavailableException('AI configuration needs attention.');
+          }
+          if (response.status === 400 && body?.error?.param === 'response_format') {
+            this.logger.warn('Configured OpenAI model does not support JSON response format.');
+            throw new ServiceUnavailableException('AI model configuration needs attention.');
           }
           if (response.status === 429) {
             if (attempt < 2) {
