@@ -41,12 +41,38 @@ export class AmenitiesService {
   }
 
   async findAll() {
-    const amenities =
-      await this.prisma.amenity.findMany({
-        orderBy: {
-          name: 'asc',
-        },
+    let amenities = await this.prisma.amenity.findMany({
+      orderBy: { name: 'asc' },
+    });
+
+    // A fresh/cleaned production database may have no amenity seed rows.
+    // Seed the standard rental amenities on first read so Add/Edit Property
+    // never presents an unusable empty selector.
+    if (amenities.length === 0) {
+      const defaults = [
+        '24/7 Water',
+        'Air Conditioning',
+        'Balcony',
+        'CCTV',
+        'Covered Parking',
+        'Elevator',
+        'Garden',
+        'Gated Community',
+        'Gym',
+        'Power Backup',
+        'Pet Friendly',
+        'Security',
+        'Swimming Pool',
+        'Wi-Fi',
+      ];
+      await this.prisma.amenity.createMany({
+        data: defaults.map((name) => ({ name })),
+        skipDuplicates: true,
       });
+      amenities = await this.prisma.amenity.findMany({
+        orderBy: { name: 'asc' },
+      });
+    }
 
     return {
       success: true,

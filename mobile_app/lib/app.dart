@@ -25,6 +25,7 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
     with WidgetsBindingObserver {
   DateTime? _backgroundedAt;
   bool _resumeRefreshInProgress = false;
+  int _webSurfaceGeneration = 0;
 
   @override
   void initState() {
@@ -84,12 +85,15 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
       _backgroundedAt = null;
 
       if (kIsWeb && wasBackgrounded) {
-        // Flutter web can return with a stale/black surface after the browser
-        // tab or installed web app has been backgrounded. Re-establish the
-        // saved session, force a visual frame and refresh the current route so
-        // the page is rebuilt without losing the user's navigation position.
+        // Mobile browsers can discard or lose Flutter's web rendering surface
+        // while a tab is backgrounded. Refreshing GoRouter alone leaves the
+        // same MaterialApp/renderer attached and can therefore remain black.
+        // Re-establish the session and replace the router application subtree
+        // so Flutter creates a fresh rendering surface without changing the
+        // current URL/route.
         await ref.read(authenticationProvider).loadSavedSession();
         if (!mounted) return;
+        _webSurfaceGeneration++;
         WidgetsBinding.instance.ensureVisualUpdate();
         WidgetsBinding.instance.scheduleWarmUpFrame();
       }
@@ -140,6 +144,7 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
     final language = userSettings?.language ?? 'en';
 
     return MaterialApp.router(
+      key: kIsWeb ? ValueKey(_webSurfaceGeneration) : null,
       title: 'RentItEase',
       debugShowCheckedModeBanner: false,
       scrollBehavior: const AppScrollBehavior(),

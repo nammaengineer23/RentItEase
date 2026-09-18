@@ -9,6 +9,8 @@ import '../../providers/admin_provider.dart';
 final _adminUserQueryProvider = StateProvider<String>((_) => '');
 final _adminUserRoleProvider = StateProvider<String>((_) => 'ALL');
 final _adminUserStatusProvider = StateProvider<String>((_) => 'ALL');
+final _adminPremiumQueryProvider = StateProvider<String>((_) => '');
+final _adminPremiumStatusProvider = StateProvider<String>((_) => 'ALL');
 
 class AdminDashboardPage extends ConsumerStatefulWidget {
   const AdminDashboardPage({super.key, this.loadOnStart = true});
@@ -572,89 +574,155 @@ class _PropertiesView extends ConsumerWidget {
           final image = property['primaryImage']?.toString();
 
           return Card(
-            child: ListTile(
-              leading: SizedBox.square(
-                dimension: 58,
-                child: image == null || image.isEmpty
-                    ? const Icon(Icons.home_work_outlined)
-                    : ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) =>
-                              const Icon(Icons.broken_image_outlined),
-                        ),
-                      ),
-              ),
-              title: Text(_text(property, 'title')),
-              subtitle: Text(
-                '${_text(property, 'city')} • ₹${_number(property, 'price')}\n'
-                'Owner: ${_text(owner, 'fullName')} • '
-                '${verified ? 'Verified' : 'Pending verification'} • '
-                '${visible ? 'Visible' : 'Hidden'}',
-              ),
-              isThreeLine: true,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
               onTap: () => _showPropertyDetails(
                 context,
                 notifier,
                 _text(property, 'id'),
               ),
-              trailing: PopupMenuButton<String>(
-                onSelected: (action) async {
-                  if (action == 'approve') {
-                    await _runAction(
-                      context,
-                      () => notifier.approveProperty(_text(property, 'id')),
-                      'Property and owner approved',
-                    );
-                  } else if (action == 'premium') {
-                    await _runAction(
-                      context,
-                      () => notifier.markPropertyPremium(
-                        _text(property, 'id'),
-                        _text(owner, 'id'),
-                      ),
-                      'Property marked premium for 30 days',
-                    );
-                  } else if (action == 'toggle') {
-                    await _runAction(
-                      context,
-                      () => notifier.setPropertyVisible(
-                        _text(property, 'id'),
-                        !visible,
-                      ),
-                      visible ? 'Property hidden' : 'Property visible',
-                    );
-                  } else if (action == 'delete' &&
-                      await _confirm(
-                        context,
-                        'Delete property?',
-                        'This permanently removes the property.',
-                      )) {
-                    if (!context.mounted) return;
-                    await _runAction(
-                      context,
-                      () => notifier.deleteProperty(_text(property, 'id')),
-                      'Property deleted',
-                    );
-                  }
-                },
-                itemBuilder: (_) => [
-                  if (!verified)
-                    const PopupMenuItem(
-                      value: 'approve',
-                      child: Text('Approve property & owner'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    height: 180,
+                    child: image == null || image.isEmpty
+                        ? const ColoredBox(
+                            color: Color(0xFFF0F0F0),
+                            child: Icon(Icons.home_work_outlined, size: 64),
+                          )
+                        : Image.network(
+                            image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const ColoredBox(
+                              color: Color(0xFFF0F0F0),
+                              child: Icon(Icons.broken_image_outlined, size: 56),
+                            ),
+                          ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _text(property, 'title'),
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${_text(property, 'locality')}, ${_text(property, 'city')}',
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '₹${_number(property, 'price')} / month',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text('Owner: ${_text(owner, 'fullName')}'),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            Chip(
+                              avatar: Icon(
+                                verified ? Icons.verified : Icons.pending_outlined,
+                                size: 18,
+                              ),
+                              label: Text(
+                                verified ? 'Approved' : 'Pending approval',
+                              ),
+                            ),
+                            Chip(
+                              avatar: Icon(
+                                visible ? Icons.visibility : Icons.visibility_off,
+                                size: 18,
+                              ),
+                              label: Text(visible ? 'Visible' : 'Hidden'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (!verified)
+                              FilledButton.icon(
+                                onPressed: () => _runAction(
+                                  context,
+                                  () => notifier.approveProperty(
+                                    _text(property, 'id'),
+                                  ),
+                                  'Property and owner approved',
+                                ),
+                                icon: const Icon(Icons.check_circle_outline),
+                                label: const Text('Approve'),
+                              ),
+                            OutlinedButton.icon(
+                              onPressed: () => _showPropertyDetails(
+                                context,
+                                notifier,
+                                _text(property, 'id'),
+                              ),
+                              icon: const Icon(Icons.visibility_outlined),
+                              label: const Text('Review'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () => _runAction(
+                                context,
+                                () => notifier.setPropertyVisible(
+                                  _text(property, 'id'),
+                                  !visible,
+                                ),
+                                visible ? 'Property hidden' : 'Property visible',
+                              ),
+                              icon: Icon(
+                                visible ? Icons.visibility_off : Icons.visibility,
+                              ),
+                              label: Text(visible ? 'Hide' : 'Unhide'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () => _runAction(
+                                context,
+                                () => notifier.markPropertyPremium(
+                                  _text(property, 'id'),
+                                  _text(owner, 'id'),
+                                ),
+                                'Property marked premium for 30 days',
+                              ),
+                              icon: const Icon(Icons.workspace_premium_outlined),
+                              label: const Text('Premium'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () async {
+                                if (!await _confirm(
+                                  context,
+                                  'Delete property?',
+                                  'This permanently removes the property.',
+                                )) return;
+                                if (!context.mounted) return;
+                                await _runAction(
+                                  context,
+                                  () => notifier.deleteProperty(
+                                    _text(property, 'id'),
+                                  ),
+                                  'Property deleted',
+                                );
+                              },
+                              icon: const Icon(Icons.delete_outline),
+                              label: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  const PopupMenuItem(
-                    value: 'premium',
-                    child: Text('Make Premium (30 days)'),
                   ),
-                  PopupMenuItem(
-                    value: 'toggle',
-                    child: Text(visible ? 'Hide' : 'Unhide'),
-                  ),
-                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
                 ],
               ),
             ),
@@ -699,15 +767,71 @@ class _PremiumView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(adminProvider);
+    final query = ref.watch(_adminPremiumQueryProvider).trim().toLowerCase();
+    final statusFilter = ref.watch(_adminPremiumStatusProvider);
+    final memberships = state.memberships.where((membership) {
+      final user = _section(membership, 'user');
+      final plan = _section(membership, 'plan');
+      final status = _text(membership, 'status').toUpperCase();
+      final matchesQuery = query.isEmpty ||
+          _text(user, 'fullName').toLowerCase().contains(query) ||
+          _text(user, 'email').toLowerCase().contains(query) ||
+          _text(plan, 'name').toLowerCase().contains(query) ||
+          status.toLowerCase().contains(query);
+      return matchesQuery && (statusFilter == 'ALL' || status == statusFilter);
+    }).toList();
     return _AdminRefreshView(
       error: state.error,
       empty: state.memberships.isEmpty,
       onRefresh: ref.read(adminProvider.notifier).loadMemberships,
       child: ListView.builder(
         padding: const EdgeInsets.all(12),
-        itemCount: state.memberships.length,
+        itemCount: memberships.length + 1,
         itemBuilder: (context, index) {
-          final membership = state.memberships[index];
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                children: [
+                  TextField(
+                    onChanged: (value) =>
+                        ref.read(_adminPremiumQueryProvider.notifier).state = value,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.search),
+                      hintText: 'Search member, email, plan or status',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final filter in const [
+                          ('ALL', 'All'),
+                          ('ACTIVE', 'Active'),
+                          ('PENDING', 'Pending'),
+                          ('EXPIRED', 'Expired'),
+                          ('CANCELLED', 'Cancelled'),
+                        ])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(filter.$2),
+                              selected: statusFilter == filter.$1,
+                              onSelected: (_) => ref
+                                  .read(_adminPremiumStatusProvider.notifier)
+                                  .state = filter.$1,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          final membership = memberships[index - 1];
           final user = _section(membership, 'user');
           final plan = _section(membership, 'plan');
           final id = _text(membership, 'id');
@@ -787,16 +911,100 @@ class _PremiumView extends ConsumerWidget {
 class _SocialMediaView extends ConsumerWidget {
   const _SocialMediaView();
 
+  Future<String?> _platformDialog(BuildContext context) async {
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Select platform'),
+        children: [
+          for (final platform in const ['INSTAGRAM', 'FACEBOOK', 'YOUTUBE'])
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(dialogContext, platform),
+              child: Text(platform),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _generate(
+    BuildContext context,
+    AdminNotifier notifier,
+    String propertyId,
+  ) async {
+    try {
+      await notifier.generateSocialMedia(
+        propertyId,
+        const ['INSTAGRAM', 'FACEBOOK', 'YOUTUBE'],
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Social-media content generated')),
+      );
+      await notifier.loadSocialMedia();
+    } catch (error) {
+      if (context.mounted) _showError(context, error);
+    }
+  }
+
+  Future<void> _publish(
+    BuildContext context,
+    AdminNotifier notifier,
+    String propertyId,
+  ) async {
+    final platform = await _platformDialog(context);
+    if (platform == null || !context.mounted) return;
+    await _runAction(
+      context,
+      () => notifier.publishSocialMedia(propertyId, platform),
+      'Published to ${platform.toLowerCase()}',
+    );
+  }
+
+  Future<void> _schedule(
+    BuildContext context,
+    AdminNotifier notifier,
+    String propertyId,
+  ) async {
+    final platform = await _platformDialog(context);
+    if (platform == null || !context.mounted) return;
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (date == null || !context.mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (time == null || !context.mounted) return;
+    final scheduledAt = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    await _runAction(
+      context,
+      () => notifier.scheduleSocialMedia(propertyId, platform, scheduledAt),
+      'Social-media post scheduled',
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(adminProvider);
+    final notifier = ref.read(adminProvider.notifier);
     final consentedProperties = state.socialProperties.where((property) {
       return _section(property, 'socialMarketingConsent')['approved'] == true;
     }).toList();
     return _AdminRefreshView(
       error: state.error,
       empty: consentedProperties.isEmpty,
-      onRefresh: ref.read(adminProvider.notifier).loadSocialMedia,
+      onRefresh: notifier.loadSocialMedia,
       child: consentedProperties.isEmpty
           ? ListView(
               children: const [
@@ -815,18 +1023,50 @@ class _SocialMediaView extends ConsumerWidget {
                 final property = consentedProperties[index];
                 final consent = _section(property, 'socialMarketingConsent');
                 final owner = _section(property, 'owner');
+                final propertyId = _text(property, 'id');
                 return Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.campaign_outlined),
-                    title: Text(_text(property, 'title')),
-                    subtitle: Text(
-                      'Consent active • Owner: ${_text(owner, 'fullName')}\n'
-                      'Consent version: ${_text(consent, 'consentVersion')}',
-                    ),
-                    isThreeLine: true,
-                    trailing: const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _text(property, 'title'),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Consent active • Owner: ${_text(owner, 'fullName')}\n'
+                          'Consent version: ${_text(consent, 'consentVersion')}',
+                        ),
+                        const SizedBox(height: 14),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            FilledButton.icon(
+                              onPressed: () =>
+                                  _generate(context, notifier, propertyId),
+                              icon: const Icon(Icons.auto_awesome),
+                              label: const Text('Generate'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () =>
+                                  _publish(context, notifier, propertyId),
+                              icon: const Icon(Icons.publish_outlined),
+                              label: const Text('Publish'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () =>
+                                  _schedule(context, notifier, propertyId),
+                              icon: const Icon(Icons.schedule_outlined),
+                              label: const Text('Schedule'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -1168,14 +1408,95 @@ Future<void> _showPropertyDetails(
     final property = await notifier.getProperty(id);
     if (!context.mounted) return;
     final owner = _section(property, 'owner');
-    await _showDetails(context, 'Property Details', {
-      'Title': _text(property, 'title'),
-      'Location': '${_text(property, 'locality')}, ${_text(property, 'city')}',
-      'Price': '₹${_number(property, 'price')}',
-      'Owner': _text(owner, 'fullName'),
-      'Owner Email': _text(owner, 'email'),
-      'Status': property['isAvailable'] == true ? 'Visible' : 'Hidden',
-    });
+    final images = property['images'] is List
+        ? List<Map<String, dynamic>>.from(
+            (property['images'] as List).whereType<Map>().map(
+                  (item) => Map<String, dynamic>.from(item),
+                ),
+          )
+        : <Map<String, dynamic>>[];
+    final amenities = property['amenities'] is List
+        ? (property['amenities'] as List)
+            .map((item) => item is Map ? _section(Map<String, dynamic>.from(item), 'amenity') : const <String, dynamic>{})
+            .map((item) => _text(item, 'name'))
+            .where((name) => name.isNotEmpty)
+            .join(', ')
+        : '';
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: FractionallySizedBox(
+          heightFactor: 0.92,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            children: [
+              Text('Property approval review',
+                  style: Theme.of(sheetContext).textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              if (images.isNotEmpty) ...[
+                SizedBox(
+                  height: 220,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: images.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    itemBuilder: (_, index) => ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        _text(images[index], 'imageUrl'),
+                        width: 300,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            const SizedBox(width: 300, child: Icon(Icons.broken_image_outlined)),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (_text(property, 'videoUrl').isNotEmpty)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.videocam_outlined),
+                  title: const Text('Video tour attached'),
+                  subtitle: SelectableText(_text(property, 'videoUrl')),
+                ),
+              ...{
+                'Title': _text(property, 'title'),
+                'Description': _text(property, 'description'),
+                'Property type': _text(property, 'propertyType'),
+                'Monthly rent': '₹${_text(property, 'price')}',
+                'Security deposit': '₹${_text(property, 'securityDeposit')}',
+                'Bedrooms': _text(property, 'bedrooms'),
+                'Bathrooms': _text(property, 'bathrooms'),
+                'Area': '${_text(property, 'area')} sq ft',
+                'Furnishing': _text(property, 'furnishing'),
+                'Address': _text(property, 'address'),
+                'Locality': _text(property, 'locality'),
+                'Landmark': _text(property, 'landmark'),
+                'City': _text(property, 'city'),
+                'State': _text(property, 'state'),
+                'Country': _text(property, 'country'),
+                'Pincode': _text(property, 'pincode'),
+                'Amenities': amenities,
+                'Parking': property['parking'] == true ? 'Yes' : 'No',
+                'Pet friendly': property['petFriendly'] == true ? 'Yes' : 'No',
+                'Owner': _text(owner, 'fullName'),
+                'Owner email': _text(owner, 'email'),
+                'Owner phone': _text(owner, 'phone'),
+                'Approval': property['isVerified'] == true ? 'Approved' : 'Pending approval',
+              }.entries.map((entry) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(entry.key),
+                    subtitle: Text(entry.value.isEmpty ? '—' : entry.value),
+                  )),
+            ],
+          ),
+        ),
+      ),
+    );
   } catch (error) {
     if (context.mounted) _showError(context, error);
   }

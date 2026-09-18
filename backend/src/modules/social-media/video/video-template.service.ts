@@ -29,9 +29,11 @@ export class VideoTemplateService {
       property.furnishing !== 'UNFURNISHED' ? `🛋️ ${property.furnishing.replace(/_/g, ' ')}` : '',
       property.parking ? '🚗 Parking available' : '',
       property.petFriendly ? '🐾 Pet friendly' : '',
+      property.description?.trim() ? `📝 ${property.description.trim()}` : '',
       '',
-      'Schedule a property visit with RentItEase.',
-      '#RentItEase #RentalProperty #HouseForRent #ApartmentForRent #BangaloreRentals',
+      'View property details & schedule a visit:',
+      'https://rentitease.com',
+      '#RentItEase #RentalProperty #HouseForRent #ApartmentForRent',
     ].filter(Boolean).join('\n');
   }
 
@@ -45,7 +47,7 @@ export class VideoTemplateService {
       `${property.bedrooms} BHK • ${property.bathrooms} Bath • ${property.area} sq.ft`,
       `₹${property.price}/month`,
       [property.locality, property.city].filter(Boolean).join(', '),
-      'Schedule a Visit • RentItEase',
+      'Visit rentitease.com • Schedule a Visit',
     ];
   }
 }

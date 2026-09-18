@@ -128,11 +128,11 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
                                       return PropertyOwnerCard(
                                         property: property,
                                         onTap: () => context.push(
-                                          '/owner/property-details',
+                                          '/owner/property-details/${property.id}',
                                           extra: property,
                                         ),
                                         onEdit: () => context.push(
-                                          '/owner/edit-property',
+                                          '/owner/edit-property/${property.id}',
                                           extra: property,
                                         ),
                                         onDelete: () => _deleteProperty(context, property.id),

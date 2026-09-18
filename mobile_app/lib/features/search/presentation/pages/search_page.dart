@@ -454,21 +454,24 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     icon: Icons.search_off,
                     message: context.tr('noPropertiesFound'),
                   )
-                : PageView.builder(
-                    scrollDirection: Axis.vertical,
-                    itemCount: state.results.length,
-                    onPageChanged: (index) {
-                      if (index >= state.results.length - 2 && state.hasMore) {
+                : NotificationListener<ScrollNotification>(
+                    onNotification: (notification) {
+                      if (notification.metrics.extentAfter < 600 &&
+                          state.hasMore &&
+                          !state.isLoading) {
                         ref.read(searchProvider.notifier).loadMore();
                       }
+                      return false;
                     },
-                    itemBuilder: (context, index) {
-                      final property = state.results[index];
-                      return RefreshIndicator(
-                        onRefresh: ref.read(searchProvider.notifier).refresh,
-                        child: SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          child: PropertyCard(
+                    child: RefreshIndicator(
+                      onRefresh: ref.read(searchProvider.notifier).refresh,
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: 16),
+                        itemCount: state.results.length,
+                        itemBuilder: (context, index) {
+                          final property = state.results[index];
+                          return PropertyCard(
                             property: property,
                             onTap: () async {
                               await context.push('/property/${property.id}');
@@ -506,10 +509,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                       },
                                     ).toString(),
                                   ),
-                          ),
-                        ),
-                      );
-                    },
+                          );
+                        },
+                      ),
+                    ),
                   ),
           ),
         ],

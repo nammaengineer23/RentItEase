@@ -561,7 +561,7 @@ class _Footer extends StatelessWidget {
   }
 }
 
-enum WebInfoPageKind { about, contact, privacy, deleteAccount }
+enum WebInfoPageKind { about, contact, privacy, terms, deleteAccount }
 
 class WebInfoPage extends StatelessWidget {
   const WebInfoPage({required this.kind, super.key});
@@ -572,6 +572,7 @@ class WebInfoPage extends StatelessWidget {
         WebInfoPageKind.about => 'Rentals, made simpler.',
         WebInfoPageKind.contact => 'Contact us',
         WebInfoPageKind.privacy => 'Privacy Policy',
+        WebInfoPageKind.terms => 'Terms & Conditions',
         WebInfoPageKind.deleteAccount => 'Delete your RentItEase account',
       };
 
@@ -582,6 +583,8 @@ class WebInfoPage extends StatelessWidget {
           'We are here to help with RentItEase account, property, or app questions.',
         WebInfoPageKind.privacy =>
           'Last updated: 12 September 2026. This draft should be reviewed before public publication.',
+        WebInfoPageKind.terms =>
+          'Terms for using RentItEase and submitting rental property listings.',
         WebInfoPageKind.deleteAccount =>
           'You can request deletion of your account and associated personal data.',
       };
@@ -626,6 +629,28 @@ class WebInfoPage extends StatelessWidget {
               title: 'Your choices',
               body:
                   'You can request account deletion or privacy assistance by emailing support@rentitease.com.',
+            ),
+          ],
+        WebInfoPageKind.terms => const [
+            _InfoSection(
+              title: 'Property listing responsibility',
+              body:
+                  'Owners must provide accurate property, pricing, availability, location, photo and video information and must have the right to advertise the property.',
+            ),
+            _InfoSection(
+              title: 'Approval and visibility',
+              body:
+                  'Submitted properties may remain hidden while RentItEase reviews the listing. RentItEase may reject, hide or remove listings that are inaccurate, misleading, unlawful or contrary to platform requirements.',
+            ),
+            _InfoSection(
+              title: 'Visits, bookings and payments',
+              body:
+                  'Users are responsible for reviewing property information and transaction details before proceeding. Availability and listing information can change and should be confirmed through the platform.',
+            ),
+            _InfoSection(
+              title: 'Promotional consent',
+              body:
+                  'Permission to prepare or publish promotional content is separate from acceptance of these Terms & Conditions and is optional unless the owner expressly enables it.',
             ),
           ],
         WebInfoPageKind.deleteAccount => const [
@@ -710,6 +735,7 @@ class WebInfoPage extends StatelessWidget {
                       TextButton(onPressed: () => context.go('/about'), child: const Text('About')),
                       TextButton(onPressed: () => context.go('/contact'), child: const Text('Contact')),
                       TextButton(onPressed: () => context.go('/privacy'), child: const Text('Privacy Policy')),
+                      TextButton(onPressed: () => context.go('/terms'), child: const Text('Terms & Conditions')),
                       TextButton(onPressed: () => context.go('/delete-account'), child: const Text('Delete Account')),
                     ],
                   ),
