@@ -574,89 +574,155 @@ class _PropertiesView extends ConsumerWidget {
           final image = property['primaryImage']?.toString();
 
           return Card(
-            child: ListTile(
-              leading: SizedBox.square(
-                dimension: 58,
-                child: image == null || image.isEmpty
-                    ? const Icon(Icons.home_work_outlined)
-                    : ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) =>
-                              const Icon(Icons.broken_image_outlined),
-                        ),
-                      ),
-              ),
-              title: Text(_text(property, 'title')),
-              subtitle: Text(
-                '${_text(property, 'city')} • ₹${_number(property, 'price')}\n'
-                'Owner: ${_text(owner, 'fullName')} • '
-                '${verified ? 'Verified' : 'Pending verification'} • '
-                '${visible ? 'Visible' : 'Hidden'}',
-              ),
-              isThreeLine: true,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
               onTap: () => _showPropertyDetails(
                 context,
                 notifier,
                 _text(property, 'id'),
               ),
-              trailing: PopupMenuButton<String>(
-                onSelected: (action) async {
-                  if (action == 'approve') {
-                    await _runAction(
-                      context,
-                      () => notifier.approveProperty(_text(property, 'id')),
-                      'Property and owner approved',
-                    );
-                  } else if (action == 'premium') {
-                    await _runAction(
-                      context,
-                      () => notifier.markPropertyPremium(
-                        _text(property, 'id'),
-                        _text(owner, 'id'),
-                      ),
-                      'Property marked premium for 30 days',
-                    );
-                  } else if (action == 'toggle') {
-                    await _runAction(
-                      context,
-                      () => notifier.setPropertyVisible(
-                        _text(property, 'id'),
-                        !visible,
-                      ),
-                      visible ? 'Property hidden' : 'Property visible',
-                    );
-                  } else if (action == 'delete' &&
-                      await _confirm(
-                        context,
-                        'Delete property?',
-                        'This permanently removes the property.',
-                      )) {
-                    if (!context.mounted) return;
-                    await _runAction(
-                      context,
-                      () => notifier.deleteProperty(_text(property, 'id')),
-                      'Property deleted',
-                    );
-                  }
-                },
-                itemBuilder: (_) => [
-                  if (!verified)
-                    const PopupMenuItem(
-                      value: 'approve',
-                      child: Text('Approve property & owner'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    height: 180,
+                    child: image == null || image.isEmpty
+                        ? const ColoredBox(
+                            color: Color(0xFFF0F0F0),
+                            child: Icon(Icons.home_work_outlined, size: 64),
+                          )
+                        : Image.network(
+                            image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const ColoredBox(
+                              color: Color(0xFFF0F0F0),
+                              child: Icon(Icons.broken_image_outlined, size: 56),
+                            ),
+                          ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _text(property, 'title'),
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${_text(property, 'locality')}, ${_text(property, 'city')}',
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '₹${_number(property, 'price')} / month',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text('Owner: ${_text(owner, 'fullName')}'),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            Chip(
+                              avatar: Icon(
+                                verified ? Icons.verified : Icons.pending_outlined,
+                                size: 18,
+                              ),
+                              label: Text(
+                                verified ? 'Approved' : 'Pending approval',
+                              ),
+                            ),
+                            Chip(
+                              avatar: Icon(
+                                visible ? Icons.visibility : Icons.visibility_off,
+                                size: 18,
+                              ),
+                              label: Text(visible ? 'Visible' : 'Hidden'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (!verified)
+                              FilledButton.icon(
+                                onPressed: () => _runAction(
+                                  context,
+                                  () => notifier.approveProperty(
+                                    _text(property, 'id'),
+                                  ),
+                                  'Property and owner approved',
+                                ),
+                                icon: const Icon(Icons.check_circle_outline),
+                                label: const Text('Approve'),
+                              ),
+                            OutlinedButton.icon(
+                              onPressed: () => _showPropertyDetails(
+                                context,
+                                notifier,
+                                _text(property, 'id'),
+                              ),
+                              icon: const Icon(Icons.visibility_outlined),
+                              label: const Text('Review'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () => _runAction(
+                                context,
+                                () => notifier.setPropertyVisible(
+                                  _text(property, 'id'),
+                                  !visible,
+                                ),
+                                visible ? 'Property hidden' : 'Property visible',
+                              ),
+                              icon: Icon(
+                                visible ? Icons.visibility_off : Icons.visibility,
+                              ),
+                              label: Text(visible ? 'Hide' : 'Unhide'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () => _runAction(
+                                context,
+                                () => notifier.markPropertyPremium(
+                                  _text(property, 'id'),
+                                  _text(owner, 'id'),
+                                ),
+                                'Property marked premium for 30 days',
+                              ),
+                              icon: const Icon(Icons.workspace_premium_outlined),
+                              label: const Text('Premium'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () async {
+                                if (!await _confirm(
+                                  context,
+                                  'Delete property?',
+                                  'This permanently removes the property.',
+                                )) return;
+                                if (!context.mounted) return;
+                                await _runAction(
+                                  context,
+                                  () => notifier.deleteProperty(
+                                    _text(property, 'id'),
+                                  ),
+                                  'Property deleted',
+                                );
+                              },
+                              icon: const Icon(Icons.delete_outline),
+                              label: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  const PopupMenuItem(
-                    value: 'premium',
-                    child: Text('Make Premium (30 days)'),
                   ),
-                  PopupMenuItem(
-                    value: 'toggle',
-                    child: Text(visible ? 'Hide' : 'Unhide'),
-                  ),
-                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
                 ],
               ),
             ),
