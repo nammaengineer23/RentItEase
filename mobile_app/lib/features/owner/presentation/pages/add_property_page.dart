@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -111,8 +112,22 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
       final description = value is Map ? value['description']?.toString().trim() : null;
       if (title == null || title.isEmpty || description == null || description.isEmpty) throw const FormatException('AI returned an incomplete suggestion.');
       if (mounted) setState(() { titleController.text = title; descriptionController.text = description; });
-    } catch (e) { if (mounted) _showError('Unable to generate suggestion. Please try again.'); }
+    } on DioException catch (e) {
+      if (mounted) _showError(_aiErrorMessage(e));
+    } catch (_) {
+      if (mounted) _showError('Unable to generate suggestion. Please try again.');
+    }
     finally { if (mounted) setState(() => aiSuggesting = false); }
+  }
+
+  String _aiErrorMessage(DioException error) {
+    final data = error.response?.data;
+    dynamic value = data;
+    while (value is Map && value.containsKey('data')) value = value['data'];
+    final message = value is Map ? value['message'] : null;
+    if (message is String && message.trim().isNotEmpty) return message.trim();
+    if (message is List && message.isNotEmpty) return message.join(' ');
+    return 'Unable to generate suggestion. Please try again.';
   }
 
   String? _required(String? v) => v == null || v.trim().isEmpty ? context.tr('required') : null;
