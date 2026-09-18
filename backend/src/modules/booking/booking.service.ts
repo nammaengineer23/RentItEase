@@ -72,6 +72,12 @@ export class BookingService {
       );
     }
 
+    if (visit.property.ownerId === user.id) {
+      throw new BadRequestException(
+        'You cannot book your own property.',
+      );
+    }
+
     if (visit.status !== VisitStatus.APPROVED) {
       throw new BadRequestException(
         'Booking can only be created for an approved property visit.',
