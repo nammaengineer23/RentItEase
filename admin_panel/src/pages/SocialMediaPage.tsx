@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { socialMediaApi, type GenerateVideoResponse, type SocialAnalytics, type SocialAuditEvent, type SocialPlatform, type SocialPost, type SocialPostStatus, type SocialProperty, type SocialSettings } from '../api/socialMediaApi';
 import '../styles/social-media.css';
 
 export function SocialMediaPage() {
+  const [searchParams] = useSearchParams();
   const [propertyId, setPropertyId] = useState('');
   const [settings, setSettings] = useState<SocialSettings | null>(null);
   const [properties, setProperties] = useState<SocialProperty[]>([]);
@@ -29,6 +31,13 @@ export function SocialMediaPage() {
     } catch (e) { setError(e instanceof Error ? e.message : 'Unable to load social activity.'); }
   }
   useEffect(() => { void loadDashboard(); }, [statusFilter, platformFilter]);
+
+  useEffect(() => {
+    const recordId = searchParams.get('record');
+    if (!recordId || posts.length === 0) return;
+    const match = posts.find((post) => post.id === recordId);
+    if (match) void openPost(match);
+  }, [searchParams, posts]);
 
   const platforms = useMemo(() => [
     ['INSTAGRAM', settings?.instagramEnabled], ['FACEBOOK', settings?.facebookEnabled], ['YOUTUBE', settings?.youtubeEnabled],
