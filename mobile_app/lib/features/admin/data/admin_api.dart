@@ -117,6 +117,46 @@ class AdminApi {
     return _map(await _dio.get<dynamic>('/admin/social-media/analytics'));
   }
 
+  Future<Map<String, dynamic>> generateSocialMedia(
+    String propertyId, {
+    required List<String> platforms,
+  }) async {
+    return _map(
+      await _dio.post<dynamic>(
+        '/admin/social-media/generate',
+        data: {
+          'propertyId': propertyId,
+          'platforms': platforms,
+          'autoPublish': false,
+        },
+      ),
+    );
+  }
+
+  Future<void> publishSocialMedia(
+    String propertyId,
+    String platform,
+  ) async {
+    await _dio.post<void>(
+      '/admin/social-media/properties/$propertyId/publish',
+      data: {'platform': platform},
+    );
+  }
+
+  Future<void> scheduleSocialMedia(
+    String propertyId,
+    String platform,
+    DateTime scheduledAt,
+  ) async {
+    await _dio.post<void>(
+      '/admin/social-media/properties/$propertyId/schedule',
+      data: {
+        'platform': platform,
+        'scheduledAt': scheduledAt.toUtc().toIso8601String(),
+      },
+    );
+  }
+
   dynamic _unwrap(Response<dynamic> response) {
     dynamic value = response.data;
     for (var depth = 0; depth < 5; depth++) {
