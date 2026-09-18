@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import {
   deleteProperty,
@@ -98,6 +99,7 @@ function PropertyDetailsPanel({ property, onClose }: { property: AdminPropertyDe
 }
 
 export function PropertiesPage() {
+  const [searchParams] = useSearchParams();
   const [properties, setProperties] = useState<AdminPropertyListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -115,6 +117,17 @@ export function PropertiesPage() {
   }
 
   useEffect(() => { void loadProperties(); }, []);
+
+  useEffect(() => {
+    const query = searchParams.get("search");
+    if (query) setSearch(query);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const recordId = searchParams.get("record");
+    if (!recordId || loading) return;
+    void handleViewProperty(recordId);
+  }, [searchParams, loading]);
 
   const filteredProperties = useMemo(() => {
     const query = search.trim().toLowerCase();

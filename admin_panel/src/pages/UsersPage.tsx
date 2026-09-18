@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import {
   activateUser,
@@ -124,6 +125,7 @@ function UserDetailsPanel({
 }
 
 export function UsersPage() {
+  const [searchParams] = useSearchParams();
   const [users, setUsers] = useState<AdminUserListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -155,6 +157,17 @@ export function UsersPage() {
   useEffect(() => {
     void loadUsers();
   }, []);
+
+  useEffect(() => {
+    const query = searchParams.get("search");
+    if (query) setSearch(query);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const recordId = searchParams.get("record");
+    if (!recordId || loading) return;
+    void handleViewUser(recordId);
+  }, [searchParams, loading]);
 
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase();

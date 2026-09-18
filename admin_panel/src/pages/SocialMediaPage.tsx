@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { socialMediaApi, type GenerateVideoResponse, type SocialAnalytics, type SocialAuditEvent, type SocialPlatform, type SocialPost, type SocialPostStatus, type SocialProperty, type SocialSettings } from '../api/socialMediaApi';
 import '../styles/social-media.css';
 
 export function SocialMediaPage() {
+  const [searchParams] = useSearchParams();
   const [propertyId, setPropertyId] = useState('');
   const [settings, setSettings] = useState<SocialSettings | null>(null);
   const [properties, setProperties] = useState<SocialProperty[]>([]);
@@ -29,6 +31,13 @@ export function SocialMediaPage() {
     } catch (e) { setError(e instanceof Error ? e.message : 'Unable to load social activity.'); }
   }
   useEffect(() => { void loadDashboard(); }, [statusFilter, platformFilter]);
+
+  useEffect(() => {
+    const recordId = searchParams.get('record');
+    if (!recordId || posts.length === 0) return;
+    const match = posts.find((post) => post.id === recordId);
+    if (match) void openPost(match);
+  }, [searchParams, posts]);
 
   const platforms = useMemo(() => [
     ['INSTAGRAM', settings?.instagramEnabled], ['FACEBOOK', settings?.facebookEnabled], ['YOUTUBE', settings?.youtubeEnabled],
@@ -81,6 +90,7 @@ export function SocialMediaPage() {
     </div>
 
     {selected && <div className="social-card"><div className="section-heading"><div><h2>{selected.title}</h2><p className="muted">{selected.owner.fullName} · consented {new Date(selected.socialMarketingConsent.consentedAt).toLocaleString()}</p></div><button className="secondary-button" onClick={() => setSelected(null)}>Close</button></div>
+      <p className="muted">{selected.city}{selected.locality ? `, ${selected.locality}` : ''}</p>
       <button onClick={() => void generateVideo()} disabled={loading}>{loading ? 'Generating…' : 'Generate / Regenerate content'}</button>
       {video && <><h3>Preview</h3>{video.videoUrl && <video src={video.videoUrl} controls playsInline style={{ width:'100%', maxWidth:360, aspectRatio:'9 / 16', objectFit:'cover', borderRadius:12 }}/>}<label htmlFor="social-title">Title</label><input id="social-title" value={videoTitle} onChange={(e) => setVideoTitle(e.target.value)} /><label htmlFor="caption">Caption / description</label><textarea id="caption" value={caption} onChange={(e) => setCaption(e.target.value)} rows={9}/><div className="social-publish-grid">{platforms.map(([platform, enabled]) => <button key={platform} onClick={() => void publish(platform)} disabled={!enabled || publishing !== null}>{publishing === platform ? 'Publishing…' : `Publish ${platform}`}</button>)}</div><label htmlFor="scheduled-at">Schedule for later</label><input id="scheduled-at" type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)}/><div className="social-publish-grid">{platforms.map(([platform, enabled]) => <button key={`schedule-${platform}`} onClick={() => void schedule(platform)} disabled={!enabled || publishing !== null || !scheduledAt}>Schedule {platform}</button>)}</div></>}
     </div>}

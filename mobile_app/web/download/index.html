@@ -18,19 +18,25 @@
   <main>
     <section>
       <h1>RentItEase</h1>
-      <p>Your Android APK download is starting. You will return to the RentItEase home page automatically.</p>
+      <p>Your Android APK download is starting. This page will return to RentItEase after the browser has had time to start the download.</p>
       <a id="download" href="https://github.com/nammaengineer23/RentItEase/releases/latest/download/RentItEase-release.apk">Download again</a>
     </section>
   </main>
   <script>
     (() => {
       const apk = 'https://github.com/nammaengineer23/RentItEase/releases/latest/download/RentItEase-release.apk';
-      const frame = document.createElement('iframe');
-      frame.hidden = true;
-      frame.setAttribute('aria-hidden', 'true');
-      frame.src = apk;
-      document.body.appendChild(frame);
-      window.setTimeout(() => window.location.replace('/'), 1800);
+      // Start the file request in a separate browser context so returning this
+      // page home does not cancel the APK request. Mobile browsers can take a
+      // few seconds to follow GitHub's release redirect, so allow a generous
+      // hand-off window before returning to the landing page.
+      const downloadWindow = window.open(apk, '_blank', 'noopener,noreferrer');
+      if (!downloadWindow) {
+        // Popup-blocked browsers can still start the download from the visible
+        // fallback link without risking a premature automatic redirect.
+        document.getElementById('download').textContent = 'Start download';
+        return;
+      }
+      window.setTimeout(() => window.location.replace('/'), 8000);
     })();
   </script>
 </body>
