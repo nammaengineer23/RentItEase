@@ -911,22 +911,6 @@ class _PremiumView extends ConsumerWidget {
 class _SocialMediaView extends ConsumerWidget {
   const _SocialMediaView();
 
-  Future<String?> _choosePlatform(BuildContext context) =>
-      showDialog<String>(
-        context: context,
-        builder: (dialogContext) => SimpleDialog(
-          title: const Text('Select platform'),
-          children: const [
-            SimpleDialogOption(
-              child: ListTile(
-                leading: Icon(Icons.camera_alt_outlined),
-                title: Text('Instagram'),
-              ),
-            ),
-          ],
-        ),
-      );
-
   Future<String?> _platformDialog(BuildContext context) async {
     return showDialog<String>(
       context: context,
