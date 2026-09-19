@@ -11,7 +11,7 @@
     main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;text-align:center}
     section{max-width:520px}
     h1{margin:0 0 12px;font-size:32px}p{color:#52655b;line-height:1.6}
-    a{display:inline-block;margin-top:16px;padding:14px 20px;border-radius:12px;background:#123b2a;color:white;text-decoration:none;font-weight:700}
+    a{display:inline-block;margin-top:16px;padding:14px 20px;border-radius:12px;background:#123b2a;color:white;text-decoration:none;font-weight:700}\n    a.secondary{margin-left:10px;background:transparent;color:#123b2a;border:2px solid #123b2a}
   </style>
 </head>
 <body>
@@ -19,7 +19,7 @@
     <section>
       <h1>RentItEase</h1>
       <p>Your Android APK download is starting. This page will return to RentItEase after the browser has had time to start the download.</p>
-      <a id="download" href="https://github.com/nammaengineer23/RentItEase/releases/latest/download/RentItEase-release.apk">Download again</a>
+      <a id="download" href="https://github.com/nammaengineer23/RentItEase/releases/latest/download/RentItEase-release.apk">Download again</a>\n      <a class="secondary" href="/">Back to Home</a>
     </section>
   </main>
   <script>
@@ -36,7 +36,7 @@
         document.getElementById('download').textContent = 'Start download';
         return;
       }
-      window.setTimeout(() => window.location.replace('/'), 8000);
+      // Keep this page available so the user can see download status/options\n      // and explicitly return home using the Back to Home button.
     })();
   </script>
 </body>
