@@ -42,6 +42,11 @@ class ImageUtils {
   // =============================================
 
   static Future<File> compressImage(File file) async {
+    // Browser-picked files are represented by blob URLs. Native file-system
+    // compression APIs cannot read/write those paths, so keep the validated
+    // browser file unchanged and upload its bytes directly.
+    if (kIsWeb) return file;
+
     final tempDir = await getTemporaryDirectory();
 
     final targetPath =
