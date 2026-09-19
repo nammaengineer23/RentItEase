@@ -44,6 +44,7 @@ export class VideoService {
       lines: this.template.buildTextLines(data),
       slug: propertyId,
       secondsPerPhoto,
+      persistentCta: this.template.buildPersistentCta(),
     });
 
     return {

@@ -54,7 +54,7 @@ function socialLinks(env) {
 
 function footer(env) {
   const social = socialLinks(env);
-  return `<footer><a href="/">Home</a> · <a href="/rentals/bangalore">Bangalore Rentals</a> · <a href="/about">About</a> · <a href="/contact">Contact</a> · <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a> · <a href="/delete-account">Delete Account</a> · <a href="/download">Download App</a>${social ? ` · ${social}` : ''}</footer>`;
+  return `<footer><a href="/">Home</a> · <a href="/rental-app">Rental App</a> · <a href="/houses-for-rent">Houses for Rent</a> · <a href="/rentals/bangalore">Bangalore Rentals</a> · <a href="/about">About</a> · <a href="/contact">Contact</a> · <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a> · <a href="/delete-account">Delete Account</a> · <a href="/download">Download App</a>${social ? ` · ${social}` : ''}</footer>`;
 }
 
 function staticPage({ path, title, description, body, env, schema }) {
@@ -114,6 +114,18 @@ async function cityPage(env) {
   return staticPage({ path: '/rentals/bangalore', title: 'Rental Properties in Bangalore', description, body, env, schema: { '@context': 'https://schema.org', '@type': 'ItemList', name: 'Rental properties in Bangalore', itemListElement: listedProperties.map((property, index) => ({ '@type': 'ListItem', position: index + 1, url: `${siteUrl}/property/${encodeURIComponent(property.id)}`, name: firstString(property.title, 'Rental property') })) } });
 }
 
+function rentalAppPage(env) {
+  const description = 'Find houses, flats and apartments for rent with RentItEase, a rental property app for tenants and property owners in India.';
+  const body = `<p>${description}</p><h2>Search homes for rent</h2><p>Browse verified rental property listings, compare rent and amenities, view property locations, save favourites, contact owners and schedule visits.</p><h2>Rental app for tenants</h2><p>RentItEase keeps property search, visits, bookings, payments and invoices together so you can manage your rental journey from one place.</p><h2>Property rental app for owners</h2><p>Owners can list houses, flats and apartments for rent, add photos and property details, manage visit requests and track rental activity.</p><p><a class="button" href="/auth">Search rental properties</a> <a class="button" href="/download">Download RentItEase</a></p>`;
+  return staticPage({ path: '/rental-app', title: 'Rental App for Houses, Flats & Apartments for Rent in India', description, body, env, schema: { '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'RentItEase', operatingSystem: 'Android, Web', applicationCategory: 'LifestyleApplication', url: `${siteUrl}/rental-app`, downloadUrl: androidDownloadUrl, description } });
+}
+
+function housesForRentPage(env) {
+  const description = 'Search verified houses, flats and apartments for rent in India with RentItEase. Connect with owners and schedule property visits online.';
+  const body = `<p>${description}</p><h2>Find rental properties</h2><p>Search available homes by location and review rent, photos, amenities and property information before arranging a visit.</p><h2>Rent directly with useful property details</h2><p>RentItEase helps tenants discover rental homes and communicate with property owners while keeping visits and bookings organised.</p><p><a class="button" href="/auth">Find a home for rent</a></p>`;
+  return staticPage({ path: '/houses-for-rent', title: 'Houses, Flats & Apartments for Rent in India', description, body, env });
+}
+
 function downloadPage(env) {
   const description = 'Download the latest signed RentItEase Android APK and start searching verified rental properties.';
   const body = `<p>${description}</p><h2>Install RentItEase for Android</h2><p>Download the current signed APK directly from the RentItEase website. Android may ask you to allow installation from your browser or file manager.</p><p><a class="button" href="${androidDownloadUrl}" onclick="window.gtag?.('event','apk_download',{method:'rentitease_website'})">Download latest Android APK</a></p><p class="muted">For your security, install RentItEase only from rentitease.com.</p>`;
@@ -138,13 +150,19 @@ async function androidApk(request) {
     redirect: 'follow',
     cf: { cacheEverything: true, cacheTtl: 3600 },
   });
-  if (!upstream.ok) return Response.redirect(githubAndroidReleaseUrl, 302);
+  if (!upstream.ok) {
+    return new Response('The RentItEase APK is temporarily unavailable. Please try again shortly.', {
+      status: 502,
+      headers: { 'content-type': 'text/plain; charset=UTF-8', 'cache-control': 'no-store' },
+    });
+  }
 
   const headers = new Headers({
     'content-type': 'application/vnd.android.package-archive',
     'content-disposition': 'attachment; filename="RentItEase.apk"',
     'cache-control': 'public, max-age=3600',
     'x-content-type-options': 'nosniff',
+    'content-location': androidDownloadUrl,
   });
   for (const name of ['content-length', 'content-range', 'accept-ranges', 'etag', 'last-modified']) {
     const value = upstream.headers.get(name);
@@ -257,6 +275,8 @@ export default {
     if (path === '/terms-of-service') return Response.redirect(`${siteUrl}/terms`, 301);
     if (path === '/rentals/bengaluru') return Response.redirect(`${siteUrl}/rentals/bangalore`, 301);
     if (path === '/download') return htmlResponse(downloadPage(env));
+    if (path === '/rental-app') return htmlResponse(rentalAppPage(env));
+    if (path === '/houses-for-rent') return htmlResponse(housesForRentPage(env));
     if (path === '/downloads/RentItEase.apk') return androidApk(request);
     if (path === '/rentals/bangalore') return htmlResponse(await cityPage(env));
     if (path === '/sitemap-properties.xml') return propertySitemap();

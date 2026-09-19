@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../core/utils/app_image_url.dart';
 
@@ -73,10 +74,17 @@ class PropertyImageApi {
       final files = <MultipartFile>[];
       for (final image in images) {
         files.add(
-          await MultipartFile.fromFile(
-            image.path,
-            filename: image.uri.pathSegments.last,
-          ),
+          kIsWeb
+              ? MultipartFile.fromBytes(
+                  await image.readAsBytes(),
+                  filename: image.uri.pathSegments.isEmpty
+                      ? 'property-image.jpg'
+                      : image.uri.pathSegments.last,
+                )
+              : await MultipartFile.fromFile(
+                  image.path,
+                  filename: image.uri.pathSegments.last,
+                ),
         );
       }
 

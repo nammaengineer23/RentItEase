@@ -114,6 +114,7 @@ class OwnerRepositoryImpl implements OwnerRepository {
     required String stateName,
     bool dailyRentEnabled = false,
     double? dailyRent,
+    List<String>? amenityIds,
   }) {
     return _api.updateProperty(property.id, {
       'title': property.title,
@@ -135,6 +136,7 @@ class OwnerRepositoryImpl implements OwnerRepository {
       'furnishing': _furnishingToApi(furnishing),
       'parking': parking,
       'petFriendly': petFriendly,
+      'amenityIds': ?amenityIds,
       'securityDeposit': securityDeposit,
       'isAvailable': property.isAvailable,
       'dailyRentEnabled': dailyRentEnabled,

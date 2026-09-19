@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -144,7 +145,9 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
             Positioned.fill(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.file(_images[index], fit: BoxFit.cover),
+                child: kIsWeb
+                    ? Image.network(_images[index].path, fit: BoxFit.cover)
+                    : Image.file(_images[index], fit: BoxFit.cover),
               ),
             ),
             Positioned(

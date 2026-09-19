@@ -167,6 +167,18 @@ class _SectionedPropertyImagePickerState
   }
 
   @override
+  void didUpdateWidget(covariant SectionedPropertyImagePicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.initialImages, widget.initialImages)) {
+      _existingBySection
+        ..clear()
+        ..addAll(widget.initialImages.map(
+          (section, images) => MapEntry(section, List<PropertyImageRecord>.from(images)),
+        ));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

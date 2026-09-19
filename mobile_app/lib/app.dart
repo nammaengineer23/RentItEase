@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/app_router.dart';
 import 'app/app_theme.dart';
 import 'core/navigation/route_persistence_service.dart';
+import 'core/platform/web_visibility.dart';
 import 'core/ui/app_scroll_behavior.dart';
 import 'features/authentication/providers/authentication_provider.dart';
 import 'features/settings/providers/settings_provider.dart';
@@ -26,12 +27,19 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
   DateTime? _backgroundedAt;
   bool _resumeRefreshInProgress = false;
   int _webSurfaceGeneration = 0;
+  VoidCallback? _removeWebVisibilityListener;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     Future.microtask(_restoreSessionAndRoute);
+    if (kIsWeb) {
+      _removeWebVisibilityListener = listenForWebVisibilityChanges(
+        onHidden: () => _backgroundedAt ??= DateTime.now(),
+        onVisible: () => unawaited(_refreshAfterResume()),
+      );
+    }
   }
 
   Future<void> _restoreSessionAndRoute() async {
@@ -54,6 +62,7 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
 
   @override
   void dispose() {
+    _removeWebVisibilityListener?.call();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -93,7 +102,9 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
         // current URL/route.
         await ref.read(authenticationProvider).loadSavedSession();
         if (!mounted) return;
-        _webSurfaceGeneration++;
+        setState(() => _webSurfaceGeneration++);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        if (!mounted) return;
         WidgetsBinding.instance.ensureVisualUpdate();
         WidgetsBinding.instance.scheduleWarmUpFrame();
       }

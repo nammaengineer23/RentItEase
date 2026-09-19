@@ -117,6 +117,10 @@ class AdminApi {
     return _map(await _dio.get<dynamic>('/admin/social-media/analytics'));
   }
 
+  Future<Map<String, dynamic>> getSocialSettings() async {
+    return _map(await _dio.get<dynamic>('/admin/social-media/settings'));
+  }
+
   Future<Map<String, dynamic>> generateSocialMedia(
     String propertyId, {
     required List<String> platforms,
@@ -135,12 +139,33 @@ class AdminApi {
 
   Future<void> publishSocialMedia(
     String propertyId,
-    String platform,
-  ) async {
-    await _dio.post<void>(
-      '/admin/social-media/properties/$propertyId/publish',
-      data: {'platform': platform},
+    String platform, {
+    String? caption,
+    String? title,
+  }) async {
+    final result = _map(
+      await _dio.post<dynamic>(
+        '/admin/social-media/properties/$propertyId/publish',
+        data: {
+          'platform': platform,
+          'caption': ?caption,
+          'title': ?title,
+        },
+      ),
     );
+    final status = result['status']?.toString().toUpperCase();
+    if (status != 'PUBLISHED') {
+      final message = result['error']?.toString().trim();
+      throw StateError(
+        message?.isNotEmpty == true
+            ? '$platform publish failed: $message'
+            : '$platform publish was not confirmed by the platform.',
+      );
+    }
+    final externalId = result['externalId']?.toString().trim();
+    if (externalId == null || externalId.isEmpty) {
+      throw StateError('$platform did not return a published post ID.');
+    }
   }
 
   Future<void> scheduleSocialMedia(

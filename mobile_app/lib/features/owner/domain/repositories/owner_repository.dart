@@ -63,6 +63,7 @@ abstract class OwnerRepository {
     required String stateName,
     bool dailyRentEnabled = false,
     double? dailyRent,
+    List<String>? amenityIds,
   });
 
   Future<void> deleteProperty(String propertyId);
