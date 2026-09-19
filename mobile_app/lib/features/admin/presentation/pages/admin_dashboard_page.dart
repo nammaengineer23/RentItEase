@@ -104,7 +104,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
             children: [
               _DashboardView(onSelect: _select),
               const _PremiumView(),
-              const _SocialMediaView(),
+              _SocialMediaView(loadSettingsOnStart: widget.loadOnStart),
               const _ActivityView(),
               const _AnalyticsView(),
               const _UsersView(),
@@ -909,7 +909,9 @@ class _PremiumView extends ConsumerWidget {
 }
 
 class _SocialMediaView extends ConsumerStatefulWidget {
-  const _SocialMediaView();
+  const _SocialMediaView({this.loadSettingsOnStart = true});
+
+  final bool loadSettingsOnStart;
 
   @override
   ConsumerState<_SocialMediaView> createState() => _SocialMediaViewState();
@@ -926,9 +928,13 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _loadSettings();
-    });
+    if (widget.loadSettingsOnStart) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadSettings();
+      });
+    } else {
+      _settingsLoading = false;
+    }
   }
 
   @override
