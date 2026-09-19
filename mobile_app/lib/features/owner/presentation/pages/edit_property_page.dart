@@ -54,6 +54,10 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
   bool imagesLoading = true;
   bool videoLoading = false;
   bool detailsLoading = true;
+  bool amenitiesLoading = true;
+  String? amenitiesError;
+  List<Map<String, dynamic>> amenities = const [];
+  final Set<String> selectedAmenityIds = {};
   late String videoUrl;
   LocationModel? selectedLocation;
   Map<String, List<File>> newImagesBySection = const {};
@@ -111,6 +115,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFullProperty();
       _loadImages();
+      _loadAmenities();
     });
   }
 
@@ -194,6 +199,29 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     }
   }
 
+  Future<void> _loadAmenities() async {
+    try {
+      final response = await ref.read(dioProvider).get('/amenities');
+      dynamic value = response.data;
+      while (value is Map && value.containsKey('data')) value = value['data'];
+      if (value is Map && value['amenities'] is List) value = value['amenities'];
+      if (value is! List) throw const FormatException('Unexpected amenities response.');
+      final items = value.whereType<Map>().map(Map<String, dynamic>.from).where((a) => a['id'] != null).toList();
+      final selectedNames = widget.property.amenities.map((name) => name.trim().toLowerCase()).toSet();
+      if (!mounted) return;
+      setState(() {
+        amenities = items;
+        selectedAmenityIds
+          ..clear()
+          ..addAll(items.where((a) => selectedNames.contains(a['name']?.toString().trim().toLowerCase())).map((a) => a['id'].toString()));
+        amenitiesLoading = false;
+        amenitiesError = null;
+      });
+    } catch (_) {
+      if (mounted) setState(() { amenitiesLoading = false; amenitiesError = 'Amenities could not be loaded.'; });
+    }
+  }
+
   Future<void> _loadImages() async {
     try {
       final images = await PropertyImageApi(
@@ -221,6 +249,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     setState(() {
       selectedLocation = location;
       if (location.address.isNotEmpty) addressController.text = location.address;
+      if (location.locality.isNotEmpty) localityController.text = location.locality;
       if (location.city.isNotEmpty) cityController.text = location.city;
       if (location.state.isNotEmpty) stateController.text = location.state;
       if (location.country.isNotEmpty) countryController.text = location.country;
@@ -393,6 +422,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
         stateName: stateController.text.trim(),
         dailyRentEnabled: dailyRentEnabled,
         dailyRent: dailyRent,
+        amenityIds: selectedAmenityIds.toList(),
       );
 
       if (newImagesBySection.isNotEmpty) {
@@ -610,6 +640,36 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: _number,
             ),
+            const SizedBox(height: 24),
+            Text('Amenities', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            if (amenitiesLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (amenitiesError != null)
+              Row(children: [Expanded(child: Text(amenitiesError!)), TextButton(onPressed: _loadAmenities, child: const Text('Retry'))])
+            else
+              ...amenities.map((amenity) {
+                final id = amenity['id'].toString();
+                final name = amenity['name']?.toString().trim() ?? 'Amenity';
+                final normalized = name.toLowerCase();
+                final selected = normalized == 'parking' || normalized == 'covered parking'
+                    ? parking
+                    : normalized == 'pet friendly'
+                        ? petFriendly
+                        : selectedAmenityIds.contains(id);
+                return SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  title: Text(name),
+                  value: selected,
+                  onChanged: loading ? null : (value) => setState(() {
+                    if (normalized == 'parking' || normalized == 'covered parking') parking = value;
+                    else if (normalized == 'pet friendly') petFriendly = value;
+                    else if (value) selectedAmenityIds.add(id);
+                    else selectedAmenityIds.remove(id);
+                  }),
+                );
+              }),
             const SizedBox(height: 24),
             Text(
               context.tr('propertyLocation'),
