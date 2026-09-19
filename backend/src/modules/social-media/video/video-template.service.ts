@@ -43,11 +43,15 @@ export class VideoTemplateService {
 
   buildTextLines(property: PropertyVideoData): string[] {
     return [
+      'Looking for a home to rent?',
       property.title,
       `${property.bedrooms} BHK • ${property.bathrooms} Bath • ${property.area} sq.ft`,
       `₹${property.price}/month`,
       [property.locality, property.city].filter(Boolean).join(', '),
-      'Visit rentitease.com • Schedule a Visit',
     ];
+  }
+
+  buildPersistentCta(): string {
+    return 'Find this property → rentitease.com';
   }
 }
