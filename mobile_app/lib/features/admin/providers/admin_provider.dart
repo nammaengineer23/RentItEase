@@ -161,9 +161,21 @@ class AdminNotifier extends StateNotifier<AdminState> {
     List<String> platforms,
   ) => _api.generateSocialMedia(propertyId, platforms: platforms);
 
-  Future<void> publishSocialMedia(String propertyId, String platform) async {
+  Future<Map<String, dynamic>> getSocialSettings() => _api.getSocialSettings();
+
+  Future<void> publishSocialMedia(
+    String propertyId,
+    String platform, {
+    String? caption,
+    String? title,
+  }) async {
     await _action(
-      () => _api.publishSocialMedia(propertyId, platform),
+      () => _api.publishSocialMedia(
+        propertyId,
+        platform,
+        caption: caption,
+        title: title,
+      ),
       loadSocialMedia,
     );
   }
