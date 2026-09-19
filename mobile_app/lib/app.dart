@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'dart:html' as html;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -26,12 +28,17 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
   DateTime? _backgroundedAt;
   bool _resumeRefreshInProgress = false;
   int _webSurfaceGeneration = 0;
+  bool _webVisibilityListenerAttached = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     Future.microtask(_restoreSessionAndRoute);
+    if (kIsWeb) {
+      html.document.addEventListener('visibilitychange', _handleWebVisibility);
+      _webVisibilityListenerAttached = true;
+    }
   }
 
   Future<void> _restoreSessionAndRoute() async {
@@ -52,8 +59,20 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
     });
   }
 
+  void _handleWebVisibility(html.Event event) {
+    if (!mounted) return;
+    if (html.document.hidden == true) {
+      _backgroundedAt ??= DateTime.now();
+      return;
+    }
+    unawaited(_refreshAfterResume());
+  }
+
   @override
   void dispose() {
+    if (_webVisibilityListenerAttached) {
+      html.document.removeEventListener('visibilitychange', _handleWebVisibility);
+    }
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -93,7 +112,9 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
         // current URL/route.
         await ref.read(authenticationProvider).loadSavedSession();
         if (!mounted) return;
-        _webSurfaceGeneration++;
+        setState(() => _webSurfaceGeneration++);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        if (!mounted) return;
         WidgetsBinding.instance.ensureVisualUpdate();
         WidgetsBinding.instance.scheduleWarmUpFrame();
       }
