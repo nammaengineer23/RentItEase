@@ -341,7 +341,7 @@ export class SocialMediaService {
         videoUrl,
         filePath: generated.filePath,
         caption: post.caption || generated.caption,
-        title: generated.videoTitle,
+        title: post.title || generated.videoTitle,
       });
       const result = await this.prisma.socialMediaPost.update({
         where: { id: postId },
