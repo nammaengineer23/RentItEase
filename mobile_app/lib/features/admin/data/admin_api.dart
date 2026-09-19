@@ -117,6 +117,10 @@ class AdminApi {
     return _map(await _dio.get<dynamic>('/admin/social-media/analytics'));
   }
 
+  Future<Map<String, dynamic>> getSocialSettings() async {
+    return _map(await _dio.get<dynamic>('/admin/social-media/settings'));
+  }
+
   Future<Map<String, dynamic>> generateSocialMedia(
     String propertyId, {
     required List<String> platforms,
@@ -135,11 +139,17 @@ class AdminApi {
 
   Future<void> publishSocialMedia(
     String propertyId,
-    String platform,
-  ) async {
+    String platform, {
+    String? caption,
+    String? title,
+  }) async {
     await _dio.post<void>(
       '/admin/social-media/properties/$propertyId/publish',
-      data: {'platform': platform},
+      data: {
+        'platform': platform,
+        if (caption != null) 'caption': caption,
+        if (title != null) 'title': title,
+      },
     );
   }
 
