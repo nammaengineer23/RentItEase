@@ -908,170 +908,171 @@ class _PremiumView extends ConsumerWidget {
   }
 }
 
-class _SocialMediaView extends ConsumerWidget {
+class _SocialMediaView extends ConsumerStatefulWidget {
   const _SocialMediaView();
 
-  Future<String?> _platformDialog(BuildContext context) async {
-    return showDialog<String>(
-      context: context,
-      builder: (dialogContext) => SimpleDialog(
-        title: const Text('Select platform'),
-        children: [
-          for (final platform in const ['INSTAGRAM', 'FACEBOOK', 'YOUTUBE'])
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(dialogContext, platform),
-              child: Text(platform),
-            ),
-        ],
-      ),
-    );
+  @override
+  ConsumerState<_SocialMediaView> createState() => _SocialMediaViewState();
+}
+
+class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
+  final Map<String, Map<String, dynamic>> _drafts = {};
+  final Map<String, TextEditingController> _captions = {};
+  final Map<String, TextEditingController> _titles = {};
+  final Map<String, Set<String>> _selectedPlatforms = {};
+  Map<String, dynamic> _settings = const {};
+  bool _settingsLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_loadSettings);
   }
 
-  Future<void> _generate(
-    BuildContext context,
-    AdminNotifier notifier,
-    String propertyId,
-  ) async {
+  @override
+  void dispose() {
+    for (final controller in _captions.values) controller.dispose();
+    for (final controller in _titles.values) controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSettings() async {
     try {
-      await notifier.generateSocialMedia(
-        propertyId,
-        const ['INSTAGRAM', 'FACEBOOK', 'YOUTUBE'],
-      );
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Social-media content generated')),
-      );
-      await notifier.loadSocialMedia();
+      final value = await ref.read(adminProvider.notifier).getSocialSettings();
+      if (mounted) setState(() { _settings = value; _settingsLoading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _settingsLoading = false);
+    }
+  }
+
+  bool _enabled(String platform) => _settings['${platform.toLowerCase()}Enabled'] == true;
+
+  Future<void> _generate(BuildContext context, String propertyId) async {
+    try {
+      final notifier = ref.read(adminProvider.notifier);
+      final generated = await notifier.generateSocialMedia(propertyId, const []);
+      if (!mounted) return;
+      _captions[propertyId]?.dispose();
+      _titles[propertyId]?.dispose();
+      setState(() {
+        _drafts[propertyId] = generated;
+        _captions[propertyId] = TextEditingController(text: generated['caption']?.toString() ?? '');
+        _titles[propertyId] = TextEditingController(text: generated['videoTitle']?.toString() ?? generated['title']?.toString() ?? '');
+        _selectedPlatforms[propertyId] = {
+          for (final p in const ['FACEBOOK', 'INSTAGRAM', 'YOUTUBE'])
+            if (_enabled(p)) p,
+        };
+      });
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft reel generated. Review it before publishing.')));
+      }
     } catch (error) {
       if (context.mounted) _showError(context, error);
     }
   }
 
-  Future<void> _publish(
-    BuildContext context,
-    AdminNotifier notifier,
-    String propertyId,
-  ) async {
-    final platform = await _platformDialog(context);
-    if (platform == null || !context.mounted) return;
-    await _runAction(
-      context,
-      () => notifier.publishSocialMedia(propertyId, platform),
-      'Published to ${platform.toLowerCase()}',
-    );
+  Future<void> _publishSelected(BuildContext context, String propertyId) async {
+    final selected = _selectedPlatforms[propertyId] ?? {};
+    if (selected.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select at least one configured platform.')));
+      return;
+    }
+    final caption = _captions[propertyId]?.text.trim();
+    final title = _titles[propertyId]?.text.trim();
+    try {
+      for (final platform in selected) {
+        await ref.read(adminProvider.notifier).publishSocialMedia(
+          propertyId,
+          platform,
+          caption: caption,
+          title: title,
+        );
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Submitted to ${selected.length} selected platform(s).')));
+      }
+    } catch (error) {
+      if (context.mounted) _showError(context, error);
+    }
   }
 
-  Future<void> _schedule(
-    BuildContext context,
-    AdminNotifier notifier,
-    String propertyId,
-  ) async {
-    final platform = await _platformDialog(context);
-    if (platform == null || !context.mounted) return;
-    final date = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (date == null || !context.mounted) return;
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-    if (time == null || !context.mounted) return;
-    final scheduledAt = DateTime(
-      date.year,
-      date.month,
-      date.day,
-      time.hour,
-      time.minute,
-    );
-    await _runAction(
-      context,
-      () => notifier.scheduleSocialMedia(propertyId, platform, scheduledAt),
-      'Social-media post scheduled',
+  Widget _platform(String propertyId, String platform, String label) {
+    final enabled = _enabled(platform);
+    final selected = _selectedPlatforms[propertyId]?.contains(platform) ?? false;
+    return CheckboxListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      value: enabled && selected,
+      onChanged: enabled ? (value) => setState(() {
+        final set = _selectedPlatforms.putIfAbsent(propertyId, () => <String>{});
+        if (value == true) set.add(platform); else set.remove(platform);
+      }) : null,
+      title: Text(label),
+      subtitle: Text(enabled ? 'Configured and ready' : 'Integration not configured'),
     );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final state = ref.watch(adminProvider);
     final notifier = ref.read(adminProvider.notifier);
-    final consentedProperties = state.socialProperties.where((property) {
-      return _section(property, 'socialMarketingConsent')['approved'] == true;
-    }).toList();
+    final consentedProperties = state.socialProperties.where((property) =>
+      _section(property, 'socialMarketingConsent')['approved'] == true).toList();
+
     return _AdminRefreshView(
       error: state.error,
       empty: consentedProperties.isEmpty,
-      onRefresh: notifier.loadSocialMedia,
+      onRefresh: () async { await notifier.loadSocialMedia(); await _loadSettings(); },
       child: consentedProperties.isEmpty
-          ? ListView(
-              children: const [
-                SizedBox(height: 160),
-                Center(child: Icon(Icons.campaign_outlined, size: 56)),
-                SizedBox(height: 12),
-                Center(
-                  child: Text('No social-media consented properties yet.'),
-                ),
-              ],
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: consentedProperties.length,
-              itemBuilder: (context, index) {
-                final property = consentedProperties[index];
-                final consent = _section(property, 'socialMarketingConsent');
-                final owner = _section(property, 'owner');
-                final propertyId = _text(property, 'id');
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _text(property, 'title'),
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Consent active • Owner: ${_text(owner, 'fullName')}\n'
-                          'Consent version: ${_text(consent, 'consentVersion')}',
-                        ),
-                        const SizedBox(height: 14),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            FilledButton.icon(
-                              onPressed: () =>
-                                  _generate(context, notifier, propertyId),
-                              icon: const Icon(Icons.auto_awesome),
-                              label: const Text('Generate'),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: () =>
-                                  _publish(context, notifier, propertyId),
-                              icon: const Icon(Icons.publish_outlined),
-                              label: const Text('Publish'),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: () =>
-                                  _schedule(context, notifier, propertyId),
-                              icon: const Icon(Icons.schedule_outlined),
-                              label: const Text('Schedule'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+        ? ListView(children: const [SizedBox(height:160), Center(child:Icon(Icons.campaign_outlined,size:56)), SizedBox(height:12), Center(child:Text('No social-media consented properties yet.'))])
+        : ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: consentedProperties.length,
+            itemBuilder: (context,index) {
+              final property=consentedProperties[index];
+              final consent=_section(property,'socialMarketingConsent');
+              final owner=_section(property,'owner');
+              final id=_text(property,'id');
+              final draft=_drafts[id];
+              final videoUrl=draft?['videoUrl']?.toString() ?? '';
+              return Card(child:Padding(
+                padding:const EdgeInsets.all(16),
+                child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                  Text(_text(property,'title'),style:Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight:FontWeight.bold)),
+                  const SizedBox(height:6),
+                  Text('Consent active • Owner: ${_text(owner,'fullName')}\nConsent version: ${_text(consent,'consentVersion')}'),
+                  const SizedBox(height:12),
+                  FilledButton.icon(onPressed:()=>_generate(context,id),icon:const Icon(Icons.auto_awesome),label:Text(draft==null?'Generate draft reel':'Regenerate draft reel')),
+                  if(draft!=null)...[
+                    const Divider(height:32),
+                    Text('Generated video preview',style:Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height:8),
+                    if(videoUrl.isNotEmpty) Card(child:ListTile(
+                      leading:const Icon(Icons.play_circle_outline),
+                      title:const Text('Draft reel ready'),
+                      subtitle:Text(videoUrl,maxLines:2,overflow:TextOverflow.ellipsis),
+                      trailing:IconButton(icon:const Icon(Icons.open_in_new),tooltip:'Open video preview',onPressed:()=>launchUrl(Uri.parse(videoUrl),mode:LaunchMode.externalApplication)),
+                      onTap:()=>launchUrl(Uri.parse(videoUrl),mode:LaunchMode.externalApplication),
+                    )),
+                    const SizedBox(height:12),
+                    TextField(controller:_titles[id],decoration:const InputDecoration(labelText:'Video title',border:OutlineInputBorder())),
+                    const SizedBox(height:12),
+                    TextField(controller:_captions[id],minLines:5,maxLines:10,decoration:const InputDecoration(labelText:'Editable caption',alignLabelWithHint:true,border:OutlineInputBorder())),
+                    const SizedBox(height:12),
+                    Text('Select platforms',style:Theme.of(context).textTheme.titleMedium),
+                    if(_settingsLoading) const LinearProgressIndicator(),
+                    _platform(id,'FACEBOOK','Facebook'),
+                    _platform(id,'INSTAGRAM','Instagram'),
+                    _platform(id,'YOUTUBE','YouTube'),
+                    const SizedBox(height:8),
+                    FilledButton.icon(onPressed:()=>_publishSelected(context,id),icon:const Icon(Icons.publish_outlined),label:const Text('Publish selected platforms')),
+                    const SizedBox(height:8),
+                    const Text('Generate only creates a draft. Publishing happens only after this review and explicit submit action.'),
+                  ],
+                ]),
+              ));
+            },
+          ),
     );
   }
 }
