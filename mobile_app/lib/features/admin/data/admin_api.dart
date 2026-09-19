@@ -148,8 +148,8 @@ class AdminApi {
         '/admin/social-media/properties/$propertyId/publish',
         data: {
           'platform': platform,
-          if (caption != null) 'caption': caption,
-          if (title != null) 'title': title,
+          'caption': ?caption,
+          'title': ?title,
         },
       ),
     );
