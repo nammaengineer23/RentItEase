@@ -23,6 +23,7 @@ export class VideoGeneratorService {
     lines: string[];
     slug: string;
     secondsPerPhoto?: number;
+    persistentCta?: string;
   }): Promise<{ filePath: string; durationSeconds: number }> {
     if (!params.imageUrls.length) {
       throw new Error('The property has no images available for video generation.');
@@ -101,18 +102,28 @@ export class VideoGeneratorService {
         });
       }
 
+      if (font && params.persistentCta) {
+        const cta = params.persistentCta
+          .replace(/\\/g, '\\\\')
+          .replace(/:/g, '\\:')
+          .replace(/'/g, "\\'");
+        filters.push(
+          `drawtext=fontfile='${font.replace(/\\/g, '/').replace(/:/g, '\\:')}':text='${cta}':fontcolor=white:fontsize=42:x=(w-text_w)/2:y=h-190:box=1:boxcolor=0x5B2EFF@0.90:boxborderw=24`,
+        );
+      }
+
       const vf = filters.length ? filters.join(',') : 'format=yuv420p';
-      await execFileAsync(process.env.FFMPEG_PATH || 'ffmpeg', [
-        '-y',
-        '-i', rawVideo,
-        '-vf', vf,
-        '-r', '30',
-        '-c:v', 'libx264',
-        '-preset', 'veryfast',
-        '-pix_fmt', 'yuv420p',
-        '-movflags', '+faststart',
-        finalVideo,
-      ]);
+      const musicFile = process.env.SOCIAL_BACKGROUND_MUSIC_FILE;
+      const args = ['-y', '-i', rawVideo];
+      if (musicFile) args.push('-stream_loop', '-1', '-i', musicFile);
+      args.push('-vf', vf, '-r', '30', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p');
+      if (musicFile) {
+        args.push('-filter:a', 'volume=0.16', '-c:a', 'aac', '-b:a', '128k', '-shortest');
+      } else {
+        args.push('-an');
+      }
+      args.push('-movflags', '+faststart', finalVideo);
+      await execFileAsync(process.env.FFMPEG_PATH || 'ffmpeg', args);
 
       const durationSeconds = params.imageUrls.length * seconds;
       return { filePath: finalVideo, durationSeconds };
