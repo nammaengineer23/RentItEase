@@ -136,7 +136,7 @@ class OwnerRepositoryImpl implements OwnerRepository {
       'furnishing': _furnishingToApi(furnishing),
       'parking': parking,
       'petFriendly': petFriendly,
-      if (amenityIds != null) 'amenityIds': amenityIds,
+      'amenityIds': ?amenityIds,
       'securityDeposit': securityDeposit,
       'isAvailable': property.isAvailable,
       'dailyRentEnabled': dailyRentEnabled,
