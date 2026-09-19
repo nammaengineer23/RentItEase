@@ -138,13 +138,19 @@ async function androidApk(request) {
     redirect: 'follow',
     cf: { cacheEverything: true, cacheTtl: 3600 },
   });
-  if (!upstream.ok) return Response.redirect(githubAndroidReleaseUrl, 302);
+  if (!upstream.ok) {
+    return new Response('The RentItEase APK is temporarily unavailable. Please try again shortly.', {
+      status: 502,
+      headers: { 'content-type': 'text/plain; charset=UTF-8', 'cache-control': 'no-store' },
+    });
+  }
 
   const headers = new Headers({
     'content-type': 'application/vnd.android.package-archive',
     'content-disposition': 'attachment; filename="RentItEase.apk"',
     'cache-control': 'public, max-age=3600',
     'x-content-type-options': 'nosniff',
+    'content-location': androidDownloadUrl,
   });
   for (const name of ['content-length', 'content-range', 'accept-ranges', 'etag', 'last-modified']) {
     const value = upstream.headers.get(name);
