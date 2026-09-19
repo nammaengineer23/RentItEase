@@ -143,14 +143,29 @@ class AdminApi {
     String? caption,
     String? title,
   }) async {
-    await _dio.post<void>(
-      '/admin/social-media/properties/$propertyId/publish',
-      data: {
-        'platform': platform,
-        if (caption != null) 'caption': caption,
-        if (title != null) 'title': title,
-      },
+    final result = _map(
+      await _dio.post<dynamic>(
+        '/admin/social-media/properties/$propertyId/publish',
+        data: {
+          'platform': platform,
+          if (caption != null) 'caption': caption,
+          if (title != null) 'title': title,
+        },
+      ),
     );
+    final status = result['status']?.toString().toUpperCase();
+    if (status != 'PUBLISHED') {
+      final message = result['error']?.toString().trim();
+      throw StateError(
+        message?.isNotEmpty == true
+            ? '$platform publish failed: $message'
+            : '$platform publish was not confirmed by the platform.',
+      );
+    }
+    final externalId = result['externalId']?.toString().trim();
+    if (externalId == null || externalId.isEmpty) {
+      throw StateError('$platform did not return a published post ID.');
+    }
   }
 
   Future<void> scheduleSocialMedia(
