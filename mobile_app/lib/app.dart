@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'dart:html' as html;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -10,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/app_router.dart';
 import 'app/app_theme.dart';
 import 'core/navigation/route_persistence_service.dart';
+import 'core/platform/web_visibility.dart';
 import 'core/ui/app_scroll_behavior.dart';
 import 'features/authentication/providers/authentication_provider.dart';
 import 'features/settings/providers/settings_provider.dart';
@@ -28,7 +27,7 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
   DateTime? _backgroundedAt;
   bool _resumeRefreshInProgress = false;
   int _webSurfaceGeneration = 0;
-  bool _webVisibilityListenerAttached = false;
+  VoidCallback? _removeWebVisibilityListener;
 
   @override
   void initState() {
@@ -36,8 +35,10 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
     WidgetsBinding.instance.addObserver(this);
     Future.microtask(_restoreSessionAndRoute);
     if (kIsWeb) {
-      html.document.addEventListener('visibilitychange', _handleWebVisibility);
-      _webVisibilityListenerAttached = true;
+      _removeWebVisibilityListener = listenForWebVisibilityChanges(
+        onHidden: () => _backgroundedAt ??= DateTime.now(),
+        onVisible: () => unawaited(_refreshAfterResume()),
+      );
     }
   }
 
@@ -59,20 +60,9 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
     });
   }
 
-  void _handleWebVisibility(html.Event event) {
-    if (!mounted) return;
-    if (html.document.hidden == true) {
-      _backgroundedAt ??= DateTime.now();
-      return;
-    }
-    unawaited(_refreshAfterResume());
-  }
-
   @override
   void dispose() {
-    if (_webVisibilityListenerAttached) {
-      html.document.removeEventListener('visibilitychange', _handleWebVisibility);
-    }
+    _removeWebVisibilityListener?.call();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
