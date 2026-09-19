@@ -926,7 +926,9 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(_loadSettings);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadSettings();
+    });
   }
 
   @override
