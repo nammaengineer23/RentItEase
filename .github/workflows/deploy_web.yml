@@ -53,9 +53,12 @@ jobs:
             echo "GOOGLE_MAPS_WEB_API_KEY is required for the web location picker."
             exit 1
           }
-          sed -i "s|GOOGLE_MAPS_WEB_API_KEY_PLACEHOLDER|$GOOGLE_MAPS_WEB_API_KEY|g" web/index.html
-          grep -q "GOOGLE_MAPS_WEB_API_KEY_PLACEHOLDER" web/index.html && {
-            echo "Google Maps web key injection failed."
+          # Flutter's google_maps_flutter_web expects the Google Maps JS API
+          # to be present in index.html. Load it explicitly with the same key
+          # used by geocoding so map tiles and the location picker work on web.
+          sed -i "/<script src=\"flutter_bootstrap.js\" async><\\/script>/i\\  <script src=\"https://maps.googleapis.com/maps/api/js?key=$GOOGLE_MAPS_WEB_API_KEY\"></script>" web/index.html
+          grep -q "maps.googleapis.com/maps/api/js?key=" web/index.html || {
+            echo "Google Maps JavaScript API injection failed."
             exit 1
           }
 

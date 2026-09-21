@@ -371,6 +371,18 @@ import {
             },
           });
 
+          // A successfully paid rental is no longer available to other tenants.
+          // Keep this in the same transaction as payment + booking + invoice so
+          // the marketplace can never expose a paid property as available.
+          await tx.property.update({
+            where: {
+              id: payment.booking.propertyId,
+            },
+            data: {
+              isAvailable: false,
+            },
+          });
+
           await tx.invoice.upsert({
             where: {
               invoiceNumber: `RIE-${payment.bookingId}`,

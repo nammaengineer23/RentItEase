@@ -18,6 +18,8 @@ export function SocialMediaPage() {
   const [video, setVideo] = useState<GenerateVideoResponse | null>(null);
   const [caption, setCaption] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
+  const [locationText, setLocationText] = useState('');
+  const [selectedPlatforms, setSelectedPlatforms] = useState<SocialPlatform[]>([]);
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState<SocialPlatform | null>(null);
   const [scheduledAt, setScheduledAt] = useState('');
@@ -43,7 +45,40 @@ export function SocialMediaPage() {
     ['INSTAGRAM', settings?.instagramEnabled], ['FACEBOOK', settings?.facebookEnabled], ['YOUTUBE', settings?.youtubeEnabled],
   ] as const, [settings]);
 
-  function chooseProperty(property: SocialProperty) { setSelected(property); setPropertyId(property.id); setVideo(null); setCaption(''); setVideoTitle(''); }
+  function chooseProperty(property: SocialProperty) {
+    setSelected(property);
+    setPropertyId(property.id);
+    setVideo(null);
+    setCaption('');
+    setVideoTitle('');
+    setLocationText([property.locality, property.city].filter(Boolean).join(', '));
+    setSelectedPlatforms(platforms.filter(([, enabled]) => enabled).map(([platform]) => platform));
+    setError('');
+    setMessage('');
+  }
+
+  function togglePlatform(platform: SocialPlatform) {
+    setSelectedPlatforms((current) =>
+      current.includes(platform)
+        ? current.filter((item) => item !== platform)
+        : [...current, platform],
+    );
+  }
+
+  function captionForPublish() {
+    const base = (caption || video?.caption || '').trim();
+    const location = locationText.trim();
+    if (!location) return base;
+    return base.includes(location) ? base : `${base}\n📍 ${location}`.trim();
+  }
+
+  async function publishSelected() {
+    if (!selectedPlatforms.length) return setError('Select at least one connected platform.');
+    setError('');
+    for (const platform of selectedPlatforms) {
+      await publish(platform);
+    }
+  }
   async function openPost(post: SocialPost) { setSelectedPost(post); try { setHistory(await socialMediaApi.history(post.id)); } catch { setHistory([]); } }
 
   async function generateVideo() {
@@ -57,7 +92,7 @@ export function SocialMediaPage() {
   async function publish(platform: SocialPlatform) {
     if (!propertyId.trim()) return setError('Choose a consented property.');
     setPublishing(platform); setError('');
-    try { const result = await socialMediaApi.publish(propertyId.trim(), platform, caption || video?.caption, videoTitle || video?.videoTitle); setMessage(`${platform} published successfully${result.url ? `: ${result.url}` : '.'}`); await loadDashboard(); }
+    try { const result = await socialMediaApi.publish(propertyId.trim(), platform, captionForPublish(), videoTitle || video?.videoTitle); setMessage(`${platform} published successfully${result.url ? `: ${result.url}` : '.'}`); await loadDashboard(); }
     catch (e) { setError(e instanceof Error ? e.message : `${platform} publishing failed.`); }
     finally { setPublishing(null); }
   }
@@ -89,10 +124,29 @@ export function SocialMediaPage() {
       {properties.length === 0 ? <div className="empty-state">No consented properties found.</div> : <div className="table-container"><table className="data-table"><thead><tr><th>Property</th><th>Owner</th><th>Consent</th><th>Action</th></tr></thead><tbody>{properties.map((p) => <tr key={p.id}><td><strong>{p.title}</strong><br/><span className="muted">{p.city}{p.locality ? `, ${p.locality}` : ''}</span></td><td>{p.owner.fullName}</td><td><span className="status-badge status-active">Approved · v{p.socialMarketingConsent.consentVersion}</span></td><td><button className="table-button" onClick={() => chooseProperty(p)}>Manage</button></td></tr>)}</tbody></table></div>}
     </div>
 
-    {selected && <div className="social-card"><div className="section-heading"><div><h2>{selected.title}</h2><p className="muted">{selected.owner.fullName} · consented {new Date(selected.socialMarketingConsent.consentedAt).toLocaleString()}</p></div><button className="secondary-button" onClick={() => setSelected(null)}>Close</button></div>
-      <p className="muted">{selected.city}{selected.locality ? `, ${selected.locality}` : ''}</p>
-      <button onClick={() => void generateVideo()} disabled={loading}>{loading ? 'Generating…' : 'Generate / Regenerate content'}</button>
-      {video && <><h3>Preview</h3>{video.videoUrl && <video src={video.videoUrl} controls playsInline style={{ width:'100%', maxWidth:360, aspectRatio:'9 / 16', objectFit:'cover', borderRadius:12 }}/>}<label htmlFor="social-title">Title</label><input id="social-title" value={videoTitle} onChange={(e) => setVideoTitle(e.target.value)} /><label htmlFor="caption">Caption / description</label><textarea id="caption" value={caption} onChange={(e) => setCaption(e.target.value)} rows={9}/><div className="social-publish-grid">{platforms.map(([platform, enabled]) => <button key={platform} onClick={() => void publish(platform)} disabled={!enabled || publishing !== null}>{publishing === platform ? 'Publishing…' : `Publish ${platform}`}</button>)}</div><label htmlFor="scheduled-at">Schedule for later</label><input id="scheduled-at" type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)}/><div className="social-publish-grid">{platforms.map(([platform, enabled]) => <button key={`schedule-${platform}`} onClick={() => void schedule(platform)} disabled={!enabled || publishing !== null || !scheduledAt}>Schedule {platform}</button>)}</div></>}
+    {selected && <div className="modal-backdrop" onClick={() => setSelected(null)}>
+      <div className="modal-card social-property-dialog" onClick={(e) => e.stopPropagation()}>
+        <div className="section-heading"><div><h2>{selected.title}</h2><p className="muted">{selected.owner.fullName} · consented {new Date(selected.socialMarketingConsent.consentedAt).toLocaleString()}</p></div><button className="secondary-button" onClick={() => setSelected(null)}>Close</button></div>
+        <label htmlFor="social-location">Location</label>
+        <input id="social-location" value={locationText} onChange={(e) => setLocationText(e.target.value)} placeholder="Property locality, city" />
+        <button onClick={() => void generateVideo()} disabled={loading}>{loading ? 'Generating…' : video ? 'Regenerate reel' : 'Generate reel'}</button>
+        {video && <>
+          <h3>View reel</h3>
+          {video.videoUrl && <video src={video.videoUrl} controls playsInline style={{ width:'100%', maxWidth:360, aspectRatio:'9 / 16', objectFit:'cover', borderRadius:12 }}/>}
+          <label htmlFor="social-title">Title</label>
+          <input id="social-title" value={videoTitle} onChange={(e) => setVideoTitle(e.target.value)} />
+          <label htmlFor="caption">Caption / description</label>
+          <textarea id="caption" value={caption} onChange={(e) => setCaption(e.target.value)} rows={9}/>
+          <h3>Publish to</h3>
+          <div className="social-publish-grid">{platforms.map(([platform, enabled]) => <label key={platform} className="platform-choice"><input type="checkbox" checked={selectedPlatforms.includes(platform)} disabled={!enabled || publishing !== null} onChange={() => togglePlatform(platform)} /> <strong>{platform}</strong> <span className={enabled ? 'status-badge status-active' : 'status-badge status-inactive'}>{enabled ? 'Connected' : 'Not configured'}</span></label>)}</div>
+          <button onClick={() => void publishSelected()} disabled={!selectedPlatforms.length || publishing !== null}>{publishing ? 'Publishing…' : 'Publish to selected platforms'}</button>
+          <label htmlFor="scheduled-at">Schedule for later</label>
+          <input id="scheduled-at" type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)}/>
+          <div className="social-publish-grid">{selectedPlatforms.map((platform) => <button key={`schedule-${platform}`} onClick={() => void schedule(platform)} disabled={publishing !== null || !scheduledAt}>Schedule {platform}</button>)}</div>
+        </>}
+        {message && <div className="social-message success">{message}</div>}
+        {error && <div className="social-message error">{error}</div>}
+      </div>
     </div>}
 
     <div className="content-card"><div className="section-heading"><div><h3>Publication history</h3><p className="muted">Audit scheduled, published, failed and cancelled activity.</p></div><div><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as SocialPostStatus | '')}><option value="">All statuses</option>{['PENDING','READY','PUBLISHING','PUBLISHED','FAILED','CANCELLED'].map((s) => <option key={s}>{s}</option>)}</select> <select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value as SocialPlatform | '')}><option value="">All platforms</option>{['INSTAGRAM','FACEBOOK','YOUTUBE'].map((p) => <option key={p}>{p}</option>)}</select></div></div>

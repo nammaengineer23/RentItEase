@@ -922,6 +922,7 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
   final Map<String, TextEditingController> _captions = {};
   final Map<String, TextEditingController> _titles = {};
   final Map<String, Set<String>> _selectedPlatforms = {};
+  final Map<String, TextEditingController> _locations = {};
   Map<String, dynamic> _settings = const {};
   bool _settingsLoading = true;
 
@@ -941,6 +942,7 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
   void dispose() {
     for (final controller in _captions.values) controller.dispose();
     for (final controller in _titles.values) controller.dispose();
+    for (final controller in _locations.values) controller.dispose();
     super.dispose();
   }
 
@@ -985,7 +987,11 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select at least one configured platform.')));
       return;
     }
-    final caption = _captions[propertyId]?.text.trim();
+    final baseCaption = _captions[propertyId]?.text.trim() ?? '';
+    final location = _locations[propertyId]?.text.trim() ?? '';
+    final caption = location.isEmpty || baseCaption.contains(location)
+        ? baseCaption
+        : '$baseCaption\n📍 $location'.trim();
     final title = _titles[propertyId]?.text.trim();
     try {
       for (final platform in selected) {
@@ -1042,47 +1048,82 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
               final owner=_section(property,'owner');
               final id=_text(property,'id');
               final draft=_drafts[id];
-              final videoUrl=draft?['videoUrl']?.toString() ?? '';
-              return Card(child:Padding(
-                padding:const EdgeInsets.all(16),
-                child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-                  Text(_text(property,'title'),style:Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight:FontWeight.bold)),
-                  const SizedBox(height:6),
-                  Text('Consent active • Owner: ${_text(owner,'fullName')}\nConsent version: ${_text(consent,'consentVersion')}'),
-                  const SizedBox(height:12),
-                  FilledButton.icon(onPressed:()=>_generate(context,id),icon:const Icon(Icons.auto_awesome),label:Text(draft==null?'Generate draft reel':'Regenerate draft reel')),
-                  if(draft!=null)...[
-                    const Divider(height:32),
-                    Text('Generated video preview',style:Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height:8),
-                    if(videoUrl.isNotEmpty) Card(child:ListTile(
-                      leading:const Icon(Icons.play_circle_outline),
-                      title:const Text('Draft reel ready'),
-                      subtitle:Text(videoUrl,maxLines:2,overflow:TextOverflow.ellipsis),
-                      trailing:IconButton(icon:const Icon(Icons.open_in_new),tooltip:'Open video preview',onPressed:()=>launchUrl(Uri.parse(videoUrl),mode:LaunchMode.externalApplication)),
-                      onTap:()=>launchUrl(Uri.parse(videoUrl),mode:LaunchMode.externalApplication),
-                    )),
-                    const SizedBox(height:12),
-                    TextField(controller:_titles[id],decoration:const InputDecoration(labelText:'Video title',border:OutlineInputBorder())),
-                    const SizedBox(height:12),
-                    TextField(controller:_captions[id],minLines:5,maxLines:10,decoration:const InputDecoration(labelText:'Editable caption',alignLabelWithHint:true,border:OutlineInputBorder())),
-                    const SizedBox(height:12),
-                    Text('Select platforms',style:Theme.of(context).textTheme.titleMedium),
-                    if(_settingsLoading) const LinearProgressIndicator(),
-                    _platform(id,'FACEBOOK','Facebook'),
-                    _platform(id,'INSTAGRAM','Instagram'),
-                    _platform(id,'YOUTUBE','YouTube'),
-                    const SizedBox(height:8),
-                    FilledButton.icon(onPressed:()=>_publishSelected(context,id),icon:const Icon(Icons.publish_outlined),label:const Text('Publish selected platforms')),
-                    const SizedBox(height:8),
-                    const Text('Generate only creates a draft. Publishing happens only after this review and explicit submit action.'),
-                  ],
-                ]),
+              return Card(child:ListTile(
+                title:Text(_text(property,'title'),style:const TextStyle(fontWeight:FontWeight.bold)),
+                subtitle:Text('Consent active • Owner: ${_text(owner,'fullName')}\nConsent version: ${_text(consent,'consentVersion')}'),
+                isThreeLine:true,
+                trailing:const Icon(Icons.chevron_right),
+                onTap:()=>_showSocialPropertyDialog(context, property, id, draft),
               ));
             },
           ),
     );
   }
+  Future<void> _showSocialPropertyDialog(
+    BuildContext context,
+    Map<String, dynamic> property,
+    String id,
+    Map<String, dynamic>? initialDraft,
+  ) async {
+    _locations.putIfAbsent(id, () => TextEditingController(
+      text: [_text(property, 'locality'), _text(property, 'city')]
+          .where((value) => value.isNotEmpty)
+          .join(', '),
+    ));
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          final draft = _drafts[id] ?? initialDraft;
+          final videoUrl = draft?['videoUrl']?.toString() ?? '';
+          return AlertDialog(
+            title: Text(_text(property, 'title')),
+            content: SizedBox(
+              width: 520,
+              child: SingleChildScrollView(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  TextField(controller: _locations[id], decoration: const InputDecoration(labelText: 'Location', border: OutlineInputBorder())),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: () async { await _generate(dialogContext, id); if (dialogContext.mounted) setDialogState(() {}); },
+                    icon: const Icon(Icons.auto_awesome),
+                    label: Text(draft == null ? 'Generate reel' : 'Regenerate reel'),
+                  ),
+                  if (draft != null) ...[
+                    const SizedBox(height: 16),
+                    if (videoUrl.isNotEmpty) ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.play_circle_outline),
+                      title: const Text('View generated reel'),
+                      subtitle: Text(videoUrl, maxLines: 2, overflow: TextOverflow.ellipsis),
+                      onTap: () => launchUrl(Uri.parse(videoUrl), mode: LaunchMode.externalApplication),
+                    ),
+                    TextField(controller: _titles[id], decoration: const InputDecoration(labelText: 'Video title', border: OutlineInputBorder())),
+                    const SizedBox(height: 12),
+                    TextField(controller: _captions[id], minLines: 5, maxLines: 10, decoration: const InputDecoration(labelText: 'Caption / description', alignLabelWithHint: true, border: OutlineInputBorder())),
+                    const SizedBox(height: 12),
+                    Text('Publish to', style: Theme.of(dialogContext).textTheme.titleMedium),
+                    if (_settingsLoading) const LinearProgressIndicator(),
+                    _platform(id, 'FACEBOOK', 'Facebook'),
+                    _platform(id, 'INSTAGRAM', 'Instagram'),
+                    _platform(id, 'YOUTUBE', 'YouTube'),
+                    const SizedBox(height: 8),
+                    FilledButton.icon(
+                      onPressed: () => _publishSelected(dialogContext, id),
+                      icon: const Icon(Icons.publish_outlined),
+                      label: const Text('Publish selected platforms'),
+                    ),
+                  ],
+                ]),
+              ),
+            ),
+            actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Close'))],
+          );
+        },
+      ),
+    );
+  }
+
 }
 
 class _ActivityView extends ConsumerWidget {
