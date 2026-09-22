@@ -41,6 +41,9 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
   late final TextEditingController pincodeController;
   late final TextEditingController bedroomsController;
   late final TextEditingController bathroomsController;
+  late final TextEditingController balconiesController;
+  late final TextEditingController floorController;
+  late final TextEditingController totalFloorsController;
   late final TextEditingController areaController;
 
   late String propertyType;
@@ -90,6 +93,9 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     bathroomsController = TextEditingController(
       text: property.bathrooms.toString(),
     );
+    balconiesController = TextEditingController(text: property.balconies.toString());
+    floorController = TextEditingController(text: property.floor.toString());
+    totalFloorsController = TextEditingController(text: property.totalFloors.toString());
     areaController = TextEditingController(text: property.area.toString());
 
     propertyType = _displayPropertyType(property.propertyType);
@@ -139,6 +145,9 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
         pincodeController.text = property.pincode;
         bedroomsController.text = property.bedrooms.toString();
         bathroomsController.text = property.bathrooms.toString();
+        balconiesController.text = property.balconies.toString();
+        floorController.text = property.floor.toString();
+        totalFloorsController.text = property.totalFloors.toString();
         areaController.text = property.area.toString();
         propertyType = _displayPropertyType(property.propertyType);
         furnishing = _displayFurnishing(property.furnishing);
@@ -302,12 +311,10 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Property video uploaded successfully.')),
       );
-    } catch (_) {
-      if (mounted) {
-        _showError(
-          'Video upload failed. Use an MP4, MOV or M4V up to 60 seconds and 100 MB.',
-        );
-      }
+    } on FormatException catch (error) {
+      if (mounted) _showError(error.message);
+    } catch (error) {
+      if (mounted) _showError('Video upload failed: ${error.toString().replaceFirst('Exception: ', '')}');
     } finally {
       if (mounted) setState(() => videoLoading = false);
     }
@@ -353,6 +360,9 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     );
     final bedrooms = int.tryParse(bedroomsController.text.trim());
     final bathrooms = int.tryParse(bathroomsController.text.trim());
+    final balconies = int.tryParse(balconiesController.text.trim());
+    final floor = int.tryParse(floorController.text.trim());
+    final totalFloors = int.tryParse(totalFloorsController.text.trim());
     final area = double.tryParse(areaController.text.trim());
 
     if (rent == null ||
@@ -360,6 +370,9 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
         securityDeposit == null ||
         bedrooms == null ||
         bathrooms == null ||
+        balconies == null ||
+        floor == null ||
+        totalFloors == null ||
         area == null) {
       _showError(context.tr('validNumericDetails'));
       return;
@@ -386,6 +399,9 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
       securityDeposit: securityDeposit,
       bedrooms: bedrooms,
       bathrooms: bathrooms,
+      balconies: balconies,
+      floor: floor,
+      totalFloors: totalFloors,
       area: area,
       propertyType: propertyType,
       furnishing: furnishing,
@@ -408,6 +424,9 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
         area: area,
         bathrooms: bathrooms,
         bedrooms: bedrooms,
+        balconies: balconies,
+        floor: floor,
+        totalFloors: totalFloors,
         country: countryController.text.trim(),
         furnishing: furnishing,
         landmark: landmarkController.text.trim().isEmpty
@@ -506,6 +525,9 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
       pincodeController,
       bedroomsController,
       bathroomsController,
+      balconiesController,
+      floorController,
+      totalFloorsController,
       areaController,
     ]) {
       controller.dispose();
@@ -633,6 +655,14 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
                 ),
               ],
             ),
+            gap,
+            Row(children: [
+              Expanded(child: _field(balconiesController, 'Balconies', keyboardType: TextInputType.number, validator: _integer)),
+              const SizedBox(width: 12),
+              Expanded(child: _field(floorController, 'Floor', keyboardType: TextInputType.number, validator: _integer)),
+              const SizedBox(width: 12),
+              Expanded(child: _field(totalFloorsController, 'Total floors', keyboardType: TextInputType.number, validator: _integer)),
+            ]),
             gap,
             _field(
               areaController,
