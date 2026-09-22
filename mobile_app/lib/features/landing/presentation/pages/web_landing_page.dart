@@ -253,12 +253,31 @@ class _WebNavigationMenu extends StatelessWidget {
   Widget build(BuildContext context) => PopupMenuButton<String>(
         tooltip: 'More pages',
         icon: const Icon(Icons.menu_rounded),
-        onSelected: (path) => context.go(path),
+        onSelected: (path) {
+          if (path == '/admin-panel/login') {
+            launchUrl(
+              Uri.parse('https://rentitease.com/admin-panel/login'),
+              webOnlyWindowName: '_self',
+            );
+            return;
+          }
+          context.go(path);
+        },
         itemBuilder: (context) => const [
           PopupMenuItem(value: '/about', child: Text('About')),
           PopupMenuItem(value: '/contact', child: Text('Contact')),
           PopupMenuItem(value: '/privacy', child: Text('Privacy')),
           PopupMenuItem(value: '/delete-account', child: Text('Delete account')),
+          PopupMenuItem(
+            value: '/admin-panel/login',
+            child: Row(
+              children: [
+                Icon(Icons.admin_panel_settings_outlined, size: 18),
+                SizedBox(width: 10),
+                Text('Admin'),
+              ],
+            ),
+          ),
         ],
       );
 }
