@@ -1087,6 +1087,107 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
     }
   }
 
+  Future<void> _scheduleSelected(BuildContext context, String propertyId) async {
+    final selected = _selectedPlatforms[propertyId] ?? {};
+    if (selected.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select at least one configured platform.')));
+      return;
+    }
+    final now = DateTime.now();
+    final date = await showDatePicker(context: context, firstDate: now, lastDate: now.add(const Duration(days: 365)), initialDate: now);
+    if (date == null || !context.mounted) return;
+    final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))));
+    if (time == null || !context.mounted) return;
+    final scheduledAt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    if (!scheduledAt.isAfter(now)) {
+      _showError(context, StateError('Choose a future date and time.'));
+      return;
+    }
+    final baseCaption = _captions[propertyId]?.text.trim() ?? '';
+    final location = _locations[propertyId]?.text.trim() ?? '';
+    final caption = location.isEmpty || baseCaption.contains(location) ? baseCaption : '$baseCaption\n📍 $location'.trim();
+    final title = _titles[propertyId]?.text.trim();
+    try {
+      for (final platform in selected) {
+        await ref.read(adminProvider.notifier).scheduleSocialMedia(
+          propertyId, platform, scheduledAt, caption: caption, title: title,
+        );
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Scheduled for ${selected.length} platform(s).')));
+      }
+    } catch (error) {
+      if (context.mounted) _showError(context, error);
+    }
+  }
+
+  Future<void> _showPublicationHistory(BuildContext context, String propertyId) async {
+    final posts = ref.read(adminProvider).socialPosts.where((post) => _text(post, 'propertyId') == propertyId).toList();
+    await showDialog<void>(
+      context: context,
+      builder: (historyContext) => AlertDialog(
+        title: const Text('Publication history'),
+        content: SizedBox(
+          width: 620,
+          height: 440,
+          child: posts.isEmpty
+              ? const Center(child: Text('No publication history yet.'))
+              : ListView.builder(
+                  itemCount: posts.length,
+                  itemBuilder: (_, index) {
+                    final post = posts[index];
+                    final status = _text(post, 'status').toUpperCase();
+                    return Card(child: ListTile(
+                      title: Text('${_text(post,'platform')} • $status'),
+                      subtitle: Text('Created: ${_text(post,'createdAt')}\n${_text(post,'error')}'),
+                      isThreeLine: true,
+                      onTap: () async {
+                        final events = await ref.read(adminProvider.notifier).getSocialPostHistory(_text(post,'id'));
+                        if (!historyContext.mounted) return;
+                        await showDialog<void>(
+                          context: historyContext,
+                          builder: (_) => AlertDialog(
+                            title: const Text('Audit history'),
+                            content: SizedBox(
+                              width: 520,
+                              child: events.isEmpty
+                                  ? const Text('No audit events.')
+                                  : ListView(shrinkWrap: true, children: events.map((event) => ListTile(
+                                      title: Text(_text(event,'eventType')),
+                                      subtitle: Text(_text(event,'createdAt')),
+                                    )).toList()),
+                            ),
+                            actions: [TextButton(onPressed: () => Navigator.pop(historyContext), child: const Text('Close'))],
+                          ),
+                        );
+                      },
+                      trailing: status == 'FAILED'
+                          ? IconButton(
+                              tooltip: 'Retry',
+                              icon: const Icon(Icons.refresh),
+                              onPressed: () => _runAction(historyContext, () => ref.read(adminProvider.notifier).retrySocialPost(_text(post,'id')), 'Retry submitted'),
+                            )
+                          : const SizedBox.shrink(),
+                    ));
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final cancellable = posts.where((p) => const {'PENDING','READY','FAILED'}.contains(_text(p,'status').toUpperCase())).toList();
+              if (cancellable.isNotEmpty) {
+                await _runAction(historyContext, () => ref.read(adminProvider.notifier).cancelSocialPost(_text(cancellable.first,'id')), 'Post cancelled');
+              }
+            },
+            child: const Text('Cancel pending/failed'),
+          ),
+          TextButton(onPressed: () => Navigator.pop(historyContext), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
   Widget _platform(String propertyId, String platform, String label) {
     final enabled = _enabled(platform);
     final selected = _selectedPlatforms[propertyId]?.contains(platform) ?? false;
@@ -1189,6 +1290,18 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
                       onPressed: () => _publishSelected(dialogContext, id),
                       icon: const Icon(Icons.publish_outlined),
                       label: const Text('Publish selected platforms'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => _scheduleSelected(dialogContext, id),
+                      icon: const Icon(Icons.schedule_outlined),
+                      label: const Text('Schedule selected platforms'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () => _showPublicationHistory(dialogContext, id),
+                      icon: const Icon(Icons.history),
+                      label: const Text('Publication history'),
                     ),
                   ],
                 ]),
