@@ -158,7 +158,13 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
       if (selectedVideo != null) await PropertyVideoApi(ref.read(dioProvider)).uploadVideo(propertyId: created.id, video: selectedVideo!);
       if (socialMarketingConsent) await ref.read(dioProvider).post('/social-media/owner/consent', data: {'propertyId': created.id, 'approved': true, 'consentVersion': '1.0'});
       if (!mounted) return; ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('propertyCreated')))); Navigator.of(context).pop(true);
-    } catch (e) { if (mounted) _showError('${context.tr('createPropertyFailed')}: $e'); }
+    } on FormatException catch (e) {
+      if (mounted) _showError(e.message);
+    } on DioException catch (e) {
+      if (mounted) _showError('${context.tr('createPropertyFailed')}: ${_aiErrorMessage(e)}');
+    } catch (e) {
+      if (mounted) _showError('${context.tr('createPropertyFailed')}: ${e.toString().replaceFirst('Exception: ', '')}');
+    }
     finally { if (mounted) setState(() => loading = false); }
   }
 
