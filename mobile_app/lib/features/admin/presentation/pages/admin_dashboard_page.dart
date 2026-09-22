@@ -32,6 +32,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
     'Platform Analytics',
     'User Management',
     'Property Management',
+    'Billing',
   ];
 
   @override
@@ -69,6 +70,9 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
       case 6:
         await notifier.loadProperties();
         break;
+      case 7:
+        await notifier.loadBilling();
+        break;
     }
   }
 
@@ -85,6 +89,11 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
       appBar: AppBar(
         title: Text(_titles[_index]),
         actions: [
+          IconButton(
+            tooltip: 'Search admin records',
+            onPressed: () => _showAdminSearch(context, ref),
+            icon: const Icon(Icons.search),
+          ),
           IconButton(
             tooltip: 'Profile',
             onPressed: () => context.push('/profile'),
@@ -109,6 +118,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
               const _AnalyticsView(),
               const _UsersView(),
               const _PropertiesView(),
+              const _BillingView(),
             ],
           ),
           if (state.loading)
@@ -240,10 +250,77 @@ class _DashboardView extends ConsumerWidget {
             Icons.task_alt,
             onTap: () => onSelect(3),
           ),
+          _MetricCard(
+            'Billing',
+            _number(data, 'revenue'),
+            Icons.receipt_long_outlined,
+            onTap: () => onSelect(7),
+          ),
         ],
       ),
     );
   }
+}
+
+Future<void> _showAdminSearch(BuildContext context, WidgetRef ref) async {
+  final controller = TextEditingController();
+  var results = <Map<String, dynamic>>[];
+  var loading = false;
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        title: const Text('Search admin records'),
+        content: SizedBox(
+          width: 560,
+          height: 440,
+          child: Column(children: [
+            TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: 'Users, properties, visits, invoices…',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) async {
+                if (value.trim().length < 2) {
+                  setState(() => results = []);
+                  return;
+                }
+                setState(() => loading = true);
+                try {
+                  final found = await ref.read(adminProvider.notifier).searchRecords(value.trim());
+                  if (context.mounted) setState(() => results = found);
+                } finally {
+                  if (context.mounted) setState(() => loading = false);
+                }
+              },
+            ),
+            if (loading) const LinearProgressIndicator(),
+            const SizedBox(height: 8),
+            Expanded(
+              child: results.isEmpty
+                  ? const Center(child: Text('Enter at least 2 characters to search.'))
+                  : ListView.builder(
+                      itemCount: results.length,
+                      itemBuilder: (_, index) {
+                        final item = results[index];
+                        return ListTile(
+                          leading: const Icon(Icons.manage_search),
+                          title: Text(_text(item, 'title')),
+                          subtitle: Text('${_text(item, 'type')} • ${_text(item, 'subtitle')}'),
+                        );
+                      },
+                    ),
+            ),
+          ]),
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Close'))],
+      ),
+    ),
+  );
+  controller.dispose();
 }
 
 class _UsersView extends ConsumerWidget {
