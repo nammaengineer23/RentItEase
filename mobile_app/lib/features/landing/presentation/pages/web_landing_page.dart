@@ -1,10 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/network/dio_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class WebLandingPage extends StatelessWidget {
+class WebLandingPage extends ConsumerStatefulWidget {
   const WebLandingPage({super.key});
+
+  @override
+  ConsumerState<WebLandingPage> createState() => _WebLandingPageState();
+}
+
+class _WebLandingPageState extends ConsumerState<WebLandingPage> {
+  Map<String, dynamic>? _socialProof;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_loadSocialProof);
+  }
+
+  Future<void> _loadSocialProof() async {
+    try {
+      final dio = ref.read(dioProvider);
+      await dio.post('/app-feedback/visit');
+      final response = await dio.get('/app-feedback/public-summary');
+      if (!mounted || response.data is! Map) return;
+      setState(() => _socialProof = Map<String, dynamic>.from(response.data as Map));
+    } catch (_) {}
+  }
 
   static const _ink = Color(0xFF10251B);
   static const _deepGreen = Color(0xFF123B2A);
@@ -170,6 +196,7 @@ class WebLandingPage extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (_socialProof != null) _LandingSocialProof(data: _socialProof!),
                 SizedBox(
                   key: _howItWorksKey,
                   width: double.infinity,
@@ -443,6 +470,74 @@ class _HomePreview extends StatelessWidget {
           ),
         ),
       );
+}
+
+class _LandingSocialProof extends StatelessWidget {
+  const _LandingSocialProof({required this.data});
+  final Map<String, dynamic> data;
+
+  @override
+  Widget build(BuildContext context) {
+    final average = (data['averageRating'] as num?)?.toDouble() ?? 0;
+    final ratings = (data['ratingCount'] as num?)?.toInt() ?? 0;
+    final visitors = (data['visitorCount'] as num?)?.toInt() ?? 0;
+    final reviews = (data['reviews'] as List?)?.whereType<Map>().take(3).toList() ?? const [];
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFFF4FAF6),
+      child: _ContentWidth(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 48, 24, 48),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Trusted by RentItEase users', style: TextStyle(color: WebLandingPage._ink, fontSize: 30, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 18),
+            Wrap(spacing: 12, runSpacing: 12, children: [
+              _ProofMetric(icon: Icons.star_rounded, value: ratings == 0 ? 'New' : average.toStringAsFixed(1), label: ratings == 0 ? 'Awaiting ratings' : ratings.toString() + ' ratings'),
+              _ProofMetric(icon: Icons.visibility_outlined, value: visitors.toString(), label: 'website visits'),
+            ]),
+            if (reviews.isNotEmpty) ...[
+              const SizedBox(height: 26),
+              Wrap(spacing: 12, runSpacing: 12, children: reviews.map((raw) {
+                final review = Map<String, dynamic>.from(raw);
+                final rating = (review['rating'] as num?)?.toInt() ?? 0;
+                final name = (review['reviewer'] ?? 'RentItEase user').toString();
+                final comment = (review['comment'] ?? '').toString();
+                final stars = List.filled(rating, '★').join() + List.filled(5 - rating, '☆').join();
+                return SizedBox(width: 330, child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(color: Colors.white, border: Border.all(color: WebLandingPage._line), borderRadius: BorderRadius.circular(18)),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(stars, style: const TextStyle(fontSize: 18)),
+                    const SizedBox(height: 10),
+                    Text(comment, maxLines: 4, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF395548), height: 1.45)),
+                    const SizedBox(height: 12),
+                    Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  ]),
+                ));
+              }).toList()),
+            ],
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProofMetric extends StatelessWidget {
+  const _ProofMetric({required this.icon, required this.value, required this.label});
+  final IconData icon;
+  final String value;
+  final String label;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    decoration: BoxDecoration(color: Colors.white, border: Border.all(color: WebLandingPage._line), borderRadius: BorderRadius.circular(16)),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, color: WebLandingPage._green), const SizedBox(width: 10),
+      Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)), const SizedBox(width: 7),
+      Text(label, style: const TextStyle(color: Color(0xFF587064))),
+    ]),
+  );
 }
 
 class _HowItWorks extends StatelessWidget {
