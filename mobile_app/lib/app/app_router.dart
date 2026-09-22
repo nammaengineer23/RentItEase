@@ -108,6 +108,24 @@ class AppRouter {
         return '/auth';
       }
 
+      // Browser Back can revisit an authentication URL that remains in the
+      // history stack after sign-in. Keep the persisted session active and
+      // return authenticated users to their role home instead of showing the
+      // signed-out flow.
+      const authPaths = {
+        '/auth',
+        '/sign-in',
+        '/register',
+        '/forgot-password',
+      };
+      if (kIsWeb && auth.isLoggedIn && authPaths.contains(location)) {
+        return switch (role) {
+          'ADMIN' => '/admin/dashboard',
+          'OWNER' => '/owner/dashboard',
+          _ => '/home',
+        };
+      }
+
       if (location.startsWith('/admin/') && role != 'ADMIN') {
         return auth.isLoggedIn ? '/home' : '/auth';
       }
