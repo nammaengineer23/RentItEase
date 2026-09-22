@@ -166,5 +166,5 @@ jobs:
         working-directory: .
         run: |
           gh workflow run deploy_web.yml \
-            --ref "${{ github.ref_name }}" \
+            --ref main \
             -f apk_artifact_run_id="${{ github.run_id }}"
