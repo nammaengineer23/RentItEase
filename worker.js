@@ -271,6 +271,18 @@ async function propertySitemap() {
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname.replace(/\/$/, '') || '/';
+    if (path === '/admin-panel' || path.startsWith('/admin-panel/')) {
+      const assetPath = path === '/admin-panel'
+        ? '/admin-panel/index.html'
+        : path;
+      let response = await env.ASSETS.fetch(new Request(new URL(assetPath, request.url), request));
+      if (response.status === 404 || (response.headers.get('content-type') || '').includes('text/html') && !assetPath.endsWith('.html')) {
+        response = await env.ASSETS.fetch(
+          new Request(new URL('/admin-panel/index.html', request.url), request),
+        );
+      }
+      return response;
+    }
     if (path === '/privacy-policy') return Response.redirect(`${siteUrl}/privacy`, 301);
     if (path === '/terms-of-service') return Response.redirect(`${siteUrl}/terms`, 301);
     if (path === '/rentals/bengaluru') return Response.redirect(`${siteUrl}/rentals/bangalore`, 301);
