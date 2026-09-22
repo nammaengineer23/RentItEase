@@ -25,6 +25,12 @@ class AdminState {
     this.memberships = const [],
     this.socialProperties = const [],
     this.socialAnalytics = const {},
+    this.billingOverview = const {},
+    this.billingPlans = const [],
+    this.premiumListings = const [],
+    this.payments = const [],
+    this.invoices = const [],
+    this.socialPosts = const [],
   });
 
   final bool loading;
@@ -39,6 +45,12 @@ class AdminState {
   final List<Map<String, dynamic>> memberships;
   final List<Map<String, dynamic>> socialProperties;
   final Map<String, dynamic> socialAnalytics;
+  final Map<String, dynamic> billingOverview;
+  final List<Map<String, dynamic>> billingPlans;
+  final List<Map<String, dynamic>> premiumListings;
+  final List<Map<String, dynamic>> payments;
+  final List<Map<String, dynamic>> invoices;
+  final List<Map<String, dynamic>> socialPosts;
 
   AdminState copyWith({
     bool? loading,
@@ -54,6 +66,12 @@ class AdminState {
     List<Map<String, dynamic>>? memberships,
     List<Map<String, dynamic>>? socialProperties,
     Map<String, dynamic>? socialAnalytics,
+    Map<String, dynamic>? billingOverview,
+    List<Map<String, dynamic>>? billingPlans,
+    List<Map<String, dynamic>>? premiumListings,
+    List<Map<String, dynamic>>? payments,
+    List<Map<String, dynamic>>? invoices,
+    List<Map<String, dynamic>>? socialPosts,
   }) {
     return AdminState(
       loading: loading ?? this.loading,
@@ -68,6 +86,12 @@ class AdminState {
       memberships: memberships ?? this.memberships,
       socialProperties: socialProperties ?? this.socialProperties,
       socialAnalytics: socialAnalytics ?? this.socialAnalytics,
+      billingOverview: billingOverview ?? this.billingOverview,
+      billingPlans: billingPlans ?? this.billingPlans,
+      premiumListings: premiumListings ?? this.premiumListings,
+      payments: payments ?? this.payments,
+      invoices: invoices ?? this.invoices,
+      socialPosts: socialPosts ?? this.socialPosts,
     );
   }
 }
@@ -148,10 +172,44 @@ class AdminNotifier extends StateNotifier<AdminState> {
     );
   }
 
+  Future<List<Map<String, dynamic>>> searchRecords(String query) =>
+      _api.searchRecords(query);
+
+  Future<void> loadBilling() async {
+    await _load(() async {
+      final results = await Future.wait<dynamic>([
+        _api.getBillingOverview(),
+        _api.getBillingPlans(),
+        _api.getMemberships(),
+        _api.getPremiumListings(),
+        _api.getPayments(),
+        _api.getInvoices(),
+      ]);
+      state = state.copyWith(
+        billingOverview: results[0] as Map<String, dynamic>,
+        billingPlans: results[1] as List<Map<String, dynamic>>,
+        memberships: results[2] as List<Map<String, dynamic>>,
+        premiumListings: results[3] as List<Map<String, dynamic>>,
+        payments: results[4] as List<Map<String, dynamic>>,
+        invoices: results[5] as List<Map<String, dynamic>>,
+      );
+    });
+  }
+
+  Future<void> updateInvoiceStatus(String id, String action) async =>
+      _action(() => _api.updateInvoiceStatus(id, action), loadBilling);
+  Future<void> updatePremiumListingStatus(String id, String action) async =>
+      _action(() => _api.updatePremiumListingStatus(id, action), loadBilling);
+  Future<void> extendMembership(String id, int days) async =>
+      _action(() => _api.extendMembership(id, days), loadBilling);
+  Future<void> restoreMembership(String id) async =>
+      _action(() => _api.restoreMembership(id), loadBilling);
+
   Future<void> loadSocialMedia() async {
     await _load(
       () async => state = state.copyWith(
         socialProperties: await _api.getSocialProperties(),
+        socialPosts: await _api.getSocialPosts(),
       ),
     );
   }
@@ -183,13 +241,22 @@ class AdminNotifier extends StateNotifier<AdminState> {
   Future<void> scheduleSocialMedia(
     String propertyId,
     String platform,
-    DateTime scheduledAt,
-  ) async {
+    DateTime scheduledAt, {
+    String? caption,
+    String? title,
+  }) async {
     await _action(
-      () => _api.scheduleSocialMedia(propertyId, platform, scheduledAt),
+      () => _api.scheduleSocialMedia(propertyId, platform, scheduledAt, caption: caption, title: title),
       loadSocialMedia,
     );
   }
+
+  Future<List<Map<String, dynamic>>> getSocialPostHistory(String postId) =>
+      _api.getSocialPostHistory(postId);
+  Future<void> retrySocialPost(String postId) async =>
+      _action(() => _api.retrySocialPost(postId), loadSocialMedia);
+  Future<void> cancelSocialPost(String postId) async =>
+      _action(() => _api.cancelSocialPost(postId), loadSocialMedia);
 
   Future<Map<String, dynamic>> getUser(String id) => _api.getUser(id);
 
