@@ -64,6 +64,18 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
         ],
       ),
 
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final created = await context.push<bool>('/owner/add-property');
+          if (created == true && mounted) {
+            await ref.read(ownerProvider.notifier).refreshDashboard();
+          }
+        },
+        tooltip: 'Create new property',
+        icon: const Icon(Icons.add_home_work_outlined),
+        label: const Text('New Property'),
+      ),
+
       body: RefreshIndicator(
         onRefresh: () => ref.read(ownerProvider.notifier).refreshDashboard(),
 
