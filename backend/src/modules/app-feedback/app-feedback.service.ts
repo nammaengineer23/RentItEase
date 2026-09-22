@@ -8,7 +8,7 @@ export class AppFeedbackService {
   constructor(private readonly prisma: PrismaService) {}
 
   async publicSummary() {
-    const [aggregate, reviews] = await Promise.all([
+    const [aggregate, reviews, visitorCount] = await Promise.all([
       this.prisma.appFeedback.aggregate({
         _avg: { rating: true },
         _count: { rating: true },
@@ -24,9 +24,11 @@ export class AppFeedbackService {
           user: { select: { fullName: true } },
         },
       }),
+      this.prisma.landingVisit.count(),
     ]);
 
     return {
+      visitorCount,
       averageRating: Number((aggregate._avg.rating ?? 0).toFixed(1)),
       ratingCount: aggregate._count.rating,
       reviews: reviews.map((review) => ({
@@ -36,6 +38,12 @@ export class AppFeedbackService {
         createdAt: review.createdAt,
       })),
     };
+  }
+
+  async recordVisit() {
+    await this.prisma.landingVisit.create({ data: {} });
+    const visitorCount = await this.prisma.landingVisit.count();
+    return { visitorCount };
   }
 
   create(userId: string, dto: CreateAppFeedbackDto) {
