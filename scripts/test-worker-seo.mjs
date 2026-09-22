@@ -27,12 +27,13 @@ const property = {
 };
 
 globalThis.fetch = async (url) => {
-  if (String(url).includes('/releases/latest/download/')) {
+  if (String(url).includes('/downloads/RentItEase.apk')) {
     return new Response('signed-apk', {
       headers: {
-        'content-type': 'application/octet-stream',
+        'content-type': 'application/vnd.android.package-archive',
         'content-length': '10',
         'accept-ranges': 'bytes',
+        'content-disposition': 'attachment; filename="RentItEase.apk"',
       },
     });
   }
@@ -57,9 +58,21 @@ const env = {
   INSTAGRAM_PROFILE_URL: 'https://instagram.com/rentitease',
   YOUTUBE_CHANNEL_URL: 'https://youtube.com/@RentItEase',
   ASSETS: {
-    fetch: async () => new Response(shell, {
-      headers: { 'content-type': 'text/html' },
-    }),
+    fetch: async (request) => {
+      if (new URL(request.url).pathname === '/downloads/RentItEase.apk') {
+        return new Response('signed-apk', {
+          headers: {
+            'content-type': 'application/vnd.android.package-archive',
+            'content-length': '10',
+            'accept-ranges': 'bytes',
+            'content-disposition': 'attachment; filename="RentItEase.apk"',
+          },
+        });
+      }
+      return new Response(shell, {
+        headers: { 'content-type': 'text/html' },
+      });
+    },
   },
 };
 
