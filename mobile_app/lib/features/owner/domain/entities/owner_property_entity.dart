@@ -18,6 +18,9 @@ class OwnerPropertyEntity {
     required this.securityDeposit,
     required this.bedrooms,
     required this.bathrooms,
+    this.balconies = 0,
+    this.floor = 0,
+    this.totalFloors = 0,
     required this.area,
     required this.propertyType,
     required this.furnishing,
@@ -60,6 +63,9 @@ class OwnerPropertyEntity {
 
   final int bedrooms;
   final int bathrooms;
+  final int balconies;
+  final int floor;
+  final int totalFloors;
   final double area;
 
   final String propertyType;
