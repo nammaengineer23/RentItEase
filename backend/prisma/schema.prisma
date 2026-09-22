@@ -112,6 +112,9 @@ model Property {
   pincode                String
   bedrooms               Int
   bathrooms              Int
+  balconies              Int                     @default(0)
+  floor                  Int                     @default(0)
+  totalFloors            Int                     @default(0)
   area                   Float
   propertyType           PropertyType
   furnishing             FurnishingType
