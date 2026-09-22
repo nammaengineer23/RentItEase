@@ -16,6 +16,11 @@ export class AppFeedbackController {
     return this.service.publicSummary();
   }
 
+  @Post('download')
+  recordDownload(@Body() body: { source?: string }) {
+    return this.service.recordDownload(body.source);
+  }
+
   @Post('visit')
   recordVisit() {
     return this.service.recordVisit();
