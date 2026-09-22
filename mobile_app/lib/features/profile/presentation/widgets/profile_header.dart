@@ -18,8 +18,19 @@ class ProfileHeader extends StatelessWidget {
       padding: const EdgeInsets.all(20),
 
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
-
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: Theme.of(context).brightness == Brightness.dark
+              ? const [Color(0xFF18231E), Color(0xFF121C18)]
+              : const [Color(0xFFEAF3FF), Color(0xFFF7F4FF), Color(0xFFFFF6E8)],
+          stops: const [0, 0.55, 1],
+        ),
+        border: Border(
+          bottom: BorderSide(
+            color: colors.outlineVariant.withValues(alpha: 0.55),
+          ),
+        ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(30),
 
@@ -61,7 +72,7 @@ class ProfileHeader extends StatelessWidget {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: colors.onPrimaryContainer,
+              color: colors.onSurface,
             ),
           ),
 
@@ -69,7 +80,7 @@ class ProfileHeader extends StatelessWidget {
 
           Text(
             profile.email,
-            style: TextStyle(color: colors.onPrimaryContainer),
+            style: TextStyle(color: colors.onSurface),
           ),
 
           const SizedBox(height: 12),
@@ -104,7 +115,7 @@ class ProfileHeader extends StatelessWidget {
 
             style: OutlinedButton.styleFrom(
               foregroundColor: colors.onPrimaryContainer,
-              side: BorderSide(color: colors.onPrimaryContainer),
+              side: BorderSide(color: colors.onSurface),
             ),
 
             icon: const Icon(Icons.edit),
