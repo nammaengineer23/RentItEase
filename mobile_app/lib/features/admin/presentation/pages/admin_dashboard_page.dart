@@ -1424,7 +1424,7 @@ class _BillingView extends ConsumerWidget {
           : ListView.separated(
               padding: const EdgeInsets.all(12),
               itemCount: items.length,
-              separatorBuilder: (_,__) => const Divider(height:1),
+              separatorBuilder: (_, _) => const Divider(height:1),
               itemBuilder: (_,i) => Card(child: builder(items[i])),
             );
 }
