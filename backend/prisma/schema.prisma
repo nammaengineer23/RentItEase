@@ -58,6 +58,14 @@ model User {
   @@index([ownerRequestStatus])
 }
 
+model AppDownload {
+  id        String   @id @default(cuid())
+  source    String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model LandingVisit {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
