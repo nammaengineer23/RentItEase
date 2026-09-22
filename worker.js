@@ -166,7 +166,7 @@ function housesForRentPage(env) {
 
 function downloadPage(env) {
   const description = 'Download the latest signed RentItEase Android APK and start searching verified rental properties.';
-  const body = `<p>${description}</p><h2>Install RentItEase for Android</h2><p>Download the current signed APK directly from the RentItEase website. Android may ask you to allow installation from your browser or file manager.</p><p><a class="button" href="${androidDownloadUrl}" onclick="window.gtag?.('event','apk_download',{method:'rentitease_website'})">Download latest Android APK</a></p><p class="muted">For your security, install RentItEase only from rentitease.com.</p>`;
+  const body = `<p>${description}</p><h2>Install RentItEase for Android</h2><p>Download the current signed APK directly from the RentItEase website. Android may ask you to allow installation from your browser or file manager.</p><p><a class="button" href="/download/latest" onclick="window.gtag?.('event','apk_download',{method:'rentitease_website'})">Download latest Android APK</a></p><p class="muted">For your security, install RentItEase only from rentitease.com.</p>`;
   return staticPage({ path: '/download', title: 'Download RentItEase for Android', description, body, env, schema: { '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'RentItEase', operatingSystem: 'Android', applicationCategory: 'LifestyleApplication', downloadUrl: androidDownloadUrl, offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' } } });
 }
 
@@ -283,6 +283,18 @@ export default {
     if (path === '/privacy-policy') return Response.redirect(`${siteUrl}/privacy`, 301);
     if (path === '/terms-of-service') return Response.redirect(`${siteUrl}/terms`, 301);
     if (path === '/rentals/bengaluru') return Response.redirect(`${siteUrl}/rentals/bangalore`, 301);
+    if (path === '/download/latest') {
+      if (request.method === 'GET') {
+        try {
+          await fetch(`${apiUrl}/app-feedback/download`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ source: 'website' }),
+          });
+        } catch (_) {}
+      }
+      return Response.redirect(androidDownloadUrl, 302);
+    }
     if (path === '/download') return htmlResponse(downloadPage(env));
     if (path === '/rental-app') return htmlResponse(rentalAppPage(env));
     if (path === '/houses-for-rent') return htmlResponse(housesForRentPage(env));
