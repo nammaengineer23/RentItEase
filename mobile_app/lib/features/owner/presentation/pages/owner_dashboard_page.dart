@@ -64,7 +64,30 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
         ],
       ),
 
-      body: RefreshIndicator(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final created = await context.push<bool>('/owner/add-property');
+          if (created == true && mounted) {
+            await ref.read(ownerProvider.notifier).refreshDashboard();
+          }
+        },
+        tooltip: 'Create new property',
+        icon: const Icon(Icons.add_home_work_outlined),
+        label: const Text('New Property'),
+      ),
+
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: Theme.of(context).brightness == Brightness.dark
+                ? const [Color(0xFF0A110E), Color(0xFF101A15), Color(0xFF0C1411)]
+                : const [Color(0xFFEAF3FF), Color(0xFFF3F8F5), Color(0xFFFFF7EA)],
+            stops: const [0, 0.58, 1],
+          ),
+        ),
+        child: RefreshIndicator(
         onRefresh: () => ref.read(ownerProvider.notifier).refreshDashboard(),
 
         child: state.loading
@@ -248,6 +271,7 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
                   );
                 },
               ),
+        ),
       ),
     );
   }

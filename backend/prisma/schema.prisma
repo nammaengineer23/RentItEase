@@ -112,6 +112,9 @@ model Property {
   pincode                String
   bedrooms               Int
   bathrooms              Int
+  balconies              Int                     @default(0)
+  floor                  Int                     @default(0)
+  totalFloors            Int                     @default(0)
   area                   Float
   propertyType           PropertyType
   furnishing             FurnishingType
@@ -183,6 +186,10 @@ model SocialMarketingConsent {
   consentVersion String            @default("1.0")
   consentedAt    DateTime?
   revokedAt      DateTime?
+  preparedVideoUrl String?
+  preparedCaption  String?
+  preparedTitle    String?
+  preparedAt       DateTime?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   owner          User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)

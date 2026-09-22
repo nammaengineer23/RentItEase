@@ -24,6 +24,20 @@ export class StorageService {
     return this.firebaseService.uploadImage(file, folder);
   }
 
+  uploadVideo(
+    file: Express.Multer.File,
+    folder = 'property-videos',
+  ): Promise<StoredImage> {
+    // Both storage drivers preserve the supplied MIME type and raw bytes.
+    // Keep a separate video entry point so video uploads do not depend on
+    // image-specific behavior as the storage layer evolves.
+    if (this.driver === 'r2') {
+      return this.r2StorageService.uploadImage(file, folder);
+    }
+
+    return this.firebaseService.uploadImage(file, folder);
+  }
+
   deleteImage(publicId: string): Promise<boolean> {
     if (publicId.startsWith('r2:')) {
       return this.r2StorageService.deleteImage(publicId);

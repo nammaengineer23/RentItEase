@@ -32,6 +32,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
     'Platform Analytics',
     'User Management',
     'Property Management',
+    'Billing',
   ];
 
   @override
@@ -69,6 +70,9 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
       case 6:
         await notifier.loadProperties();
         break;
+      case 7:
+        await notifier.loadBilling();
+        break;
     }
   }
 
@@ -85,6 +89,11 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
       appBar: AppBar(
         title: Text(_titles[_index]),
         actions: [
+          IconButton(
+            tooltip: 'Search admin records',
+            onPressed: () => _showAdminSearch(context, ref),
+            icon: const Icon(Icons.search),
+          ),
           IconButton(
             tooltip: 'Profile',
             onPressed: () => context.push('/profile'),
@@ -109,6 +118,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
               const _AnalyticsView(),
               const _UsersView(),
               const _PropertiesView(),
+              const _BillingView(),
             ],
           ),
           if (state.loading)
@@ -240,10 +250,77 @@ class _DashboardView extends ConsumerWidget {
             Icons.task_alt,
             onTap: () => onSelect(3),
           ),
+          _MetricCard(
+            'Billing',
+            _number(data, 'revenue'),
+            Icons.receipt_long_outlined,
+            onTap: () => onSelect(7),
+          ),
         ],
       ),
     );
   }
+}
+
+Future<void> _showAdminSearch(BuildContext context, WidgetRef ref) async {
+  final controller = TextEditingController();
+  var results = <Map<String, dynamic>>[];
+  var loading = false;
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        title: const Text('Search admin records'),
+        content: SizedBox(
+          width: 560,
+          height: 440,
+          child: Column(children: [
+            TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: 'Users, properties, visits, invoices…',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) async {
+                if (value.trim().length < 2) {
+                  setState(() => results = []);
+                  return;
+                }
+                setState(() => loading = true);
+                try {
+                  final found = await ref.read(adminProvider.notifier).searchRecords(value.trim());
+                  if (context.mounted) setState(() => results = found);
+                } finally {
+                  if (context.mounted) setState(() => loading = false);
+                }
+              },
+            ),
+            if (loading) const LinearProgressIndicator(),
+            const SizedBox(height: 8),
+            Expanded(
+              child: results.isEmpty
+                  ? const Center(child: Text('Enter at least 2 characters to search.'))
+                  : ListView.builder(
+                      itemCount: results.length,
+                      itemBuilder: (_, index) {
+                        final item = results[index];
+                        return ListTile(
+                          leading: const Icon(Icons.manage_search),
+                          title: Text(_text(item, 'title')),
+                          subtitle: Text('${_text(item, 'type')} • ${_text(item, 'subtitle')}'),
+                        );
+                      },
+                    ),
+            ),
+          ]),
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Close'))],
+      ),
+    ),
+  );
+  controller.dispose();
 }
 
 class _UsersView extends ConsumerWidget {
@@ -1010,6 +1087,107 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
     }
   }
 
+  Future<void> _scheduleSelected(BuildContext context, String propertyId) async {
+    final selected = _selectedPlatforms[propertyId] ?? {};
+    if (selected.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select at least one configured platform.')));
+      return;
+    }
+    final now = DateTime.now();
+    final date = await showDatePicker(context: context, firstDate: now, lastDate: now.add(const Duration(days: 365)), initialDate: now);
+    if (date == null || !context.mounted) return;
+    final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))));
+    if (time == null || !context.mounted) return;
+    final scheduledAt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    if (!scheduledAt.isAfter(now)) {
+      _showError(context, StateError('Choose a future date and time.'));
+      return;
+    }
+    final baseCaption = _captions[propertyId]?.text.trim() ?? '';
+    final location = _locations[propertyId]?.text.trim() ?? '';
+    final caption = location.isEmpty || baseCaption.contains(location) ? baseCaption : '$baseCaption\n📍 $location'.trim();
+    final title = _titles[propertyId]?.text.trim();
+    try {
+      for (final platform in selected) {
+        await ref.read(adminProvider.notifier).scheduleSocialMedia(
+          propertyId, platform, scheduledAt, caption: caption, title: title,
+        );
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Scheduled for ${selected.length} platform(s).')));
+      }
+    } catch (error) {
+      if (context.mounted) _showError(context, error);
+    }
+  }
+
+  Future<void> _showPublicationHistory(BuildContext context, String propertyId) async {
+    final posts = ref.read(adminProvider).socialPosts.where((post) => _text(post, 'propertyId') == propertyId).toList();
+    await showDialog<void>(
+      context: context,
+      builder: (historyContext) => AlertDialog(
+        title: const Text('Publication history'),
+        content: SizedBox(
+          width: 620,
+          height: 440,
+          child: posts.isEmpty
+              ? const Center(child: Text('No publication history yet.'))
+              : ListView.builder(
+                  itemCount: posts.length,
+                  itemBuilder: (_, index) {
+                    final post = posts[index];
+                    final status = _text(post, 'status').toUpperCase();
+                    return Card(child: ListTile(
+                      title: Text('${_text(post,'platform')} • $status'),
+                      subtitle: Text('Created: ${_text(post,'createdAt')}\n${_text(post,'error')}'),
+                      isThreeLine: true,
+                      onTap: () async {
+                        final events = await ref.read(adminProvider.notifier).getSocialPostHistory(_text(post,'id'));
+                        if (!historyContext.mounted) return;
+                        await showDialog<void>(
+                          context: historyContext,
+                          builder: (_) => AlertDialog(
+                            title: const Text('Audit history'),
+                            content: SizedBox(
+                              width: 520,
+                              child: events.isEmpty
+                                  ? const Text('No audit events.')
+                                  : ListView(shrinkWrap: true, children: events.map((event) => ListTile(
+                                      title: Text(_text(event,'eventType')),
+                                      subtitle: Text(_text(event,'createdAt')),
+                                    )).toList()),
+                            ),
+                            actions: [TextButton(onPressed: () => Navigator.pop(historyContext), child: const Text('Close'))],
+                          ),
+                        );
+                      },
+                      trailing: status == 'FAILED'
+                          ? IconButton(
+                              tooltip: 'Retry',
+                              icon: const Icon(Icons.refresh),
+                              onPressed: () => _runAction(historyContext, () => ref.read(adminProvider.notifier).retrySocialPost(_text(post,'id')), 'Retry submitted'),
+                            )
+                          : const SizedBox.shrink(),
+                    ));
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final cancellable = posts.where((p) => const {'PENDING','READY','FAILED'}.contains(_text(p,'status').toUpperCase())).toList();
+              if (cancellable.isNotEmpty) {
+                await _runAction(historyContext, () => ref.read(adminProvider.notifier).cancelSocialPost(_text(cancellable.first,'id')), 'Post cancelled');
+              }
+            },
+            child: const Text('Cancel pending/failed'),
+          ),
+          TextButton(onPressed: () => Navigator.pop(historyContext), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
   Widget _platform(String propertyId, String platform, String label) {
     final enabled = _enabled(platform);
     final selected = _selectedPlatforms[propertyId]?.contains(platform) ?? false;
@@ -1113,6 +1291,18 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
                       icon: const Icon(Icons.publish_outlined),
                       label: const Text('Publish selected platforms'),
                     ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => _scheduleSelected(dialogContext, id),
+                      icon: const Icon(Icons.schedule_outlined),
+                      label: const Text('Schedule selected platforms'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () => _showPublicationHistory(dialogContext, id),
+                      icon: const Icon(Icons.history),
+                      label: const Text('Publication history'),
+                    ),
                   ],
                 ]),
               ),
@@ -1124,6 +1314,119 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
     );
   }
 
+}
+
+class _BillingView extends ConsumerWidget {
+  const _BillingView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(adminProvider);
+    final notifier = ref.read(adminProvider.notifier);
+    final overview = state.billingOverview;
+    return _AdminRefreshView(
+      error: state.error,
+      empty: overview.isEmpty,
+      onRefresh: notifier.loadBilling,
+      child: DefaultTabController(
+        length: 5,
+        child: Column(children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Wrap(spacing: 8, runSpacing: 8, children: [
+              _AdminStatCard(label: 'Revenue', value: '₹${overview['revenue'] ?? 0}', icon: Icons.currency_rupee),
+              _AdminStatCard(label: 'Memberships', value: '${overview['memberships'] ?? 0}', icon: Icons.workspace_premium_outlined),
+              _AdminStatCard(label: 'Payments', value: '${overview['payments'] ?? 0}', icon: Icons.payments_outlined),
+              _AdminStatCard(label: 'Invoices', value: '${overview['invoices'] ?? 0}', icon: Icons.receipt_long_outlined),
+            ]),
+          ),
+          const TabBar(isScrollable: true, tabs: [
+            Tab(text: 'Plans'), Tab(text: 'Memberships'), Tab(text: 'Premium listings'),
+            Tab(text: 'Payments'), Tab(text: 'Invoices'),
+          ]),
+          Expanded(child: TabBarView(children: [
+            _billingList(state.billingPlans, (item) => ListTile(
+              title: Text(_text(item, 'name')),
+              subtitle: Text('${_text(item, 'code')} • ₹${item['price'] ?? 0} • ${_number(item, 'durationDays')} days'),
+              trailing: Chip(label: Text(item['isActive'] == true ? 'Active' : 'Inactive')),
+            )),
+            _billingList(state.memberships, (item) {
+              final user = _section(item, 'user');
+              final plan = _section(item, 'plan');
+              return ListTile(
+                title: Text(_text(user, 'fullName')),
+                subtitle: Text('${_text(plan, 'name')} • ${_text(item, 'status')}\n${_text(user, 'email')}'),
+                isThreeLine: true,
+                trailing: PopupMenuButton<String>(
+                  onSelected: (action) async {
+                    if (action == 'extend') {
+                      await _runAction(context, () => notifier.extendMembership(_text(item, 'id'), 30), 'Membership extended 30 days');
+                    } else if (action == 'restore') {
+                      await _runAction(context, () => notifier.restoreMembership(_text(item, 'id')), 'Membership restored');
+                    } else {
+                      await _runAction(context, () => notifier.updateMembershipStatus(_text(item, 'id'), action), 'Membership updated');
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value:'activate', child:Text('Activate')),
+                    PopupMenuItem(value:'renew', child:Text('Renew')),
+                    PopupMenuItem(value:'extend', child:Text('Extend 30 days')),
+                    PopupMenuItem(value:'restore', child:Text('Restore')),
+                    PopupMenuItem(value:'expire', child:Text('Expire')),
+                    PopupMenuItem(value:'cancel', child:Text('Cancel')),
+                  ],
+                ),
+              );
+            }),
+            _billingList(state.premiumListings, (item) {
+              final property = _section(item, 'property');
+              return ListTile(
+                title: Text(_text(property, 'title')),
+                subtitle: Text('${_text(item, 'status')} • ₹${item['amount'] ?? 0}'),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (action) => _runAction(context, () => notifier.updatePremiumListingStatus(_text(item,'id'), action), 'Premium listing updated'),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value:'activate',child:Text('Activate')),
+                    PopupMenuItem(value:'expire',child:Text('Expire')),
+                    PopupMenuItem(value:'cancel',child:Text('Cancel')),
+                  ],
+                ),
+              );
+            }),
+            _billingList(state.payments, (item) => ListTile(
+              title: Text('₹${item['amount'] ?? 0} ${_text(item,'currency')}'),
+              subtitle: Text('${_text(item,'status')} • ${_text(item,'razorpayPaymentId')}'),
+              trailing: Text(_text(item, 'createdAt')),
+            )),
+            _billingList(state.invoices, (item) {
+              final user = _section(item, 'user');
+              return ListTile(
+                title: Text(_text(item, 'invoiceNumber')),
+                subtitle: Text('${_text(user,'fullName')} • ₹${item['totalAmount'] ?? 0} • ${_text(item,'status')}'),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (action) => _runAction(context, () => notifier.updateInvoiceStatus(_text(item,'id'), action), 'Invoice updated'),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value:'paid',child:Text('Mark paid')),
+                    PopupMenuItem(value:'cancel',child:Text('Cancel')),
+                  ],
+                ),
+              );
+            }),
+          ])),
+        ]),
+      ),
+    );
+  }
+
+  Widget _billingList(List<Map<String,dynamic>> items, Widget Function(Map<String,dynamic>) builder) =>
+      items.isEmpty
+          ? const Center(child: Text('No records found.'))
+          : ListView.separated(
+              padding: const EdgeInsets.all(12),
+              itemCount: items.length,
+              separatorBuilder: (_, _) => const Divider(height:1),
+              itemBuilder: (_,i) => Card(child: builder(items[i])),
+            );
 }
 
 class _ActivityView extends ConsumerWidget {

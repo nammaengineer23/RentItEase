@@ -3,6 +3,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
 
@@ -255,6 +256,40 @@ async deactivateUser(id: string) {
 
   return serializePrisma(updatedUser);
 }
+  // ==========================
+  // Update User Role
+  // ==========================
+  async updateUserRole(id: string, role: UserRole) {
+    if (!Object.values(UserRole).includes(role)) {
+      throw new NotFoundException('Invalid user role.');
+    }
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found.');
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        role,
+        ...(role === UserRole.OWNER
+          ? { ownerRequestStatus: 'APPROVED', ownerReviewedAt: new Date() }
+          : role === UserRole.USER
+            ? { ownerReviewedAt: null }
+            : {}),
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    return serializePrisma(updatedUser);
+  }
+
   // ==========================
   // Delete User
   // ==========================

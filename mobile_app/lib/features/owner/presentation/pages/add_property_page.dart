@@ -39,6 +39,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   final pincodeController = TextEditingController();
   final bedroomsController = TextEditingController(text: '2');
   final bathroomsController = TextEditingController(text: '2');
+  final balconiesController = TextEditingController(text: '0');
+  final floorController = TextEditingController(text: '0');
+  final totalFloorsController = TextEditingController(text: '0');
   final areaController = TextEditingController(text: '1000');
 
   String propertyType = 'House';
@@ -147,18 +150,27 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     final deposit = double.tryParse(securityDepositController.text.trim());
     final bedrooms = int.tryParse(bedroomsController.text.trim());
     final bathrooms = int.tryParse(bathroomsController.text.trim());
+    final balconies = int.tryParse(balconiesController.text.trim());
+    final floor = int.tryParse(floorController.text.trim());
+    final totalFloors = int.tryParse(totalFloorsController.text.trim());
     final area = double.tryParse(areaController.text.trim());
-    if (rent == null || deposit == null || bedrooms == null || bathrooms == null || area == null || (dailyRentEnabled && dailyRent == null)) { _showError(context.tr('validNumericDetails')); return; }
+    if (rent == null || deposit == null || bedrooms == null || bathrooms == null || balconies == null || floor == null || totalFloors == null || area == null || (dailyRentEnabled && dailyRent == null)) { _showError(context.tr('validNumericDetails')); return; }
     if (selectedLocation == null) { _showError('Select the property location on the map before submitting.'); return; }
     setState(() => loading = true);
     try {
       final property = OwnerPropertyEntity(id: '', title: titleController.text.trim(), description: descriptionController.text.trim(), address: addressController.text.trim(), city: cityController.text.trim(), stateName: stateController.text.trim(), country: countryController.text.trim(), pincode: pincodeController.text.trim(), locality: localityController.text.trim(), landmark: landmarkController.text.trim(), latitude: selectedLocation!.latitude, longitude: selectedLocation!.longitude, rent: rent, securityDeposit: deposit, bedrooms: bedrooms, bathrooms: bathrooms, area: area, propertyType: propertyType, furnishing: furnishing, parking: parking, petFriendly: petFriendly, imageUrl: '', isAvailable: false, isVerified: false, totalViews: 0, pendingVisits: 0, createdAt: DateTime.now(), views: 0, favorites: 0, visitRequests: 0);
-      final created = await ref.read(ownerProvider.notifier).addProperty(property, area: area, bathrooms: bathrooms, bedrooms: bedrooms, country: countryController.text.trim(), furnishing: furnishing, landmark: landmarkController.text.trim().isEmpty ? null : landmarkController.text.trim(), latitude: selectedLocation!.latitude, longitude: selectedLocation!.longitude, parking: parking, petFriendly: petFriendly, pincode: pincodeController.text.trim(), securityDeposit: deposit, stateName: stateController.text.trim(), dailyRentEnabled: dailyRentEnabled, dailyRent: dailyRent, amenityIds: _selectedAmenityIds.toList());
+      final created = await ref.read(ownerProvider.notifier).addProperty(property, area: area, bathrooms: bathrooms, bedrooms: bedrooms, balconies: balconies, floor: floor, totalFloors: totalFloors, country: countryController.text.trim(), furnishing: furnishing, landmark: landmarkController.text.trim().isEmpty ? null : landmarkController.text.trim(), latitude: selectedLocation!.latitude, longitude: selectedLocation!.longitude, parking: parking, petFriendly: petFriendly, pincode: pincodeController.text.trim(), securityDeposit: deposit, stateName: stateController.text.trim(), dailyRentEnabled: dailyRentEnabled, dailyRent: dailyRent, amenityIds: _selectedAmenityIds.toList());
       if (selectedImagesBySection.isNotEmpty) await PropertyImageApi(ref.read(dioProvider)).uploadSectionImages(propertyId: created.id, imagesBySection: selectedImagesBySection);
       if (selectedVideo != null) await PropertyVideoApi(ref.read(dioProvider)).uploadVideo(propertyId: created.id, video: selectedVideo!);
       if (socialMarketingConsent) await ref.read(dioProvider).post('/social-media/owner/consent', data: {'propertyId': created.id, 'approved': true, 'consentVersion': '1.0'});
       if (!mounted) return; ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('propertyCreated')))); Navigator.of(context).pop(true);
-    } catch (e) { if (mounted) _showError('${context.tr('createPropertyFailed')}: $e'); }
+    } on FormatException catch (e) {
+      if (mounted) _showError(e.message);
+    } on DioException catch (e) {
+      if (mounted) _showError('${context.tr('createPropertyFailed')}: ${_aiErrorMessage(e)}');
+    } catch (e) {
+      if (mounted) _showError('${context.tr('createPropertyFailed')}: ${e.toString().replaceFirst('Exception: ', '')}');
+    }
     finally { if (mounted) setState(() => loading = false); }
   }
 
@@ -214,6 +226,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     DropdownButtonFormField<String>(initialValue: propertyType, decoration: InputDecoration(labelText: context.tr('propertyType'), border: const OutlineInputBorder()), items: const ['Apartment','House','Villa','Studio','Room','PG'].map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(), onChanged:(v){if(v!=null)setState(()=>propertyType=v);}), const SizedBox(height:16),
     DropdownButtonFormField<String>(initialValue: furnishing, decoration: InputDecoration(labelText: context.tr('furnishing'), border: const OutlineInputBorder()), items: const ['Unfurnished','Semi Furnished','Fully Furnished'].map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(), onChanged:(v){if(v!=null)setState(()=>furnishing=v);}), const SizedBox(height:16),
     Row(children:[Expanded(child:_text(bedroomsController,context.tr('bedrooms'),keyboard:TextInputType.number,validator:_integer)),const SizedBox(width:12),Expanded(child:_text(bathroomsController,context.tr('bathrooms'),keyboard:TextInputType.number,validator:_integer))]),
+    Row(children:[Expanded(child:_text(balconiesController,'Balconies',keyboard:TextInputType.number,validator:_integer)),const SizedBox(width:12),Expanded(child:_text(floorController,'Floor',keyboard:TextInputType.number,validator:_integer)),const SizedBox(width:12),Expanded(child:_text(totalFloorsController,'Total floors',keyboard:TextInputType.number,validator:_integer))]),
     _text(areaController, context.tr('areaSqFt'), keyboard: const TextInputType.numberWithOptions(decimal:true), validator:_number), _amenitiesSection(),
     Text(context.tr('propertyLocation'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), OutlinedButton.icon(onPressed:loading?null:_pickLocation,icon:const Icon(Icons.location_on_outlined),label:Text(selectedLocation==null?context.tr('gettingCurrentLocation'):context.tr('changeLocationMap'))), if(selectedLocation!=null) Padding(padding:const EdgeInsets.only(top:8,bottom:16),child:Text('${context.tr('coordinates')}: ${selectedLocation!.latitude.toStringAsFixed(6)}, ${selectedLocation!.longitude.toStringAsFixed(6)}')),
     _text(addressController,context.tr('address')), _text(localityController,context.tr('locality')), _text(landmarkController,context.tr('landmark'),validator:(_)=>null), _text(cityController,context.tr('city')), _text(stateController,context.tr('state')), _text(countryController,context.tr('country')), _text(pincodeController,context.tr('pincode'),keyboard:TextInputType.number),
@@ -227,5 +240,5 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   ])));
 
   @override
-  void dispose() { for (final c in [titleController,descriptionController,rentController,dailyRentController,securityDepositController,addressController,localityController,landmarkController,cityController,stateController,countryController,pincodeController,bedroomsController,bathroomsController,areaController]) { c.dispose(); } super.dispose(); }
+  void dispose() { for (final c in [titleController,descriptionController,rentController,dailyRentController,securityDepositController,addressController,localityController,landmarkController,cityController,stateController,countryController,pincodeController,bedroomsController,bathroomsController,balconiesController,floorController,totalFloorsController,areaController]) { c.dispose(); } super.dispose(); }
 }

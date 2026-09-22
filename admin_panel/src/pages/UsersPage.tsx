@@ -7,6 +7,7 @@ import {
   deleteUser,
   getUser,
   getUsers,
+  updateUserRole,
   type AdminUserDetails,
   type AdminUserListItem,
   type UserRole,
@@ -250,6 +251,30 @@ export function UsersPage() {
     }
   }
 
+  async function handleRoleChange(user: AdminUserListItem, role: UserRole) {
+    if (role === user.role) return;
+    const confirmed = window.confirm(
+      `Change ${user.fullName}'s role from ${roleLabel(user.role)} to ${roleLabel(role)}?`,
+    );
+    if (!confirmed) return;
+
+    setBusyUserId(user.id);
+    setError("");
+    try {
+      const updated = await updateUserRole(user.id, role);
+      setUsers((current) =>
+        current.map((item) => item.id === user.id ? { ...item, ...updated } : item),
+      );
+      if (selectedUser?.id === user.id) {
+        setSelectedUser((current) => current ? { ...current, ...updated } : current);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update user role.");
+    } finally {
+      setBusyUserId(null);
+    }
+  }
+
   async function handleDelete(user: AdminUserListItem) {
     if (user.role === "ADMIN") {
       window.alert(
@@ -385,11 +410,19 @@ export function UsersPage() {
                       <td>{user.phone || "—"}</td>
 
                       <td>
-                        <span
-                          className={`role-badge role-${user.role.toLowerCase()}`}
+                        <select
+                          className="filter-select"
+                          value={user.role}
+                          disabled={busy}
+                          aria-label={`Role for ${user.fullName}`}
+                          onChange={(event) =>
+                            void handleRoleChange(user, event.target.value as UserRole)
+                          }
                         >
-                          {roleLabel(user.role)}
-                        </span>
+                          <option value="USER">User</option>
+                          <option value="OWNER">Owner</option>
+                          <option value="ADMIN">Administrator</option>
+                        </select>
                       </td>
 
                       <td>
