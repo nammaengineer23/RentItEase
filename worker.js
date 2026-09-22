@@ -1,8 +1,6 @@
 const effectiveDate = 'August 31, 2026';
 const siteUrl = 'https://rentitease.com';
 const apiUrl = 'https://api.rentitease.com/api/v1';
-const githubAndroidReleaseUrl =
-  'https://github.com/nammaengineer23/RentItEase/releases/latest/download/RentItEase-release.apk';
 const androidDownloadUrl = `${siteUrl}/downloads/RentItEase.apk`;
 
 const legalContent = {
@@ -172,48 +170,6 @@ function downloadPage(env) {
   return staticPage({ path: '/download', title: 'Download RentItEase for Android', description, body, env, schema: { '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'RentItEase', operatingSystem: 'Android', applicationCategory: 'LifestyleApplication', downloadUrl: androidDownloadUrl, offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' } } });
 }
 
-async function androidApk(request) {
-  if (!['GET', 'HEAD'].includes(request.method)) {
-    return new Response('Method not allowed.', {
-      status: 405,
-      headers: { allow: 'GET, HEAD' },
-    });
-  }
-
-  const upstreamHeaders = new Headers({ accept: 'application/vnd.android.package-archive' });
-  const range = request.headers.get('range');
-  if (range) upstreamHeaders.set('range', range);
-
-  const upstream = await fetch(githubAndroidReleaseUrl, {
-    method: request.method,
-    headers: upstreamHeaders,
-    redirect: 'follow',
-    cf: { cacheEverything: true, cacheTtl: 3600 },
-  });
-  if (!upstream.ok) {
-    return new Response('The RentItEase APK is temporarily unavailable. Please try again shortly.', {
-      status: 502,
-      headers: { 'content-type': 'text/plain; charset=UTF-8', 'cache-control': 'no-store' },
-    });
-  }
-
-  const headers = new Headers({
-    'content-type': 'application/vnd.android.package-archive',
-    'content-disposition': 'attachment; filename="RentItEase.apk"',
-    'cache-control': 'public, max-age=3600',
-    'x-content-type-options': 'nosniff',
-    'content-location': androidDownloadUrl,
-  });
-  for (const name of ['content-length', 'content-range', 'accept-ranges', 'etag', 'last-modified']) {
-    const value = upstream.headers.get(name);
-    if (value) headers.set(name, value);
-  }
-  return new Response(request.method === 'HEAD' ? null : upstream.body, {
-    status: upstream.status,
-    headers,
-  });
-}
-
 function replaceTag(html, expression, replacement) {
   return expression.test(html) ? html.replace(expression, replacement) : html;
 }
@@ -330,7 +286,6 @@ export default {
     if (path === '/download') return htmlResponse(downloadPage(env));
     if (path === '/rental-app') return htmlResponse(rentalAppPage(env));
     if (path === '/houses-for-rent') return htmlResponse(housesForRentPage(env));
-    if (path === '/downloads/RentItEase.apk') return androidApk(request);
     if (path === '/rentals/bangalore') return htmlResponse(await cityPage(env));
     if (path === '/sitemap-properties.xml') return propertySitemap();
     const propertyMatch = path.match(/^\/property\/([^/]+)$/);
