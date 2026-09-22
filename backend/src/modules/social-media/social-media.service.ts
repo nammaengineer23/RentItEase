@@ -101,6 +101,15 @@ export class SocialMediaService {
 
     const generated = await this.videoService.generate(propertyId);
     const videoUrl = await this.storage.uploadVideo(generated.filePath, propertyId);
+    await this.prisma.socialMarketingConsent.update({
+      where: { propertyId },
+      data: {
+        preparedVideoUrl: videoUrl,
+        preparedCaption: generated.caption,
+        preparedTitle: generated.videoTitle,
+        preparedAt: new Date(),
+      },
+    });
     await this.audit(propertyId, 'system', 'REEL_AUTO_GENERATED', undefined, {
       videoUrl,
       durationSeconds: generated.durationSeconds,
@@ -160,6 +169,10 @@ export class SocialMediaService {
             approved: true,
             consentVersion: true,
             consentedAt: true,
+            preparedVideoUrl: true,
+            preparedCaption: true,
+            preparedTitle: true,
+            preparedAt: true,
           },
         },
         images: {
