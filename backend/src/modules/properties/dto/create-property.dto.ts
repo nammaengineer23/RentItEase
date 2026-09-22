@@ -109,6 +109,21 @@ export class CreatePropertyDto {
   @IsNumber()
   bathrooms!: number;
 
+  @ApiProperty({ example: 1, required: false, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  balconies?: number;
+
+  @ApiProperty({ example: 2, required: false, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  floor?: number;
+
+  @ApiProperty({ example: 5, required: false, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  totalFloors?: number;
+
   @ApiProperty({
     example: 1200,
   })
