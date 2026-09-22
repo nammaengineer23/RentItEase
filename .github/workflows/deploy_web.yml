@@ -34,6 +34,21 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Setup Node.js for React admin
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: admin_panel/package-lock.json
+
+      - name: Build React admin panel
+        working-directory: admin_panel
+        env:
+          VITE_API_BASE_URL: https://api.rentitease.com/api/v1
+        run: |
+          npm ci
+          npm run build
+
       - name: Install Flutter dependencies
         working-directory: mobile_app
         run: flutter pub get
@@ -69,6 +84,10 @@ jobs:
             --dart-define=FACEBOOK_PAGE_URL="$FACEBOOK_PAGE_URL" \
             --dart-define=INSTAGRAM_PROFILE_URL="$INSTAGRAM_PROFILE_URL" \
             --dart-define=YOUTUBE_CHANNEL_URL="$YOUTUBE_CHANNEL_URL"
+
+          rm -rf build/web/admin-panel
+          mkdir -p build/web/admin-panel
+          cp -R ../admin_panel/dist/. build/web/admin-panel/
 
       - name: Deploy to Cloudflare Workers
         env:
