@@ -54,7 +54,7 @@ function socialLinks(env) {
 
 function footer(env) {
   const social = socialLinks(env);
-  return `<footer><a href="/">Home</a> · <a href="/rental-app">Rental App</a> · <a href="/houses-for-rent">Houses for Rent</a> · <a href="/rentals/bangalore">Bangalore Rentals</a> · <a href="/about">About</a> · <a href="/contact">Contact</a> · <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a> · <a href="/delete-account">Delete Account</a> · <a href="/download">Download App</a>${social ? ` · ${social}` : ''}</footer>`;
+  return `<footer><a href="/">Home</a> · <a href="/admin-panel/login">Admin</a> · <a href="/rental-app">Rental App</a> · <a href="/houses-for-rent">Houses for Rent</a> · <a href="/rentals/bangalore">Bangalore Rentals</a> · <a href="/about">About</a> · <a href="/contact">Contact</a> · <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a> · <a href="/delete-account">Delete Account</a> · <a href="/download">Download App</a>${social ? ` · ${social}` : ''}</footer>`;
 }
 
 function staticPage({ path, title, description, body, env, schema }) {
