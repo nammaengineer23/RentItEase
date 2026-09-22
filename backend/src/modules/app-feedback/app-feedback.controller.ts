@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -12,6 +12,11 @@ import { CreateAppFeedbackDto } from './dto/create-app-feedback.dto';
 @Controller('app-feedback')
 export class AppFeedbackController {
   constructor(private readonly service: AppFeedbackService) {}
+
+  @Get('public-summary')
+  publicSummary() {
+    return this.service.publicSummary();
+  }
 
   @Post()
   create(@CurrentUser() user: { id: string }, @Body() dto: CreateAppFeedbackDto) {
