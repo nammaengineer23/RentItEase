@@ -1,7 +1,9 @@
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../auth/AuthContext";
-import { AdminSearchResult, searchAdminRecords } from "../api/adminSearchApi";
+import { searchAdminRecords } from "../api/adminSearchApi";
+import type { AdminSearchResult } from "../api/adminSearchApi";
 
 const navItems = [
   { label: "Dashboard", path: "/dashboard" },
