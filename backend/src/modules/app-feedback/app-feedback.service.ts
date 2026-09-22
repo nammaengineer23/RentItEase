@@ -8,7 +8,7 @@ export class AppFeedbackService {
   constructor(private readonly prisma: PrismaService) {}
 
   async publicSummary() {
-    const [aggregate, reviews, visitorCount] = await Promise.all([
+    const [aggregate, reviews, visitorCount, downloadCount] = await Promise.all([
       this.prisma.appFeedback.aggregate({
         _avg: { rating: true },
         _count: { rating: true },
@@ -25,10 +25,12 @@ export class AppFeedbackService {
         },
       }),
       this.prisma.landingVisit.count(),
+      this.prisma.appDownload.count(),
     ]);
 
     return {
       visitorCount,
+      downloadCount,
       averageRating: Number((aggregate._avg.rating ?? 0).toFixed(1)),
       ratingCount: aggregate._count.rating,
       reviews: reviews.map((review) => ({
@@ -38,6 +40,14 @@ export class AppFeedbackService {
         createdAt: review.createdAt,
       })),
     };
+  }
+
+  async recordDownload(source?: string) {
+    await this.prisma.appDownload.create({
+      data: { source: source?.trim() || null },
+    });
+    const downloadCount = await this.prisma.appDownload.count();
+    return { downloadCount };
   }
 
   async recordVisit() {
