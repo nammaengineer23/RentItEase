@@ -273,7 +273,7 @@ async deactivateUser(id: string) {
         ...(role === UserRole.OWNER
           ? { ownerRequestStatus: 'APPROVED', ownerReviewedAt: new Date() }
           : role === UserRole.USER
-            ? { ownerRequestStatus: null, ownerReviewedAt: null }
+            ? { ownerReviewedAt: null }
             : {}),
       },
       select: {
