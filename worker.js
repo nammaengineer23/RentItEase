@@ -114,6 +114,46 @@ async function cityPage(env) {
   return staticPage({ path: '/rentals/bangalore', title: 'Rental Properties in Bangalore', description, body, env, schema: { '@context': 'https://schema.org', '@type': 'ItemList', name: 'Rental properties in Bangalore', itemListElement: listedProperties.map((property, index) => ({ '@type': 'ListItem', position: index + 1, url: `${siteUrl}/property/${encodeURIComponent(property.id)}`, name: firstString(property.title, 'Rental property') })) } });
 }
 
+function landingPage(env) {
+  const description = 'Discover verified rental homes, connect with owners, schedule visits, and manage your rental journey with RentItEase.';
+  const body = `
+    <section class="landing-hero">
+      <p class="eyebrow">RENTAL HOMES, MADE SIMPLE</p>
+      <h1>Find a place<br>that feels right.</h1>
+      <p class="lead">Browse verified rental homes, compare clear property details, book visits and manage your rental journey in one place.</p>
+      <div class="landing-actions">
+        <a class="button" href="/auth">Open RentItEase</a>
+        <a class="button secondary" href="/download">Download Android App</a>
+      </div>
+    </section>
+    <section class="quick-grid">
+      <article><strong>1</strong><h2>Explore homes</h2><p>Search available properties and compare rent, location, photos and amenities.</p></article>
+      <article><strong>2</strong><h2>Book a visit</h2><p>Request a property visit and stay updated as the owner responds.</p></article>
+      <article><strong>3</strong><h2>Manage your rental</h2><p>Keep bookings, chats, payments and invoices together.</p></article>
+    </section>`;
+  return staticPage({
+    path: '/',
+    title: 'Verified Rental Homes and Properties in India',
+    description,
+    body,
+    env,
+    schema: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        { '@type': 'Organization', '@id': siteUrl + '/#organization', name: 'RentItEase', url: siteUrl + '/', email: 'support@rentitease.com' },
+        { '@type': 'WebSite', '@id': siteUrl + '/#website', name: 'RentItEase', url: siteUrl + '/', publisher: { '@id': siteUrl + '/#organization' } },
+      ],
+    },
+  }).replace(
+    '</style>',
+    '.landing-hero{padding:64px 0 52px;max-width:760px}.eyebrow{color:#087a45;font-size:13px;font-weight:800;letter-spacing:.12em}.landing-hero h1{margin:10px 0 18px;color:#10251b;font-size:clamp(44px,8vw,72px);line-height:.98;letter-spacing:-.045em}.lead{font-size:18px;color:#52655b;max-width:650px}.landing-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}.button.secondary{background:#fff;color:#123b2a;border:1px solid #b9d6c5}.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:10px 0 42px}.quick-grid article{padding:22px;border:1px solid #d9e4dd;border-radius:18px;background:#fff}.quick-grid strong{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#d9f7e7;color:#123b2a}.quick-grid h2{margin:14px 0 6px}.quick-grid p{margin:0;color:#597067}@media(max-width:700px){main{margin-top:24px}.landing-hero{padding-top:28px}.quick-grid{grid-template-columns:1fr}}' +
+    '</style>',
+  ).replace(
+    '<body><main>',
+    '<body><main><header style="display:flex;align-items:center;justify-content:space-between;gap:16px"><a href="/" style="font-size:22px;font-weight:800;text-decoration:none;color:#123b2a">RentItEase</a><nav style="display:flex;flex-wrap:wrap;gap:16px"><a href="/about">About</a><a href="/contact">Contact</a><a href="/admin-panel/login">Admin</a></nav></header>',
+  );
+}
+
 function rentalAppPage(env) {
   const description = 'Find houses, flats and apartments for rent with RentItEase, a rental property app for tenants and property owners in India.';
   const body = `<p>${description}</p><h2>Search homes for rent</h2><p>Browse verified rental property listings, compare rent and amenities, view property locations, save favourites, contact owners and schedule visits.</p><h2>Rental app for tenants</h2><p>RentItEase keeps property search, visits, bookings, payments and invoices together so you can manage your rental journey from one place.</p><h2>Property rental app for owners</h2><p>Owners can list houses, flats and apartments for rent, add photos and property details, manage visit requests and track rental activity.</p><p><a class="button" href="/auth">Search rental properties</a> <a class="button" href="/download">Download RentItEase</a></p>`;
@@ -271,6 +311,7 @@ async function propertySitemap() {
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname.replace(/\/$/, '') || '/';
+    if (path === '/') return htmlResponse(landingPage(env), 'public, max-age=3600, stale-while-revalidate=86400');
     if (path === '/admin-panel' || path.startsWith('/admin-panel/')) {
       const assetPath = path === '/admin-panel'
         ? '/admin-panel/index.html'
