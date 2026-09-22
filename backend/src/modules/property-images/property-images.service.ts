@@ -2,14 +2,22 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { execFile } from 'child_process';
+import { mkdtemp, rm, writeFile } from 'fs/promises';
+import { tmpdir } from 'os';
+import { extname, join } from 'path';
+import { promisify } from 'util';
 
 import { PropertyImageSection, UserRole } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
 import { StorageService } from '../../storage/storage.service';
 import { ReorderImagesDto } from './dto/reorder-images.dto';
+
+const execFileAsync = promisify(execFile);
 
 @Injectable()
 export class PropertyImagesService {
@@ -179,19 +187,14 @@ export class PropertyImagesService {
       );
     }
 
-    const durationSeconds = this.readMp4DurationSeconds(file.buffer);
-    if (durationSeconds == null) {
-      throw new BadRequestException(
-        'Could not read the video duration. Use a standard MP4, MOV or M4V file.',
-      );
-    }
+    const durationSeconds = await this.readVideoDurationSeconds(file);
     if (durationSeconds > 60) {
       throw new BadRequestException(
         'The property video must not exceed 60 seconds.',
       );
     }
 
-    const uploaded = await this.storageService.uploadImage(
+    const uploaded = await this.storageService.uploadVideo(
       file,
       'property-videos',
     );
@@ -484,31 +487,54 @@ export class PropertyImagesService {
       message: 'Image deleted successfully.',
     };
   }
-  private readMp4DurationSeconds(buffer: Buffer): number | null {
-    const marker = Buffer.from('mvhd');
-    const markerOffset = buffer.indexOf(marker);
-    if (markerOffset < 0 || markerOffset + 36 > buffer.length) {
-      return null;
+  private async readVideoDurationSeconds(
+    file: Express.Multer.File,
+  ): Promise<number> {
+    const workDir = await mkdtemp(join(tmpdir(), 'rentitease-video-'));
+    const extension = extname(file.originalname).toLowerCase() || '.mp4';
+    const inputPath = join(workDir, `upload${extension}`);
+
+    try {
+      await writeFile(inputPath, file.buffer);
+
+      const ffprobePath = process.env.FFPROBE_PATH?.trim() || 'ffprobe';
+      const { stdout } = await execFileAsync(
+        ffprobePath,
+        [
+          '-v',
+          'error',
+          '-show_entries',
+          'format=duration',
+          '-of',
+          'default=noprint_wrappers=1:nokey=1',
+          inputPath,
+        ],
+        {
+          timeout: 15_000,
+          maxBuffer: 1024 * 1024,
+        },
+      );
+
+      const duration = Number.parseFloat(stdout.trim());
+      if (!Number.isFinite(duration) || duration <= 0) {
+        throw new Error('ffprobe returned an invalid duration.');
+      }
+
+      return duration;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
+        throw new InternalServerErrorException(
+          'Video processing is temporarily unavailable. Please try again later.',
+        );
+      }
+
+      if (error instanceof InternalServerErrorException) throw error;
+
+      throw new BadRequestException(
+        'Could not read this video. Please upload a valid MP4, MOV or M4V file.',
+      );
+    } finally {
+      await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
     }
-
-    const version = buffer.readUInt8(markerOffset + 4);
-    const timescaleOffset = markerOffset + (version === 1 ? 24 : 16);
-    const durationOffset = markerOffset + (version === 1 ? 28 : 20);
-
-    if (durationOffset + (version === 1 ? 8 : 4) > buffer.length) {
-      return null;
-    }
-
-    const timescale = buffer.readUInt32BE(timescaleOffset);
-    if (timescale === 0) return null;
-
-    const duration =
-      version === 1
-        ? Number(buffer.readBigUInt64BE(durationOffset))
-        : buffer.readUInt32BE(durationOffset);
-
-    if (!Number.isFinite(duration) || duration <= 0) return null;
-    return duration / timescale;
   }
-
 }
