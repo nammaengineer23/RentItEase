@@ -34,6 +34,8 @@ export class SocialMediaService {
   }
 
   async publish(dto: PublishPostDto & { propertyId: string; actorId: string }) {
+    // Publishing is always an explicit admin action. Automatic property
+    // processing only prepares reviewable content and never selects a platform.
     const post = await this.createPost(dto);
     return this.publishPost(post.id, dto.actorId);
   }
@@ -90,11 +92,29 @@ export class SocialMediaService {
     const consent = await this.prisma.socialMarketingConsent.findUnique({
       where: { propertyId },
     });
+    if (!consent?.approved) {
+      return {
+        skipped: true,
+        reason: 'Owner social-marketing consent is required before content can be prepared.',
+      };
+    }
+
+    const generated = await this.videoService.generate(propertyId);
+    const videoUrl = await this.storage.uploadVideo(generated.filePath, propertyId);
+    await this.audit(propertyId, 'system', 'REEL_AUTO_GENERATED', undefined, {
+      videoUrl,
+      durationSeconds: generated.durationSeconds,
+      source: 'PROPERTY_APPROVAL',
+    });
     return {
-      skipped: true,
-      reason: consent?.approved
-        ? 'Owner consent is recorded. An administrator must create or schedule a publication.'
-        : 'Owner social-marketing consent is required before an administrator can publish.',
+      skipped: false,
+      reviewRequired: true,
+      propertyId,
+      videoUrl,
+      caption: generated.caption,
+      videoTitle: generated.videoTitle,
+      durationSeconds: generated.durationSeconds,
+      message: 'Reel prepared automatically. Admin review and platform selection are required before publishing.',
     };
   }
 
