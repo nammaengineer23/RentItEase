@@ -7,8 +7,6 @@ import { AppFeedbackService } from './app-feedback.service';
 import { CreateAppFeedbackDto } from './dto/create-app-feedback.dto';
 
 @ApiTags('App Feedback')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('app-feedback')
 export class AppFeedbackController {
   constructor(private readonly service: AppFeedbackService) {}
@@ -18,7 +16,14 @@ export class AppFeedbackController {
     return this.service.publicSummary();
   }
 
+  @Post('visit')
+  recordVisit() {
+    return this.service.recordVisit();
+  }
+
   @Post()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   create(@CurrentUser() user: { id: string }, @Body() dto: CreateAppFeedbackDto) {
     return this.service.create(user.id, dto);
   }
