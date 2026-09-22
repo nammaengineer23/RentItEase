@@ -1203,6 +1203,119 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
 
 }
 
+class _BillingView extends ConsumerWidget {
+  const _BillingView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(adminProvider);
+    final notifier = ref.read(adminProvider.notifier);
+    final overview = state.billingOverview;
+    return _AdminRefreshView(
+      error: state.error,
+      empty: overview.isEmpty,
+      onRefresh: notifier.loadBilling,
+      child: DefaultTabController(
+        length: 5,
+        child: Column(children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Wrap(spacing: 8, runSpacing: 8, children: [
+              _AdminStatCard(label: 'Revenue', value: '₹${overview['revenue'] ?? 0}', icon: Icons.currency_rupee),
+              _AdminStatCard(label: 'Memberships', value: '${overview['memberships'] ?? 0}', icon: Icons.workspace_premium_outlined),
+              _AdminStatCard(label: 'Payments', value: '${overview['payments'] ?? 0}', icon: Icons.payments_outlined),
+              _AdminStatCard(label: 'Invoices', value: '${overview['invoices'] ?? 0}', icon: Icons.receipt_long_outlined),
+            ]),
+          ),
+          const TabBar(isScrollable: true, tabs: [
+            Tab(text: 'Plans'), Tab(text: 'Memberships'), Tab(text: 'Premium listings'),
+            Tab(text: 'Payments'), Tab(text: 'Invoices'),
+          ]),
+          Expanded(child: TabBarView(children: [
+            _billingList(state.billingPlans, (item) => ListTile(
+              title: Text(_text(item, 'name')),
+              subtitle: Text('${_text(item, 'code')} • ₹${item['price'] ?? 0} • ${_number(item, 'durationDays')} days'),
+              trailing: Chip(label: Text(item['isActive'] == true ? 'Active' : 'Inactive')),
+            )),
+            _billingList(state.memberships, (item) {
+              final user = _section(item, 'user');
+              final plan = _section(item, 'plan');
+              return ListTile(
+                title: Text(_text(user, 'fullName')),
+                subtitle: Text('${_text(plan, 'name')} • ${_text(item, 'status')}\n${_text(user, 'email')}'),
+                isThreeLine: true,
+                trailing: PopupMenuButton<String>(
+                  onSelected: (action) async {
+                    if (action == 'extend') {
+                      await _runAction(context, () => notifier.extendMembership(_text(item, 'id'), 30), 'Membership extended 30 days');
+                    } else if (action == 'restore') {
+                      await _runAction(context, () => notifier.restoreMembership(_text(item, 'id')), 'Membership restored');
+                    } else {
+                      await _runAction(context, () => notifier.updateMembershipStatus(_text(item, 'id'), action), 'Membership updated');
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value:'activate', child:Text('Activate')),
+                    PopupMenuItem(value:'renew', child:Text('Renew')),
+                    PopupMenuItem(value:'extend', child:Text('Extend 30 days')),
+                    PopupMenuItem(value:'restore', child:Text('Restore')),
+                    PopupMenuItem(value:'expire', child:Text('Expire')),
+                    PopupMenuItem(value:'cancel', child:Text('Cancel')),
+                  ],
+                ),
+              );
+            }),
+            _billingList(state.premiumListings, (item) {
+              final property = _section(item, 'property');
+              return ListTile(
+                title: Text(_text(property, 'title')),
+                subtitle: Text('${_text(item, 'status')} • ₹${item['amount'] ?? 0}'),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (action) => _runAction(context, () => notifier.updatePremiumListingStatus(_text(item,'id'), action), 'Premium listing updated'),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value:'activate',child:Text('Activate')),
+                    PopupMenuItem(value:'expire',child:Text('Expire')),
+                    PopupMenuItem(value:'cancel',child:Text('Cancel')),
+                  ],
+                ),
+              );
+            }),
+            _billingList(state.payments, (item) => ListTile(
+              title: Text('₹${item['amount'] ?? 0} ${_text(item,'currency')}'),
+              subtitle: Text('${_text(item,'status')} • ${_text(item,'razorpayPaymentId')}'),
+              trailing: Text(_text(item, 'createdAt')),
+            )),
+            _billingList(state.invoices, (item) {
+              final user = _section(item, 'user');
+              return ListTile(
+                title: Text(_text(item, 'invoiceNumber')),
+                subtitle: Text('${_text(user,'fullName')} • ₹${item['totalAmount'] ?? 0} • ${_text(item,'status')}'),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (action) => _runAction(context, () => notifier.updateInvoiceStatus(_text(item,'id'), action), 'Invoice updated'),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value:'paid',child:Text('Mark paid')),
+                    PopupMenuItem(value:'cancel',child:Text('Cancel')),
+                  ],
+                ),
+              );
+            }),
+          ])),
+        ]),
+      ),
+    );
+  }
+
+  Widget _billingList(List<Map<String,dynamic>> items, Widget Function(Map<String,dynamic>) builder) =>
+      items.isEmpty
+          ? const Center(child: Text('No records found.'))
+          : ListView.separated(
+              padding: const EdgeInsets.all(12),
+              itemCount: items.length,
+              separatorBuilder: (_,__) => const Divider(height:1),
+              itemBuilder: (_,i) => Card(child: builder(items[i])),
+            );
+}
+
 class _ActivityView extends ConsumerWidget {
   const _ActivityView();
 
