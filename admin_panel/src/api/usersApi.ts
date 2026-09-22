@@ -123,3 +123,17 @@ export async function deleteUser(
     },
   );
 }
+export async function updateUserRole(
+  id: string,
+  role: UserRole,
+): Promise<AdminUserListItem> {
+  const response = await apiRequest<UserActionResponse>(
+    `/admin/users/${id}/role`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    },
+  );
+  if (response.data) return response.data;
+  return getUser(id);
+}
