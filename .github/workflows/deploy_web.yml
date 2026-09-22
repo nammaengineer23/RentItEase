@@ -4,9 +4,16 @@ on:
   workflow_run:
     workflows: ["RentItEase - Release E2E / RC1"]
     types: [completed]
+  workflow_dispatch:
+    inputs:
+      apk_artifact_run_id:
+        description: "Release workflow run containing the website APK artifact"
+        required: false
+        type: string
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: rentitease-production-web
@@ -16,16 +23,17 @@ jobs:
   deploy:
     name: Deploy Flutter Web to Cloudflare
     if: >-
-      ${{ github.event.workflow_run.conclusion == 'success' &&
-          github.event.workflow_run.event == 'push' &&
-          github.event.workflow_run.head_branch == 'main' }}
+      ${{ github.event_name == 'workflow_dispatch' ||
+          (github.event.workflow_run.conclusion == 'success' &&
+           github.event.workflow_run.event == 'push' &&
+           github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout tested commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -88,6 +96,33 @@ jobs:
           rm -rf build/web/admin-panel
           mkdir -p build/web/admin-panel
           cp -R ../admin_panel/dist/. build/web/admin-panel/
+
+      - name: Download latest release APK for direct website hosting
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.apk_artifact_run_id != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APK_RUN_ID: ${{ inputs.apk_artifact_run_id }}
+        run: |
+          rm -rf /tmp/rentitease-apk
+          mkdir -p /tmp/rentitease-apk
+          gh run download "$APK_RUN_ID" \
+            --repo "${{ github.repository }}" \
+            --name rentitease-website-apk \
+            --dir /tmp/rentitease-apk
+          test -s /tmp/rentitease-apk/RentItEase-release.apk
+          mkdir -p mobile_app/build/web/downloads
+          cp /tmp/rentitease-apk/RentItEase-release.apk \
+            mobile_app/build/web/downloads/RentItEase.apk
+          echo "Direct website APK:"
+          ls -lh mobile_app/build/web/downloads/RentItEase.apk
+
+      - name: Preserve currently hosted APK on normal web deployments
+        if: ${{ github.event_name == 'workflow_run' }}
+        run: |
+          mkdir -p mobile_app/build/web/downloads
+          curl --fail --location --retry 3 \
+            https://rentitease.com/downloads/RentItEase.apk \
+            --output mobile_app/build/web/downloads/RentItEase.apk || true
 
       - name: Deploy to Cloudflare Workers
         env:
