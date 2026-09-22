@@ -20,13 +20,13 @@ class AppTheme {
       brightness: brightness,
       primary: isDark ? const Color(0xFF79D6A5) : AppColors.primary,
       secondary: isDark ? const Color(0xFFFFC16F) : AppColors.secondary,
-      surface: isDark ? const Color(0xFF111814) : const Color(0xFFFBFDFC),
+      surface: isDark ? const Color(0xFF111814) : const Color(0xFFF9FCFA),
       error: isDark ? const Color(0xFFFFB4AB) : AppColors.error,
     );
     final surface = scheme.surface;
     final surfaceContainer = isDark
         ? const Color(0xFF18211C)
-        : const Color(0xFFF1F6F3);
+        : const Color(0xFFEAF2EE);
     final outline = isDark
         ? const Color(0xFF34423A)
         : const Color(0xFFDCE6E0);
@@ -36,7 +36,7 @@ class AppTheme {
       brightness: brightness,
       colorScheme: scheme,
       scaffoldBackgroundColor:
-          isDark ? const Color(0xFF0B100D) : const Color(0xFFF7FAF8),
+          isDark ? const Color(0xFF0A110E) : const Color(0xFFF1F6F4),
       visualDensity: VisualDensity.standard,
       splashFactory: InkSparkle.splashFactory,
     );
@@ -99,9 +99,9 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: surface,
+        color: isDark ? surface : const Color(0xFFF9FCFA),
         surfaceTintColor: Colors.transparent,
-        elevation: isDark ? 0 : 1,
+        elevation: isDark ? 0 : 0.5,
         shadowColor: Colors.black.withValues(alpha: 0.06),
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
