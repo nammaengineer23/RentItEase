@@ -48,9 +48,18 @@ export function SocialMediaPage() {
   function chooseProperty(property: SocialProperty) {
     setSelected(property);
     setPropertyId(property.id);
-    setVideo(null);
-    setCaption('');
-    setVideoTitle('');
+    const preparedUrl = property.socialMarketingConsent.preparedVideoUrl;
+    setVideo(preparedUrl ? {
+      propertyId: property.id,
+      title: property.title,
+      filePath: '',
+      durationSeconds: 0,
+      caption: property.socialMarketingConsent.preparedCaption || '',
+      videoTitle: property.socialMarketingConsent.preparedTitle || property.title,
+      videoUrl: preparedUrl,
+    } : null);
+    setCaption(property.socialMarketingConsent.preparedCaption || '');
+    setVideoTitle(property.socialMarketingConsent.preparedTitle || '');
     setLocationText([property.locality, property.city].filter(Boolean).join(', '));
     setSelectedPlatforms(platforms.filter(([, enabled]) => enabled).map(([platform]) => platform));
     setError('');
@@ -129,6 +138,7 @@ export function SocialMediaPage() {
         <div className="section-heading"><div><h2>{selected.title}</h2><p className="muted">{selected.owner.fullName} · consented {new Date(selected.socialMarketingConsent.consentedAt).toLocaleString()}</p></div><button className="secondary-button" onClick={() => setSelected(null)}>Close</button></div>
         <label htmlFor="social-location">Location</label>
         <input id="social-location" value={locationText} onChange={(e) => setLocationText(e.target.value)} placeholder="Property locality, city" />
+        {video && <p className="status-badge status-active">Reel ready for admin review{selected.socialMarketingConsent.preparedAt ? ` · prepared ${new Date(selected.socialMarketingConsent.preparedAt).toLocaleString()}` : ''}</p>}
         <button onClick={() => void generateVideo()} disabled={loading}>{loading ? 'Generating…' : video ? 'Regenerate reel' : 'Generate reel'}</button>
         {video && <>
           <h3>View reel</h3>
