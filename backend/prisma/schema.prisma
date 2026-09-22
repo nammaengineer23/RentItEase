@@ -58,6 +58,13 @@ model User {
   @@index([ownerRequestStatus])
 }
 
+model LandingVisit {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model AppFeedback {
   id        String   @id @default(cuid())
   userId    String
