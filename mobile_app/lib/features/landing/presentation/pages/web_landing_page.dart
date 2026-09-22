@@ -75,6 +75,11 @@ class WebLandingPage extends StatelessWidget {
                             onPressed: () => context.go('/delete-account'),
                             child: const Text('Delete account'),
                           ),
+                          TextButton.icon(
+                            onPressed: _openAdminPanel,
+                            icon: const Icon(Icons.admin_panel_settings_outlined, size: 18),
+                            label: const Text('Admin'),
+                          ),
                         ],
                         const SizedBox(width: 8),
                         if (compact)
@@ -229,6 +234,11 @@ class WebLandingPage extends StatelessWidget {
   }
 
   static final _howItWorksKey = GlobalKey();
+
+  static Future<void> _openAdminPanel() => launchUrl(
+        Uri.parse('https://rentitease.com/admin-panel/login'),
+        webOnlyWindowName: '_self',
+      );
 
   Future<void> _openAndroidDownload() => launchUrl(
         Uri.parse(_androidReleaseUrl),
