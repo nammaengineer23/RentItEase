@@ -1,7 +1,7 @@
 const effectiveDate = 'August 31, 2026';
 const siteUrl = 'https://rentitease.com';
 const apiUrl = 'https://api.rentitease.com/api/v1';
-const androidDownloadUrl = `${siteUrl}/downloads/RentItEase.apk`;
+const androidDownloadUrl = 'https://github.com/nammaengineer23/RentItEase/releases/latest/download/RentItEase-release.apk';
 
 const legalContent = {
   '/contact': {
@@ -267,7 +267,7 @@ async function propertySitemap() {
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname.replace(/\/$/, '') || '/';
-    if (path === '/') return htmlResponse(landingPage(env), 'public, max-age=3600, stale-while-revalidate=86400');
+    if (path === '/') return htmlResponse(landingPage(env), 'no-cache, max-age=0, must-revalidate');
     if (path === '/admin-panel' || path.startsWith('/admin-panel/')) {
       const assetPath = path === '/admin-panel'
         ? '/admin-panel/index.html'
