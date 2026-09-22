@@ -481,6 +481,7 @@ class _LandingSocialProof extends StatelessWidget {
     final average = (data['averageRating'] as num?)?.toDouble() ?? 0;
     final ratings = (data['ratingCount'] as num?)?.toInt() ?? 0;
     final visitors = (data['visitorCount'] as num?)?.toInt() ?? 0;
+    final downloads = (data['downloadCount'] as num?)?.toInt() ?? 0;
     final reviews = (data['reviews'] as List?)?.whereType<Map>().take(3).toList() ?? const [];
     return Container(
       width: double.infinity,
@@ -494,6 +495,7 @@ class _LandingSocialProof extends StatelessWidget {
             Wrap(spacing: 12, runSpacing: 12, children: [
               _ProofMetric(icon: Icons.star_rounded, value: ratings == 0 ? 'New' : average.toStringAsFixed(1), label: ratings == 0 ? 'Awaiting ratings' : ratings.toString() + ' ratings'),
               _ProofMetric(icon: Icons.visibility_outlined, value: visitors.toString(), label: 'website visits'),
+              _ProofMetric(icon: Icons.download_rounded, value: downloads.toString(), label: 'app downloads'),
             ]),
             if (reviews.isNotEmpty) ...[
               const SizedBox(height: 26),
