@@ -36,11 +36,13 @@ class SectionedPropertyImagePicker extends StatefulWidget {
     required this.onImagesChanged,
     this.initialImages = const {},
     this.onDeleteExisting,
+    this.selectedImages = const {},
   });
 
   final ValueChanged<Map<String, List<File>>> onImagesChanged;
   final Map<String, List<PropertyImageRecord>> initialImages;
   final Future<void> Function(PropertyImageRecord image)? onDeleteExisting;
+  final Map<String, List<File>> selectedImages;
 
   @override
   State<SectionedPropertyImagePicker> createState() =>
@@ -56,6 +58,9 @@ class _SectionedPropertyImagePickerState
   @override
   void initState() {
     super.initState();
+    _newImagesBySection.addAll(widget.selectedImages.map(
+      (section, images) => MapEntry(section, List<File>.from(images)),
+    ));
     _existingBySection = widget.initialImages.map(
       (section, images) => MapEntry(
         section,
