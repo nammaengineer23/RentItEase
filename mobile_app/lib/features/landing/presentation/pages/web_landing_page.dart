@@ -490,7 +490,7 @@ class _LandingSocialProof extends StatelessWidget {
             const Text('Trusted by RentItEase users', style: TextStyle(color: ink, fontSize: 30, fontWeight: FontWeight.w800)),
             const SizedBox(height: 18),
             Wrap(spacing: 12, runSpacing: 12, children: [
-              _ProofMetric(icon: Icons.star_rounded, value: ratings == 0 ? 'New' : average.toStringAsFixed(1), label: ratings == 0 ? 'Awaiting ratings' : ratings.toString() + ' ratings'),
+              _ProofMetric(icon: Icons.star_rounded, value: ratings == 0 ? 'New' : average.toStringAsFixed(1), label: ratings == 0 ? 'Awaiting ratings' : '$ratings ratings'),
               _ProofMetric(icon: Icons.visibility_outlined, value: visitors.toString(), label: 'website visits'),
               _ProofMetric(icon: Icons.download_rounded, value: downloads.toString(), label: 'app downloads'),
             ]),
