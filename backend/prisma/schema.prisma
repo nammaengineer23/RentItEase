@@ -68,9 +68,12 @@ model AppDownload {
 
 model LandingVisit {
   id        String   @id @default(cuid())
+  visitorId String?  @unique
   createdAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
 
   @@index([createdAt])
+  @@index([lastSeenAt])
 }
 
 model AppFeedback {
