@@ -34,6 +34,26 @@ export class SocialMediaStorageService {
     return filePath;
   }
 
+  async importRemoteVideo(videoUrl: string, propertyId: string): Promise<string> {
+    const response = await fetch(videoUrl);
+    if (!response.ok) {
+      throw new Error(`Unable to download rendered reel (${response.status}).`);
+    }
+    const contentLength = Number(response.headers.get('content-length') || 0);
+    if (contentLength > 100 * 1024 * 1024) {
+      throw new Error('Rendered reel exceeds the 100 MB storage limit.');
+    }
+    const buffer = Buffer.from(await response.arrayBuffer());
+    if (buffer.length > 100 * 1024 * 1024) {
+      throw new Error('Rendered reel exceeds the 100 MB storage limit.');
+    }
+    return this.uploadBuffer(
+      buffer,
+      propertyId,
+      response.headers.get('content-type') || 'video/mp4',
+    );
+  }
+
   async uploadBuffer(buffer: Buffer, propertyId: string, contentType = 'video/mp4'): Promise<string> {
     this.ensureFirebase();
     const bucket = getStorage().bucket();
