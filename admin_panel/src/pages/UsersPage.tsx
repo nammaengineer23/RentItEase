@@ -39,10 +39,16 @@ function roleLabel(role: UserRole): string {
 
 function UserDetailsPanel({
   user,
+  busy,
   onClose,
+  onRoleChange,
+  onToggleStatus,
 }: {
   user: AdminUserDetails;
+  busy: boolean;
   onClose: () => void;
+  onRoleChange: (role: UserRole) => void;
+  onToggleStatus: () => void;
 }) {
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -64,12 +70,23 @@ function UserDetailsPanel({
         <div className="user-detail-grid">
           <div>
             <span>Role</span>
-            <strong>{roleLabel(user.role)}</strong>
+            <select
+              className="filter-select"
+              value={user.role}
+              disabled={busy}
+              onChange={(event) => onRoleChange(event.target.value as UserRole)}
+            >
+              <option value="USER">User</option>
+              <option value="OWNER">Owner</option>
+              <option value="ADMIN">Administrator</option>
+            </select>
           </div>
 
           <div>
             <span>Status</span>
-            <strong>{user.isActive ? "Active" : "Inactive"}</strong>
+            <button className="table-button" disabled={busy} onClick={onToggleStatus}>
+              {busy ? "Updating…" : user.isActive ? "Deactivate user" : "Activate user"}
+            </button>
           </div>
 
           <div>
@@ -486,7 +503,10 @@ export function UsersPage() {
       {selectedUser && (
         <UserDetailsPanel
           user={selectedUser}
+          busy={busyUserId === selectedUser.id}
           onClose={() => setSelectedUser(null)}
+          onRoleChange={(role) => void handleRoleChange(selectedUser, role)}
+          onToggleStatus={() => void handleToggleStatus(selectedUser)}
         />
       )}
     </section>
