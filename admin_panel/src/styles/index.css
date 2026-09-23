@@ -137,3 +137,22 @@ input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1
   .topbar-actions { align-items: stretch; flex-direction: column; }
   .role-badge { align-self: flex-start; }
 }
+
+/* Adaptive admin shell: phone navigation becomes horizontally scrollable instead of
+   consuming the full first viewport; tablet/desktop content stays centered. */
+.main-content > * { max-width: 1440px; margin-left: auto; margin-right: auto; }
+@media (max-width: 680px) {
+  .sidebar { padding: 14px 12px; position: sticky; top: 0; z-index: 60; }
+  .sidebar .brand { margin-bottom: 8px; }
+  .sidebar-nav { display: flex; overflow-x: auto; gap: 8px; margin-top: 10px; padding-bottom: 4px; scrollbar-width: thin; }
+  .nav-link { flex: 0 0 auto; white-space: nowrap; }
+  .sidebar-footer { display: none; }
+  .main-content { padding: 16px; }
+  .content-card, .stat-card { border-radius: 16px; }
+  .modal-card { width: calc(100vw - 24px); max-height: calc(100vh - 24px); overflow: auto; }
+  .data-table { min-width: 720px; }
+}
+@media (min-width: 681px) and (max-width: 1100px) {
+  .main-content { padding: 22px; }
+  .sidebar { width: 220px; flex-basis: 220px; }
+}
