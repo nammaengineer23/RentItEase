@@ -10,14 +10,12 @@ import { PublishPostDto } from './dto/publish-post.dto';
 import { SocialSettingsDto } from './dto/social-settings.dto';
 import { PublishingService } from './publishing/publishing.service';
 import { SocialMediaStorageService } from './social-media.storage.service';
-import { VideoService } from './video/video.service';
 import { CreatomateVideoService } from './video/creatomate-video.service';
 
 @Injectable()
 export class SocialMediaService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly videoService: VideoService,
     private readonly creatomateVideo: CreatomateVideoService,
     private readonly publishing: PublishingService,
     private readonly storage: SocialMediaStorageService,
