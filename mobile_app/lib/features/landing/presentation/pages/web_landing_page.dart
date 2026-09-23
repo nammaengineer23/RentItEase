@@ -343,7 +343,7 @@ class _HeroCopy extends StatelessWidget {
           Text(
             'Find a place\nthat feels right.',
             style: TextStyle(
-              color: WebLandingPage.ink,
+              color: ink,
               fontSize: compact ? 48 : 64,
               height: .98,
               fontWeight: FontWeight.w800,
@@ -367,7 +367,7 @@ class _HeroCopy extends StatelessWidget {
               FilledButton(
                 onPressed: onOpenApp,
                 style: FilledButton.styleFrom(
-                  backgroundColor: WebLandingPage.deepGreen,
+                  backgroundColor: deepGreen,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                 ),
@@ -376,7 +376,7 @@ class _HeroCopy extends StatelessWidget {
               OutlinedButton(
                 onPressed: onLearnMore,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: WebLandingPage.deepGreen,
+                  foregroundColor: deepGreen,
                   backgroundColor: Colors.white,
                   side: const BorderSide(color: Color(0xFFB9D6C5)),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -399,7 +399,7 @@ class _HomePreview extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: WebLandingPage.deepGreen,
+            color: deepGreen,
             borderRadius: BorderRadius.circular(28),
             boxShadow: const [
               BoxShadow(
@@ -456,7 +456,7 @@ class _HomePreview extends StatelessWidget {
                     Text(
                       'Made for simpler renting',
                       style: TextStyle(
-                        color: WebLandingPage.green,
+                        color: green,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -487,7 +487,7 @@ class _LandingSocialProof extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 48, 24, 48),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Trusted by RentItEase users', style: TextStyle(color: WebLandingPage.ink, fontSize: 30, fontWeight: FontWeight.w800)),
+            const Text('Trusted by RentItEase users', style: TextStyle(color: ink, fontSize: 30, fontWeight: FontWeight.w800)),
             const SizedBox(height: 18),
             Wrap(spacing: 12, runSpacing: 12, children: [
               _ProofMetric(icon: Icons.star_rounded, value: ratings == 0 ? 'New' : average.toStringAsFixed(1), label: ratings == 0 ? 'Awaiting ratings' : ratings.toString() + ' ratings'),
@@ -504,7 +504,7 @@ class _LandingSocialProof extends StatelessWidget {
                 final stars = List.filled(rating, '★').join() + List.filled(5 - rating, '☆').join();
                 return SizedBox(width: 330, child: Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(color: Colors.white, border: Border.all(color: WebLandingPage.line), borderRadius: BorderRadius.circular(18)),
+                  decoration: BoxDecoration(color: Colors.white, border: Border.all(color: line), borderRadius: BorderRadius.circular(18)),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(stars, style: const TextStyle(fontSize: 18)),
                     const SizedBox(height: 10),
@@ -530,9 +530,9 @@ class _ProofMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-    decoration: BoxDecoration(color: Colors.white, border: Border.all(color: WebLandingPage.line), borderRadius: BorderRadius.circular(16)),
+    decoration: BoxDecoration(color: Colors.white, border: Border.all(color: line), borderRadius: BorderRadius.circular(16)),
     child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, color: WebLandingPage.green), const SizedBox(width: 10),
+      Icon(icon, color: green), const SizedBox(width: 10),
       Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)), const SizedBox(width: 7),
       Text(label, style: const TextStyle(color: Color(0xFF587064))),
     ]),
@@ -554,7 +554,7 @@ class _HowItWorks extends StatelessWidget {
                 Text(
                   'Move from search to home in three clear steps.',
                   style: TextStyle(
-                    color: WebLandingPage.ink,
+                    color: ink,
                     fontSize: 40,
                     height: 1.08,
                     fontWeight: FontWeight.w800,
@@ -599,13 +599,13 @@ class _StepCard extends StatelessWidget {
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: WebLandingPage.line),
+          border: Border.all(color: line),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(backgroundColor: WebLandingPage.mint, foregroundColor: WebLandingPage.deepGreen, child: Text(number, style: const TextStyle(fontWeight: FontWeight.w800))),
+            CircleAvatar(backgroundColor: mint, foregroundColor: deepGreen, child: Text(number, style: const TextStyle(fontWeight: FontWeight.w800))),
             const SizedBox(height: 17),
             Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 6),
@@ -637,9 +637,9 @@ class _Footer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final socialLinks = <(String, String)>[
-      ('Facebook', WebLandingPage.facebookPageUrl),
-      ('Instagram', WebLandingPage.instagramProfileUrl),
-      ('YouTube', WebLandingPage.youtubeChannelUrl),
+      ('Facebook', facebookPageUrl),
+      ('Instagram', instagramProfileUrl),
+      ('YouTube', youtubeChannelUrl),
     ].where((entry) => entry.$2.startsWith('https://')).toList();
 
     return Wrap(
@@ -801,7 +801,7 @@ class WebInfoPage extends StatelessWidget {
             child: const Text(
               'RentItEase',
               style: TextStyle(
-                color: WebLandingPage.ink,
+                color: ink,
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
               ),
@@ -828,7 +828,7 @@ class WebInfoPage extends StatelessWidget {
                   Text(
                     _title,
                     style: TextStyle(
-                      color: WebLandingPage.ink,
+                      color: ink,
                       fontSize: MediaQuery.sizeOf(context).width < 520 ? 34 : 44,
                       height: 1.1,
                       fontWeight: FontWeight.w800,
@@ -886,7 +886,7 @@ class _InfoCard extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: WebLandingPage.line),
+          border: Border.all(color: line),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
