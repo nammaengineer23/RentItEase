@@ -1,7 +1,8 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart' hide PlatformFile;
+import 'package:file_picker/file_picker.dart' as file_picker show PlatformFile;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -53,7 +54,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   String? _amenitiesError;
   LocationModel? selectedLocation;
   Map<String, List<File>> selectedImagesBySection = const {};
-  PlatformFile? selectedVideo;
+  file_picker.PlatformFile? selectedVideo;
   List<Map<String, dynamic>> _amenities = const [];
   final Set<String> _selectedAmenityIds = {};
 
@@ -96,7 +97,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     final value = await Navigator.of(context).push<LocationModel>(MaterialPageRoute(builder: (_) => const MapPickerPage()));
     if (value != null && mounted) _applyLocation(value);
   }
-  Future<void> _setVideo(PlatformFile video) async {
+  Future<void> _setVideo(file_picker.PlatformFile video) async {
     if (await video.length() > 100 * 1024 * 1024) {
       _showError('The property video must not exceed 100 MB.');
       return;
@@ -122,7 +123,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
       if (recorded == null || !mounted) return;
       final file = File(recorded.path);
       await _setVideo(
-        PlatformFile(
+        file_picker.PlatformFile(
           name: recorded.name.isNotEmpty ? recorded.name : 'property-tour.mp4',
           path: recorded.path,
           size: await file.length(),
