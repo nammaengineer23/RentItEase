@@ -6,11 +6,13 @@ import {
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
+import { SocialMediaService } from '../social-media/social-media.service';
 
 @Injectable()
 export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly socialMediaService: SocialMediaService,
   ) {}
 
   // ==========================
@@ -511,8 +513,8 @@ async getProperty(id: string) {
     const property = await this.prisma.property.findUnique({ where: { id } });
     if (!property) throw new NotFoundException('Property not found.');
 
-    return this.prisma.$transaction(async (prisma) => {
-      const approved = await prisma.property.update({
+    const approved = await this.prisma.$transaction(async (prisma) => {
+      const updated = await prisma.property.update({
         where: { id },
         data: { isVerified: true, isAvailable: true },
       });
@@ -524,8 +526,20 @@ async getProperty(id: string) {
           ownerReviewedAt: new Date(),
         },
       });
-      return serializePrisma(approved);
+      return updated;
     });
+
+    // Prepare marketing content only after the approval transaction commits.
+    // Generation must never block or roll back property approval; the admin can
+    // regenerate from Social Media if preparation fails.
+    void this.socialMediaService.onPropertyApproved(id).catch((error) => {
+      console.error('Automatic reel preparation failed after property approval', {
+        propertyId: id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+
+    return serializePrisma(approved);
   }
 
   // ==========================
