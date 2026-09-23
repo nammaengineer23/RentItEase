@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/network/dio_provider.dart';
 
 import '../../providers/profile_provider.dart';
 
@@ -80,14 +79,6 @@ class ProfilePage extends ConsumerWidget {
                     title: 'Booking Requests',
                     subtitle: 'Approve or reject tenant bookings',
                     onTap: () => context.push('/owner/booking-requests'),
-                  ),
-
-                if (profile.role.trim().toUpperCase() == 'USER')
-                  ProfileMenuTile(
-                    icon: Icons.storefront_outlined,
-                    title: 'Become an Owner',
-                    subtitle: 'Request admin approval to list properties',
-                    onTap: () => _requestOwnerAccess(context, ref),
                   ),
 
                 if (profile.role.trim().toUpperCase() != 'OWNER')
@@ -181,28 +172,6 @@ class ProfilePage extends ConsumerWidget {
         },
       ),
     );
-  }
-
-  Future<void> _requestOwnerAccess(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    try {
-      await ref.read(dioProvider).patch('/users/request-owner');
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Owner request sent. Once an admin approves it, sign out and sign in again to create and manage properties.',
-          ),
-        ),
-      );
-    } catch (error) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to submit request: $error')),
-      );
-    }
   }
 
 }
