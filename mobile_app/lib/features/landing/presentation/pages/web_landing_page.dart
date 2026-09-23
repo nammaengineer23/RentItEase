@@ -6,6 +6,16 @@ import '../../../../core/network/dio_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+const ink = Color(0xFF10251B);
+const deepGreen = Color(0xFF123B2A);
+const green = Color(0xFF0D8A55);
+const mint = Color(0xFFD9F7E7);
+const line = Color(0xFFD9E4DD);
+const androidReleaseUrl = 'https://rentitease.com/download';
+const facebookPageUrl = String.fromEnvironment('FACEBOOK_PAGE_URL');
+const instagramProfileUrl = String.fromEnvironment('INSTAGRAM_PROFILE_URL');
+const youtubeChannelUrl = String.fromEnvironment('YOUTUBE_CHANNEL_URL');
+
 class WebLandingPage extends ConsumerStatefulWidget {
   const WebLandingPage({super.key});
 
@@ -32,19 +42,6 @@ class _WebLandingPageState extends ConsumerState<WebLandingPage> {
     } catch (_) {}
   }
 
-  static const _ink = Color(0xFF10251B);
-  static const _deepGreen = Color(0xFF123B2A);
-  static const _green = Color(0xFF0D8A55);
-  static const _mint = Color(0xFFD9F7E7);
-  static const _line = Color(0xFFD9E4DD);
-  static const _androidReleaseUrl = 'https://rentitease.com/download';
-  static const _facebookPageUrl = String.fromEnvironment('FACEBOOK_PAGE_URL');
-  static const _instagramProfileUrl = String.fromEnvironment(
-    'INSTAGRAM_PROFILE_URL',
-  );
-  static const _youtubeChannelUrl = String.fromEnvironment(
-    'YOUTUBE_CHANNEL_URL',
-  );
 
   @override
   Widget build(BuildContext context) {
@@ -268,7 +265,7 @@ class _WebLandingPageState extends ConsumerState<WebLandingPage> {
       );
 
   Future<void> _openAndroidDownload() => launchUrl(
-        Uri.parse(_androidReleaseUrl),
+        Uri.parse(androidReleaseUrl),
         webOnlyWindowName: '_blank',
       );
 }
