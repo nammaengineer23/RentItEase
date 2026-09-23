@@ -112,7 +112,9 @@ async function cityPage(env) {
   return staticPage({ path: '/rentals/bangalore', title: 'Rental Properties in Bangalore', description, body, env, schema: { '@context': 'https://schema.org', '@type': 'ItemList', name: 'Rental properties in Bangalore', itemListElement: listedProperties.map((property, index) => ({ '@type': 'ListItem', position: index + 1, url: `${siteUrl}/property/${encodeURIComponent(property.id)}`, name: firstString(property.title, 'Rental property') })) } });
 }
 
-function landingPage(env) {
+async function landingPage(env) {
+  let proof = { visitorCount: 0, downloadCount: 0, averageRating: 0, ratingCount: 0, reviews: [] };
+  try { proof = { ...proof, ...(await apiJson('/app-feedback/public-summary')) }; } catch (_) {}
   const description = 'Discover verified rental homes, connect with owners, schedule visits, and manage your rental journey with RentItEase.';
   const body = `
     <section class="landing-hero">
@@ -124,6 +126,12 @@ function landingPage(env) {
         <a class="button secondary" href="/download">Download Android App</a>
       </div>
     </section>
+    <section class="social-proof" aria-label="RentItEase community activity">
+      <div><strong>${Number(proof.averageRating || 0).toFixed(1)}</strong><span>Average rating · ${Number(proof.ratingCount || 0).toLocaleString('en-IN')} ratings</span></div>
+      <div><strong>${Number(proof.visitorCount || 0).toLocaleString('en-IN')}</strong><span>Website visitors</span></div>
+      <div><strong>${Number(proof.downloadCount || 0).toLocaleString('en-IN')}</strong><span>App downloads from website</span></div>
+    </section>
+    ${Array.isArray(proof.reviews) && proof.reviews.length ? `<section class="review-grid" aria-label="Recent RentItEase reviews">${proof.reviews.map((review) => `<blockquote><div class="review-stars">★ ${escapeHtml(review.rating)}</div><p>${escapeHtml(review.comment || '')}</p><cite>— ${escapeHtml(review.reviewer || 'RentItEase user')}</cite></blockquote>`).join('')}</section>` : ''}
     <section class="quick-grid">
       <article><strong>1</strong><h2>Explore homes</h2><p>Search available properties and compare rent, location, photos and amenities.</p></article>
       <article><strong>2</strong><h2>Book a visit</h2><p>Request a property visit and stay updated as the owner responds.</p></article>
@@ -144,7 +152,7 @@ function landingPage(env) {
     },
   }).replace(
     '</style>',
-    '.landing-hero{padding:64px 0 52px;max-width:760px}.eyebrow{color:#087a45;font-size:13px;font-weight:800;letter-spacing:.12em}.landing-hero h1{margin:10px 0 18px;color:#10251b;font-size:clamp(44px,8vw,72px);line-height:.98;letter-spacing:-.045em}.lead{font-size:18px;color:#52655b;max-width:650px}.landing-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}.button.secondary{background:#fff;color:#123b2a;border:1px solid #b9d6c5}.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:10px 0 42px}.quick-grid article{padding:22px;border:1px solid #d9e4dd;border-radius:18px;background:#fff}.quick-grid strong{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#d9f7e7;color:#123b2a}.quick-grid h2{margin:14px 0 6px}.quick-grid p{margin:0;color:#597067}@media(max-width:700px){main{margin-top:24px}.landing-hero{padding-top:28px}.quick-grid{grid-template-columns:1fr}}' +
+    '.landing-hero{padding:64px 0 52px;max-width:760px}.eyebrow{color:#087a45;font-size:13px;font-weight:800;letter-spacing:.12em}.landing-hero h1{margin:10px 0 18px;color:#10251b;font-size:clamp(44px,8vw,72px);line-height:.98;letter-spacing:-.045em}.lead{font-size:18px;color:#52655b;max-width:650px}.landing-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}.button.secondary{background:#fff;color:#123b2a;border:1px solid #b9d6c5}.social-proof{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:0 0 20px}.social-proof div{padding:20px;border:1px solid #d9e4dd;border-radius:18px;background:#f7fffa}.social-proof strong{display:block;font-size:30px;color:#087a45}.social-proof span{color:#597067}.review-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:0 0 26px}.review-grid blockquote{margin:0;padding:20px;border:1px solid #d9e4dd;border-radius:18px;background:#fff}.review-stars{color:#087a45;font-weight:800}.review-grid cite{color:#597067}.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:10px 0 42px}.quick-grid article{padding:22px;border:1px solid #d9e4dd;border-radius:18px;background:#fff}.quick-grid strong{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#d9f7e7;color:#123b2a}.quick-grid h2{margin:14px 0 6px}.quick-grid p{margin:0;color:#597067}@media(max-width:700px){main{margin-top:24px}.landing-hero{padding-top:28px}.quick-grid,.social-proof,.review-grid{grid-template-columns:1fr}}' +
     '</style>',
   ).replace(
     '<body><main>',
@@ -267,7 +275,13 @@ async function propertySitemap() {
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname.replace(/\/$/, '') || '/';
-    if (path === '/') return htmlResponse(landingPage(env), 'no-cache, max-age=0, must-revalidate');
+    if (path === '/') {
+      const visitorId = request.headers.get('cookie')?.match(/(?:^|; )rie_visitor=([^;]+)/)?.[1] || crypto.randomUUID();
+      try { await fetch(`${apiUrl}/app-feedback/visit`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ visitorId }) }); } catch (_) {}
+      const response = htmlResponse(await landingPage(env), 'no-cache, max-age=0, must-revalidate');
+      response.headers.append('set-cookie', `rie_visitor=${encodeURIComponent(visitorId)}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`);
+      return response;
+    }
     if (path === '/admin-panel' || path.startsWith('/admin-panel/')) {
       const assetPath = path === '/admin-panel'
         ? '/admin-panel/index.html'
@@ -278,7 +292,9 @@ export default {
           new Request(new URL('/admin-panel/index.html', request.url), request),
         );
       }
-      return response;
+      const headers = new Headers(response.headers);
+      headers.set('x-robots-tag', 'noindex, nofollow');
+      return new Response(response.body, { status: response.status, headers });
     }
     if (path === '/privacy-policy') return Response.redirect(`${siteUrl}/privacy`, 301);
     if (path === '/terms-of-service') return Response.redirect(`${siteUrl}/terms`, 301);
@@ -312,6 +328,9 @@ export default {
     if (propertyMatch) return propertyPage(request, env, decodeURIComponent(propertyMatch[1]));
     const document = legalContent[path];
     if (document) return htmlResponse(staticPage({ path, title: document.title, description: document.description, body: document.body, env }), 'no-store, max-age=0');
-    return appShell(request, env);
+    const response = await appShell(request, env);
+    const headers = new Headers(response.headers);
+    headers.set('x-robots-tag', 'noindex, follow');
+    return new Response(response.body, { status: response.status, headers });
   },
 };
