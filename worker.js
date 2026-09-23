@@ -299,6 +299,14 @@ export default {
     if (path === '/rental-app') return htmlResponse(rentalAppPage(env));
     if (path === '/houses-for-rent') return htmlResponse(housesForRentPage(env));
     if (path === '/rentals/bangalore') return htmlResponse(await cityPage(env));
+    if (path === '/robots.txt') {
+      return new Response('User-agent: *\\nAllow: /\\nDisallow: /admin-panel/\\nDisallow: /auth\\n\\nSitemap: https://rentitease.com/sitemap.xml\\n', {
+        headers: { 'content-type': 'text/plain; charset=UTF-8', 'cache-control': 'public, max-age=3600' },
+      });
+    }
+    if (path === '/sitemap.xml' || path === '/sitemap-pages.xml') {
+      return env.ASSETS.fetch(request);
+    }
     if (path === '/sitemap-properties.xml') return propertySitemap();
     const propertyMatch = path.match(/^\/property\/([^/]+)$/);
     if (propertyMatch) return propertyPage(request, env, decodeURIComponent(propertyMatch[1]));
