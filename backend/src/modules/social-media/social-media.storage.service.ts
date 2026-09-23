@@ -34,6 +34,19 @@ export class SocialMediaStorageService {
     return filePath;
   }
 
+  async uploadBuffer(buffer: Buffer, propertyId: string, contentType = 'video/mp4'): Promise<string> {
+    this.ensureFirebase();
+    const bucket = getStorage().bucket();
+    const destination = `social-videos/${propertyId}/${Date.now()}.mp4`;
+    const file = bucket.file(destination);
+    await file.save(buffer, {
+      contentType,
+      metadata: { cacheControl: 'public,max-age=3600' },
+    });
+    await file.makePublic();
+    return `https://storage.googleapis.com/${bucket.name}/${encodeURIComponent(destination).replace(/%2F/g, '/')}`;
+  }
+
   async uploadVideo(filePath: string, propertyId: string): Promise<string> {
     if (!existsSync(filePath)) throw new Error(`Generated video not found: ${filePath}`);
 
