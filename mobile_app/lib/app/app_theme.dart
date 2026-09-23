@@ -20,13 +20,13 @@ class AppTheme {
       brightness: brightness,
       primary: isDark ? const Color(0xFF79D6A5) : AppColors.primary,
       secondary: isDark ? const Color(0xFFFFC16F) : AppColors.secondary,
-      surface: isDark ? const Color(0xFF111814) : const Color(0xFFF9FCFA),
+      surface: isDark ? const Color(0xFF111A16) : const Color(0xFFEAF3F2),
       error: isDark ? const Color(0xFFFFB4AB) : AppColors.error,
     );
     final surface = scheme.surface;
     final surfaceContainer = isDark
-        ? const Color(0xFF18211C)
-        : const Color(0xFFEAF2EE);
+        ? const Color(0xFF1B2821)
+        : const Color(0xFFDDEAE8);
     final outline = isDark
         ? const Color(0xFF34423A)
         : const Color(0xFFDCE6E0);
@@ -36,7 +36,7 @@ class AppTheme {
       brightness: brightness,
       colorScheme: scheme,
       scaffoldBackgroundColor:
-          isDark ? const Color(0xFF0A110E) : const Color(0xFFF3F8F5),
+          isDark ? const Color(0xFF09120E) : const Color(0xFFE5F0F1),
       visualDensity: VisualDensity.standard,
       splashFactory: InkSparkle.splashFactory,
     );
@@ -99,7 +99,7 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: isDark ? surface : const Color(0xFFF9FCFA),
+        color: isDark ? const Color(0xFF16221C) : const Color(0xFFDCE9E8),
         surfaceTintColor: Colors.transparent,
         elevation: isDark ? 0 : 0.5,
         shadowColor: Colors.black.withValues(alpha: 0.06),
@@ -112,7 +112,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? const Color(0xFF17201B) : Colors.white,
+        fillColor: isDark ? const Color(0xFF1B2821) : const Color(0xFFF2F7F6),
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
         hintStyle: TextStyle(color: scheme.onSurfaceVariant),
         labelStyle: TextStyle(color: scheme.onSurfaceVariant),
@@ -145,7 +145,7 @@ class AppTheme {
       ),
       searchBarTheme: SearchBarThemeData(
         backgroundColor: WidgetStatePropertyAll(
-          isDark ? const Color(0xFF17201B) : Colors.white,
+          isDark ? const Color(0xFF1B2821) : const Color(0xFFF2F7F6),
         ),
         surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
         elevation: WidgetStatePropertyAll(isDark ? 0 : 1),
@@ -234,7 +234,7 @@ class AppTheme {
         elevation: 0,
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: surface,
+        backgroundColor: isDark ? const Color(0xFF1C2A23) : const Color(0xFFD7E6E5),
         surfaceTintColor: Colors.transparent,
         elevation: 8,
         shadowColor: Colors.black.withValues(alpha: 0.14),
