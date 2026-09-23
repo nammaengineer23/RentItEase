@@ -22,8 +22,8 @@ export class AppFeedbackController {
   }
 
   @Post('visit')
-  recordVisit() {
-    return this.service.recordVisit();
+  recordVisit(@Body() body: { visitorId?: string }) {
+    return this.service.recordVisit(body.visitorId);
   }
 
   @Post()
