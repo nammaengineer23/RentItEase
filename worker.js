@@ -282,6 +282,18 @@ export default {
       response.headers.append('set-cookie', `rie_visitor=${encodeURIComponent(visitorId)}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`);
       return response;
     }
+    // Keep /admin reserved for the Flutter admin console. A direct browser
+    // reopen of /admin (or a stale pre-release admin URL) must bootstrap the
+    // Flutter SPA instead of falling through to the public landing response.
+    if (path === '/admin' || path.startsWith('/admin/')) {
+      let response = await env.ASSETS.fetch(
+        new Request(new URL('/index.html', request.url), request),
+      );
+      const headers = new Headers(response.headers);
+      headers.set('cache-control', 'no-cache, max-age=0, must-revalidate');
+      headers.set('x-robots-tag', 'noindex, nofollow');
+      return new Response(response.body, { status: response.status, headers });
+    }
     if (path === '/admin-panel' || path.startsWith('/admin-panel/')) {
       const assetPath = path === '/admin-panel'
         ? '/admin-panel/index.html'
