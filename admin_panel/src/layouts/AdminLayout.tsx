@@ -13,7 +13,6 @@ const navItems = [
   { label: "Reviews", path: "/reviews" },
   { label: "Visits", path: "/visits" },
   { label: "Analytics", path: "/analytics" },
-  { label: "Premium Memberships", path: "/premium-memberships" },
   { label: "Billing", path: "/billing" },
   { label: "Social Media", path: "/social-media" },
 ];
