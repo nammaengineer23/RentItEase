@@ -32,17 +32,17 @@ class _WebLandingPageState extends ConsumerState<WebLandingPage> {
     } catch (_) {}
   }
 
-  static const _WebLandingPageState._ink = Color(0xFF10251B);
-  static const _WebLandingPageState._deepGreen = Color(0xFF123B2A);
-  static const _WebLandingPageState._green = Color(0xFF0D8A55);
-  static const _WebLandingPageState._mint = Color(0xFFD9F7E7);
-  static const _WebLandingPageState._line = Color(0xFFD9E4DD);
+  static const _ink = Color(0xFF10251B);
+  static const _deepGreen = Color(0xFF123B2A);
+  static const _green = Color(0xFF0D8A55);
+  static const _mint = Color(0xFFD9F7E7);
+  static const _line = Color(0xFFD9E4DD);
   static const _androidReleaseUrl = 'https://rentitease.com/download';
-  static const _WebLandingPageState._facebookPageUrl = String.fromEnvironment('FACEBOOK_PAGE_URL');
-  static const _WebLandingPageState._instagramProfileUrl = String.fromEnvironment(
+  static const _facebookPageUrl = String.fromEnvironment('FACEBOOK_PAGE_URL');
+  static const _instagramProfileUrl = String.fromEnvironment(
     'INSTAGRAM_PROFILE_URL',
   );
-  static const _WebLandingPageState._youtubeChannelUrl = String.fromEnvironment(
+  static const _youtubeChannelUrl = String.fromEnvironment(
     'YOUTUBE_CHANNEL_URL',
   );
 
