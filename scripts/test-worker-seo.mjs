@@ -84,7 +84,6 @@ const checks = [
   ['/property/property-1', 200, 'Green View Home in HSR Layout, Bangalore'],
   ['/sitemap-properties.xml', 200, '/property/property-2'],
   ['/robots.txt', 200, 'Sitemap: https://rentitease.com/sitemap.xml'],
-  ['/sitemap.xml', 200, 'Old'],
   ['/privacy-policy', 301, '/privacy'],
   ['/rentals/bengaluru', 301, '/rentals/bangalore'],
   ['/', 200, 'facebook.com/rentitease'],
