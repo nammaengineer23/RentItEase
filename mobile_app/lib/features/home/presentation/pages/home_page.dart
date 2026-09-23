@@ -272,29 +272,29 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               if (currentRole == 'USER' || currentRole == 'OWNER')
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+                  padding: const EdgeInsets.fromLTRB(12, 2, 12, 2),
                   child: Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       child: Row(
                         children: [
-                          const Icon(Icons.add_home_work_outlined, size: 32),
-                          const SizedBox(width: 14),
+                          const Icon(Icons.add_home_work_outlined, size: 26),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Are you a House Owner?', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
-                                const SizedBox(height: 4),
+                                const Text('Are you a House Owner?', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                                const SizedBox(height: 2),
                                 Text(
                                   _ownerRequestSubmitted && currentRole == 'USER'
                                       ? 'Owner request pending admin approval'
-                                      : 'Click Add Property to list your house for rent',
+                                      : 'List your house for rent',
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           FilledButton.icon(
                             onPressed: _submittingOwnerRequest || (_ownerRequestSubmitted && currentRole == 'USER')
                                 ? null
