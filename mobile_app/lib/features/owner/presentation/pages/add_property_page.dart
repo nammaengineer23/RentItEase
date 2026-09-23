@@ -217,27 +217,24 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     if (_amenitiesLoading) const Row(children: [SizedBox(width: 18,height:18,child:CircularProgressIndicator(strokeWidth:2)),SizedBox(width:10),Text('Loading amenities…')])
     else if (_amenitiesError != null) Row(children: [Expanded(child: Text(_amenitiesError!)), TextButton.icon(onPressed: _loadAmenities, icon: const Icon(Icons.refresh), label: const Text('Retry'))])
     else if (_amenities.isEmpty) Row(children: [const Expanded(child: Text('No amenities are available right now.')), TextButton(onPressed: _loadAmenities, child: const Text('Retry'))])
-    else ..._amenities.map((a) {
+    else ..._amenities
+        .where((a) {
+          final normalizedName = (a['name']?.toString().trim() ?? '').toLowerCase();
+          return normalizedName != 'parking' &&
+              normalizedName != 'covered parking' &&
+              normalizedName != 'pet friendly';
+        })
+        .map((a) {
       final id = a['id'].toString();
       final name = a['name']?.toString().trim();
-      final normalizedName = (name ?? '').toLowerCase();
-      final selected = normalizedName == 'parking' ||
-              normalizedName == 'covered parking'
-          ? parking
-          : normalizedName == 'pet friendly'
-              ? petFriendly
-              : _selectedAmenityIds.contains(id);
+      final selected = _selectedAmenityIds.contains(id);
       return SwitchListTile.adaptive(
         contentPadding: EdgeInsets.zero,
         dense: true,
         title: Text(name == null || name.isEmpty ? 'Amenity' : name),
         value: selected,
         onChanged: loading ? null : (value) => setState(() {
-          if (normalizedName == 'parking' || normalizedName == 'covered parking') {
-            parking = value;
-          } else if (normalizedName == 'pet friendly') {
-            petFriendly = value;
-          } else if (value) {
+          if (value) {
             _selectedAmenityIds.add(id);
           } else {
             _selectedAmenityIds.remove(id);
