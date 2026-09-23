@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart' as fp;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -53,7 +53,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   String? _amenitiesError;
   LocationModel? selectedLocation;
   Map<String, List<File>> selectedImagesBySection = const {};
-  PlatformFile? selectedVideo;
+  File? selectedVideo;
   List<Map<String, dynamic>> _amenities = const [];
   final Set<String> _selectedAmenityIds = {};
 
@@ -96,7 +96,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     final value = await Navigator.of(context).push<LocationModel>(MaterialPageRoute(builder: (_) => const MapPickerPage()));
     if (value != null && mounted) _applyLocation(value);
   }
-  Future<void> _setVideo(PlatformFile video) async {
+  Future<void> _setVideo(File video) async {
     if (await video.length() > 100 * 1024 * 1024) {
       _showError('The property video must not exceed 100 MB.');
       return;
@@ -105,12 +105,16 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   }
 
   Future<void> _pickVideo() async {
-    final video = await FilePicker.pickFile(
-      type: FileType.custom,
+    final video = await fp.FilePicker.pickFile(
+      type: fp.FileType.custom,
       allowedExtensions: const ['mp4', 'mov', 'm4v'],
     );
     if (video == null || !mounted) return;
-    await _setVideo(video);
+    if (video.path == null) {
+      _showError('The selected video is not available as a local file.');
+      return;
+    }
+    await _setVideo(File(video.path!));
   }
 
   Future<void> _recordVideo() async {
@@ -120,14 +124,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
         maxDuration: const Duration(seconds: 60),
       );
       if (recorded == null || !mounted) return;
-      final file = File(recorded.path);
-      await _setVideo(
-        PlatformFile(
-          name: recorded.name.isNotEmpty ? recorded.name : 'property-tour.mp4',
-          path: recorded.path,
-          size: await file.length(),
-        ),
-      );
+      await _setVideo(File(recorded.path));
     } catch (_) {
       if (mounted) {
         _showError('Unable to open the camera. Check camera permission and try again.');
@@ -260,7 +257,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     _text(areaController, context.tr('areaSqFt'), keyboard: const TextInputType.numberWithOptions(decimal:true), validator:_number), _amenitiesSection(),
     Text(context.tr('propertyLocation'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), OutlinedButton.icon(onPressed:loading?null:_pickLocation,icon:const Icon(Icons.location_on_outlined),label:Text(selectedLocation==null?context.tr('gettingCurrentLocation'):context.tr('changeLocationMap'))), if(selectedLocation!=null) Padding(padding:const EdgeInsets.only(top:8,bottom:16),child:Text('${context.tr('coordinates')}: ${selectedLocation!.latitude.toStringAsFixed(6)}, ${selectedLocation!.longitude.toStringAsFixed(6)}')),
     _text(addressController,context.tr('address')), _text(localityController,context.tr('locality')), _text(landmarkController,context.tr('landmark'),validator:(_)=>null), _text(cityController,context.tr('city')), _text(stateController,context.tr('state')), _text(countryController,context.tr('country')), _text(pincodeController,context.tr('pincode'),keyboard:TextInputType.number),
-    const SizedBox(height:16), const Text('Video tour (optional)',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const Text('One MP4, MOV or M4V video • up to 60 seconds • 100 MB'), Wrap(spacing:10,runSpacing:8,children:[FilledButton.icon(onPressed:loading?null:_recordVideo,icon:const Icon(Icons.videocam_outlined),label:Text(selectedVideo==null?'Record video tour':'Retake video')),OutlinedButton.icon(onPressed:loading?null:_pickVideo,icon:const Icon(Icons.video_library_outlined),label:Text(selectedVideo==null?'Choose existing video':'Choose another video',overflow:TextOverflow.ellipsis))]), if(selectedVideo!=null) Card(child:ListTile(leading:const Icon(Icons.video_file_outlined),title:Text(selectedVideo!.name,overflow:TextOverflow.ellipsis),subtitle:const Text('Ready to upload when property is created'),trailing:IconButton(onPressed:loading?null:()=>setState(()=>selectedVideo=null),icon:const Icon(Icons.close),tooltip:'Remove selected video'))),
+    const SizedBox(height:16), const Text('Video tour (optional)',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const Text('One MP4, MOV or M4V video • up to 60 seconds • 100 MB'), Wrap(spacing:10,runSpacing:8,children:[FilledButton.icon(onPressed:loading?null:_recordVideo,icon:const Icon(Icons.videocam_outlined),label:Text(selectedVideo==null?'Record video tour':'Retake video')),OutlinedButton.icon(onPressed:loading?null:_pickVideo,icon:const Icon(Icons.video_library_outlined),label:Text(selectedVideo==null?'Choose existing video':'Choose another video',overflow:TextOverflow.ellipsis))]), if(selectedVideo!=null) Card(child:ListTile(leading:const Icon(Icons.video_file_outlined),title:Text(selectedVideo!.path.split(Platform.pathSeparator).last,overflow:TextOverflow.ellipsis),subtitle:const Text('Ready to upload when property is created'),trailing:IconButton(onPressed:loading?null:()=>setState(()=>selectedVideo=null),icon:const Icon(Icons.close),tooltip:'Remove selected video'))),
     const SizedBox(height:16), Text(context.tr('propertyPhotos'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), SectionedPropertyImagePicker(onImagesChanged:(v)=>selectedImagesBySection=v),
     const SizedBox(height:24),
     const Text('Consent & Terms', style: TextStyle(fontSize:18,fontWeight:FontWeight.bold)),

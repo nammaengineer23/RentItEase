@@ -24,6 +24,12 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>RentItEase uses the camera to record property video tours.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>RentItEase uses the microphone when recording property video tours.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>RentItEase uses your photo library to select property photos and video tours.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

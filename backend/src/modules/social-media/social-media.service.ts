@@ -365,16 +365,21 @@ export class SocialMediaService {
       },
     });
     try {
-      const generated = await this.videoService.generate(post.propertyId);
-      const videoUrl = await this.storage.uploadVideo(
-        generated.filePath,
-        post.propertyId,
-      );
+      if (!consent.preparedVideoUrl) {
+        throw new BadRequestException(
+          'No prepared reel is available. Generate and review the reel before publishing.',
+        );
+      }
+      const videoUrl = consent.preparedVideoUrl;
+      const filePath =
+        post.platform === SocialPlatform.YOUTUBE
+          ? await this.storage.downloadVideo(videoUrl, post.propertyId)
+          : undefined;
       const published = await this.publishing.publish(post.platform as any, {
         videoUrl,
-        filePath: generated.filePath,
-        caption: post.caption || generated.caption,
-        title: generated.videoTitle,
+        filePath,
+        caption: post.caption || consent.preparedCaption || '',
+        title: consent.preparedTitle || 'RentItEase property tour',
       });
       const result = await this.prisma.socialMediaPost.update({
         where: { id: postId },

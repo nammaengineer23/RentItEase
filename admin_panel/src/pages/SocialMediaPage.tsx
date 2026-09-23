@@ -138,22 +138,22 @@ export function SocialMediaPage() {
         <div className="section-heading"><div><h2>{selected.title}</h2><p className="muted">{selected.owner.fullName} · consented {new Date(selected.socialMarketingConsent.consentedAt).toLocaleString()}</p></div><button className="secondary-button" onClick={() => setSelected(null)}>Close</button></div>
         <label htmlFor="social-location">Location</label>
         <input id="social-location" value={locationText} onChange={(e) => setLocationText(e.target.value)} placeholder="Property locality, city" />
-        {video && <p className="status-badge status-active">Reel ready for admin review{selected.socialMarketingConsent.preparedAt ? ` · prepared ${new Date(selected.socialMarketingConsent.preparedAt).toLocaleString()}` : ''}</p>}
+        {video ? <p className="status-badge status-active">Reel ready for admin review{selected.socialMarketingConsent.preparedAt ? ` · prepared ${new Date(selected.socialMarketingConsent.preparedAt).toLocaleString()}` : ''}</p> : <p className="muted">No prepared reel yet. Generate one before publishing or scheduling.</p>}
+        <h3>1. Prepare reel</h3>
         <button onClick={() => void generateVideo()} disabled={loading}>{loading ? 'Generating…' : video ? 'Regenerate reel' : 'Generate reel'}</button>
-        {video && <>
-          <h3>View reel</h3>
-          {video.videoUrl && <video src={video.videoUrl} controls playsInline style={{ width:'100%', maxWidth:360, aspectRatio:'9 / 16', objectFit:'cover', borderRadius:12 }}/>}
-          <label htmlFor="social-title">Title</label>
-          <input id="social-title" value={videoTitle} onChange={(e) => setVideoTitle(e.target.value)} />
-          <label htmlFor="caption">Caption / description</label>
-          <textarea id="caption" value={caption} onChange={(e) => setCaption(e.target.value)} rows={9}/>
-          <h3>Publish to</h3>
-          <div className="social-publish-grid">{platforms.map(([platform, enabled]) => <label key={platform} className="platform-choice"><input type="checkbox" checked={selectedPlatforms.includes(platform)} disabled={!enabled || publishing !== null} onChange={() => togglePlatform(platform)} /> <strong>{platform}</strong> <span className={enabled ? 'status-badge status-active' : 'status-badge status-inactive'}>{enabled ? 'Connected' : 'Not configured'}</span></label>)}</div>
-          <button onClick={() => void publishSelected()} disabled={!selectedPlatforms.length || publishing !== null}>{publishing ? 'Publishing…' : 'Publish to selected platforms'}</button>
-          <label htmlFor="scheduled-at">Schedule for later</label>
-          <input id="scheduled-at" type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)}/>
-          <div className="social-publish-grid">{selectedPlatforms.map((platform) => <button key={`schedule-${platform}`} onClick={() => void schedule(platform)} disabled={publishing !== null || !scheduledAt}>Schedule {platform}</button>)}</div>
-        </>}
+        <h3>2. Review & edit</h3>
+        {video?.videoUrl ? <video src={video.videoUrl} controls playsInline style={{ width:'100%', maxWidth:360, aspectRatio:'9 / 16', objectFit:'cover', borderRadius:12 }}/> : <div className="empty-state">Generate the reel to preview it here.</div>}
+        <label htmlFor="social-title">Title</label>
+        <input id="social-title" value={videoTitle} disabled={!video} onChange={(e) => setVideoTitle(e.target.value)} placeholder="Generate a reel first" />
+        <label htmlFor="caption">Caption / description</label>
+        <textarea id="caption" value={caption} disabled={!video} onChange={(e) => setCaption(e.target.value)} rows={9} placeholder="Generate a reel first"/>
+        <h3>3. Choose platforms</h3>
+        <div className="social-publish-grid">{platforms.map(([platform, enabled]) => <label key={platform} className="platform-choice"><input type="checkbox" checked={selectedPlatforms.includes(platform)} disabled={!video || !enabled || publishing !== null} onChange={() => togglePlatform(platform)} /> <strong>{platform}</strong> <span className={enabled ? 'status-badge status-active' : 'status-badge status-inactive'}>{enabled ? 'Connected' : 'Not configured'}</span></label>)}</div>
+        <h3>4. Publish now or schedule</h3>
+        <button onClick={() => void publishSelected()} disabled={!video || !selectedPlatforms.length || publishing !== null}>{publishing ? 'Publishing…' : 'Publish to selected platforms'}</button>
+        <label htmlFor="scheduled-at">Schedule for later</label>
+        <input id="scheduled-at" type="datetime-local" value={scheduledAt} disabled={!video} onChange={(e) => setScheduledAt(e.target.value)}/>
+        <div className="social-publish-grid">{selectedPlatforms.map((platform) => <button key={`schedule-${platform}`} onClick={() => void schedule(platform)} disabled={!video || publishing !== null || !scheduledAt}>Schedule {platform}</button>)}</div>
         {message && <div className="social-message success">{message}</div>}
         {error && <div className="social-message error">{error}</div>}
       </div>

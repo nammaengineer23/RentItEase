@@ -36,7 +36,7 @@ export class AppFeedbackService {
       reviews: reviews.map((review) => ({
         rating: review.rating,
         comment: review.comment,
-        reviewer: review.user.fullName,
+        reviewer: this.publicReviewerName(review.user.fullName),
         createdAt: review.createdAt,
       })),
     };
@@ -50,10 +50,24 @@ export class AppFeedbackService {
     return { downloadCount };
   }
 
-  async recordVisit() {
-    await this.prisma.landingVisit.create({ data: {} });
+  async recordVisit(visitorId?: string) {
+    const normalized = visitorId?.trim().slice(0, 128);
+    if (normalized) {
+      await this.prisma.landingVisit.upsert({
+        where: { visitorId: normalized },
+        create: { visitorId: normalized },
+        update: { lastSeenAt: new Date() },
+      });
+    } else {
+      await this.prisma.landingVisit.create({ data: {} });
+    }
     const visitorCount = await this.prisma.landingVisit.count();
     return { visitorCount };
+  }
+
+  private publicReviewerName(fullName: string) {
+    const firstName = fullName.trim().split(/\s+/)[0];
+    return firstName || 'RentItEase user';
   }
 
   create(userId: string, dto: CreateAppFeedbackDto) {

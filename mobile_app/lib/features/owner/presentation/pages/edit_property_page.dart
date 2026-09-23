@@ -295,7 +295,12 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     );
     if (video == null || !mounted) return;
 
-    final size = await video.length();
+    if (video.path == null) {
+      _showError('The selected video is not available as a local file.');
+      return;
+    }
+    final localVideo = File(video.path!);
+    final size = await localVideo.length();
     if (size > 100 * 1024 * 1024) {
       _showError('The property video must not exceed 100 MB.');
       return;
@@ -305,7 +310,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     try {
       final url = await PropertyVideoApi(
         ref.read(dioProvider),
-      ).uploadVideo(propertyId: widget.property.id, video: video);
+      ).uploadVideo(propertyId: widget.property.id, video: localVideo);
       if (!mounted) return;
       setState(() => videoUrl = url);
       ScaffoldMessenger.of(context).showSnackBar(

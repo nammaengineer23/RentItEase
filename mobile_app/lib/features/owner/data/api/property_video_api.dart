@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:file_picker/file_picker.dart';
+import 'dart:io';
 
 import '../../../../core/utils/app_image_url.dart';
 
@@ -10,7 +10,7 @@ class PropertyVideoApi {
 
   Future<String> uploadVideo({
     required String propertyId,
-    required PlatformFile video,
+    required File video,
   }) async {
     final size = await video.length();
     if (size > 100 * 1024 * 1024) {
@@ -21,7 +21,7 @@ class PropertyVideoApi {
 
     final multipartFile = MultipartFile.fromBytes(
       await video.readAsBytes(),
-      filename: video.name,
+      filename: video.path.split(Platform.pathSeparator).last,
     );
 
     late final Response<Map<String, dynamic>> response;
