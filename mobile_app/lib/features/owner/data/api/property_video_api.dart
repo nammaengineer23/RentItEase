@@ -1,5 +1,7 @@
-import 'package:dio/dio.dart';
 import 'dart:io';
+
+import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 
 import '../../../../core/utils/app_image_url.dart';
 
@@ -19,9 +21,12 @@ class PropertyVideoApi {
       );
     }
 
-    final multipartFile = MultipartFile.fromBytes(
-      await video.readAsBytes(),
+    final extension = video.path.split('.').last.toLowerCase();
+    final mimeSubtype = extension == 'mov' ? 'quicktime' : extension == 'm4v' ? 'x-m4v' : 'mp4';
+    final multipartFile = await MultipartFile.fromFile(
+      video.path,
       filename: video.path.split(Platform.pathSeparator).last,
+      contentType: MediaType('video', mimeSubtype),
     );
 
     late final Response<Map<String, dynamic>> response;
