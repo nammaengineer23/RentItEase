@@ -52,6 +52,8 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   bool _amenitiesLoading = true;
   String? _amenitiesError;
   LocationModel? selectedLocation;
+  final latitudeController = TextEditingController();
+  final longitudeController = TextEditingController();
   Map<String, List<File>> selectedImagesBySection = const {};
   File? selectedVideo;
   List<Map<String, dynamic>> _amenities = const [];
@@ -86,6 +88,8 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     if (location.state.isNotEmpty) stateController.text = location.state;
     if (location.country.isNotEmpty) countryController.text = location.country;
     if (location.postalCode.isNotEmpty) pincodeController.text = location.postalCode;
+    latitudeController.text = location.latitude.toStringAsFixed(6);
+    longitudeController.text = location.longitude.toStringAsFixed(6);
   });
 
   Future<void> _loadCurrentLocation() async {
@@ -186,6 +190,13 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     final area = double.tryParse(areaController.text.trim());
     if (rent == null || deposit == null || bedrooms == null || bathrooms == null || balconies == null || floor == null || totalFloors == null || area == null || (dailyRentEnabled && dailyRent == null)) { _showError(context.tr('validNumericDetails')); return; }
     if (selectedLocation == null) { _showError('Select the property location on the map before submitting.'); return; }
+    final manualLatitude = double.tryParse(latitudeController.text.trim());
+    final manualLongitude = double.tryParse(longitudeController.text.trim());
+    if (manualLatitude == null || manualLatitude < -90 || manualLatitude > 90 || manualLongitude == null || manualLongitude < -180 || manualLongitude > 180) {
+      _showError('Enter valid latitude (-90 to 90) and longitude (-180 to 180).');
+      return;
+    }
+    selectedLocation = selectedLocation!.copyWith(latitude: manualLatitude, longitude: manualLongitude);
     setState(() => loading = true);
     try {
       final property = OwnerPropertyEntity(id: '', title: titleController.text.trim(), description: descriptionController.text.trim(), address: addressController.text.trim(), city: cityController.text.trim(), stateName: stateController.text.trim(), country: countryController.text.trim(), pincode: pincodeController.text.trim(), locality: localityController.text.trim(), landmark: landmarkController.text.trim(), latitude: selectedLocation!.latitude, longitude: selectedLocation!.longitude, rent: rent, securityDeposit: deposit, bedrooms: bedrooms, bathrooms: bathrooms, area: area, propertyType: propertyType, furnishing: furnishing, parking: parking, petFriendly: petFriendly, imageUrl: '', isAvailable: false, isVerified: false, totalViews: 0, pendingVisits: 0, createdAt: DateTime.now(), views: 0, favorites: 0, visitRequests: 0);
@@ -255,7 +266,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     Row(children:[Expanded(child:_text(bedroomsController,context.tr('bedrooms'),keyboard:TextInputType.number,validator:_integer)),const SizedBox(width:12),Expanded(child:_text(bathroomsController,context.tr('bathrooms'),keyboard:TextInputType.number,validator:_integer))]),
     Row(children:[Expanded(child:_text(balconiesController,'Balconies',keyboard:TextInputType.number,validator:_integer)),const SizedBox(width:12),Expanded(child:_text(floorController,'Floor',keyboard:TextInputType.number,validator:_integer)),const SizedBox(width:12),Expanded(child:_text(totalFloorsController,'Total floors',keyboard:TextInputType.number,validator:_integer))]),
     _text(areaController, context.tr('areaSqFt'), keyboard: const TextInputType.numberWithOptions(decimal:true), validator:_number), _amenitiesSection(),
-    Text(context.tr('propertyLocation'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), OutlinedButton.icon(onPressed:loading?null:_pickLocation,icon:const Icon(Icons.location_on_outlined),label:Text(selectedLocation==null?context.tr('gettingCurrentLocation'):context.tr('changeLocationMap'))), if(selectedLocation!=null) Padding(padding:const EdgeInsets.only(top:8,bottom:16),child:Text('${context.tr('coordinates')}: ${selectedLocation!.latitude.toStringAsFixed(6)}, ${selectedLocation!.longitude.toStringAsFixed(6)}')),
+    Text(context.tr('propertyLocation'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), OutlinedButton.icon(onPressed:loading?null:_pickLocation,icon:const Icon(Icons.location_on_outlined),label:Text(selectedLocation==null?context.tr('gettingCurrentLocation'):context.tr('changeLocationMap'))), if(selectedLocation!=null) Padding(padding:const EdgeInsets.only(top:8,bottom:16),child:Row(children:[Expanded(child:TextFormField(controller:latitudeController,keyboardType:const TextInputType.numberWithOptions(decimal:true,signed:true),decoration:const InputDecoration(labelText:'Latitude',prefixIcon:Icon(Icons.my_location)))),const SizedBox(width:12),Expanded(child:TextFormField(controller:longitudeController,keyboardType:const TextInputType.numberWithOptions(decimal:true,signed:true),decoration:const InputDecoration(labelText:'Longitude',prefixIcon:Icon(Icons.location_on_outlined))))])),
     _text(addressController,context.tr('address')), _text(localityController,context.tr('locality')), _text(landmarkController,context.tr('landmark'),validator:(_)=>null), _text(cityController,context.tr('city')), _text(stateController,context.tr('state')), _text(countryController,context.tr('country')), _text(pincodeController,context.tr('pincode'),keyboard:TextInputType.number),
     const SizedBox(height:16), const Text('Video tour (optional)',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const Text('One MP4, MOV or M4V video • up to 60 seconds • 100 MB'), Wrap(spacing:10,runSpacing:8,children:[FilledButton.icon(onPressed:loading?null:_recordVideo,icon:const Icon(Icons.videocam_outlined),label:Text(selectedVideo==null?'Record video tour':'Retake video')),OutlinedButton.icon(onPressed:loading?null:_pickVideo,icon:const Icon(Icons.video_library_outlined),label:Text(selectedVideo==null?'Choose existing video':'Choose another video',overflow:TextOverflow.ellipsis))]), if(selectedVideo!=null) Card(child:ListTile(leading:const Icon(Icons.video_file_outlined),title:Text(selectedVideo!.path.split(Platform.pathSeparator).last,overflow:TextOverflow.ellipsis),subtitle:const Text('Ready to upload when property is created'),trailing:IconButton(onPressed:loading?null:()=>setState(()=>selectedVideo=null),icon:const Icon(Icons.close),tooltip:'Remove selected video'))),
     const SizedBox(height:16), Text(context.tr('propertyPhotos'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), SectionedPropertyImagePicker(onImagesChanged:(v)=>selectedImagesBySection=v),
