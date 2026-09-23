@@ -12,7 +12,7 @@ import { SocialMediaProcessor } from './processors/social-media.processor';
 import { VideoGeneratorService } from './video/video-generator.service';
 import { VideoService } from './video/video.service';
 import { VideoTemplateService } from './video/video-template.service';
-import { CreatomateVideoService } from './video/creatomate-video.service';
+import { RemotionVideoService } from './video/remotion-video.service';
 import { SocialMediaStorageService } from './social-media.storage.service';
 import { CampaignSchedulerService } from './campaigns/campaign-scheduler.service';
 
@@ -24,7 +24,7 @@ import { CampaignSchedulerService } from './campaigns/campaign-scheduler.service
     SocialMediaProcessor,
     VideoService,
     VideoGeneratorService,
-    CreatomateVideoService,
+    RemotionVideoService,
     VideoTemplateService,
     PublishingService,
     InstagramService,
