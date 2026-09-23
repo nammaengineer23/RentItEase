@@ -1228,7 +1228,12 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
               final consent=_section(property,'socialMarketingConsent');
               final owner=_section(property,'owner');
               final id=_text(property,'id');
-              final draft=_drafts[id];
+              final preparedVideoUrl = consent['preparedVideoUrl']?.toString() ?? '';
+              final draft = _drafts[id] ?? (preparedVideoUrl.isNotEmpty ? <String, dynamic>{
+                'videoUrl': preparedVideoUrl,
+                'caption': consent['preparedCaption']?.toString() ?? '',
+                'videoTitle': consent['preparedTitle']?.toString() ?? _text(property, 'title'),
+              } : null);
               return Card(child:ListTile(
                 title:Text(_text(property,'title'),style:const TextStyle(fontWeight:FontWeight.bold)),
                 subtitle:Text('Consent active • Owner: ${_text(owner,'fullName')}\nConsent version: ${_text(consent,'consentVersion')}'),
@@ -1251,6 +1256,13 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
           .where((value) => value.isNotEmpty)
           .join(', '),
     ));
+    if (initialDraft != null) {
+      _captions.putIfAbsent(id, () => TextEditingController(text: initialDraft['caption']?.toString() ?? ''));
+      _titles.putIfAbsent(id, () => TextEditingController(text: initialDraft['videoTitle']?.toString() ?? _text(property, 'title')));
+      _selectedPlatforms.putIfAbsent(id, () => {
+        for (final p in const ['FACEBOOK', 'INSTAGRAM', 'YOUTUBE']) if (_enabled(p)) p,
+      });
+    }
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
