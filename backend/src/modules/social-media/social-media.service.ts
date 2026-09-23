@@ -11,24 +11,25 @@ import { SocialSettingsDto } from './dto/social-settings.dto';
 import { PublishingService } from './publishing/publishing.service';
 import { SocialMediaStorageService } from './social-media.storage.service';
 import { VideoService } from './video/video.service';
+import { CreatomateVideoService } from './video/creatomate-video.service';
 
 @Injectable()
 export class SocialMediaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly videoService: VideoService,
+    private readonly creatomateVideo: CreatomateVideoService,
     private readonly publishing: PublishingService,
     private readonly storage: SocialMediaStorageService,
   ) {}
 
   async generate(dto: GenerateVideoDto) {
     await this.requireConsent(dto.propertyId);
-    const generated = await this.videoService.generate(
-      dto.propertyId,
-      dto.secondsPerPhoto,
-    );
-    const videoUrl = await this.storage.uploadVideo(
-      generated.filePath,
+    const generated = await this.creatomateVideo.generate(dto.propertyId);
+    // Creatomate render URLs are temporary, so keep the finished reel in our
+    // Firebase storage before presenting it to the admin for review/publish.
+    const videoUrl = await this.storage.importRemoteVideo(
+      generated.videoUrl,
       dto.propertyId,
     );
     await this.prisma.socialMarketingConsent.update({
@@ -141,8 +142,11 @@ export class SocialMediaService {
       };
     }
 
-    const generated = await this.videoService.generate(propertyId);
-    const videoUrl = await this.storage.uploadVideo(generated.filePath, propertyId);
+    const generated = await this.creatomateVideo.generate(propertyId);
+    const videoUrl = await this.storage.importRemoteVideo(
+      generated.videoUrl,
+      propertyId,
+    );
     await this.prisma.socialMarketingConsent.update({
       where: { propertyId },
       data: {
@@ -155,7 +159,7 @@ export class SocialMediaService {
     await this.audit(propertyId, 'system', 'REEL_AUTO_GENERATED', undefined, {
       videoUrl,
       durationSeconds: generated.durationSeconds,
-      source: 'PROPERTY_APPROVAL',
+      source: 'CREATOMATE_PROPERTY_APPROVAL',
     });
     return {
       skipped: false,
