@@ -10,21 +10,21 @@ import { PublishPostDto } from './dto/publish-post.dto';
 import { SocialSettingsDto } from './dto/social-settings.dto';
 import { PublishingService } from './publishing/publishing.service';
 import { SocialMediaStorageService } from './social-media.storage.service';
-import { CreatomateVideoService } from './video/creatomate-video.service';
+import { RemotionVideoService } from './video/remotion-video.service';
 
 @Injectable()
 export class SocialMediaService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly creatomateVideo: CreatomateVideoService,
+    private readonly remotionVideo: RemotionVideoService,
     private readonly publishing: PublishingService,
     private readonly storage: SocialMediaStorageService,
   ) {}
 
   async generate(dto: GenerateVideoDto) {
     await this.requireConsent(dto.propertyId);
-    const generated = await this.creatomateVideo.generate(dto.propertyId);
-    // Creatomate render URLs are temporary, so keep the finished reel in our
+    const generated = await this.remotionVideo.generate(dto.propertyId);
+    // Keep the completed self-hosted Remotion render in our
     // Firebase storage before presenting it to the admin for review/publish.
     const videoUrl = await this.storage.importRemoteVideo(
       generated.videoUrl,
@@ -140,7 +140,7 @@ export class SocialMediaService {
       };
     }
 
-    const generated = await this.creatomateVideo.generate(propertyId);
+    const generated = await this.remotionVideo.generate(propertyId);
     const videoUrl = await this.storage.importRemoteVideo(
       generated.videoUrl,
       propertyId,
@@ -157,7 +157,7 @@ export class SocialMediaService {
     await this.audit(propertyId, 'system', 'REEL_AUTO_GENERATED', undefined, {
       videoUrl,
       durationSeconds: generated.durationSeconds,
-      source: 'CREATOMATE_PROPERTY_APPROVAL',
+      source: 'REMOTION_PROPERTY_APPROVAL',
     });
     return {
       skipped: false,
