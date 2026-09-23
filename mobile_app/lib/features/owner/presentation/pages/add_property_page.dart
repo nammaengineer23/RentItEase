@@ -151,14 +151,14 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
       if (title == null || title.isEmpty || description == null || description.isEmpty) throw const FormatException('AI returned an incomplete suggestion.');
       if (mounted) setState(() { titleController.text = title; descriptionController.text = description; });
     } on DioException catch (e) {
-      if (mounted) _showError(_aiErrorMessage(e));
+      if (mounted) _showError(_requestErrorMessage(e));
     } catch (_) {
       if (mounted) _showError('Unable to generate suggestion. Please try again.');
     }
     finally { if (mounted) setState(() => aiSuggesting = false); }
   }
 
-  String _aiErrorMessage(DioException error) {
+  String _requestErrorMessage(DioException error) {
     final data = error.response?.data;
     dynamic value = data;
     while (value is Map && value.containsKey('data')) value = value['data'];
@@ -201,14 +201,40 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     try {
       final property = OwnerPropertyEntity(id: '', title: titleController.text.trim(), description: descriptionController.text.trim(), address: addressController.text.trim(), city: cityController.text.trim(), stateName: stateController.text.trim(), country: countryController.text.trim(), pincode: pincodeController.text.trim(), locality: localityController.text.trim(), landmark: landmarkController.text.trim(), latitude: selectedLocation!.latitude, longitude: selectedLocation!.longitude, rent: rent, securityDeposit: deposit, bedrooms: bedrooms, bathrooms: bathrooms, area: area, propertyType: propertyType, furnishing: furnishing, parking: parking, petFriendly: petFriendly, imageUrl: '', isAvailable: false, isVerified: false, totalViews: 0, pendingVisits: 0, createdAt: DateTime.now(), views: 0, favorites: 0, visitRequests: 0);
       final created = await ref.read(ownerProvider.notifier).addProperty(property, area: area, bathrooms: bathrooms, bedrooms: bedrooms, balconies: balconies, floor: floor, totalFloors: totalFloors, country: countryController.text.trim(), furnishing: furnishing, landmark: landmarkController.text.trim().isEmpty ? null : landmarkController.text.trim(), latitude: selectedLocation!.latitude, longitude: selectedLocation!.longitude, parking: parking, petFriendly: petFriendly, pincode: pincodeController.text.trim(), securityDeposit: deposit, stateName: stateController.text.trim(), dailyRentEnabled: dailyRentEnabled, dailyRent: dailyRent, amenityIds: _selectedAmenityIds.toList());
-      if (selectedImagesBySection.isNotEmpty) await PropertyImageApi(ref.read(dioProvider)).uploadSectionImages(propertyId: created.id, imagesBySection: selectedImagesBySection);
-      if (selectedVideo != null) await PropertyVideoApi(ref.read(dioProvider)).uploadVideo(propertyId: created.id, video: selectedVideo!);
-      if (socialMarketingConsent) await ref.read(dioProvider).post('/social-media/owner/consent', data: {'propertyId': created.id, 'approved': true, 'consentVersion': '1.0'});
-      if (!mounted) return; ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('propertyCreated')))); Navigator.of(context).pop(true);
+      final warnings = <String>[];
+      // Persist consent immediately after the property exists. Optional media
+      // failures must never leave an approved listing without its consent row.
+      if (socialMarketingConsent) {
+        try {
+          await ref.read(dioProvider).post('/social-media/owner/consent', data: {'propertyId': created.id, 'approved': true, 'consentVersion': '1.0'});
+        } catch (_) {
+          warnings.add('promotional consent');
+        }
+      }
+      if (selectedImagesBySection.isNotEmpty) {
+        try {
+          await PropertyImageApi(ref.read(dioProvider)).uploadSectionImages(propertyId: created.id, imagesBySection: selectedImagesBySection);
+        } catch (_) {
+          warnings.add('photos');
+        }
+      }
+      if (selectedVideo != null) {
+        try {
+          await PropertyVideoApi(ref.read(dioProvider)).uploadVideo(propertyId: created.id, video: selectedVideo!);
+        } catch (_) {
+          warnings.add('video');
+        }
+      }
+      if (!mounted) return;
+      final message = warnings.isEmpty
+          ? context.tr('propertyCreated')
+          : 'Property created successfully. Could not save ${warnings.join(', ')}; you can retry from Edit Property.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      Navigator.of(context).pop(true);
     } on FormatException catch (e) {
       if (mounted) _showError(e.message);
     } on DioException catch (e) {
-      if (mounted) _showError('${context.tr('createPropertyFailed')}: ${_aiErrorMessage(e)}');
+      if (mounted) _showError('${context.tr('createPropertyFailed')}: ${_requestErrorMessage(e)}');
     } catch (e) {
       if (mounted) _showError('${context.tr('createPropertyFailed')}: ${e.toString().replaceFirst('Exception: ', '')}');
     }
