@@ -36,7 +36,7 @@ class AppTheme {
       brightness: brightness,
       colorScheme: scheme,
       scaffoldBackgroundColor:
-          isDark ? const Color(0xFF0A110E) : const Color(0xFFF1F6F4),
+          isDark ? const Color(0xFF0A110E) : const Color(0xFFF3F8F5),
       visualDensity: VisualDensity.standard,
       splashFactory: InkSparkle.splashFactory,
     );
