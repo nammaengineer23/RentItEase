@@ -219,7 +219,13 @@ async function propertyPage(request, env, propertyId) {
 }
 
 async function appShell(request, env) {
-  const response = await env.ASSETS.fetch(request);
+  // Every Flutter client-side route must bootstrap from index.html on a hard
+  // refresh, browser process restore, or reopened tab. Asking Static Assets
+  // for /home, /search, /owner/..., etc. can return a 404/empty fallback and
+  // leaves Flutter with a black surface before GoRouter ever starts.
+  const url = new URL(request.url);
+  const assetRequest = new Request(new URL('/index.html', url), request);
+  const response = await env.ASSETS.fetch(assetRequest);
   const analytics = analyticsHead(env);
   const sameAs = [env?.FACEBOOK_PAGE_URL, env?.INSTAGRAM_PROFILE_URL, env?.YOUTUBE_CHANNEL_URL]
     .filter((url) => /^https:\/\//.test(url || ''));
@@ -342,6 +348,7 @@ export default {
     if (document) return htmlResponse(staticPage({ path, title: document.title, description: document.description, body: document.body, env }), 'no-store, max-age=0');
     const response = await appShell(request, env);
     const headers = new Headers(response.headers);
+    headers.set('cache-control', 'no-cache, max-age=0, must-revalidate');
     headers.set('x-robots-tag', 'noindex, follow');
     return new Response(response.body, { status: response.status, headers });
   },
