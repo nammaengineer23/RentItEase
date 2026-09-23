@@ -1,4 +1,4 @@
-import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart' as fp;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -1094,8 +1094,8 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
 
   Future<void> _uploadPreparedReel(BuildContext context, String propertyId) async {
     try {
-      final picked = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
+      final picked = await fp.FilePicker.platform.pickFiles(
+        type: fp.FileType.custom,
         allowedExtensions: const ['mp4', 'mov', 'm4v'],
         allowMultiple: false,
       );
