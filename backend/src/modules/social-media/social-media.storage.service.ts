@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { writeFile } from 'node:fs/promises';
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 
@@ -21,6 +24,14 @@ export class SocialMediaStorageService {
         storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
       });
     }
+  }
+
+  async downloadVideo(videoUrl: string, propertyId: string): Promise<string> {
+    const response = await fetch(videoUrl);
+    if (!response.ok) throw new Error(`Unable to download prepared reel (HTTP ${response.status}).`);
+    const filePath = join(tmpdir(), `rentitease-social-${propertyId}-${Date.now()}.mp4`);
+    await writeFile(filePath, Buffer.from(await response.arrayBuffer()));
+    return filePath;
   }
 
   async uploadVideo(filePath: string, propertyId: string): Promise<string> {
