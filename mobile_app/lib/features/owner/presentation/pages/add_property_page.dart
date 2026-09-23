@@ -107,7 +107,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     final originalBytes = await video.length();
     if (!mounted) return;
     setState(() { videoCompressing = true; videoCompressionProgress = 0; });
-    final subscription = VideoCompress.compressProgress$.listen((progress) {
+    final subscription = VideoCompress.compressProgress$.subscribe((progress) {
       if (mounted) setState(() => videoCompressionProgress = progress.clamp(0, 100).toDouble());
     });
     try {
@@ -134,7 +134,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     } catch (error) {
       if (mounted) _showError('Unable to compress video. Please choose another video.');
     } finally {
-      await subscription.cancel();
+      subscription.unsubscribe();
       if (mounted) setState(() { videoCompressing = false; videoCompressionProgress = 0; });
     }
   }
