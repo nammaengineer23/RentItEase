@@ -30,6 +30,17 @@ export class SocialMediaService {
       generated.filePath,
       dto.propertyId,
     );
+    const consent = await this.prisma.socialMarketingConsent.findUnique({ where: { propertyId: dto.propertyId } });
+    if (!consent?.approved) throw new BadRequestException('Owner marketing consent is required before preparing content.');
+    await this.prisma.socialMarketingConsent.update({
+      where: { propertyId: dto.propertyId },
+      data: {
+        preparedVideoUrl: videoUrl,
+        preparedCaption: generated.caption,
+        preparedTitle: generated.videoTitle,
+        preparedAt: new Date(),
+      },
+    });
     return { ...generated, videoUrl };
   }
 
