@@ -77,7 +77,10 @@ jobs:
         run: flutter test test/integration/p0_chat_flow_test.dart
 
       - name: Build Debug APK
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: |
+          test -n "$MAPS_API_KEY"
           flutter build apk \
             --debug \
             --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1
@@ -113,7 +116,10 @@ jobs:
           path: mobile_app/build/app/outputs/flutter-apk/app-debug.apk
 
       - name: Build Release APK
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: |
+          test -n "$MAPS_API_KEY"
           flutter build apk \
             --release \
             --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1 \

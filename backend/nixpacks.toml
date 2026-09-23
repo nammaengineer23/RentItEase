@@ -4,4 +4,3 @@ nixPkgs = ["nodejs_22", "ffmpeg", "dejavu_fonts"]
 [variables]
 FFMPEG_PATH = "ffmpeg"
 FFPROBE_PATH = "ffprobe"
-FFMPEG_FONT_FILE = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"

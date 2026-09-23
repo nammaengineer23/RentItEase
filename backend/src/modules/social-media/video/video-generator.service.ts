@@ -25,7 +25,9 @@ export class VideoGeneratorService {
     const configured = process.env.FFMPEG_FONT_FILE;
     if (configured) return configured;
     if (process.platform === 'win32') return 'C:\\Windows\\Fonts\\arial.ttf';
-    return '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+    // Let ffmpeg/fontconfig resolve the installed DejaVu font on Linux.
+    // Nix/Railway store paths are not guaranteed to match Debian's /usr/share path.
+    return undefined;
   }
 
   async generate(params: {
@@ -104,21 +106,27 @@ export class VideoGeneratorService {
       );
 
       const filters: string[] = [];
-      if (font && escapedLines.length) {
+      if (escapedLines.length) {
         escapedLines.forEach((line, index) => {
+          const fontOption = font
+            ? `fontfile='${font.replace(/\\/g, '/').replace(/:/g, '\\:')}':`
+            : "font='DejaVu Sans':";
           filters.push(
-            `drawtext=fontfile='${font.replace(/\\/g, '/').replace(/:/g, '\\:')}':text='${line}':fontcolor=white:fontsize=${index === 0 ? 48 : 36}:x=(w-text_w)/2:y=${120 + index * 62}:box=1:boxcolor=black@0.45:boxborderw=18`,
+            `drawtext=${fontOption}text='${line}':fontcolor=white:fontsize=${index === 0 ? 48 : 36}:x=(w-text_w)/2:y=${120 + index * 62}:box=1:boxcolor=black@0.45:boxborderw=18`,
           );
         });
       }
 
-      if (font && params.persistentCta) {
+      if (params.persistentCta) {
         const cta = params.persistentCta
           .replace(/\\/g, '\\\\')
           .replace(/:/g, '\\:')
           .replace(/'/g, "\\'");
+        const fontOption = font
+          ? `fontfile='${font.replace(/\\/g, '/').replace(/:/g, '\\:')}':`
+          : "font='DejaVu Sans':";
         filters.push(
-          `drawtext=fontfile='${font.replace(/\\/g, '/').replace(/:/g, '\\:')}':text='${cta}':fontcolor=white:fontsize=42:x=(w-text_w)/2:y=h-190:box=1:boxcolor=0x5B2EFF@0.90:boxborderw=24`,
+          `drawtext=${fontOption}text='${cta}':fontcolor=white:fontsize=42:x=(w-text_w)/2:y=h-190:box=1:boxcolor=0x5B2EFF@0.90:boxborderw=24`,
         );
       }
 

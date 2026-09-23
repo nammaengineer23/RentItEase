@@ -81,6 +81,14 @@ class _HomePageState extends ConsumerState<HomePage> {
     } catch (_) {}
   }
 
+  Future<void> _handleAddPropertyCta(String? currentRole) async {
+    if (currentRole == 'OWNER' || currentRole == 'ADMIN') {
+      if (mounted) context.push('/owner/properties/add');
+      return;
+    }
+    await _requestOwnerAccess();
+  }
+
   Future<void> _requestOwnerAccess() async {
     if (_ownerRequestSubmitted || _submittingOwnerRequest) return;
     final confirmed = await showDialog<bool>(
@@ -262,24 +270,42 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ],
                   ),
                 ),
-              if (currentRole == 'USER')
+              if (currentRole == 'USER' || currentRole == 'OWNER')
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
                   child: Card(
-                    child: SwitchListTile.adaptive(
-                      secondary: const Icon(Icons.storefront_outlined),
-                      title: const Text('Become an Owner'),
-                      subtitle: Text(
-                        _ownerRequestSubmitted
-                            ? 'Owner request pending admin approval'
-                            : 'List and manage your rental properties',
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.add_home_work_outlined, size: 32),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Are you a House Owner?', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _ownerRequestSubmitted && currentRole == 'USER'
+                                      ? 'Owner request pending admin approval'
+                                      : 'Click Add Property to list your house for rent',
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          FilledButton.icon(
+                            onPressed: _submittingOwnerRequest || (_ownerRequestSubmitted && currentRole == 'USER')
+                                ? null
+                                : () => _handleAddPropertyCta(currentRole),
+                            icon: _submittingOwnerRequest
+                                ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                : const Icon(Icons.add),
+                            label: Text(currentRole == 'OWNER' ? 'Add Property' : (_ownerRequestSubmitted ? 'Pending' : 'Add Property')),
+                          ),
+                        ],
                       ),
-                      value: _ownerRequestSubmitted,
-                      onChanged: _ownerRequestSubmitted || _submittingOwnerRequest
-                          ? null
-                          : (value) {
-                              if (value) _requestOwnerAccess();
-                            },
                     ),
                   ),
                 ),

@@ -219,7 +219,13 @@ async function propertyPage(request, env, propertyId) {
 }
 
 async function appShell(request, env) {
-  const response = await env.ASSETS.fetch(request);
+  // Every Flutter client-side route must bootstrap from index.html on a hard
+  // refresh, browser process restore, or reopened tab. Asking Static Assets
+  // for /home, /search, /owner/..., etc. can return a 404/empty fallback and
+  // leaves Flutter with a black surface before GoRouter ever starts.
+  const url = new URL(request.url);
+  const assetRequest = new Request(new URL('/index.html', url), request);
+  const response = await env.ASSETS.fetch(assetRequest);
   const analytics = analyticsHead(env);
   const sameAs = [env?.FACEBOOK_PAGE_URL, env?.INSTAGRAM_PROFILE_URL, env?.YOUTUBE_CHANNEL_URL]
     .filter((url) => /^https:\/\//.test(url || ''));
@@ -282,6 +288,18 @@ export default {
       response.headers.append('set-cookie', `rie_visitor=${encodeURIComponent(visitorId)}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`);
       return response;
     }
+    // Keep /admin reserved for the Flutter admin console. A direct browser
+    // reopen of /admin (or a stale pre-release admin URL) must bootstrap the
+    // Flutter SPA instead of falling through to the public landing response.
+    if (path === '/admin' || path.startsWith('/admin/')) {
+      let response = await env.ASSETS.fetch(
+        new Request(new URL('/index.html', request.url), request),
+      );
+      const headers = new Headers(response.headers);
+      headers.set('cache-control', 'no-cache, max-age=0, must-revalidate');
+      headers.set('x-robots-tag', 'noindex, nofollow');
+      return new Response(response.body, { status: response.status, headers });
+    }
     if (path === '/admin-panel' || path.startsWith('/admin-panel/')) {
       const assetPath = path === '/admin-panel'
         ? '/admin-panel/index.html'
@@ -330,6 +348,7 @@ export default {
     if (document) return htmlResponse(staticPage({ path, title: document.title, description: document.description, body: document.body, env }), 'no-store, max-age=0');
     const response = await appShell(request, env);
     const headers = new Headers(response.headers);
+    headers.set('cache-control', 'no-cache, max-age=0, must-revalidate');
     headers.set('x-robots-tag', 'noindex, follow');
     return new Response(response.body, { status: response.status, headers });
   },
