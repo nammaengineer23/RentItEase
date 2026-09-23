@@ -6,9 +6,10 @@ import { AdminService } from './admin.service';
 import { AdminModerationController } from './admin-moderation.controller';
 import { AdminModerationService } from './admin-moderation.service';
 import { AdminSearchController } from './admin-search.controller';
+import { SocialMediaModule } from '../social-media/social-media.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, SocialMediaModule],
   controllers: [AdminController, AdminModerationController, AdminSearchController],
   providers: [AdminService, AdminModerationService],
 })
