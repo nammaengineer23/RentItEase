@@ -131,8 +131,11 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
         ],
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _index < 5 ? _index : 0,
-        onDestinationSelected: _select,
+        selectedIndex: const [0, 5, 2, 3, 4].contains(_index)
+            ? const [0, 5, 2, 3, 4].indexOf(_index)
+            : 0,
+        onDestinationSelected: (navIndex) =>
+            _select(const [0, 5, 2, 3, 4][navIndex]),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
@@ -140,9 +143,9 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
             label: 'Dashboard',
           ),
           NavigationDestination(
-            icon: Icon(Icons.workspace_premium_outlined),
-            selectedIcon: Icon(Icons.workspace_premium),
-            label: 'Premium',
+            icon: Icon(Icons.people_outline),
+            selectedIcon: Icon(Icons.people),
+            label: 'Users',
           ),
           NavigationDestination(
             icon: Icon(Icons.campaign_outlined),
