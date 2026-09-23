@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_compress/video_compress.dart';
 
 import '../../../../core/network/dio_provider.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -49,6 +50,8 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   String furnishing = 'Semi Furnished';
   bool parking = false, petFriendly = false, dailyRentEnabled = false;
   bool socialMarketingConsent = false, termsAccepted = false, aiSuggesting = false, loading = false;
+  bool videoCompressing = false;
+  double videoCompressionProgress = 0;
   bool _amenitiesLoading = true;
   String? _amenitiesError;
   LocationModel? selectedLocation;
@@ -101,11 +104,39 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     if (value != null && mounted) _applyLocation(value);
   }
   Future<void> _setVideo(File video) async {
-    if (await video.length() > 100 * 1024 * 1024) {
-      _showError('The property video must not exceed 100 MB.');
-      return;
+    final originalBytes = await video.length();
+    if (!mounted) return;
+    setState(() { videoCompressing = true; videoCompressionProgress = 0; });
+    final subscription = VideoCompress.compressProgress\$.listen((progress) {
+      if (mounted) setState(() => videoCompressionProgress = progress.clamp(0, 100).toDouble());
+    });
+    try {
+      final info = await VideoCompress.compressVideo(
+        video.path,
+        quality: VideoQuality.Res1280x720Quality,
+        deleteOrigin: false,
+        includeAudio: true,
+        frameRate: 30,
+      );
+      final output = info?.file;
+      if (output == null || !await output.exists()) throw Exception('Video compression failed.');
+      final compressedBytes = await output.length();
+      if (compressedBytes > 100 * 1024 * 1024) {
+        _showError('Compressed video is still larger than 100 MB. Please use a shorter video.');
+        return;
+      }
+      if (mounted) {
+        setState(() => selectedVideo = output);
+        final before = (originalBytes / (1024 * 1024)).toStringAsFixed(1);
+        final after = (compressedBytes / (1024 * 1024)).toStringAsFixed(1);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Video compressed: $before MB → $after MB')));
+      }
+    } catch (error) {
+      if (mounted) _showError('Unable to compress video. Please choose another video.');
+    } finally {
+      await subscription.cancel();
+      if (mounted) setState(() { videoCompressing = false; videoCompressionProgress = 0; });
     }
-    if (mounted) setState(() => selectedVideo = video);
   }
 
   Future<void> _pickVideo() async {
@@ -294,7 +325,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     _text(areaController, context.tr('areaSqFt'), keyboard: const TextInputType.numberWithOptions(decimal:true), validator:_number), _amenitiesSection(),
     Text(context.tr('propertyLocation'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), OutlinedButton.icon(onPressed:loading?null:_pickLocation,icon:const Icon(Icons.location_on_outlined),label:Text(selectedLocation==null?context.tr('gettingCurrentLocation'):context.tr('changeLocationMap'))), if(selectedLocation!=null) Padding(padding:const EdgeInsets.only(top:8,bottom:16),child:Row(children:[Expanded(child:TextFormField(controller:latitudeController,keyboardType:const TextInputType.numberWithOptions(decimal:true,signed:true),decoration:const InputDecoration(labelText:'Latitude',prefixIcon:Icon(Icons.my_location)))),const SizedBox(width:12),Expanded(child:TextFormField(controller:longitudeController,keyboardType:const TextInputType.numberWithOptions(decimal:true,signed:true),decoration:const InputDecoration(labelText:'Longitude',prefixIcon:Icon(Icons.location_on_outlined))))])),
     _text(addressController,context.tr('address')), _text(localityController,context.tr('locality')), _text(landmarkController,context.tr('landmark'),validator:(_)=>null), _text(cityController,context.tr('city')), _text(stateController,context.tr('state')), _text(countryController,context.tr('country')), _text(pincodeController,context.tr('pincode'),keyboard:TextInputType.number),
-    const SizedBox(height:16), const Text('Video tour (optional)',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const Text('One MP4, MOV or M4V video • up to 60 seconds • 100 MB'), Wrap(spacing:10,runSpacing:8,children:[FilledButton.icon(onPressed:loading?null:_recordVideo,icon:const Icon(Icons.videocam_outlined),label:Text(selectedVideo==null?'Record video tour':'Retake video')),OutlinedButton.icon(onPressed:loading?null:_pickVideo,icon:const Icon(Icons.video_library_outlined),label:Text(selectedVideo==null?'Choose existing video':'Choose another video',overflow:TextOverflow.ellipsis))]), if(selectedVideo!=null) Card(child:ListTile(leading:const Icon(Icons.video_file_outlined),title:Text(selectedVideo!.path.split(Platform.pathSeparator).last,overflow:TextOverflow.ellipsis),subtitle:const Text('Ready to upload when property is created'),trailing:IconButton(onPressed:loading?null:()=>setState(()=>selectedVideo=null),icon:const Icon(Icons.close),tooltip:'Remove selected video'))),
+    const SizedBox(height:16), const Text('Video tour (optional)',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const Text('One MP4, MOV or M4V video • up to 60 seconds • compressed to 720p before upload'), if(videoCompressing) Padding(padding:const EdgeInsets.symmetric(vertical:8),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Compressing video… ${videoCompressionProgress.toStringAsFixed(0)}%'),const SizedBox(height:6),LinearProgressIndicator(value:videoCompressionProgress>0?videoCompressionProgress/100:null)])), Wrap(spacing:10,runSpacing:8,children:[FilledButton.icon(onPressed:loading||videoCompressing?null:_recordVideo,icon:const Icon(Icons.videocam_outlined),label:Text(selectedVideo==null?'Record video tour':'Retake video')),OutlinedButton.icon(onPressed:loading||videoCompressing?null:_pickVideo,icon:const Icon(Icons.video_library_outlined),label:Text(selectedVideo==null?'Choose existing video':'Choose another video',overflow:TextOverflow.ellipsis))]), if(selectedVideo!=null) Card(child:ListTile(leading:const Icon(Icons.video_file_outlined),title:Text(selectedVideo!.path.split(Platform.pathSeparator).last,overflow:TextOverflow.ellipsis),subtitle:const Text('Ready to upload when property is created'),trailing:IconButton(onPressed:loading?null:()=>setState(()=>selectedVideo=null),icon:const Icon(Icons.close),tooltip:'Remove selected video'))),
     const SizedBox(height:16), Text(context.tr('propertyPhotos'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), SectionedPropertyImagePicker(onImagesChanged:(v)=>selectedImagesBySection=v),
     const SizedBox(height:24),
     const Text('Consent & Terms', style: TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
