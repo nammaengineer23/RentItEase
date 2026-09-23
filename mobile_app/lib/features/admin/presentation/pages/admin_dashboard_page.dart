@@ -1368,7 +1368,7 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
                           if (dialogContext.mounted) setDialogState(() {});
                         },
                         icon: const Icon(Icons.auto_awesome),
-                        label: const Text('Generate from photos'),
+                        label: const Text('Generate Auto Reel'),
                       ),
                     ],
                   ),
