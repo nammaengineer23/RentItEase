@@ -107,7 +107,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     final originalBytes = await video.length();
     if (!mounted) return;
     setState(() { videoCompressing = true; videoCompressionProgress = 0; });
-    final subscription = VideoCompress.compressProgress\$.listen((progress) {
+    final subscription = VideoCompress.compressProgress$.listen((progress) {
       if (mounted) setState(() => videoCompressionProgress = progress.clamp(0, 100).toDouble());
     });
     try {
