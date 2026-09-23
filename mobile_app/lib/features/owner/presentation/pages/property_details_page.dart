@@ -227,7 +227,7 @@ class _OwnerPropertyDetailsPageState
                               : 'Pending verification',
                         ),
                         value: isAvailable,
-                        onChanged: _updatingAvailability
+                        onChanged: _updatingAvailability || !detail.isVerified
                             ? null
                             : _updateAvailability,
                       ),

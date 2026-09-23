@@ -895,6 +895,12 @@ export class PropertiesService {
 
     const { amenityIds, ...propertyData } = updatePropertyDto;
 
+    // Owners may not make an unverified property publicly available. Admin
+    // verification remains the authority for publishing a new listing.
+    if (propertyData.isAvailable === true && !property.isVerified && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Property must be verified by an admin before it can be marked available.');
+    }
+
     const updatedProperty = await this.prisma.property.update({
       where: {
         id,
