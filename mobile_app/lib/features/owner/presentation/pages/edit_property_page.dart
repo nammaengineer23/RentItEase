@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:video_compress/video_compress.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/network/dio_provider.dart';
@@ -56,6 +57,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
   bool loading = false;
   bool imagesLoading = true;
   bool videoLoading = false;
+  double videoCompressionProgress = 0;
   bool detailsLoading = true;
   bool amenitiesLoading = true;
   String? amenitiesError;
@@ -300,28 +302,53 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
       return;
     }
     final localVideo = File(video.path!);
-    final size = await localVideo.length();
-    if (size > 100 * 1024 * 1024) {
-      _showError('The property video must not exceed 100 MB.');
-      return;
-    }
+    final originalBytes = await localVideo.length();
 
-    setState(() => videoLoading = true);
+    setState(() {
+      videoLoading = true;
+      videoCompressionProgress = 0;
+    });
+    final subscription = VideoCompress.compressProgress$.subscribe((progress) {
+      if (mounted) {
+        setState(() => videoCompressionProgress = progress.clamp(0, 100).toDouble());
+      }
+    });
     try {
+      final info = await VideoCompress.compressVideo(
+        localVideo.path,
+        quality: VideoQuality.Res1280x720Quality,
+        deleteOrigin: false,
+        includeAudio: true,
+        frameRate: 30,
+      );
+      final compressedVideo = info?.file;
+      if (compressedVideo == null || !await compressedVideo.exists()) {
+        throw const FormatException('Unable to compress the selected video.');
+      }
+      final compressedBytes = await compressedVideo.length();
+      if (compressedBytes > 100 * 1024 * 1024) {
+        throw const FormatException(
+          'Compressed video is still larger than 100 MB. Please use a shorter video.',
+        );
+      }
+
       final url = await PropertyVideoApi(
         ref.read(dioProvider),
-      ).uploadVideo(propertyId: widget.property.id, video: localVideo);
+      ).uploadVideo(propertyId: widget.property.id, video: compressedVideo);
       if (!mounted) return;
       setState(() => videoUrl = url);
+      final before = (originalBytes / (1024 * 1024)).toStringAsFixed(1);
+      final after = (compressedBytes / (1024 * 1024)).toStringAsFixed(1);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Property video uploaded successfully.')),
+        SnackBar(content: Text('Property video uploaded successfully ($before MB → $after MB).')),
       );
     } on FormatException catch (error) {
       if (mounted) _showError(error.message);
     } catch (error) {
       if (mounted) _showError('Video upload failed: ${error.toString().replaceFirst('Exception: ', '')}');
     } finally {
-      if (mounted) setState(() => videoLoading = false);
+      subscription.unsubscribe();
+      if (mounted) setState(() { videoLoading = false; videoCompressionProgress = 0; });
     }
   }
 
