@@ -4,7 +4,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { PrismaService } from '../../../database/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { VideoTemplateService } from './video-template.service';
 
 type RemotionRenderResponse = {
