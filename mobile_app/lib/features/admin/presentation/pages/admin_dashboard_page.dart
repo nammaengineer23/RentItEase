@@ -1094,18 +1094,17 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
 
   Future<void> _uploadPreparedReel(BuildContext context, String propertyId) async {
     try {
-      final picked = await fp.FilePicker.platform.pickFiles(
+      final file = await fp.FilePicker.pickFile(
         type: fp.FileType.custom,
-        allowedExtensions: const ['mp4', 'mov', 'm4v'],
-        allowMultiple: false,
+        allowedExtensions: const ['mp4'],
       );
-      if (picked == null || picked.files.isEmpty) return;
-      final file = picked.files.single;
+      if (file == null) return;
       final filePath = file.path;
       if (filePath == null || filePath.isEmpty) {
         throw StateError('This device did not provide a local path for the selected reel.');
       }
-      if (file.size > 100 * 1024 * 1024) {
+      final fileSize = file.lengthSync() ?? await file.length() ?? 0;
+      if (fileSize > 100 * 1024 * 1024) {
         throw StateError('Reel must be 100 MB or smaller.');
       }
       final draft = await ref.read(adminProvider.notifier).uploadPreparedSocialReel(
