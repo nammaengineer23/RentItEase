@@ -2,6 +2,7 @@ import React from 'react';
 import {
   AbsoluteFill,
   Img,
+  OffthreadVideo,
   Sequence,
   interpolate,
   spring,
@@ -59,11 +60,27 @@ export const PropertyReel = (props) => {
 
   return (
     <AbsoluteFill style={{background: '#111'}}>
-      {images.map((src, index) => (
-        <Sequence key={src + index} from={index * framesPerImage} durationInFrames={framesPerImage}>
-          <Photo src={src} />
-        </Sequence>
-      ))}
+      {props.propertyVideoUrl ? (
+        <AbsoluteFill style={{zIndex: 0, overflow: 'hidden', background: '#111'}}>
+          <OffthreadVideo
+            src={props.propertyVideoUrl}
+            muted
+            style={{width: '100%', height: '100%', objectFit: 'cover'}}
+          />
+          <AbsoluteFill
+            style={{
+              background: 'linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.68))',
+              zIndex: 1,
+            }}
+          />
+        </AbsoluteFill>
+      ) : (
+        images.map((src, index) => (
+          <Sequence key={src + index} from={index * framesPerImage} durationInFrames={framesPerImage}>
+            <Photo src={src} />
+          </Sequence>
+        ))
+      )}
       <div style={{...panel, top: 90, zIndex: 30, transform: `translateY(${titleY}px)`, opacity: titleOpacity}}>
         <div style={{fontSize: 58, fontWeight: 800, lineHeight: 1.08}}>{props.title}</div>
         {props.location ? <div style={{fontSize: 32, marginTop: 14}}>📍 {props.location}</div> : null}
