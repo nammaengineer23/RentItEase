@@ -908,6 +908,11 @@ export class PropertiesService {
 
       data: {
         ...propertyData,
+        // Every owner edit requires a fresh admin review before the listing
+        // becomes public again. Admin edits preserve the approval state.
+        ...(user.role !== UserRole.ADMIN
+          ? { isVerified: false, isAvailable: false }
+          : {}),
 
         amenities:
           amenityIds !== undefined

@@ -187,13 +187,6 @@ export class PropertyImagesService {
       );
     }
 
-    const durationSeconds = await this.readVideoDurationSeconds(file);
-    if (durationSeconds > 60) {
-      throw new BadRequestException(
-        'The property video must not exceed 60 seconds.',
-      );
-    }
-
     const uploaded = await this.storageService.uploadVideo(
       file,
       'property-videos',
