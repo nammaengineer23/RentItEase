@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart' as fp;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1103,7 +1105,7 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
       if (filePath == null || filePath.isEmpty) {
         throw StateError('This device did not provide a local path for the selected reel.');
       }
-      final fileSize = await fp.FilePicker.getFileSize(filePath);
+      final fileSize = await File(filePath).length();
       if (fileSize > 100 * 1024 * 1024) {
         throw StateError('Reel must be 100 MB or smaller.');
       }
