@@ -44,7 +44,13 @@ app.post('/render', authorize, async (req, res) => {
   try {
     const inputProps = req.body?.inputProps || {};
     if (!Array.isArray(inputProps.imageUrls) || inputProps.imageUrls.length === 0) {
-      return res.status(400).json({error: 'At least one property image is required.'});
+      console.warn(
+        `[render:${requestId}] rejected: imageUrls missing/empty; body keys=${Object.keys(req.body || {}).join(',')}; inputProps keys=${Object.keys(inputProps).join(',')}`,
+      );
+      return res.status(400).json({
+        error: 'At least one property image is required.',
+        requestId,
+      });
     }
 
     console.info(`[render:${requestId}] starting with ${inputProps.imageUrls.length} image(s)`);
