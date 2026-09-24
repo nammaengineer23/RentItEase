@@ -22,7 +22,7 @@ Future<LocationModel?> reverseGeocodeWithGoogleMapsJs(
   }.jsify();
 
   _GoogleGeocoder().geocode(
-    request,
+    request!,
     ((JSAny? results, JSString? status) {
       try {
         if (status?.toDart != 'OK') {
