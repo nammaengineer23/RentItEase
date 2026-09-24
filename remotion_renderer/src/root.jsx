@@ -11,6 +11,7 @@ const defaults = {
   area: null,
   propertyType: '',
   imageUrls: [],
+  propertyVideoUrl: null,
   cta: 'Find your next home on RentItEase • rentitease.com',
 };
 
