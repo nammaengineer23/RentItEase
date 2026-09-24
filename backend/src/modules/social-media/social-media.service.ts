@@ -11,6 +11,7 @@ import { SocialSettingsDto } from './dto/social-settings.dto';
 import { PublishingService } from './publishing/publishing.service';
 import { SocialMediaStorageService } from './social-media.storage.service';
 import { RemotionVideoService } from './video/remotion-video.service';
+import { VideoTemplateService, PropertyVideoData } from './video/video-template.service';
 
 @Injectable()
 export class SocialMediaService {
@@ -19,6 +20,7 @@ export class SocialMediaService {
     private readonly remotionVideo: RemotionVideoService,
     private readonly publishing: PublishingService,
     private readonly storage: SocialMediaStorageService,
+    private readonly template: VideoTemplateService,
   ) {}
 
   async generate(dto: GenerateVideoDto) {
@@ -379,12 +381,45 @@ export class SocialMediaService {
       throw new BadRequestException(
         'Owner marketing consent is required before publishing.',
       );
+    const property = await this.prisma.property.findUnique({
+      where: { id: dto.propertyId },
+      include: { images: { orderBy: { displayOrder: 'asc' } } },
+    });
+    if (!property) throw new NotFoundException('Property not found.');
+
+    const templateData: PropertyVideoData = {
+      title: property.title,
+      description: property.description,
+      price: property.price.toString(),
+      city: property.city,
+      locality: property.locality,
+      bedrooms: property.bedrooms,
+      bathrooms: property.bathrooms,
+      area: property.area,
+      propertyType: property.propertyType,
+      furnishing: property.furnishing,
+      parking: property.parking,
+      petFriendly: property.petFriendly,
+      address: property.address,
+      imageUrls: property.images.map((image) => image.imageUrl).filter(Boolean),
+    };
+    const autoCaption = this.template.buildPlatformCaption(templateData, dto.platform);
+    const autoTitle = this.template.buildTitle(templateData, dto.platform);
     const post = await this.prisma.socialMediaPost.create({
       data: {
         propertyId: dto.propertyId,
         consentId: consent.id,
         platform: dto.platform as SocialPlatform,
-        caption: dto.caption,
+        caption: dto.caption?.trim() || autoCaption,
+      },
+    });
+    // Keep the platform-specific generated title with the prepared content so
+    // the publisher can use it immediately. Manual admin text still wins.
+    await this.prisma.socialMarketingConsent.update({
+      where: { propertyId: dto.propertyId },
+      data: {
+        preparedTitle: dto.title?.trim() || autoTitle,
+        preparedCaption: dto.caption?.trim() || autoCaption,
       },
     });
     await this.audit(dto.propertyId, dto.actorId, 'POST_CREATED', post.id, {
