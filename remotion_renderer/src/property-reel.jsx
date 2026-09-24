@@ -18,6 +18,7 @@ const panel = {
   background: 'rgba(0,0,0,0.62)',
   color: 'white',
   fontFamily: 'Arial, sans-serif',
+  zIndex: 20,
 };
 
 const Photo = ({src}) => {
@@ -32,7 +33,7 @@ const Photo = ({src}) => {
     extrapolateRight: 'clamp',
   });
   return (
-    <AbsoluteFill style={{overflow: 'hidden', background: '#111', opacity}}>
+    <AbsoluteFill style={{overflow: 'hidden', background: '#111', opacity, zIndex: 0}}>
       <Img
         src={src}
         style={{
@@ -42,7 +43,7 @@ const Photo = ({src}) => {
           transform: `scale(${scale})`,
         }}
       />
-      <AbsoluteFill style={{background: 'linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.68))'}} />
+      <AbsoluteFill style={{background: 'linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.68))', zIndex: 1}} />
     </AbsoluteFill>
   );
 };
@@ -63,17 +64,17 @@ export const PropertyReel = (props) => {
           <Photo src={src} />
         </Sequence>
       ))}
-      <div style={{...panel, top: 90, transform: `translateY(${titleY}px)`, opacity: titleOpacity}}>
+      <div style={{...panel, top: 90, zIndex: 30, transform: `translateY(${titleY}px)`, opacity: titleOpacity}}>
         <div style={{fontSize: 58, fontWeight: 800, lineHeight: 1.08}}>{props.title}</div>
         {props.location ? <div style={{fontSize: 32, marginTop: 14}}>📍 {props.location}</div> : null}
       </div>
-      <div style={{...panel, bottom: 230}}>
+      <div style={{...panel, bottom: 230, zIndex: 30}}>
         {props.price ? <div style={{fontSize: 54, fontWeight: 800}}>₹{props.price}/month</div> : null}
         <div style={{fontSize: 30, marginTop: 12}}>
           {[props.bedrooms ? `${props.bedrooms} bed` : '', props.bathrooms ? `${props.bathrooms} bath` : '', props.area ? `${props.area} sq ft` : '', props.propertyType || ''].filter(Boolean).join(' • ')}
         </div>
       </div>
-      <div style={{...panel, bottom: 70, textAlign: 'center', fontSize: 30, fontWeight: 700}}>
+      <div style={{...panel, bottom: 70, zIndex: 30, textAlign: 'center', fontSize: 30, fontWeight: 700}}>
         {props.cta || 'Find your next home on RentItEase • rentitease.com'}
       </div>
     </AbsoluteFill>
