@@ -710,7 +710,12 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
             else if (amenitiesError != null)
               Row(children: [Expanded(child: Text(amenitiesError!)), TextButton(onPressed: _loadAmenities, child: const Text('Retry'))])
             else
-              ...amenities.map((amenity) {
+              ...amenities.where((amenity) {
+                final normalized = amenity['name']?.toString().trim().toLowerCase() ?? '';
+                return normalized != 'parking' &&
+                    normalized != 'covered parking' &&
+                    normalized != 'pet friendly';
+              }).map((amenity) {
                 final id = amenity['id'].toString();
                 final name = amenity['name']?.toString().trim() ?? 'Amenity';
                 final normalized = name.toLowerCase();
@@ -803,14 +808,13 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
                   ? null
                   : (value) => setState(() => petFriendly = value),
             ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(context.tr('availableForRent')),
-              value: isAvailable,
-              onChanged: loading
-                  ? null
-                  : (value) => setState(() => isAvailable = value),
-            ),
+            if (!widget.property.isVerified)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'This property is pending admin approval. Owner edits require approval before the listing becomes public again.',
+                ),
+              ),
             const SizedBox(height: 24),
             Text(
               'Video tour',
