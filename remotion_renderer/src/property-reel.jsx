@@ -53,6 +53,9 @@ export const PropertyReel = (props) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const images = (props.imageUrls || []).filter(Boolean).slice(0, 8);
+  // When a property video exists, lead with the primary photo (first ordered
+  // image from the backend) as a short cover, then continue with the video.
+  const coverFrames = props.propertyVideoUrl && images.length > 0 ? 90 : 0;
   const framesPerImage = Math.max(90, Math.floor(900 / Math.max(images.length, 1)));
   const intro = spring({frame, fps, config: {damping: 18, stiffness: 110}});
   const titleY = interpolate(intro, [0, 1], [40, 0]);
@@ -61,19 +64,28 @@ export const PropertyReel = (props) => {
   return (
     <AbsoluteFill style={{background: '#111'}}>
       {props.propertyVideoUrl ? (
-        <AbsoluteFill style={{zIndex: 0, overflow: 'hidden', background: '#111'}}>
-          <OffthreadVideo
-            src={props.propertyVideoUrl}
-            muted
-            style={{width: '100%', height: '100%', objectFit: 'cover'}}
-          />
-          <AbsoluteFill
-            style={{
-              background: 'linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.68))',
-              zIndex: 1,
-            }}
-          />
-        </AbsoluteFill>
+        <>
+          {images.length > 0 ? (
+            <Sequence from={0} durationInFrames={coverFrames}>
+              <Photo src={images[0]} />
+            </Sequence>
+          ) : null}
+          <Sequence from={coverFrames}>
+            <AbsoluteFill style={{zIndex: 0, overflow: 'hidden', background: '#111'}}>
+              <OffthreadVideo
+                src={props.propertyVideoUrl}
+                muted
+                style={{width: '100%', height: '100%', objectFit: 'cover'}}
+              />
+              <AbsoluteFill
+                style={{
+                  background: 'linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.68))',
+                  zIndex: 1,
+                }}
+              />
+            </AbsoluteFill>
+          </Sequence>
+        </>
       ) : (
         images.map((src, index) => (
           <Sequence key={src + index} from={index * framesPerImage} durationInFrames={framesPerImage}>
