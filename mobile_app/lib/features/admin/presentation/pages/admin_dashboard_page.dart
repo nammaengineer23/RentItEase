@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart' as fp;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -1061,6 +1064,67 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
     }
   }
 
+  void _applySocialDraft(String propertyId, Map<String, dynamic> draft) {
+    _captions[propertyId]?.dispose();
+    _titles[propertyId]?.dispose();
+    setState(() {
+      _drafts[propertyId] = draft;
+      _captions[propertyId] = TextEditingController(text: draft['caption']?.toString() ?? '');
+      _titles[propertyId] = TextEditingController(text: draft['videoTitle']?.toString() ?? draft['title']?.toString() ?? '');
+      _selectedPlatforms.putIfAbsent(propertyId, () => {
+        for (final p in const ['FACEBOOK', 'INSTAGRAM', 'YOUTUBE']) if (_enabled(p)) p,
+      });
+    });
+  }
+
+  Future<void> _usePropertyVideo(BuildContext context, String propertyId) async {
+    try {
+      final draft = await ref.read(adminProvider.notifier).usePropertyVideoForSocial(
+        propertyId,
+        caption: _captions[propertyId]?.text.trim(),
+        title: _titles[propertyId]?.text.trim(),
+      );
+      if (!mounted) return;
+      _applySocialDraft(propertyId, draft);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Property video selected. Review it before publishing.')));
+      }
+    } catch (error) {
+      if (context.mounted) _showError(context, error);
+    }
+  }
+
+  Future<void> _uploadPreparedReel(BuildContext context, String propertyId) async {
+    try {
+      final file = await fp.FilePicker.pickFile(
+        type: fp.FileType.custom,
+        allowedExtensions: const ['mp4'],
+      );
+      if (file == null) return;
+      final filePath = file.path;
+      if (filePath == null || filePath.isEmpty) {
+        throw StateError('This device did not provide a local path for the selected reel.');
+      }
+      final fileSize = await File(filePath).length();
+      if (fileSize > 100 * 1024 * 1024) {
+        throw StateError('Reel must be 100 MB or smaller.');
+      }
+      final draft = await ref.read(adminProvider.notifier).uploadPreparedSocialReel(
+        propertyId,
+        filePath,
+        caption: _captions[propertyId]?.text.trim(),
+        title: _titles[propertyId]?.text.trim(),
+      );
+      if (!mounted) return;
+      _applySocialDraft(propertyId, draft);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reel uploaded. Review it before publishing.')));
+      }
+    } catch (error) {
+      if (context.mounted) _showError(context, error);
+    }
+  }
+
   Future<void> _publishSelected(BuildContext context, String propertyId) async {
     final selected = _selectedPlatforms[propertyId] ?? {};
     if (selected.isEmpty) {
@@ -1277,11 +1341,42 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   TextField(controller: _locations[id], decoration: const InputDecoration(labelText: 'Location', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: () async { await _generate(dialogContext, id); if (dialogContext.mounted) setDialogState(() {}); },
-                    icon: const Icon(Icons.auto_awesome),
-                    label: Text(draft == null ? 'Generate reel' : 'Regenerate reel'),
+                  Text('Choose reel source', style: Theme.of(dialogContext).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: _text(property, 'videoUrl').isEmpty ? null : () async {
+                          await _usePropertyVideo(dialogContext, id);
+                          if (dialogContext.mounted) setDialogState(() {});
+                        },
+                        icon: const Icon(Icons.videocam_outlined),
+                        label: const Text('Use property video'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          await _uploadPreparedReel(dialogContext, id);
+                          if (dialogContext.mounted) setDialogState(() {});
+                        },
+                        icon: const Icon(Icons.upload_file_outlined),
+                        label: const Text('Upload reel'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          await _generate(dialogContext, id);
+                          if (dialogContext.mounted) setDialogState(() {});
+                        },
+                        icon: const Icon(Icons.auto_awesome),
+                        label: const Text('Generate Auto Reel'),
+                      ),
+                    ],
                   ),
+                  if (_text(property, 'videoUrl').isEmpty) ...[
+                    const SizedBox(height: 6),
+                    const Text('No property video tour is available. Upload a reel or generate one from photos.'),
+                  ],
                   if (draft != null) ...[
                     const SizedBox(height: 16),
                     if (videoUrl.isNotEmpty) ListTile(

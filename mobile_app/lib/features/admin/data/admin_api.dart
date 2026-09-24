@@ -192,6 +192,35 @@ class AdminApi {
     );
   }
 
+  Future<Map<String, dynamic>> usePropertyVideoForSocial(
+    String propertyId, {
+    String? caption,
+    String? title,
+  }) async {
+    return _map(await _dio.post<dynamic>(
+      '/admin/social-media/properties/$propertyId/use-property-video',
+      data: {'caption': ?caption, 'title': ?title},
+    ));
+  }
+
+  Future<Map<String, dynamic>> uploadPreparedSocialReel(
+    String propertyId,
+    String filePath, {
+    String? caption,
+    String? title,
+  }) async {
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath),
+      'caption': caption ?? '',
+      'title': title ?? '',
+    });
+    return _map(await _dio.post<dynamic>(
+      '/admin/social-media/properties/$propertyId/upload-reel',
+      data: form,
+      options: Options(sendTimeout: const Duration(minutes: 10), receiveTimeout: const Duration(minutes: 5)),
+    ));
+  }
+
   Future<void> publishSocialMedia(
     String propertyId,
     String platform, {

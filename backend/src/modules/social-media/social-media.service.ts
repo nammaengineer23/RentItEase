@@ -10,28 +10,26 @@ import { PublishPostDto } from './dto/publish-post.dto';
 import { SocialSettingsDto } from './dto/social-settings.dto';
 import { PublishingService } from './publishing/publishing.service';
 import { SocialMediaStorageService } from './social-media.storage.service';
-import { VideoService } from './video/video.service';
+import { RemotionVideoService } from './video/remotion-video.service';
 
 @Injectable()
 export class SocialMediaService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly videoService: VideoService,
+    private readonly remotionVideo: RemotionVideoService,
     private readonly publishing: PublishingService,
     private readonly storage: SocialMediaStorageService,
   ) {}
 
   async generate(dto: GenerateVideoDto) {
-    const generated = await this.videoService.generate(
+    await this.requireConsent(dto.propertyId);
+    const generated = await this.remotionVideo.generate(dto.propertyId);
+    // Keep the completed self-hosted Remotion render in our
+    // Firebase storage before presenting it to the admin for review/publish.
+    const videoUrl = await this.storage.importRemoteVideo(
+      generated.videoUrl,
       dto.propertyId,
-      dto.secondsPerPhoto,
     );
-    const videoUrl = await this.storage.uploadVideo(
-      generated.filePath,
-      dto.propertyId,
-    );
-    const consent = await this.prisma.socialMarketingConsent.findUnique({ where: { propertyId: dto.propertyId } });
-    if (!consent?.approved) throw new BadRequestException('Owner marketing consent is required before preparing content.');
     await this.prisma.socialMarketingConsent.update({
       where: { propertyId: dto.propertyId },
       data: {
@@ -42,6 +40,38 @@ export class SocialMediaService {
       },
     });
     return { ...generated, videoUrl };
+  }
+
+  async usePropertyVideo(propertyId: string, actorId: string, body: { title?: string; caption?: string }) {
+    await this.requireConsent(propertyId);
+    const property = await this.prisma.property.findUnique({ where: { id: propertyId }, select: { title: true, videoUrl: true } });
+    if (!property) throw new NotFoundException('Property not found.');
+    if (!property.videoUrl) throw new BadRequestException('This property does not have a video tour yet.');
+    const title = body.title?.trim() || property.title || 'RentItEase property tour';
+    const caption = body.caption?.trim() || '';
+    await this.prisma.socialMarketingConsent.update({
+      where: { propertyId },
+      data: { preparedVideoUrl: property.videoUrl, preparedTitle: title, preparedCaption: caption, preparedAt: new Date() },
+    });
+    await this.audit(propertyId, actorId, 'PROPERTY_VIDEO_SELECTED', undefined, { videoUrl: property.videoUrl });
+    return { videoUrl: property.videoUrl, videoTitle: title, caption, source: 'PROPERTY_VIDEO' };
+  }
+
+  async uploadPreparedReel(propertyId: string, actorId: string, file: Express.Multer.File | undefined, body: { title?: string; caption?: string }) {
+    await this.requireConsent(propertyId);
+    if (!file?.buffer?.length) throw new BadRequestException('Choose a reel video to upload.');
+    if (file.size > 100 * 1024 * 1024) throw new BadRequestException('Reel must be 100 MB or smaller.');
+    const property = await this.prisma.property.findUnique({ where: { id: propertyId }, select: { title: true } });
+    if (!property) throw new NotFoundException('Property not found.');
+    const videoUrl = await this.storage.uploadBuffer(file.buffer, propertyId, file.mimetype || 'video/mp4');
+    const title = body.title?.trim() || property.title || 'RentItEase property tour';
+    const caption = body.caption?.trim() || '';
+    await this.prisma.socialMarketingConsent.update({
+      where: { propertyId },
+      data: { preparedVideoUrl: videoUrl, preparedTitle: title, preparedCaption: caption, preparedAt: new Date() },
+    });
+    await this.audit(propertyId, actorId, 'PREPARED_REEL_UPLOADED', undefined, { videoUrl, bytes: file.size });
+    return { videoUrl, videoTitle: title, caption, source: 'UPLOADED_REEL' };
   }
 
   async publish(dto: PublishPostDto & { propertyId: string; actorId: string }) {
@@ -110,8 +140,11 @@ export class SocialMediaService {
       };
     }
 
-    const generated = await this.videoService.generate(propertyId);
-    const videoUrl = await this.storage.uploadVideo(generated.filePath, propertyId);
+    const generated = await this.remotionVideo.generate(propertyId);
+    const videoUrl = await this.storage.importRemoteVideo(
+      generated.videoUrl,
+      propertyId,
+    );
     await this.prisma.socialMarketingConsent.update({
       where: { propertyId },
       data: {
@@ -124,7 +157,7 @@ export class SocialMediaService {
     await this.audit(propertyId, 'system', 'REEL_AUTO_GENERATED', undefined, {
       videoUrl,
       durationSeconds: generated.durationSeconds,
-      source: 'PROPERTY_APPROVAL',
+      source: 'REMOTION_PROPERTY_APPROVAL',
     });
     return {
       skipped: false,
@@ -173,6 +206,7 @@ export class SocialMediaService {
         city: true,
         locality: true,
         createdAt: true,
+        videoUrl: true,
         owner: { select: { id: true, fullName: true } },
         socialMarketingConsent: {
           select: {
@@ -327,6 +361,12 @@ export class SocialMediaService {
     if (post.attemptCount >= post.maxAttempts)
       throw new BadRequestException('Maximum retry attempts reached.');
     return this.publishPost(postId, actorId);
+  }
+
+  private async requireConsent(propertyId: string) {
+    const consent = await this.prisma.socialMarketingConsent.findUnique({ where: { propertyId } });
+    if (!consent?.approved) throw new BadRequestException('Owner marketing consent is required before preparing content.');
+    return consent;
   }
 
   private async createPost(

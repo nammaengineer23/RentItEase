@@ -9,9 +9,8 @@ import { InstagramService } from './publishing/instagram.service';
 import { PublishingService } from './publishing/publishing.service';
 import { YouTubeService } from './publishing/youtube.service';
 import { SocialMediaProcessor } from './processors/social-media.processor';
-import { VideoGeneratorService } from './video/video-generator.service';
-import { VideoService } from './video/video.service';
 import { VideoTemplateService } from './video/video-template.service';
+import { RemotionVideoService } from './video/remotion-video.service';
 import { SocialMediaStorageService } from './social-media.storage.service';
 import { CampaignSchedulerService } from './campaigns/campaign-scheduler.service';
 
@@ -21,8 +20,7 @@ import { CampaignSchedulerService } from './campaigns/campaign-scheduler.service
   providers: [
     SocialMediaService,
     SocialMediaProcessor,
-    VideoService,
-    VideoGeneratorService,
+    RemotionVideoService,
     VideoTemplateService,
     PublishingService,
     InstagramService,

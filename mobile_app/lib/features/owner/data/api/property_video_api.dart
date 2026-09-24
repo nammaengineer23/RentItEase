@@ -36,8 +36,8 @@ class PropertyVideoApi {
         data: FormData.fromMap({'file': multipartFile}),
         options: Options(
           contentType: 'multipart/form-data',
-          sendTimeout: const Duration(minutes: 3),
-          receiveTimeout: const Duration(minutes: 3),
+          sendTimeout: const Duration(minutes: 10),
+          receiveTimeout: const Duration(minutes: 5),
         ),
       );
     } on DioException catch (error) {

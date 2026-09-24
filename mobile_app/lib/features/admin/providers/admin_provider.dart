@@ -221,6 +221,19 @@ class AdminNotifier extends StateNotifier<AdminState> {
 
   Future<Map<String, dynamic>> getSocialSettings() => _api.getSocialSettings();
 
+  Future<Map<String, dynamic>> usePropertyVideoForSocial(
+    String propertyId, {
+    String? caption,
+    String? title,
+  }) => _api.usePropertyVideoForSocial(propertyId, caption: caption, title: title);
+
+  Future<Map<String, dynamic>> uploadPreparedSocialReel(
+    String propertyId,
+    String filePath, {
+    String? caption,
+    String? title,
+  }) => _api.uploadPreparedSocialReel(propertyId, filePath, caption: caption, title: title);
+
   Future<void> publishSocialMedia(
     String propertyId,
     String platform, {
