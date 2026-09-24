@@ -1316,7 +1316,7 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
     Map<String, dynamic>? initialDraft,
   ) async {
     _locations.putIfAbsent(id, () => TextEditingController(
-      text: [_text(property, 'locality'), _text(property, 'city')]
+      text: [_text(property, 'city'), _text(property, 'state')]
           .where((value) => value.isNotEmpty)
           .join(', '),
     ));
@@ -1382,7 +1382,7 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
                     if (videoUrl.isNotEmpty) ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.play_circle_outline),
-                      title: const Text('View generated reel'),
+                      title: const Text('Review generated reel'),
                       subtitle: Text(videoUrl, maxLines: 2, overflow: TextOverflow.ellipsis),
                       onTap: () => launchUrl(Uri.parse(videoUrl), mode: LaunchMode.externalApplication),
                     ),
@@ -1399,7 +1399,7 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
                     FilledButton.icon(
                       onPressed: () => _publishSelected(dialogContext, id),
                       icon: const Icon(Icons.publish_outlined),
-                      label: const Text('Publish selected platforms'),
+                      label: const Text('Approve & publish selected platforms'),
                     ),
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
