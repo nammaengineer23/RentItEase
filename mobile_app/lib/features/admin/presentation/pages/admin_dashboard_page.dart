@@ -1103,7 +1103,7 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
       if (filePath == null || filePath.isEmpty) {
         throw StateError('This device did not provide a local path for the selected reel.');
       }
-      final fileSize = file.lengthSync() ?? await file.length() ?? 0;
+      final fileSize = file.size;
       if (fileSize > 100 * 1024 * 1024) {
         throw StateError('Reel must be 100 MB or smaller.');
       }
