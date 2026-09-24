@@ -29,6 +29,9 @@ const getBundle = () => {
   bundlePromise ??= bundle({
     entryPoint: path.join(here, 'src', 'index.jsx'),
     webpackOverride: (config) => config,
+  }).catch((error) => {
+    bundlePromise = undefined;
+    throw error;
   });
   return bundlePromise;
 };
@@ -36,12 +39,15 @@ const getBundle = () => {
 app.get('/health', (_req, res) => res.json({ok: true, renderer: 'remotion'}));
 
 app.post('/render', authorize, async (req, res) => {
+  const requestId = randomUUID();
+  const startedAt = Date.now();
   try {
     const inputProps = req.body?.inputProps || {};
     if (!Array.isArray(inputProps.imageUrls) || inputProps.imageUrls.length === 0) {
       return res.status(400).json({error: 'At least one property image is required.'});
     }
 
+    console.info(`[render:${requestId}] starting with ${inputProps.imageUrls.length} image(s)`);
     const serveUrl = await getBundle();
     const composition = await selectComposition({
       serveUrl,
@@ -61,15 +67,18 @@ app.post('/render', authorize, async (req, res) => {
 
     const configuredBase = process.env.PUBLIC_RENDER_BASE_URL?.replace(/\/$/, '');
     const base = configuredBase || `${req.protocol}://${req.get('host')}`;
+    console.info(`[render:${requestId}] completed in ${Date.now() - startedAt}ms as ${renderId}`);
     res.json({
       renderId,
       videoUrl: `${base}/renders/${renderId}.mp4`,
       durationSeconds: composition.durationInFrames / composition.fps,
     });
   } catch (error) {
-    res.status(500).json({
-      error: error instanceof Error ? error.message : String(error),
-    });
+    const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : undefined;
+    console.error(`[render:${requestId}] failed after ${Date.now() - startedAt}ms: ${message}`);
+    if (stack) console.error(stack);
+    res.status(500).json({error: message, requestId});
   }
 });
 
