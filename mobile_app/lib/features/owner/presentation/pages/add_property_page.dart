@@ -251,7 +251,9 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
       }
       if (selectedVideo != null) {
         try {
-          await PropertyVideoApi(ref.read(dioProvider)).uploadVideo(propertyId: created.id, video: selectedVideo!);
+          await PropertyVideoApi(ref.read(dioProvider))
+              .uploadVideo(propertyId: created.id, video: selectedVideo!)
+              .timeout(const Duration(seconds: 90));
         } catch (_) {
           warnings.add('video');
         }
