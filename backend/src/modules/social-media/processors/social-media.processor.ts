@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SocialPlatform, SocialPostStatus } from '@prisma/client';
-import { PrismaService } from '../../../database/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { PublishingService, PublishPlatform } from '../publishing/publishing.service';
-import { VideoService } from '../video/video.service';
+import { RemotionVideoService } from '../video/remotion-video.service';
 import { SocialMediaStorageService } from '../social-media.storage.service';
 
 @Injectable()
@@ -11,7 +11,7 @@ export class SocialMediaProcessor {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly videoService: VideoService,
+    private readonly videoService: RemotionVideoService,
     private readonly publishingService: PublishingService,
     private readonly storage: SocialMediaStorageService,
   ) {}
@@ -19,11 +19,11 @@ export class SocialMediaProcessor {
   async processApprovedProperty(propertyId: string, platforms: PublishPlatform[]) {
     const generated = await this.videoService.generate(propertyId);
 
-    const publicVideoUrl = await this.storage.uploadVideo(generated.filePath, propertyId);
+    const publicVideoUrl = await this.storage.importRemoteVideo(generated.videoUrl, propertyId);
 
     const result = {
       propertyId,
-      videoPath: generated.filePath,
+      videoUrl: publicVideoUrl,
       durationSeconds: generated.durationSeconds,
       caption: generated.caption,
       videoTitle: generated.videoTitle,
@@ -44,7 +44,6 @@ export class SocialMediaProcessor {
       try {
         const published = await this.publishingService.publish(platform, {
           videoUrl: publicVideoUrl,
-          filePath: generated.filePath,
           caption: generated.caption,
           title: generated.videoTitle,
         });
