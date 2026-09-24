@@ -249,14 +249,21 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
           warnings.add('photos');
         }
       }
+      // Video is optional and must never block property creation. Start it
+      // after the property exists and let the owner retry from Edit Property
+      // if the background upload fails.
       if (selectedVideo != null) {
-        try {
-          await PropertyVideoApi(ref.read(dioProvider))
-              .uploadVideo(propertyId: created.id, video: selectedVideo!)
-              .timeout(const Duration(seconds: 90));
-        } catch (_) {
-          warnings.add('video');
-        }
+        final videoApi = PropertyVideoApi(ref.read(dioProvider));
+        final videoFile = selectedVideo!;
+        final propertyId = created.id;
+        Future<void>(() async {
+          try {
+            await videoApi.uploadVideo(propertyId: propertyId, video: videoFile);
+          } catch (_) {
+            // Property creation has already succeeded. Video can be retried
+            // independently from Edit Property.
+          }
+        });
       }
       if (!mounted) return;
       final message = warnings.isEmpty
