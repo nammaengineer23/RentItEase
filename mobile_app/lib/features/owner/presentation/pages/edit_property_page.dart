@@ -486,7 +486,11 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('propertyUpdated'))),
+        const SnackBar(
+          content: Text(
+            'Property updated successfully and sent for admin approval.',
+          ),
+        ),
       );
       Navigator.pop(context, true);
     } catch (error) {
