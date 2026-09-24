@@ -84,7 +84,7 @@ export class RemotionVideoService {
           inputProps: {
             title: property.title,
             price: property.price.toString(),
-            location: [property.locality, property.city].filter(Boolean).join(', '),
+            location: [property.city, property.state].filter(Boolean).join(', '),
             bedrooms: property.bedrooms,
             bathrooms: property.bathrooms,
             area: property.area,

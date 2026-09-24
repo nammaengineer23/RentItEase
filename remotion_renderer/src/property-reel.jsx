@@ -4,6 +4,7 @@ import {
   Img,
   Sequence,
   interpolate,
+  spring,
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion';
@@ -22,12 +23,16 @@ const panel = {
 const Photo = ({src}) => {
   const frame = useCurrentFrame();
   const {durationInFrames} = useVideoConfig();
-  const scale = interpolate(frame, [0, durationInFrames], [1, 1.08], {
+  const scale = interpolate(frame, [0, durationInFrames], [1, 1.1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+  const opacity = interpolate(frame, [0, 12, durationInFrames - 12, durationInFrames], [0, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
   return (
-    <AbsoluteFill style={{overflow: 'hidden', background: '#111'}}>
+    <AbsoluteFill style={{overflow: 'hidden', background: '#111', opacity}}>
       <Img
         src={src}
         style={{
@@ -37,14 +42,20 @@ const Photo = ({src}) => {
           transform: `scale(${scale})`,
         }}
       />
-      <AbsoluteFill style={{background: 'linear-gradient(180deg, rgba(0,0,0,.10), rgba(0,0,0,.62))'}} />
+      <AbsoluteFill style={{background: 'linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.68))'}} />
     </AbsoluteFill>
   );
 };
 
 export const PropertyReel = (props) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
   const images = (props.imageUrls || []).filter(Boolean).slice(0, 8);
-  const framesPerImage = Math.max(90, Math.floor(720 / Math.max(images.length, 1)));
+  const framesPerImage = Math.max(90, Math.floor(900 / Math.max(images.length, 1)));
+  const intro = spring({frame, fps, config: {damping: 18, stiffness: 110}});
+  const titleY = interpolate(intro, [0, 1], [40, 0]);
+  const titleOpacity = interpolate(intro, [0, 1], [0, 1]);
+
   return (
     <AbsoluteFill style={{background: '#111'}}>
       {images.map((src, index) => (
@@ -52,18 +63,18 @@ export const PropertyReel = (props) => {
           <Photo src={src} />
         </Sequence>
       ))}
-      <div style={{...panel, top: 90}}>
+      <div style={{...panel, top: 90, transform: `translateY(${titleY}px)`, opacity: titleOpacity}}>
         <div style={{fontSize: 58, fontWeight: 800, lineHeight: 1.08}}>{props.title}</div>
-        {props.location ? <div style={{fontSize: 32, marginTop: 14}}>{props.location}</div> : null}
+        {props.location ? <div style={{fontSize: 32, marginTop: 14}}>📍 {props.location}</div> : null}
       </div>
       <div style={{...panel, bottom: 230}}>
         {props.price ? <div style={{fontSize: 54, fontWeight: 800}}>₹{props.price}/month</div> : null}
         <div style={{fontSize: 30, marginTop: 12}}>
-          {[props.bedrooms ? `${props.bedrooms} bed` : '', props.bathrooms ? `${props.bathrooms} bath` : '', props.area ? `${props.area} sq ft` : ''].filter(Boolean).join(' • ')}
+          {[props.bedrooms ? `${props.bedrooms} bed` : '', props.bathrooms ? `${props.bathrooms} bath` : '', props.area ? `${props.area} sq ft` : '', props.propertyType || ''].filter(Boolean).join(' • ')}
         </div>
       </div>
       <div style={{...panel, bottom: 70, textAlign: 'center', fontSize: 30, fontWeight: 700}}>
-        {props.cta}
+        {props.cta || 'Find your next home on RentItEase • rentitease.com'}
       </div>
     </AbsoluteFill>
   );

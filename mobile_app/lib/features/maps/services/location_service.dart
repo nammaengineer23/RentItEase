@@ -5,6 +5,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/location_model.dart';
+import 'web_reverse_geocoder_stub.dart'
+    if (dart.library.js_interop) 'web_reverse_geocoder_web.dart';
 
 class LocationService {
   static const String _mapsApiKey = String.fromEnvironment('MAPS_API_KEY');
@@ -77,6 +79,20 @@ class LocationService {
     double latitude,
     double longitude,
   ) async {
+    // On web, use the Maps JavaScript API already loaded for the map. This
+    // avoids browser CORS/referrer restrictions on the Geocoding REST API.
+    try {
+      final browserResult = await reverseGeocodeWithGoogleMapsJs(
+        latitude,
+        longitude,
+      );
+      if (browserResult != null) return browserResult;
+    } catch (error) {
+      debugPrint('Maps JavaScript reverse geocoding failed: $error');
+    }
+
+    // Keep the REST path as a fallback for deployments that explicitly inject
+    // a web-compatible MAPS_API_KEY.
     if (_mapsApiKey.isEmpty) {
       throw StateError('MAPS_API_KEY is not configured for the web build.');
     }
