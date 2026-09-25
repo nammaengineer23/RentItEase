@@ -1087,7 +1087,7 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
       if (!mounted) return;
       _applySocialDraft(propertyId, draft);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Property video selected. Review it before publishing.')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Branded reel generated from property video. Review it before publishing.')));
       }
     } catch (error) {
       if (context.mounted) _showError(context, error);
@@ -1353,7 +1353,7 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
                           if (dialogContext.mounted) setDialogState(() {});
                         },
                         icon: const Icon(Icons.videocam_outlined),
-                        label: const Text('Use property video'),
+                        label: const Text('Create reel from property video'),
                       ),
                       OutlinedButton.icon(
                         onPressed: () async {
