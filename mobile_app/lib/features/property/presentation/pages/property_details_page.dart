@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/property_entity.dart';
@@ -23,6 +22,7 @@ import '../widgets/property_location.dart';
 import '../widgets/property_price.dart';
 import '../widgets/property_status.dart';
 import '../widgets/property_video_tour.dart';
+import '../widgets/property_youtube_reel.dart';
 
 class PropertyDetailsPage extends ConsumerStatefulWidget {
   const PropertyDetailsPage({super.key, required this.propertyId});
@@ -471,14 +471,9 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                   ],
 
                   if (property.youtubeReelUrl.isNotEmpty) ...[
-                    const SizedBox(height: 18),
-                    OutlinedButton.icon(
-                      onPressed: () => launchUrl(
-                        Uri.parse(property.youtubeReelUrl),
-                        mode: LaunchMode.externalApplication,
-                      ),
-                      icon: const Icon(Icons.smart_display_outlined),
-                      label: const Text('Watch this property reel on YouTube'),
+                    const SizedBox(height: 24),
+                    PropertyYoutubeReel(
+                      youtubeUrl: property.youtubeReelUrl,
                     ),
                   ],
 
