@@ -2135,8 +2135,21 @@ Future<void> _runAction(
 }
 
 void _showError(BuildContext context, Object error) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(error.toString()), backgroundColor: Colors.red),
+  final message = error.toString().replaceFirst('Bad state: ', '');
+  showDialog<void>(
+    context: context,
+    useRootNavigator: false,
+    builder: (dialogContext) => AlertDialog(
+      icon: const Icon(Icons.error_outline),
+      title: const Text('Action failed'),
+      content: SelectableText(message),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
   );
 }
 
