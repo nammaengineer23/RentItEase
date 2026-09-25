@@ -1126,6 +1126,19 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
     }
   }
 
+  String _platformLabel(String platform) {
+    switch (platform.toUpperCase()) {
+      case 'FACEBOOK':
+        return 'Facebook';
+      case 'INSTAGRAM':
+        return 'Instagram';
+      case 'YOUTUBE':
+        return 'YouTube';
+      default:
+        return platform;
+    }
+  }
+
   Future<void> _publishSelected(BuildContext context, String propertyId) async {
     final selected = _selectedPlatforms[propertyId] ?? {};
     if (selected.isEmpty) {
