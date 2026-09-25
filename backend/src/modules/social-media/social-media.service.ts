@@ -529,7 +529,13 @@ export class SocialMediaService {
         retryAt: retryAt?.toISOString(),
         message,
       });
-      return result;
+      // The publish endpoint is an explicit admin action. Returning a FAILED
+      // database row as HTTP success makes the app report "Submitted" even
+      // though no platform received the reel. Surface the platform failure to
+      // the caller while preserving the FAILED post for history/retry.
+      throw new BadRequestException(
+        `${post.platform} publish failed: ${message}`,
+      );
     }
   }
 
