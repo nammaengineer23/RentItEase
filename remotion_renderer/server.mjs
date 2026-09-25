@@ -43,11 +43,28 @@ app.post('/render', authorize, async (req, res) => {
   const startedAt = Date.now();
   try {
     const inputProps = req.body?.inputProps || {};
-    if (!Array.isArray(inputProps.imageUrls) || inputProps.imageUrls.length === 0) {
-      return res.status(400).json({error: 'At least one property image is required.'});
+    const imageUrls = Array.isArray(inputProps.imageUrls)
+      ? inputProps.imageUrls.filter(Boolean)
+      : [];
+    const propertyVideoUrl =
+      typeof inputProps.propertyVideoUrl === 'string'
+        ? inputProps.propertyVideoUrl.trim()
+        : '';
+
+    if (imageUrls.length === 0 && !propertyVideoUrl) {
+      console.warn(
+        `[render:${requestId}] rejected: no property media; body keys=${Object.keys(req.body || {}).join(',')}; inputProps keys=${Object.keys(inputProps).join(',')}`,
+      );
+      return res.status(400).json({
+        error: 'Add at least one property photo or video before generating a reel.',
+        requestId,
+      });
     }
 
-    console.info(`[render:${requestId}] starting with ${inputProps.imageUrls.length} image(s)`);
+    inputProps.imageUrls = imageUrls;
+    inputProps.propertyVideoUrl = propertyVideoUrl || null;
+
+    console.info(`[render:${requestId}] starting with ${imageUrls.length} image(s), propertyVideo=${Boolean(propertyVideoUrl)}`);
     const serveUrl = await getBundle();
     const composition = await selectComposition({
       serveUrl,

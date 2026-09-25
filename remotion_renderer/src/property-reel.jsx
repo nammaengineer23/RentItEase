@@ -2,6 +2,7 @@ import React from 'react';
 import {
   AbsoluteFill,
   Img,
+  OffthreadVideo,
   Sequence,
   interpolate,
   spring,
@@ -18,6 +19,7 @@ const panel = {
   background: 'rgba(0,0,0,0.62)',
   color: 'white',
   fontFamily: 'Arial, sans-serif',
+  zIndex: 20,
 };
 
 const Photo = ({src}) => {
@@ -32,7 +34,7 @@ const Photo = ({src}) => {
     extrapolateRight: 'clamp',
   });
   return (
-    <AbsoluteFill style={{overflow: 'hidden', background: '#111', opacity}}>
+    <AbsoluteFill style={{overflow: 'hidden', background: '#111', opacity, zIndex: 0}}>
       <Img
         src={src}
         style={{
@@ -42,7 +44,7 @@ const Photo = ({src}) => {
           transform: `scale(${scale})`,
         }}
       />
-      <AbsoluteFill style={{background: 'linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.68))'}} />
+      <AbsoluteFill style={{background: 'linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.68))', zIndex: 1}} />
     </AbsoluteFill>
   );
 };
@@ -51,6 +53,9 @@ export const PropertyReel = (props) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const images = (props.imageUrls || []).filter(Boolean).slice(0, 8);
+  // When a property video exists, lead with the primary photo (first ordered
+  // image from the backend) as a short cover, then continue with the video.
+  const coverFrames = props.propertyVideoUrl && images.length > 0 ? 90 : 0;
   const framesPerImage = Math.max(90, Math.floor(900 / Math.max(images.length, 1)));
   const intro = spring({frame, fps, config: {damping: 18, stiffness: 110}});
   const titleY = interpolate(intro, [0, 1], [40, 0]);
@@ -58,22 +63,47 @@ export const PropertyReel = (props) => {
 
   return (
     <AbsoluteFill style={{background: '#111'}}>
-      {images.map((src, index) => (
-        <Sequence key={src + index} from={index * framesPerImage} durationInFrames={framesPerImage}>
-          <Photo src={src} />
-        </Sequence>
-      ))}
-      <div style={{...panel, top: 90, transform: `translateY(${titleY}px)`, opacity: titleOpacity}}>
+      {props.propertyVideoUrl ? (
+        <>
+          {images.length > 0 ? (
+            <Sequence from={0} durationInFrames={coverFrames}>
+              <Photo src={images[0]} />
+            </Sequence>
+          ) : null}
+          <Sequence from={coverFrames}>
+            <AbsoluteFill style={{zIndex: 0, overflow: 'hidden', background: '#111'}}>
+              <OffthreadVideo
+                src={props.propertyVideoUrl}
+                muted
+                style={{width: '100%', height: '100%', objectFit: 'cover'}}
+              />
+              <AbsoluteFill
+                style={{
+                  background: 'linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.68))',
+                  zIndex: 1,
+                }}
+              />
+            </AbsoluteFill>
+          </Sequence>
+        </>
+      ) : (
+        images.map((src, index) => (
+          <Sequence key={src + index} from={index * framesPerImage} durationInFrames={framesPerImage}>
+            <Photo src={src} />
+          </Sequence>
+        ))
+      )}
+      <div style={{...panel, top: 90, zIndex: 30, transform: `translateY(${titleY}px)`, opacity: titleOpacity}}>
         <div style={{fontSize: 58, fontWeight: 800, lineHeight: 1.08}}>{props.title}</div>
         {props.location ? <div style={{fontSize: 32, marginTop: 14}}>📍 {props.location}</div> : null}
       </div>
-      <div style={{...panel, bottom: 230}}>
+      <div style={{...panel, bottom: 230, zIndex: 30}}>
         {props.price ? <div style={{fontSize: 54, fontWeight: 800}}>₹{props.price}/month</div> : null}
         <div style={{fontSize: 30, marginTop: 12}}>
           {[props.bedrooms ? `${props.bedrooms} bed` : '', props.bathrooms ? `${props.bathrooms} bath` : '', props.area ? `${props.area} sq ft` : '', props.propertyType || ''].filter(Boolean).join(' • ')}
         </div>
       </div>
-      <div style={{...panel, bottom: 70, textAlign: 'center', fontSize: 30, fontWeight: 700}}>
+      <div style={{...panel, bottom: 70, zIndex: 30, textAlign: 'center', fontSize: 30, fontWeight: 700}}>
         {props.cta || 'Find your next home on RentItEase • rentitease.com'}
       </div>
     </AbsoluteFill>
