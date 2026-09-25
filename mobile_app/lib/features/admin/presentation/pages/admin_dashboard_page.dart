@@ -1129,30 +1129,75 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
   Future<void> _publishSelected(BuildContext context, String propertyId) async {
     final selected = _selectedPlatforms[propertyId] ?? {};
     if (selected.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select at least one configured platform.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select at least one configured platform.')),
+      );
       return;
     }
+
     final baseCaption = _captions[propertyId]?.text.trim() ?? '';
     final location = _locations[propertyId]?.text.trim() ?? '';
     final caption = location.isEmpty || baseCaption.contains(location)
         ? baseCaption
         : '$baseCaption\n📍 $location'.trim();
     final title = _titles[propertyId]?.text.trim();
-    try {
-      for (final platform in selected) {
+
+    final results = <String, String>{};
+    for (final platform in selected) {
+      try {
         await ref.read(adminProvider.notifier).publishSocialMedia(
           propertyId,
           platform,
           caption: caption,
           title: title,
         );
+        results[platform] = 'Published';
+      } catch (error) {
+        results[platform] = error
+            .toString()
+            .replaceFirst('Bad state: ', '')
+            .replaceFirst('Exception: ', '');
       }
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Submitted to ${selected.length} selected platform(s).')));
-      }
-    } catch (error) {
-      if (context.mounted) _showError(context, error);
     }
+
+    if (!context.mounted) return;
+    final succeeded = results.entries.where((entry) => entry.value == 'Published').length;
+    final failed = results.length - succeeded;
+    await showDialog<void>(
+      context: context,
+      useRootNavigator: false,
+      builder: (resultContext) => AlertDialog(
+        icon: Icon(failed == 0 ? Icons.check_circle_outline : Icons.info_outline),
+        title: Text(
+          failed == 0
+              ? 'Publishing complete'
+              : succeeded == 0
+                  ? 'Publishing failed'
+                  : 'Publishing partially complete',
+        ),
+        content: SizedBox(
+          width: 520,
+          child: ListView(
+            shrinkWrap: true,
+            children: results.entries.map((entry) {
+              final ok = entry.value == 'Published';
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(ok ? Icons.check_circle : Icons.error_outline),
+                title: Text(_platformLabel(entry.key)),
+                subtitle: Text(ok ? 'Published successfully' : entry.value),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(resultContext).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _scheduleSelected(BuildContext context, String propertyId) async {
