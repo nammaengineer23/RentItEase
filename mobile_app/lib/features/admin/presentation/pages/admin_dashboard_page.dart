@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../authentication/providers/authentication_provider.dart';
 import '../../providers/admin_provider.dart';
@@ -1379,13 +1380,12 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
                   ],
                   if (draft != null) ...[
                     const SizedBox(height: 16),
-                    if (videoUrl.isNotEmpty) ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.play_circle_outline),
-                      title: const Text('Review generated reel'),
-                      subtitle: Text(videoUrl, maxLines: 2, overflow: TextOverflow.ellipsis),
-                      onTap: () => launchUrl(Uri.parse(videoUrl), mode: LaunchMode.externalApplication),
-                    ),
+                    if (videoUrl.isNotEmpty) ...[
+                      Text('Review generated reel', style: Theme.of(dialogContext).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      _InlineNetworkVideo(url: videoUrl, aspectRatio: 9 / 16),
+                      const SizedBox(height: 12),
+                    ],
                     TextField(controller: _titles[id], decoration: const InputDecoration(labelText: 'Video title', border: OutlineInputBorder())),
                     const SizedBox(height: 12),
                     TextField(controller: _captions[id], minLines: 5, maxLines: 10, decoration: const InputDecoration(labelText: 'Caption / description', alignLabelWithHint: true, border: OutlineInputBorder())),
@@ -1775,6 +1775,106 @@ class _AdminRefreshView extends StatelessWidget {
   }
 }
 
+class _InlineNetworkVideo extends StatefulWidget {
+  const _InlineNetworkVideo({required this.url, this.aspectRatio = 16 / 9});
+
+  final String url;
+  final double aspectRatio;
+
+  @override
+  State<_InlineNetworkVideo> createState() => _InlineNetworkVideoState();
+}
+
+class _InlineNetworkVideoState extends State<_InlineNetworkVideo> {
+  late VideoPlayerController _controller;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    try {
+      await _controller.initialize();
+      await _controller.setLooping(true);
+      if (mounted) setState(() {});
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _InlineNetworkVideo oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _controller.dispose();
+      _failed = false;
+      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+      _initialize();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_failed) {
+      return Card(
+        child: ListTile(
+          leading: const Icon(Icons.broken_image_outlined),
+          title: const Text('Video preview unavailable'),
+          trailing: IconButton(
+            tooltip: 'Open video',
+            icon: const Icon(Icons.open_in_new),
+            onPressed: () => launchUrl(Uri.parse(widget.url), mode: LaunchMode.externalApplication),
+          ),
+        ),
+      );
+    }
+    if (!_controller.value.isInitialized) {
+      return AspectRatio(
+        aspectRatio: widget.aspectRatio,
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    return AspectRatio(
+      aspectRatio: widget.aspectRatio,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: SizedBox(
+                width: _controller.value.size.width,
+                height: _controller.value.size.height,
+                child: VideoPlayer(_controller),
+              ),
+            ),
+          ),
+          IconButton.filled(
+            tooltip: _controller.value.isPlaying ? 'Pause' : 'Play',
+            iconSize: 36,
+            onPressed: () {
+              setState(() {
+                _controller.value.isPlaying ? _controller.pause() : _controller.play();
+              });
+            },
+            icon: Icon(_controller.value.isPlaying ? Icons.pause : Icons.play_arrow),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MetricCard extends StatelessWidget {
   const _MetricCard(this.label, this.value, this.icon, {this.onTap});
 
@@ -1919,13 +2019,12 @@ Future<void> _showPropertyDetails(
                 ),
                 const SizedBox(height: 16),
               ],
-              if (_text(property, 'videoUrl').isNotEmpty)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.videocam_outlined),
-                  title: const Text('Video tour attached'),
-                  subtitle: SelectableText(_text(property, 'videoUrl')),
-                ),
+              if (_text(property, 'videoUrl').isNotEmpty) ...[
+                Text('Property video tour', style: Theme.of(sheetContext).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                _InlineNetworkVideo(url: _text(property, 'videoUrl'), aspectRatio: 16 / 9),
+                const SizedBox(height: 16),
+              ],
               ...{
                 'Title': _text(property, 'title'),
                 'Description': _text(property, 'description'),
