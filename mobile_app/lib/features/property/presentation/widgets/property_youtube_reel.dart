@@ -66,6 +66,9 @@ class _PropertyYoutubeReelState extends State<PropertyYoutubeReel> {
       );
     }
 
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final reelHeight = (screenHeight * 0.72).clamp(480.0, 760.0);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -74,16 +77,27 @@ class _PropertyYoutubeReelState extends State<PropertyYoutubeReel> {
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: YoutubePlayer(
-            controller: controller,
-            aspectRatio: 9 / 16,
+        Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: reelHeight * 9 / 16,
+              maxHeight: reelHeight,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: AspectRatio(
+                aspectRatio: 9 / 16,
+                child: YoutubePlayer(
+                  controller: controller,
+                  aspectRatio: 9 / 16,
+                ),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          'Tap play to watch the published YouTube reel.',
+          'Tap play to watch the complete published reel. Full-screen playback is available from the player controls.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
