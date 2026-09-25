@@ -131,3 +131,20 @@ jobs:
         with:
           name: RentItEase-release-apk
           path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Build Release AAB
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: |
+          test -n "$MAPS_API_KEY"
+          flutter build appbundle \
+            --release \
+            --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1 \
+            --dart-define=ENABLE_GOOGLE_SIGN_IN=true \
+            --dart-define=ENABLE_PHONE_OTP=false
+
+      - name: Upload Release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: RentItEase-release-aab
+          path: mobile_app/build/app/outputs/bundle/release/app-release.aab
