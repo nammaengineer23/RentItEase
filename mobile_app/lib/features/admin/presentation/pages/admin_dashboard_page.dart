@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../authentication/providers/authentication_provider.dart';
 import '../../providers/admin_provider.dart';
@@ -1087,7 +1088,7 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
       if (!mounted) return;
       _applySocialDraft(propertyId, draft);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Property video selected. Review it before publishing.')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Branded reel generated from property video. Review it before publishing.')));
       }
     } catch (error) {
       if (context.mounted) _showError(context, error);
@@ -1125,33 +1126,91 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
     }
   }
 
+  String _platformLabel(String platform) {
+    switch (platform.toUpperCase()) {
+      case 'FACEBOOK':
+        return 'Facebook';
+      case 'INSTAGRAM':
+        return 'Instagram';
+      case 'YOUTUBE':
+        return 'YouTube';
+      default:
+        return platform;
+    }
+  }
+
   Future<void> _publishSelected(BuildContext context, String propertyId) async {
     final selected = _selectedPlatforms[propertyId] ?? {};
     if (selected.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select at least one configured platform.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select at least one configured platform.')),
+      );
       return;
     }
+
     final baseCaption = _captions[propertyId]?.text.trim() ?? '';
     final location = _locations[propertyId]?.text.trim() ?? '';
     final caption = location.isEmpty || baseCaption.contains(location)
         ? baseCaption
         : '$baseCaption\n📍 $location'.trim();
     final title = _titles[propertyId]?.text.trim();
-    try {
-      for (final platform in selected) {
+
+    final results = <String, String>{};
+    for (final platform in selected) {
+      try {
         await ref.read(adminProvider.notifier).publishSocialMedia(
           propertyId,
           platform,
           caption: caption,
           title: title,
         );
+        results[platform] = 'Published';
+      } catch (error) {
+        results[platform] = error
+            .toString()
+            .replaceFirst('Bad state: ', '')
+            .replaceFirst('Exception: ', '');
       }
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Submitted to ${selected.length} selected platform(s).')));
-      }
-    } catch (error) {
-      if (context.mounted) _showError(context, error);
     }
+
+    if (!context.mounted) return;
+    final succeeded = results.entries.where((entry) => entry.value == 'Published').length;
+    final failed = results.length - succeeded;
+    await showDialog<void>(
+      context: context,
+      useRootNavigator: false,
+      builder: (resultContext) => AlertDialog(
+        icon: Icon(failed == 0 ? Icons.check_circle_outline : Icons.info_outline),
+        title: Text(
+          failed == 0
+              ? 'Publishing complete'
+              : succeeded == 0
+                  ? 'Publishing failed'
+                  : 'Publishing partially complete',
+        ),
+        content: SizedBox(
+          width: 520,
+          child: ListView(
+            shrinkWrap: true,
+            children: results.entries.map((entry) {
+              final ok = entry.value == 'Published';
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(ok ? Icons.check_circle : Icons.error_outline),
+                title: Text(_platformLabel(entry.key)),
+                subtitle: Text(ok ? 'Published successfully' : entry.value),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(resultContext).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _scheduleSelected(BuildContext context, String propertyId) async {
@@ -1353,7 +1412,7 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
                           if (dialogContext.mounted) setDialogState(() {});
                         },
                         icon: const Icon(Icons.videocam_outlined),
-                        label: const Text('Use property video'),
+                        label: const Text('Create reel from property video'),
                       ),
                       OutlinedButton.icon(
                         onPressed: () async {
@@ -1379,13 +1438,12 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
                   ],
                   if (draft != null) ...[
                     const SizedBox(height: 16),
-                    if (videoUrl.isNotEmpty) ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.play_circle_outline),
-                      title: const Text('Review generated reel'),
-                      subtitle: Text(videoUrl, maxLines: 2, overflow: TextOverflow.ellipsis),
-                      onTap: () => launchUrl(Uri.parse(videoUrl), mode: LaunchMode.externalApplication),
-                    ),
+                    if (videoUrl.isNotEmpty) ...[
+                      Text('Review generated reel', style: Theme.of(dialogContext).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      _InlineNetworkVideo(url: videoUrl, aspectRatio: 9 / 16),
+                      const SizedBox(height: 12),
+                    ],
                     TextField(controller: _titles[id], decoration: const InputDecoration(labelText: 'Video title', border: OutlineInputBorder())),
                     const SizedBox(height: 12),
                     TextField(controller: _captions[id], minLines: 5, maxLines: 10, decoration: const InputDecoration(labelText: 'Caption / description', alignLabelWithHint: true, border: OutlineInputBorder())),
@@ -1775,6 +1833,106 @@ class _AdminRefreshView extends StatelessWidget {
   }
 }
 
+class _InlineNetworkVideo extends StatefulWidget {
+  const _InlineNetworkVideo({required this.url, this.aspectRatio = 16 / 9});
+
+  final String url;
+  final double aspectRatio;
+
+  @override
+  State<_InlineNetworkVideo> createState() => _InlineNetworkVideoState();
+}
+
+class _InlineNetworkVideoState extends State<_InlineNetworkVideo> {
+  late VideoPlayerController _controller;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    try {
+      await _controller.initialize();
+      await _controller.setLooping(true);
+      if (mounted) setState(() {});
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _InlineNetworkVideo oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _controller.dispose();
+      _failed = false;
+      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+      _initialize();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_failed) {
+      return Card(
+        child: ListTile(
+          leading: const Icon(Icons.broken_image_outlined),
+          title: const Text('Video preview unavailable'),
+          trailing: IconButton(
+            tooltip: 'Open video',
+            icon: const Icon(Icons.open_in_new),
+            onPressed: () => launchUrl(Uri.parse(widget.url), mode: LaunchMode.externalApplication),
+          ),
+        ),
+      );
+    }
+    if (!_controller.value.isInitialized) {
+      return AspectRatio(
+        aspectRatio: widget.aspectRatio,
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    return AspectRatio(
+      aspectRatio: widget.aspectRatio,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: SizedBox(
+                width: _controller.value.size.width,
+                height: _controller.value.size.height,
+                child: VideoPlayer(_controller),
+              ),
+            ),
+          ),
+          IconButton.filled(
+            tooltip: _controller.value.isPlaying ? 'Pause' : 'Play',
+            iconSize: 36,
+            onPressed: () {
+              setState(() {
+                _controller.value.isPlaying ? _controller.pause() : _controller.play();
+              });
+            },
+            icon: Icon(_controller.value.isPlaying ? Icons.pause : Icons.play_arrow),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MetricCard extends StatelessWidget {
   const _MetricCard(this.label, this.value, this.icon, {this.onTap});
 
@@ -1919,13 +2077,12 @@ Future<void> _showPropertyDetails(
                 ),
                 const SizedBox(height: 16),
               ],
-              if (_text(property, 'videoUrl').isNotEmpty)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.videocam_outlined),
-                  title: const Text('Video tour attached'),
-                  subtitle: SelectableText(_text(property, 'videoUrl')),
-                ),
+              if (_text(property, 'videoUrl').isNotEmpty) ...[
+                Text('Property video tour', style: Theme.of(sheetContext).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                _InlineNetworkVideo(url: _text(property, 'videoUrl'), aspectRatio: 16 / 9),
+                const SizedBox(height: 16),
+              ],
               ...{
                 'Title': _text(property, 'title'),
                 'Description': _text(property, 'description'),
@@ -2036,8 +2193,21 @@ Future<void> _runAction(
 }
 
 void _showError(BuildContext context, Object error) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(error.toString()), backgroundColor: Colors.red),
+  final message = error.toString().replaceFirst('Bad state: ', '');
+  showDialog<void>(
+    context: context,
+    useRootNavigator: false,
+    builder: (dialogContext) => AlertDialog(
+      icon: const Icon(Icons.error_outline),
+      title: const Text('Action failed'),
+      content: SelectableText(message),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
   );
 }
 

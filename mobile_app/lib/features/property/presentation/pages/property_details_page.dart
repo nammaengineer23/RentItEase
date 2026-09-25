@@ -22,6 +22,7 @@ import '../widgets/property_location.dart';
 import '../widgets/property_price.dart';
 import '../widgets/property_status.dart';
 import '../widgets/property_video_tour.dart';
+import '../widgets/property_youtube_reel.dart';
 
 class PropertyDetailsPage extends ConsumerStatefulWidget {
   const PropertyDetailsPage({super.key, required this.propertyId});
@@ -467,6 +468,13 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                     ),
                     const SizedBox(height: 12),
                     PropertyVideoTour(videoUrl: property.videoUrl),
+                  ],
+
+                  if (property.youtubeReelUrl.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    PropertyYoutubeReel(
+                      youtubeUrl: property.youtubeReelUrl,
+                    ),
                   ],
 
                   const SizedBox(height: 30),

@@ -675,6 +675,22 @@ export class PropertiesService {
             favorites: true,
           },
         },
+
+        socialMediaPosts: {
+          where: {
+            platform: 'YOUTUBE',
+            status: 'PUBLISHED',
+            externalId: { not: null },
+          },
+          select: {
+            externalId: true,
+            publishedAt: true,
+          },
+          orderBy: {
+            publishedAt: 'desc',
+          },
+          take: 1,
+        },
       },
     });
 
@@ -700,6 +716,9 @@ export class PropertiesService {
         totalViews: property.viewCount,
         averageRating,
         totalReviews,
+        youtubeReelUrl: property.socialMediaPosts[0]?.externalId
+          ? `https://www.youtube.com/watch?v=${property.socialMediaPosts[0].externalId}`
+          : null,
       },
     };
   }
