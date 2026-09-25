@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 class PropertyVideoTour extends StatefulWidget {
-  const PropertyVideoTour({
-    super.key,
-    required this.videoUrl,
-  });
+  const PropertyVideoTour({super.key, required this.videoUrl});
 
   final String videoUrl;
 
@@ -14,82 +11,79 @@ class PropertyVideoTour extends StatefulWidget {
 }
 
 class _PropertyVideoTourState extends State<PropertyVideoTour> {
-  bool _opening = false;
+  late VideoPlayerController _controller;
+  bool _failed = false;
 
-  Future<void> _openVideo() async {
-    if (_opening) return;
-    final uri = Uri.tryParse(widget.videoUrl);
-    if (uri == null || !uri.hasScheme) {
-      _showError();
-      return;
-    }
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+    _initialize();
+  }
 
-    setState(() => _opening = true);
+  Future<void> _initialize() async {
     try {
-      if (!await launchUrl(uri, mode: LaunchMode.platformDefault)) {
-        _showError();
-      }
+      await _controller.initialize();
+      if (mounted) setState(() {});
     } catch (_) {
-      _showError();
-    } finally {
-      if (mounted) setState(() => _opening = false);
+      if (mounted) setState(() => _failed = true);
     }
   }
 
-  void _showError() {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('The video tour could not be opened. Please try again.'),
-      ),
-    );
+  @override
+  void didUpdateWidget(covariant PropertyVideoTour oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoUrl != widget.videoUrl) {
+      _controller.dispose();
+      _failed = false;
+      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+      _initialize();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Semantics(
-      button: true,
-      label: 'Play property video tour',
-      child: InkWell(
-        onTap: _opening ? null : _openVideo,
-        borderRadius: BorderRadius.circular(16),
-        child: Ink(
-          height: 190,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              colors: [
-                colors.primaryContainer,
-                colors.primary.withValues(alpha: 0.78),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    if (_failed) {
+      return const AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Center(child: Text('Video preview unavailable')),
+      );
+    }
+    if (!_controller.value.isInitialized) {
+      return const AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    return AspectRatio(
+      aspectRatio: _controller.value.aspectRatio > 0
+          ? _controller.value.aspectRatio
+          : 16 / 9,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          VideoPlayer(_controller),
+          IconButton.filled(
+            tooltip: _controller.value.isPlaying ? 'Pause' : 'Play',
+            iconSize: 40,
+            onPressed: () {
+              setState(() {
+                _controller.value.isPlaying
+                    ? _controller.pause()
+                    : _controller.play();
+              });
+            },
+            icon: Icon(
+              _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
             ),
           ),
-          child: Center(
-            child: _opening
-                ? const CircularProgressIndicator()
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.play_circle_fill,
-                        size: 72,
-                        color: colors.onPrimary,
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Play video tour',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: colors.onPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
+        ],
       ),
     );
   }
