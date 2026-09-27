@@ -30,6 +30,14 @@
           }
         },
         {
+          "client_id": "276976121047-lbsipp1mf8enh9vmlefsjefiu26vfqns.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rentitease.app",
+            "certificate_hash": "54796c013244d581013f8299d003faab18b15238"
+          }
+        },
+        {
           "client_id": "276976121047-roj7olcke5a5336otvr163jeavv33aop.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
