@@ -1,0 +1,160 @@
+name: Publish Android AAB to Closed Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: "Android version code"
+        required: true
+        default: "7"
+        type: string
+      build_name:
+        description: "Android version name"
+        required: true
+        default: "1.0.5"
+        type: string
+      release_status:
+        description: "Play release status"
+        required: true
+        default: "completed"
+        type: choice
+        options:
+          - completed
+          - draft
+
+permissions:
+  contents: read
+
+jobs:
+  publish-closed-testing:
+    name: Build and publish version ${{ inputs.build_number }}
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mobile_app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.8"
+          channel: stable
+
+      - name: Configure Android release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          test -n "$ANDROID_STORE_PASSWORD"
+
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" \
+            | base64 --decode \
+            > android/app/upload-keystore.jks
+
+          {
+            echo "storeFile=upload-keystore.jks"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+            echo "storePassword=$ANDROID_STORE_PASSWORD"
+          } > android/key.properties
+
+      - name: Validate build inputs
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          BUILD_NAME: ${{ inputs.build_name }}
+        run: |
+          test -n "$API_BASE_URL"
+          test -n "$MAPS_API_KEY"
+
+          case "$BUILD_NUMBER" in
+            ''|*[!0-9]*)
+              echo "build_number must contain only digits."
+              exit 1
+              ;;
+          esac
+
+          if [ "$BUILD_NUMBER" -lt 7 ]; then
+            echo "build_number must be at least 7 for closed testing."
+            exit 1
+          fi
+
+          test -n "$BUILD_NAME"
+
+      - name: Verify upload-key SHA-1 is registered in Firebase
+        run: |
+          SIGNING_SHA1="$(
+            keytool -list -v \
+              -keystore android/app/upload-keystore.jks \
+              -alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+              -storepass "${{ secrets.ANDROID_STORE_PASSWORD }}" \
+              | awk -F': ' '/SHA1:/{gsub(":", "", $2); print tolower($2); exit}'
+          )"
+
+          test -n "$SIGNING_SHA1"
+
+          jq -e --arg sha "$SIGNING_SHA1" '
+            .client[].oauth_client[]?
+            | select(
+                .client_type == 1
+                and .android_info.package_name == "com.rentitease.app"
+                and (.android_info.certificate_hash | ascii_downcase) == $sha
+              )
+          ' android/app/google-services.json > /dev/null || {
+            echo "Release signing SHA-1 is not registered in Firebase."
+            exit 1
+          }
+
+          echo "Firebase SHA-1 validation passed."
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze Flutter project
+        run: flutter analyze
+
+      - name: Build signed release AAB
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          BUILD_NAME: ${{ inputs.build_name }}
+        run: |
+          flutter build appbundle \
+            --release \
+            --build-name="$BUILD_NAME" \
+            --build-number="$BUILD_NUMBER" \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=ENABLE_GOOGLE_SIGN_IN=true \
+            --dart-define=ENABLE_PHONE_OTP=false
+
+      - name: Verify AAB exists
+        run: |
+          test -f build/app/outputs/bundle/release/app-release.aab
+          ls -lh build/app/outputs/bundle/release/app-release.aab
+
+      - name: Upload AAB to Google Play Closed Testing
+        uses: joutvhu/publish-android@v2
+        with:
+          serviceAccountJson: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.rentitease.app
+          releaseFile: mobile_app/build/app/outputs/bundle/release/app-release.aab
+          track: alpha
+          status: ${{ inputs.release_status }}
+          releaseName: "RentItEase ${{ inputs.build_name }} (${{ inputs.build_number }})"
