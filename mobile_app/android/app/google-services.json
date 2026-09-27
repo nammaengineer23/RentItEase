@@ -22,11 +22,27 @@
           }
         },
         {
+          "client_id": "276976121047-l4u7iq9lr20auvrfiipqt02d8v61gern.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rentitease.app",
+            "certificate_hash": "b1e10936a45479b86481836d9d7226e928ff4f0e"
+          }
+        },
+        {
           "client_id": "276976121047-roj7olcke5a5336otvr163jeavv33aop.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.rentitease.app",
             "certificate_hash": "e871bfb81d37a3629d07c74866c81e24f0581380"
+          }
+        },
+        {
+          "client_id": "276976121047-uvm09tml8fflujjfnm52p4ghnoqiaqtk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rentitease.app",
+            "certificate_hash": "0c6cb5b3b7826ea1322f779e91f39c84eec259de"
           }
         },
         {
