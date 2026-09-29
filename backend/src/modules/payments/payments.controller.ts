@@ -67,6 +67,17 @@ import {
       );
     }
 
+    @Post('refund/:refundId/reconcile')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Reconcile an uncertain Razorpay refund' })
+    reconcileRefund(
+      @Param('refundId') refundId: string,
+      @Request() req: any,
+    ) {
+      return this.paymentsService.reconcileRefund(refundId, req.user);
+    }
+
     @Post('webhook')
     @ApiOperation({ summary: 'Receive Razorpay webhook events' })
     handleWebhook(@Request() req: any) {
