@@ -422,7 +422,7 @@ describe('Release E2E • Invoice', () => {
     // Try creating invoice
     // ----------------------------------------------------------
 
-    const create = await request(apiUrl()).post('/invoices').set(auth(tenantToken)).send({
+    const create = await request(apiUrl()).post('/invoices').set(auth(adminToken)).send({
       userId: tenantId,
       paymentId,
       amount: 1000,
@@ -514,9 +514,15 @@ describe('Release E2E • Invoice', () => {
     // If already PAID, the endpoint is still safe to call.
     // ----------------------------------------------------------
 
-    const paid = await request(apiUrl())
+    const tenantPaid = await request(apiUrl())
       .patch(`/invoices/${invoiceId}/paid`)
       .set(auth(tenantToken));
+
+    expect([401, 403]).toContain(tenantPaid.status);
+
+    const paid = await request(apiUrl())
+      .patch(`/invoices/${invoiceId}/paid`)
+      .set(auth(adminToken));
 
     statusOk(paid);
 
