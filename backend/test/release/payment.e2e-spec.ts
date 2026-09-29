@@ -262,27 +262,45 @@ describe('Release E2E • Payment', () => {
       return;
     }
 
-    // Create a new Razorpay order.
-    const res = await request(apiUrl())
-      .post('/payments/order')
+    // Two simultaneous requests must converge on one local Payment row
+    // and one Razorpay order.
+    const [resA, resB] = await Promise.all([
+      request(apiUrl())
+        .post('/payments/order')
+        .set(auth(tenantToken))
+        .send({ bookingId }),
+      request(apiUrl())
+        .post('/payments/order')
+        .set(auth(tenantToken))
+        .send({ bookingId }),
+    ]);
+
+    statusOk(resA);
+    statusOk(resB);
+
+    const dataA = extractData(resA.body);
+    const dataB = extractData(resB.body);
+
+    const paymentIdA = dataA?.paymentId ?? dataA?.payment?.id ?? '';
+    const paymentIdB = dataB?.paymentId ?? dataB?.payment?.id ?? '';
+
+    expect(paymentIdA).toBeTruthy();
+    expect(paymentIdB).toBe(paymentIdA);
+
+    const paymentRes = await request(apiUrl())
+      .get('/payments/' + paymentIdA)
       .set(auth(tenantToken))
-      .send({
-        bookingId,
-      });
+      .expect(200);
 
-    statusOk(res);
+    const persistedPayment = extractData(paymentRes.body);
 
-    const data = extractData(res.body);
-
-    paymentId = data?.paymentId ?? data?.payment?.id ?? '';
-
-    razorpayOrderId =
-      data?.razorpayOrderId ?? data?.payment?.razorpayOrderId ?? '';
-
-    paymentStatus = data?.status ?? data?.payment?.status ?? '';
+    paymentId = persistedPayment?.id ?? '';
+    razorpayOrderId = persistedPayment?.razorpayOrderId ?? '';
+    paymentStatus = persistedPayment?.status ?? '';
 
     expect(paymentId).toBeTruthy();
-    expect(razorpayOrderId).toBeTruthy();
+    expect(razorpayOrderId).toMatch(/^order_/);
+    expect(paymentStatus).toBe('CREATED');
   });
 
   // ============================================================
