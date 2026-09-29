@@ -10,6 +10,7 @@ import {
   LeaseStatus,
   NotificationType,
   UserRole,
+  Prisma,
 } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -33,71 +34,17 @@ export class LeaseService {
   // =====================================
 
   async create(dto: CreateLeaseDto, user: any) {
-    const booking = await this.prisma.booking.findUnique({
-      where: {
-        id: dto.bookingId,
-      },
-      include: {
-        property: {
-          include: {
-            owner: {
-              select: {
-                id: true,
-                fullName: true,
-                email: true,
-                phone: true,
-              },
-            },
-          },
-        },
-        tenant: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            phone: true,
-          },
-        },
-        visit: true,
-        lease: true,
-      },
-    });
-
-    if (!booking) {
-      throw new NotFoundException('Booking not found.');
-    }
-
-    if (user.role !== UserRole.ADMIN && booking.tenantId !== user.id) {
-      throw new ForbiddenException(
-        'Only the booking tenant can create this lease.',
-      );
-    }
-
-    if (booking.status !== BookingStatus.PAID) {
-      throw new BadRequestException(
-        'Lease can only be created from a paid booking.',
-      );
-    }
-
-    if (booking.lease) {
-      throw new BadRequestException('A lease already exists for this booking.');
-    }
-
     const startDate = new Date(dto.startDate);
-
     if (Number.isNaN(startDate.getTime())) {
       throw new BadRequestException('Invalid lease start date.');
     }
 
     let endDate: Date | undefined;
-
     if (dto.endDate) {
       endDate = new Date(dto.endDate);
-
       if (Number.isNaN(endDate.getTime())) {
         throw new BadRequestException('Invalid lease end date.');
       }
-
       if (endDate <= startDate) {
         throw new BadRequestException(
           'Lease end date must be after the start date.',
@@ -105,112 +52,194 @@ export class LeaseService {
       }
     }
 
-    const existingActiveLease = await this.prisma.lease.findFirst({
-      where: {
-        propertyId: booking.propertyId,
-        status: LeaseStatus.ACTIVE,
-      },
-    });
+    let lease;
+    try {
+      lease = await this.prisma.$transaction(
+        async (tx) => {
+          const booking = await tx.booking.findUnique({
+            where: { id: dto.bookingId },
+            include: {
+              property: {
+                include: {
+                  owner: {
+                    select: {
+                      id: true,
+                      fullName: true,
+                      email: true,
+                      phone: true,
+                    },
+                  },
+                },
+              },
+              tenant: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  email: true,
+                  phone: true,
+                },
+              },
+              lease: true,
+            },
+          });
 
-    if (existingActiveLease) {
-      throw new BadRequestException(
-        'This property already has an active lease.',
+          if (!booking) throw new NotFoundException('Booking not found.');
+
+          if (user.role !== UserRole.ADMIN && booking.tenantId !== user.id) {
+            throw new ForbiddenException(
+              'Only the booking tenant can create this lease.',
+            );
+          }
+
+          if (booking.status !== BookingStatus.PAID) {
+            throw new BadRequestException(
+              'Lease can only be created from a paid booking.',
+            );
+          }
+
+          if (booking.lease) {
+            throw new BadRequestException(
+              'A lease already exists for this booking.',
+            );
+          }
+
+          if (!booking.property.isAvailable) {
+            throw new BadRequestException(
+              'This property is no longer available.',
+            );
+          }
+
+          const existingActiveLease = await tx.lease.findFirst({
+            where: {
+              propertyId: booking.propertyId,
+              status: LeaseStatus.ACTIVE,
+            },
+            select: { id: true },
+          });
+
+          if (existingActiveLease) {
+            throw new BadRequestException(
+              'This property already has an active lease.',
+            );
+          }
+
+          const createdLease = await tx.lease.create({
+            data: {
+              bookingId: booking.id,
+              propertyId: booking.propertyId,
+              tenantId: booking.tenantId,
+              status: LeaseStatus.ACTIVE,
+              monthlyRent: booking.monthlyRent,
+              securityDeposit: booking.securityDeposit,
+              startDate,
+              endDate,
+              signedAt: new Date(),
+              notes: dto.notes,
+            },
+            include: {
+              booking: true,
+              property: {
+                include: {
+                  owner: {
+                    select: {
+                      id: true,
+                      fullName: true,
+                      email: true,
+                      phone: true,
+                    },
+                  },
+                  images: {
+                    where: { isPrimary: true },
+                    orderBy: { displayOrder: 'asc' },
+                  },
+                },
+              },
+              tenant: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  email: true,
+                  phone: true,
+                },
+              },
+            },
+          });
+
+          const availabilityUpdate = await tx.property.updateMany({
+            where: {
+              id: booking.propertyId,
+              isAvailable: true,
+            },
+            data: { isAvailable: false },
+          });
+
+          if (availabilityUpdate.count !== 1) {
+            throw new BadRequestException(
+              'This property is no longer available.',
+            );
+          }
+
+          return createdLease;
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2034'
+      ) {
+        throw new BadRequestException(
+          'Property availability changed concurrently. Please retry.',
+        );
+      }
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new BadRequestException(
+          'A lease already exists for this booking.',
+        );
+      }
+      throw error;
     }
 
-    const lease = await this.prisma.lease.create({
-      data: {
-        bookingId: booking.id,
-        propertyId: booking.propertyId,
-        tenantId: booking.tenantId,
-        status: LeaseStatus.ACTIVE,
-        monthlyRent: booking.monthlyRent,
-        securityDeposit: booking.securityDeposit,
-        startDate,
-        endDate,
-        signedAt: new Date(),
-        notes: dto.notes,
-      },
-      include: {
-        booking: true,
-        property: {
-          include: {
-            owner: {
-              select: {
-                id: true,
-                fullName: true,
-                email: true,
-                phone: true,
-              },
-            },
-            images: {
-              where: {
-                isPrimary: true,
-              },
-              orderBy: {
-                displayOrder: 'asc',
-              },
-            },
-          },
-        },
-        tenant: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            phone: true,
-          },
-        },
-      },
-    });
-
-    // Mark property as unavailable after lease creation.
-    await this.prisma.property.update({
-      where: {
-        id: booking.propertyId,
-      },
-      data: {
-        isAvailable: false,
-      },
-    });
-
     await this.notificationsService.createNotification(
-      booking.tenantId,
+      lease.tenantId,
       'Lease Created',
-      `Your lease for "${booking.property.title}" has been created successfully.`,
+      `Your lease for "${lease.property.title}" has been created successfully.`,
       NotificationType.GENERAL,
       lease.id,
     );
 
     await this.pushNotificationsService.sendToUser(
-      booking.tenantId,
+      lease.tenantId,
       'Lease Created',
-      `Your lease for "${booking.property.title}" has been created successfully.`,
+      `Your lease for "${lease.property.title}" has been created successfully.`,
       {
         type: 'LEASE_CREATED',
         leaseId: lease.id,
-        bookingId: booking.id,
-        propertyId: booking.propertyId,
+        bookingId: lease.bookingId,
+        propertyId: lease.propertyId,
       },
     );
 
     await this.notificationsService.createNotification(
-      booking.property.owner.id,
+      lease.property.owner.id,
       'Lease Created',
-      `A lease has been created for "${booking.property.title}".`,
+      `A lease has been created for "${lease.property.title}".`,
       NotificationType.GENERAL,
       lease.id,
     );
 
     await this.pushNotificationsService.sendToUser(
-      booking.property.owner.id,
+      lease.property.owner.id,
       'Lease Created',
-      `A lease has been created for "${booking.property.title}".`,
+      `A lease has been created for "${lease.property.title}".`,
       {
         type: 'LEASE_CREATED',
         leaseId: lease.id,
-        bookingId: booking.id,
-        propertyId: booking.propertyId,
+        bookingId: lease.bookingId,
+        propertyId: lease.propertyId,
       },
     );
 
@@ -220,7 +249,6 @@ export class LeaseService {
       data: serializePrisma(lease),
     };
   }
-
   // =====================================
   // Tenant Leases
   // =====================================
