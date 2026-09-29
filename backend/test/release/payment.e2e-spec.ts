@@ -485,4 +485,29 @@ describe('Release E2E • Payment', () => {
     expect(second.body?.message).toContain('already processed');
   });
 
+  // ============================================================
+  // 7. PAYMENT / BOOKING / INVOICE CONSISTENCY
+  // ============================================================
+
+  it('7. reconcile payment, booking and invoice state', async () => {
+    expect(adminToken).toBeTruthy();
+    expect(paymentId).toBeTruthy();
+
+    const reconciliation = await request(apiUrl())
+      .get(`/payments/${paymentId}/reconciliation`)
+      .set(auth(adminToken))
+      .expect(200);
+
+    const data = extractData(reconciliation.body);
+
+    expect(data?.paymentId).toBe(paymentId);
+    expect(data?.bookingId).toBe(bookingId);
+    expect(data?.invoiceId).toBeTruthy();
+    expect(data?.consistent).toBe(true);
+    expect(data?.checks?.paymentHasBooking).toBe(true);
+    expect(data?.checks?.paymentHasInvoice).toBe(true);
+    expect(data?.checks?.invoiceAmountMatches).toBe(true);
+  });
+
+
 });
