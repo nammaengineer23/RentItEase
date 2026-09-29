@@ -286,10 +286,44 @@ describe('Release E2E • Payment', () => {
   });
 
   // ============================================================
-  // 4. VERIFY RAZORPAY SIGNATURE → PAID
+  // 4. INVALID SIGNATURE MUST NOT FAIL THE PAYMENT
   // ============================================================
 
-  it('4. verify Razorpay signature → PAID', async () => {
+  it('4. reject invalid signature without mutating payment state', async () => {
+    if (bookingStatus === 'PAID') return;
+
+    const before = await request(apiUrl())
+      .get(`/payments/${paymentId}`)
+      .set(auth(tenantToken))
+      .expect(200);
+
+    expect(extractData(before.body)?.status).not.toBe('FAILED');
+
+    const response = await request(apiUrl())
+      .post('/payments/verify')
+      .set(auth(tenantToken))
+      .send({
+        bookingId,
+        razorpayOrderId,
+        razorpayPaymentId: 'pay_invalid_e2e',
+        razorpaySignature: '0'.repeat(64),
+      });
+
+    expect(response.status).toBe(400);
+
+    const after = await request(apiUrl())
+      .get(`/payments/${paymentId}`)
+      .set(auth(tenantToken))
+      .expect(200);
+
+    expect(extractData(after.body)?.status).toBe(extractData(before.body)?.status);
+  });
+
+  // ============================================================
+  // 5. VERIFY REAL RAZORPAY PAYMENT → PAID
+  // ============================================================
+
+  it('5. verify Razorpay payment → PAID', async () => {
     expect(tenantToken).toBeTruthy();
     expect(bookingId).toBeTruthy();
     expect(paymentId).toBeTruthy();
@@ -321,8 +355,13 @@ describe('Release E2E • Payment', () => {
       throw new Error('E2E_RAZORPAY_KEY_SECRET is required.');
     }
 
-    const razorpayPaymentId =
-      process.env.E2E_RAZORPAY_PAYMENT_ID || `pay_e2e_${Date.now()}`;
+    const razorpayPaymentId = process.env.E2E_RAZORPAY_PAYMENT_ID;
+
+    if (!razorpayPaymentId) {
+      throw new Error(
+        'E2E_RAZORPAY_PAYMENT_ID must reference a real payment captured against the E2E Razorpay order.',
+      );
+    }
 
     const signature = createHmac('sha256', secret)
       .update(`${razorpayOrderId}|${razorpayPaymentId}`)
