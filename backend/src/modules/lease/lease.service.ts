@@ -103,12 +103,6 @@ export class LeaseService {
             );
           }
 
-          if (!booking.property.isAvailable) {
-            throw new BadRequestException(
-              'This property is no longer available.',
-            );
-          }
-
           const existingActiveLease = await tx.lease.findFirst({
             where: {
               propertyId: booking.propertyId,
