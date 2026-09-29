@@ -1,5 +1,4 @@
 import { BadRequestException } from '@nestjs/common';
-import { fileTypeFromBuffer } from 'file-type';
 import sharp from 'sharp';
 
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -47,7 +46,7 @@ export async function validateImageContent(
   }
 
   const extension = extensionOf(file.originalname);
-  const detected = await fileTypeFromBuffer(file.buffer);
+  const detected = await detectFileType(file.buffer);
 
   if (!detected || !IMAGE_TYPES.has(detected.mime)) {
     throw new BadRequestException(
@@ -118,7 +117,7 @@ export async function validateChatFileContent(
 
   if (
     (extension === '.pdf' && !DOCUMENT_TYPES.has(detected.mime)) ||
-    (extension === '.doc' && detected.mime !== 'application/msword') ||
+    (extension === '.doc' && (detected.mime as string) !== 'application/msword') ||
     (extension === '.docx' &&
       detected.mime !== 'application/zip' &&
       detected.mime !==
@@ -132,6 +131,11 @@ export async function validateChatFileContent(
       'The uploaded file content is not an allowed document or audio file.',
     );
   }
+}
+
+async function detectFileType(buffer: Buffer) {
+  const { fileTypeFromBuffer } = await import('file-type');
+  return fileTypeFromBuffer(buffer);
 }
 
 function extensionOf(name: string): string {
