@@ -24,6 +24,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { RequestEmailOtpDto } from './dto/request-email-otp.dto';
 import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
 import { RegisterDto } from './dto/register.dto';
+import { VerifiedRegisterDto } from './dto/verified-register.dto';
 import { PhoneOtpLoginDto } from './dto/phone-otp-login.dto';
 
 @ApiTags('Authentication')
@@ -66,7 +67,7 @@ export class AuthController {
 
   @Post('register/verified')
   @ApiOperation({ summary: 'Create an account after email/phone verification' })
-  registerVerified(@Body() dto: import('./dto/verified-register.dto').VerifiedRegisterDto) {
+  registerVerified(@Body() dto: VerifiedRegisterDto) {
     return this.authService.registerVerified(dto);
   }
 
