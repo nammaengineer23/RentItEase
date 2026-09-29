@@ -441,50 +441,118 @@ export class AuthService {
   // Refresh Token
   // ==========================================
   async refreshToken(refreshToken: string) {
-    const payload = await this.jwtService.verifyAsync(refreshToken, {
+    const payload = await this.jwtService.verifyAsync<{
+      sub: string;
+      email: string;
+      jti?: string;
+      familyId?: string;
+    }>(refreshToken, {
       secret: process.env.JWT_REFRESH_SECRET,
     });
 
-    const storedTokens = await this.prisma.refreshToken.findMany({
-      where: {
-        userId: payload.sub,
-      },
-    });
-
-    let matchedToken: (typeof storedTokens)[number] | null = null;
-
-    for (const token of storedTokens) {
-      const matched = await bcrypt.compare(refreshToken, token.token);
-
-      if (matched) {
-        matchedToken = token;
-        break;
-      }
+    if (!payload.sub || !payload.jti || !payload.familyId) {
+      throw new UnauthorizedException(
+        'Invalid refresh token. Please sign in again.',
+      );
     }
 
-    if (!matchedToken) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, isActive: true, email: true },
+    });
+
+    if (!user || !user.isActive || user.email !== payload.email) {
+      throw new UnauthorizedException('Invalid or inactive account.');
+    }
+
+    const storedToken = await this.prisma.refreshToken.findUnique({
+      where: { jti: payload.jti },
+    });
+
+    if (
+      !storedToken ||
+      storedToken.userId !== payload.sub ||
+      storedToken.familyId !== payload.familyId
+    ) {
       throw new UnauthorizedException('Invalid refresh token.');
     }
 
-    if (matchedToken.expiresAt < new Date()) {
-      await this.prisma.refreshToken.delete({
-        where: {
-          id: matchedToken.id,
-        },
-      });
+    const matches = await bcrypt.compare(refreshToken, storedToken.token);
+    if (!matches) {
+      throw new UnauthorizedException('Invalid refresh token.');
+    }
 
+    if (storedToken.expiresAt < new Date()) {
+      await this.prisma.refreshToken.delete({
+        where: { id: storedToken.id },
+      });
       throw new UnauthorizedException('Refresh token expired.');
     }
 
-    await this.prisma.refreshToken.delete({
-      where: {
-        id: matchedToken.id,
-      },
+    if (storedToken.usedAt || storedToken.revokedAt) {
+      await this.prisma.refreshToken.updateMany({
+        where: { userId: payload.sub, familyId: payload.familyId },
+        data: { revokedAt: new Date() },
+      });
+      throw new UnauthorizedException(
+        'Refresh token reuse detected. Please sign in again.',
+      );
+    }
+
+    const tokens = await this.generateTokens(
+      payload.sub,
+      payload.email,
+      payload.familyId,
+    );
+
+    const rotated = await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.refreshToken.updateMany({
+        where: {
+          id: storedToken.id,
+          usedAt: null,
+          revokedAt: null,
+        },
+        data: {
+          usedAt: new Date(),
+        },
+      });
+
+      if (claimed.count !== 1) {
+        return false;
+      }
+
+      const decoded = this.jwtService.decode(tokens.refreshToken) as {
+        jti?: string;
+        familyId?: string;
+      } | null;
+
+      if (!decoded?.jti || decoded.familyId !== payload.familyId) {
+        throw new UnauthorizedException('Unable to rotate refresh token.');
+      }
+
+      const hashedToken = await bcrypt.hash(tokens.refreshToken, 10);
+      await tx.refreshToken.create({
+        data: {
+          jti: decoded.jti,
+          familyId: payload.familyId,
+          token: hashedToken,
+          userId: payload.sub,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      return true;
     });
 
-    const tokens = await this.generateTokens(payload.sub, payload.email);
-
-    await this.saveRefreshToken(payload.sub, tokens.refreshToken);
+    if (!rotated) {
+      await this.prisma.refreshToken.updateMany({
+        where: { userId: payload.sub, familyId: payload.familyId },
+        data: { revokedAt: new Date() },
+      });
+      throw new UnauthorizedException(
+        'Refresh token reuse detected. Please sign in again.',
+      );
+    }
 
     return {
       success: true,
@@ -497,10 +565,9 @@ export class AuthService {
   // Logout
   // ==========================================
   async logout(userId: string) {
-    await this.prisma.refreshToken.deleteMany({
-      where: {
-        userId,
-      },
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
     });
 
     return {
@@ -513,10 +580,23 @@ export class AuthService {
   // Save Refresh Token
   // ==========================================
   private async saveRefreshToken(userId: string, token: string) {
+    const decoded = this.jwtService.decode(token) as {
+      jti?: string;
+      familyId?: string;
+    } | null;
+
+    if (!decoded?.jti || !decoded.familyId) {
+      throw new UnauthorizedException(
+        'Unable to establish refresh-token state.',
+      );
+    }
+
     const hashedToken = await bcrypt.hash(token, 10);
 
     await this.prisma.refreshToken.create({
       data: {
+        jti: decoded.jti,
+        familyId: decoded.familyId,
         token: hashedToken,
         userId,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -540,16 +620,28 @@ export class AuthService {
     });
   }
 
-  private async generateTokens(userId: string, email: string) {
+  private async generateTokens(
+    userId: string,
+    email: string,
+    familyId = crypto.randomUUID(),
+  ) {
     const payload = {
       sub: userId,
       email,
+      jti: crypto.randomUUID(),
+      familyId,
     };
 
-    const accessToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_ACCESS_SECRET,
-      expiresIn: '15m',
-    });
+    const accessToken = await this.jwtService.signAsync(
+      {
+        sub: userId,
+        email,
+      },
+      {
+        secret: process.env.JWT_ACCESS_SECRET,
+        expiresIn: '15m',
+      },
+    );
 
     const refreshToken = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_REFRESH_SECRET,
