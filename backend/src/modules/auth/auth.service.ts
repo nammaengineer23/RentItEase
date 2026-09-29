@@ -496,7 +496,7 @@ export class AuthService {
     if (!user) {
       if (!createAccount) {
         throw new UnauthorizedException(
-          'No RentItEase account exists for this Google account. Complete phone verification to create one.',
+          'No RentItEase account exists for this Google account.',
         );
       }
 
@@ -506,39 +506,11 @@ export class AuthService {
         );
       }
 
-      if (!phoneIdToken) {
-        throw new UnauthorizedException(
-          'Phone verification is required before creating a new account.',
-        );
-      }
-
-      const phoneProof = await this.firebaseService.verifyToken(phoneIdToken);
-      if (!phoneProof.phone_number) {
-        throw new UnauthorizedException(
-          'Verified phone number not found in Firebase token.',
-        );
-      }
-
-      const verifiedPhone = this.normalizePhone(phoneProof.phone_number);
-      if (phone && verifiedPhone !== phone) {
-        throw new UnauthorizedException(
-          'Verified phone number does not match the Firebase account.',
-        );
-      }
-
-      const phoneOwner = await this.prisma.user.findUnique({
-        where: { phone: verifiedPhone },
-      });
-      if (phoneOwner) {
-        throw new ConflictException(
-          'This mobile number is already registered. Please sign in with that account.',
-        );
-      }
 
       user = await this.prisma.user.create({
         data: {
           fullName: decoded.name ?? 'RentItEase User',
-          phone: verifiedPhone,
+          phone: null,
           email,
           passwordHash: '',
           photoUrl: decoded.picture,
