@@ -108,7 +108,7 @@ export async function validateChatFileContent(
     return;
   }
 
-  const detected = await fileTypeFromBuffer(file.buffer);
+  const detected = await detectFileType(file.buffer);
   if (!detected || !EXTENSION_TYPE_MAP[extension]?.has(detected.mime)) {
     throw new BadRequestException(
       'The uploaded file content does not match its allowed file type.',
