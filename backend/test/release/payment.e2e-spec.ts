@@ -418,4 +418,62 @@ describe('Release E2E • Payment', () => {
     expect(bookingData?.payment?.id).toBe(paymentId);
     expect(bookingData?.payment?.status).toBe('SUCCESS');
   });
+
+  // ============================================================
+  // 6. RAZORPAY WEBHOOK SIGNATURE + EVENT IDEMPOTENCY
+  // ============================================================
+
+  it('6. accept a signed captured webhook once and deduplicate retries', async () => {
+    expect(paymentStatus).toBe('SUCCESS');
+    expect(razorpayOrderId).toMatch(/^order_/);
+
+    const webhookSecret = process.env.E2E_RAZORPAY_WEBHOOK_SECRET;
+    const razorpayPaymentId = process.env.E2E_RAZORPAY_PAYMENT_ID;
+
+    if (!webhookSecret) {
+      throw new Error('E2E_RAZORPAY_WEBHOOK_SECRET is required.');
+    }
+    if (!razorpayPaymentId) {
+      throw new Error('E2E_RAZORPAY_PAYMENT_ID is required.');
+    }
+
+    const payload = {
+      entity: 'event',
+      event: 'payment.captured',
+      payload: {
+        payment: {
+          entity: {
+            id: razorpayPaymentId,
+            order_id: razorpayOrderId,
+            status: 'captured',
+          },
+        },
+      },
+    };
+    const rawBody = JSON.stringify(payload);
+    const signature = createHmac('sha256', webhookSecret)
+      .update(rawBody)
+      .digest('hex');
+    const eventId = `e2e-payment-captured-${paymentId}`;
+
+    const first = await request(apiUrl())
+      .post('/payments/webhook')
+      .set('x-razorpay-signature', signature)
+      .set('x-razorpay-event-id', eventId)
+      .set('Content-Type', 'application/json')
+      .send(rawBody);
+
+    statusOk(first);
+
+    const second = await request(apiUrl())
+      .post('/payments/webhook')
+      .set('x-razorpay-signature', signature)
+      .set('x-razorpay-event-id', eventId)
+      .set('Content-Type', 'application/json')
+      .send(rawBody);
+
+    statusOk(second);
+    expect(second.body?.message).toContain('already processed');
+  });
+
 });
