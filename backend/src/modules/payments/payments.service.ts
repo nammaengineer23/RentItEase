@@ -877,7 +877,7 @@ import {
       razorpayStatus: string | undefined,
       failureReason: string | undefined,
     ) {
-      const refund = await this.prisma.paymentRefund.findFirst({
+      let refund = await this.prisma.paymentRefund.findFirst({
         where: {
           razorpayRefundId,
           ...(razorpayPaymentId
@@ -886,6 +886,25 @@ import {
         },
         include: { payment: true },
       });
+
+      if (!refund && razorpayPaymentId) {
+        refund = await this.prisma.paymentRefund.findFirst({
+          where: {
+            payment: { razorpayPaymentId },
+            status: { in: ['PENDING', 'UNKNOWN'] },
+          },
+          orderBy: { createdAt: 'desc' },
+          include: { payment: true },
+        });
+
+        if (refund) {
+          refund = await this.prisma.paymentRefund.update({
+            where: { id: refund.id },
+            data: { razorpayRefundId },
+            include: { payment: true },
+          });
+        }
+      }
 
       if (!refund) return;
 
