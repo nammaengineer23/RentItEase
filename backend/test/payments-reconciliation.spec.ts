@@ -215,10 +215,14 @@ describe('PaymentsService webhook recovery', () => {
     });
 
     const reconcile = jest.spyOn(service as any, 'reconcileCapturedPayment');
+    const rawBody = Buffer.from('{}');
+    const signature = createHmac('sha256', 'webhook_secret')
+      .update(rawBody)
+      .digest('hex');
 
     const result = await service.handleWebhook(
-      Buffer.from('{}'),
-      'ignored',
+      rawBody,
+      signature,
       'event-2',
     );
 
