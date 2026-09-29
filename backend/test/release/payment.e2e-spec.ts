@@ -456,6 +456,15 @@ describe('Release E2E • Payment', () => {
       .digest('hex');
     const eventId = `e2e-payment-captured-${paymentId}`;
 
+    const invalid = await request(apiUrl())
+      .post('/payments/webhook')
+      .set('x-razorpay-signature', '0'.repeat(64))
+      .set('x-razorpay-event-id', `${eventId}-invalid`)
+      .set('Content-Type', 'application/json')
+      .send(rawBody);
+
+    expect(invalid.status).toBe(403);
+
     const first = await request(apiUrl())
       .post('/payments/webhook')
       .set('x-razorpay-signature', signature)
