@@ -488,8 +488,27 @@ model Payment {
   updatedAt         DateTime      @updatedAt
   booking           Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   invoices          Invoice[]
+  refunds           PaymentRefund[]
 
   @@index([status])
+  @@index([createdAt])
+}
+
+model PaymentRefund {
+  id                String             @id @default(cuid())
+  paymentId         String
+  amount            Decimal            @db.Decimal(10, 2)
+  currency          String             @default("INR")
+  status            PaymentRefundStatus @default(PENDING)
+  razorpayRefundId  String?            @unique
+  reason            String?
+  failureReason     String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  processedAt       DateTime?
+  payment           Payment            @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId, status])
   @@index([createdAt])
 }
 
@@ -685,6 +704,13 @@ enum PremiumListingStatus {
   ACTIVE
   EXPIRED
   CANCELLED
+}
+
+enum PaymentRefundStatus {
+  PENDING
+  PROCESSED
+  FAILED
+  UNKNOWN
 }
 
 enum PaymentWebhookEventStatus {
