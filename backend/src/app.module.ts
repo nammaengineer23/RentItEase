@@ -56,6 +56,8 @@ import { StorageModule } from './storage/storage.module';
 
         JWT_REFRESH_SECRET: Joi.string().min(16).required(),
 
+        RAZORPAY_WEBHOOK_SECRET: Joi.string().min(16).optional(),
+
         FIREBASE_PROJECT_ID: Joi.string().required(),
 
         FIREBASE_CLIENT_EMAIL: Joi.string().email().required(),
