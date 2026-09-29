@@ -21,11 +21,12 @@ describe('PropertyImagesService video tours', () => {
   });
 
   function videoFile(durationSeconds: number): Express.Multer.File {
-    const buffer = Buffer.alloc(64);
+    const buffer = Buffer.alloc(256);
     buffer.write('mvhd', 4, 'ascii');
     buffer.writeUInt8(0, 8);
     buffer.writeUInt32BE(1000, 20);
     buffer.writeUInt32BE(durationSeconds * 1000, 24);
+    buffer.writeUInt32BE(1, 28);
 
     return {
       buffer,
