@@ -159,36 +159,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       return;
     }
 
-    final needsPhoneVerification =
-        provider.errorMessage?.contains('Complete phone verification') ?? false;
-    if (needsPhoneVerification) {
-      final phone = _phoneController.text.trim();
-      if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
-        _showError(context.tr('googlePhoneInstruction'));
-        return;
-      }
-
-      try {
-        final phoneProof = await FirebasePhoneOtpService().verifyPhone(
-          phoneNumber: '+91$phone',
-          requestCode: () => showOtpCodeDialog(
-            context,
-            title: context.tr('verifyPhoneNumber'),
-            destination: '+91 $phone',
-          ),
-        );
-        final created = await provider.completeGoogleRegistration(phoneProof);
-        if (!mounted) return;
-        if (created) {
-          context.go('/home');
-          return;
-        }
-      } catch (error) {
-        if (!mounted) return;
-        _showError(userFriendlyError(error));
-        return;
-      }
-    }
 
     _showError(provider.errorMessage ?? context.tr('googleSignupFailed'));
   }
