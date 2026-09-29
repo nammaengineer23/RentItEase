@@ -80,175 +80,146 @@ import {
       );
     }
   
+    private async findRazorpayOrderByReceipt(receipt: string, amountInPaise: number, currency: string) {
+      try {
+        const response = await this.razorpay.orders.all({ receipt, count: 100 });
+        const matches = (response?.items ?? []).filter(
+          (order: any) =>
+            order?.receipt === receipt &&
+            order?.amount === amountInPaise &&
+            order?.currency === currency &&
+            typeof order?.id === 'string',
+        );
+        return matches.length === 1 ? matches[0] : null;
+      } catch {
+        throw new ServiceUnavailableException(
+          'Unable to confirm the existing payment order right now. Please try again.',
+        );
+      }
+    }
     async createOrder(dto: CreatePaymentOrderDto, user: any) {
       const booking = await this.prisma.booking.findUnique({
-        where: {
-          id: dto.bookingId,
-        },
+        where: { id: dto.bookingId },
         include: {
-          property: {
-            include: {
-              owner: {
-                select: {
-                  id: true,
-                  fullName: true,
-                },
-              },
-            },
-          },
-          tenant: {
-            select: {
-              id: true,
-              fullName: true,
-              email: true,
-              phone: true,
-            },
-          },
+          property: { include: { owner: { select: { id: true, fullName: true } } } },
+          tenant: { select: { id: true, fullName: true, email: true, phone: true } },
           payment: true,
         },
       });
-  
-      if (!booking) {
-        throw new NotFoundException('Booking not found.');
+
+      if (!booking) throw new NotFoundException('Booking not found.');
+      if (user.role !== UserRole.ADMIN && booking.tenantId !== user.id) {
+        throw new ForbiddenException('Only the booking tenant can make this payment.');
       }
-  
-      if (
-        user.role !== UserRole.ADMIN &&
-        booking.tenantId !== user.id
-      ) {
-        throw new ForbiddenException(
-          'Only the booking tenant can make this payment.',
-        );
+      if (booking.status !== BookingStatus.APPROVED && booking.status !== BookingStatus.PAYMENT_PENDING) {
+        throw new BadRequestException('Payment cannot be created for booking in ' + booking.status + ' status.');
       }
-  
-      if (
-        booking.status !== BookingStatus.APPROVED &&
-        booking.status !== BookingStatus.PAYMENT_PENDING
-      ) {
-        throw new BadRequestException(
-          `Payment cannot be created for booking in ${booking.status} status.`,
-        );
-      }
-  
       if (booking.payment?.status === PaymentStatus.SUCCESS) {
-        throw new BadRequestException(
-          'This booking has already been paid.',
-        );
+        throw new BadRequestException('This booking has already been paid.');
       }
-  
-      // -------------------------------------
-      // Reuse existing pending Razorpay order
-      // -------------------------------------
-  
-      if (
-        booking.payment &&
-        booking.payment.status !== PaymentStatus.FAILED &&
-        booking.payment.status !== PaymentStatus.REFUNDED
-      ) {
-        const amount = Number(booking.payment.amount);
-        return {
-          success: true,
-          message: 'Existing payment order found.',
-          data: {
-            paymentId: booking.payment.id,
-            bookingId: booking.id,
-            razorpayOrderId: booking.payment.razorpayOrderId,
-            amount,
-            amountInPaise: Math.round(amount * 100),
-            currency: booking.payment.currency,
-            status: booking.payment.status,
-            keyId: process.env.RAZORPAY_KEY_ID,
-            customer: {
-              name: booking.tenant.fullName,
-              email: booking.tenant.email,
-              phone: booking.tenant.phone,
-            },
-          },
-        };
-      }
-  
-      // -------------------------------------
-      // Calculate amount on server
-      // -------------------------------------
-  
-      const monthlyRent = Number(booking.monthlyRent);
-      const securityDeposit = Number(booking.securityDeposit);
-  
-      const totalAmount = monthlyRent + securityDeposit;
-  
-      if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
-        throw new BadRequestException(
-          'Invalid booking payment amount.',
-        );
-      }
-  
-      // Razorpay expects amount in paise.
+
+      const totalAmount = Number(booking.monthlyRent) + Number(booking.securityDeposit);
       const amountInPaise = Math.round(totalAmount * 100);
-  
-      const receipt = `booking_${booking.id}`.slice(0, 40);
-  
-      // -------------------------------------
-      // Create Razorpay order
-      // -------------------------------------
-  
-      const razorpayOrder = await this.createRazorpayOrderWithRetry({
-        amount: amountInPaise,
-        currency: 'INR',
-        receipt,
-        notes: {
-          bookingId: booking.id,
-          propertyId: booking.propertyId,
-          tenantId: booking.tenantId,
-        },
+      if (!Number.isFinite(totalAmount) || totalAmount <= 0 || !Number.isSafeInteger(amountInPaise)) {
+        throw new BadRequestException('Invalid booking payment amount.');
+      }
+
+      const currency = 'INR';
+      const receipt = 'booking_' + booking.id;
+      const reservationOrderId = 'pending_' + booking.id;
+      let reservedPayment = await this.prisma.payment.findUnique({ where: { bookingId: booking.id } });
+
+      if (reservedPayment?.status === PaymentStatus.CREATED) {
+        return this.paymentOrderResponse(reservedPayment, booking);
+      }
+      if (reservedPayment && reservedPayment.status !== PaymentStatus.FAILED && reservedPayment.status !== PaymentStatus.REFUNDED && reservedPayment.razorpayOrderId !== reservationOrderId) {
+        return this.paymentOrderResponse(reservedPayment, booking);
+      }
+
+      try {
+        reservedPayment = await this.prisma.$transaction(async (tx) => {
+          const current = await tx.payment.findUnique({ where: { bookingId: booking.id } });
+          if (current?.status === PaymentStatus.CREATED) return current;
+          if (current && current.status !== PaymentStatus.FAILED && current.status !== PaymentStatus.REFUNDED) return current;
+
+          if (current) {
+            const claimed = await tx.payment.updateMany({
+              where: { id: current.id, status: { in: [PaymentStatus.FAILED, PaymentStatus.REFUNDED] } },
+              data: { status: PaymentStatus.PENDING, razorpayOrderId: reservationOrderId, amount: totalAmount, currency, failedAt: null, failureReason: null },
+            });
+            if (claimed.count !== 1) throw new BadRequestException('Another payment order request is already in progress. Please retry shortly.');
+            return tx.payment.findUniqueOrThrow({ where: { id: current.id } });
+          }
+
+          if (booking.status === BookingStatus.APPROVED) {
+            const transitioned = await tx.booking.updateMany({
+              where: { id: booking.id, status: BookingStatus.APPROVED },
+              data: { status: BookingStatus.PAYMENT_PENDING },
+            });
+            if (transitioned.count !== 1) throw new BadRequestException('Booking state changed while creating the payment order. Please retry.');
+          }
+
+          return tx.payment.create({
+            data: { bookingId: booking.id, amount: totalAmount, currency, status: PaymentStatus.PENDING, razorpayOrderId: reservationOrderId },
+          });
+        });
+      } catch (error: any) {
+        if (error?.code === 'P2002') {
+          const existing = await this.prisma.payment.findUnique({ where: { bookingId: booking.id } });
+          if (existing) {
+            if (existing.status === PaymentStatus.SUCCESS) throw new BadRequestException('This booking has already been paid.');
+            if (existing.status === PaymentStatus.CREATED || (existing.status !== PaymentStatus.FAILED && existing.status !== PaymentStatus.REFUNDED && existing.razorpayOrderId !== reservationOrderId)) {
+              return this.paymentOrderResponse(existing, booking);
+            }
+          }
+        }
+        throw error;
+      }
+
+      if (!reservedPayment) throw new ServiceUnavailableException('Unable to reserve the payment attempt. Please try again.');
+      if (reservedPayment.status !== PaymentStatus.PENDING || reservedPayment.razorpayOrderId !== reservationOrderId) {
+        return this.paymentOrderResponse(reservedPayment, booking);
+      }
+
+      let razorpayOrder = await this.findRazorpayOrderByReceipt(receipt, amountInPaise, currency);
+      if (!razorpayOrder) {
+        try {
+          razorpayOrder = await this.createRazorpayOrderWithRetry({
+            amount: amountInPaise, currency, receipt,
+            notes: { bookingId: booking.id, propertyId: booking.propertyId, tenantId: booking.tenantId },
+          });
+        } catch (error) {
+          await this.prisma.payment.updateMany({
+            where: { id: reservedPayment.id, status: PaymentStatus.PENDING, razorpayOrderId: reservationOrderId },
+            data: { status: PaymentStatus.FAILED, failedAt: new Date(), failureReason: 'Razorpay order creation failed.' },
+          });
+          throw error;
+        }
+      }
+
+      const linked = await this.prisma.payment.updateMany({
+        where: { id: reservedPayment.id, status: PaymentStatus.PENDING, razorpayOrderId: reservationOrderId },
+        data: { status: PaymentStatus.CREATED, razorpayOrderId: razorpayOrder.id, failedAt: null, failureReason: null },
       });
-  
-      // -------------------------------------
-      // Create Payment record
-      // -------------------------------------
-  
-      const payment = await this.prisma.payment.create({
-        data: {
-          bookingId: booking.id,
-          amount: totalAmount,
-          currency: 'INR',
-          status: PaymentStatus.CREATED,
-          razorpayOrderId: razorpayOrder.id,
-        },
-      });
-  
-      // -------------------------------------
-      // Move booking to payment pending
-      // -------------------------------------
-  
-      await this.prisma.booking.update({
-        where: {
-          id: booking.id,
-        },
-        data: {
-          status: BookingStatus.PAYMENT_PENDING,
-        },
-      });
-  
+      if (linked.count !== 1) throw new BadRequestException('Payment order state changed while completing the request. Please fetch the current payment status.');
+
+      const payment = await this.prisma.payment.findUniqueOrThrow({ where: { id: reservedPayment.id } });
+      return this.paymentOrderResponse(payment, booking);
+    }
+
+    private paymentOrderResponse(payment: any, booking: any) {
       return {
         success: true,
-        message: 'Payment order created successfully.',
+        message: payment.status === PaymentStatus.CREATED ? 'Existing payment order found.' : 'Payment order is being prepared.',
         data: {
-          paymentId: payment.id,
-          bookingId: booking.id,
-          razorpayOrderId: razorpayOrder.id,
-          amount: totalAmount,
-          amountInPaise,
-          currency: 'INR',
-          keyId: process.env.RAZORPAY_KEY_ID,
-          customer: {
-            name: booking.tenant.fullName,
-            email: booking.tenant.email,
-            phone: booking.tenant.phone,
-          },
+          paymentId: payment.id, bookingId: booking.id, razorpayOrderId: payment.razorpayOrderId,
+          amount: Number(payment.amount), amountInPaise: Math.round(Number(payment.amount) * 100),
+          currency: payment.currency, status: payment.status, keyId: process.env.RAZORPAY_KEY_ID,
+          customer: { name: booking.tenant.fullName, email: booking.tenant.email, phone: booking.tenant.phone },
         },
       };
     }
-  
+
     // =====================================
     // Verify Razorpay Payment
     // =====================================
@@ -293,7 +264,7 @@ import {
         payment.status !== PaymentStatus.PENDING
       ) {
         throw new BadRequestException(
-          `Payment cannot be verified from \${payment.status} status.`,
+          `Payment cannot be verified from ${payment.status} status.`,
         );
       }
 
@@ -305,7 +276,7 @@ import {
       }
 
       const generatedSignature = createHmac('sha256', keySecret)
-        .update(`\${dto.razorpayOrderId}|\${dto.razorpayPaymentId}`)
+        .update(`${dto.razorpayOrderId}|${dto.razorpayPaymentId}`)
         .digest('hex');
 
       const suppliedSignature = dto.razorpaySignature.trim().toLowerCase();
@@ -402,7 +373,7 @@ import {
         });
 
         await tx.invoice.upsert({
-          where: { invoiceNumber: `RIE-\${payment.bookingId}` },
+          where: { invoiceNumber: `RIE-${payment.bookingId}` },
           update: {
             status: 'PAID',
             amount: payment.amount,
@@ -410,7 +381,7 @@ import {
             paymentId: payment.id,
           },
           create: {
-            invoiceNumber: `RIE-\${payment.bookingId}`,
+            invoiceNumber: `RIE-${payment.bookingId}`,
             userId: payment.booking.tenantId,
             paymentId: payment.id,
             amount: payment.amount,
@@ -418,7 +389,7 @@ import {
             totalAmount: payment.amount,
             currency: payment.currency,
             status: 'PAID',
-            description: `Payment invoice for \${payment.booking.property.title}`,
+            description: `Payment invoice for ${payment.booking.property.title}`,
           },
         });
 
@@ -446,7 +417,7 @@ import {
       await this.notificationsService.createNotification(
         payment.booking.tenantId,
         'Payment Successful',
-        `Payment for "\${payment.booking.property.title}" was successful.`,
+        `Payment for "${payment.booking.property.title}" was successful.`,
         NotificationType.GENERAL,
         payment.booking.id,
       );
@@ -454,7 +425,7 @@ import {
       await this.pushNotificationsService.sendToUser(
         payment.booking.tenantId,
         'Payment Successful',
-        `Payment for "\${payment.booking.property.title}" was successful.`,
+        `Payment for "${payment.booking.property.title}" was successful.`,
         {
           type: 'PAYMENT_SUCCESS',
           paymentId: result.payment.id,
@@ -466,7 +437,7 @@ import {
       await this.notificationsService.createNotification(
         payment.booking.property.ownerId,
         'Booking Payment Received',
-        `Payment received for "\${payment.booking.property.title}".`,
+        `Payment received for "${payment.booking.property.title}".`,
         NotificationType.GENERAL,
         payment.booking.id,
       );
@@ -474,7 +445,7 @@ import {
       await this.pushNotificationsService.sendToUser(
         payment.booking.property.ownerId,
         'Booking Payment Received',
-        `Payment received for "\${payment.booking.property.title}".`,
+        `Payment received for "${payment.booking.property.title}".`,
         {
           type: 'BOOKING_PAYMENT_RECEIVED',
           paymentId: result.payment.id,
