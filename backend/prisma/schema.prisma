@@ -478,6 +478,7 @@ model Payment {
   currency          String        @default("INR")
   status            PaymentStatus @default(CREATED)
   razorpayOrderId   String        @unique
+  orderCreationToken String?      @unique
   razorpayPaymentId String?       @unique
   razorpaySignature String?
   paidAt            DateTime?
