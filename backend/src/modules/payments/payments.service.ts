@@ -680,7 +680,7 @@ import {
         const claimed = await tx.payment.updateMany({
           where: {
             id: payment.id,
-            status: { in: [PaymentStatus.CREATED, PaymentStatus.PENDING] },
+            status: { in: [PaymentStatus.CREATED, PaymentStatus.PENDING, PaymentStatus.FAILED] },
           },
           data: {
             status: PaymentStatus.SUCCESS,
