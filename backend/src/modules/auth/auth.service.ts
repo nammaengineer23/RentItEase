@@ -722,20 +722,25 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    await this.prisma.user.update({
-      where: {
-        id: resetToken.userId,
-      },
-      data: {
-        passwordHash: hashedPassword,
-      },
-    });
-
-    await this.prisma.passwordResetToken.delete({
-      where: {
-        id: resetToken.id,
-      },
-    });
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: {
+          id: resetToken.userId,
+        },
+        data: {
+          passwordHash: hashedPassword,
+        },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId: resetToken.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+      this.prisma.passwordResetToken.delete({
+        where: {
+          id: resetToken.id,
+        },
+      }),
+    ]);
 
     return {
       success: true,
@@ -819,18 +824,24 @@ export class AuthService {
 
     const hashed = await bcrypt.hash(dto.newPassword, 10);
 
-    await this.prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        passwordHash: hashed,
-      },
-    });
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          passwordHash: hashed,
+        },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
 
     return {
       success: true,
-      message: 'Password changed successfully.',
+      message: 'Password changed successfully. Please sign in again.',
     };
   }
 }
