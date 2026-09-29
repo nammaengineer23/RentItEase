@@ -37,41 +37,18 @@ export class ReviewsService {
       );
     }
 
-    const existing = await this.prisma.review.findFirst({
+    const review = await this.prisma.review.upsert({
       where: {
-        propertyId,
-        userId,
+        userId_propertyId: {
+          userId,
+          propertyId,
+        },
       },
-    });
-
-    if (existing) {
-      const review = await this.prisma.review.update({
-        where: {
-          id: existing.id,
-        },
-        data: {
-          rating: dto.rating,
-          comment: dto.comment,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              fullName: true,
-            },
-          },
-        },
-      });
-
-      return {
-        success: true,
-        message: 'Review updated successfully.',
-        review,
-      };
-    }
-
-    const review = await this.prisma.review.create({
-      data: {
+      update: {
+        rating: dto.rating,
+        comment: dto.comment,
+      },
+      create: {
         propertyId,
         userId,
         rating: dto.rating,
@@ -87,6 +64,11 @@ export class ReviewsService {
       },
     });
 
+    return {
+      success: true,
+      message: 'Review saved successfully.',
+      review,
+    };
     return {
       success: true,
       message: 'Review added successfully.',
