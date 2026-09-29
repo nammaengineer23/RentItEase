@@ -54,14 +54,14 @@ export class AuthService {
 
   async verifySignupEmailOtp(dto: VerifyEmailOtpDto) {
     const email = dto.email.trim().toLowerCase();
-    await this.consumeEmailOtpChallenge(
+    const challengeId = await this.consumeEmailOtpChallenge(
       email,
       this.signupEmailPurpose,
       dto.otp,
     );
 
     const verificationToken = await this.jwtService.signAsync(
-      { type: this.signupEmailPurpose, email },
+      { type: this.signupEmailPurpose, email, challengeId },
       {
         secret: process.env.JWT_ACCESS_SECRET,
         expiresIn: '10m',
@@ -80,12 +80,34 @@ export class AuthService {
     const proof = await this.jwtService.verifyAsync<{
       type: string;
       email: string;
+      challengeId: string;
     }>(dto.emailVerificationToken, {
       secret: process.env.JWT_ACCESS_SECRET,
     });
 
-    if (proof.type !== this.signupEmailPurpose || proof.email !== email) {
+    if (
+      proof.type !== this.signupEmailPurpose ||
+      proof.email !== email ||
+      !proof.challengeId
+    ) {
       throw new UnauthorizedException('Invalid email verification proof.');
+    }
+
+    const verificationClaim = await this.prisma.authOtpChallenge.updateMany({
+      where: {
+        id: proof.challengeId,
+        target: email,
+        purpose: this.signupEmailPurpose,
+        consumedAt: { not: null },
+        proofUsedAt: null,
+      },
+      data: { proofUsedAt: new Date() },
+    });
+
+    if (verificationClaim.count !== 1) {
+      throw new UnauthorizedException(
+        'Email verification proof is invalid or has already been used.',
+      );
     }
 
     const phone = dto.phone ? this.normalizePhone(dto.phone) : null;
@@ -248,7 +270,7 @@ export class AuthService {
     target: string,
     purpose: string,
     otp: string,
-  ) {
+  ): Promise<string> {
     const challenge = await this.prisma.authOtpChallenge.findUnique({
       where: { target_purpose: { target, purpose } },
     });
@@ -287,6 +309,8 @@ export class AuthService {
     if (consumed.count !== 1) {
       throw new UnauthorizedException('Invalid or expired verification code.');
     }
+
+    return challenge.id;
   }
 
   private normalizePhone(phone: string) {
