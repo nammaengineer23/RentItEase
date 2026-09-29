@@ -351,6 +351,12 @@ export class BookingService {
       );
     }
 
+    if (!booking.property.isAvailable) {
+      throw new BadRequestException(
+        'This property is no longer available for booking.',
+      );
+    }
+
     const updated = await this.prisma.booking.update({
       where: {
         id,
