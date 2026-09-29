@@ -71,6 +71,18 @@ import {
             );
           }
 
+          // A network timeout can happen after Razorpay accepted the create
+          // request but before our server received the response. Reconcile
+          // the deterministic receipt before attempting another POST.
+          if (options?.receipt && options?.amount && options?.currency) {
+            const existing = await this.findRazorpayOrderByReceipt(
+              options.receipt,
+              options.amount,
+              options.currency,
+            );
+            if (existing) return existing;
+          }
+
           await new Promise((resolve) => setTimeout(resolve, attempt * 400));
         }
       }
