@@ -16,6 +16,7 @@ model AuthOtpChallenge {
   expiresAt       DateTime
   createdAt       DateTime @default(now())
   consumedAt      DateTime?
+  proofUsedAt     DateTime?
   lastSentAt      DateTime?
   windowStartedAt DateTime?
   requestCount    Int      @default(0)
