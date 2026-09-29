@@ -8,16 +8,21 @@ datasource db {
 }
 
 model AuthOtpChallenge {
-  id        String   @id @default(cuid())
-  target    String
-  purpose   String
-  otpHash   String
-  attempts  Int      @default(0)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  target          String
+  purpose         String
+  otpHash         String
+  attempts        Int      @default(0)
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+  consumedAt      DateTime?
+  lastSentAt      DateTime?
+  windowStartedAt DateTime?
+  requestCount    Int      @default(0)
 
-  @@index([target, purpose])
+  @@unique([target, purpose])
   @@index([expiresAt])
+  @@index([lastSentAt])
 }
 
 model User {
