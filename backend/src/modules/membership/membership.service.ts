@@ -351,26 +351,6 @@ export class MembershipService {
       }
       throw error;
     }
-
-    const startDate = new Date();
-    const endDate = new Date(startDate);
-
-    endDate.setDate(endDate.getDate() + membership.plan.durationDays);
-
-    return this.prisma.membership.update({
-      where: { id },
-      data: {
-        status: MembershipStatus.ACTIVE,
-        startDate,
-        endDate,
-        activatedAt: startDate,
-        expiredAt: null,
-        cancelledAt: null,
-      },
-      include: {
-        plan: true,
-      },
-    });
   }
 
   // ============================================================
