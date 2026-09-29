@@ -51,6 +51,22 @@ import {
     // Verify Payment
     // =====================================
   
+    @Post('refund/:paymentId')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Initiate a full refund for a successful payment' })
+    refundPayment(
+      @Param('paymentId') paymentId: string,
+      @Body() body: { reason?: string },
+      @Request() req: any,
+    ) {
+      return this.paymentsService.refundPayment(
+        paymentId,
+        body?.reason,
+        req.user,
+      );
+    }
+
     @Post('webhook')
     @ApiOperation({ summary: 'Receive Razorpay webhook events' })
     handleWebhook(@Request() req: any) {
