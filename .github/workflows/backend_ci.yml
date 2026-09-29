@@ -104,4 +104,4 @@ jobs:
         run: npx prisma generate
 
       - name: Run unit test file
-        run: npx jest --runInBand "${{ matrix.test_file }}"
+        run: npx jest --config ./test/jest-unit.json --runInBand "${{ matrix.test_file }}"
