@@ -1,3 +1,5 @@
+CREATE TYPE "PaymentWebhookEventStatus" AS ENUM ('RECEIVED', 'PROCESSED', 'IGNORED', 'FAILED');
+
 CREATE TABLE "PaymentWebhookEvent" (
   "id" TEXT NOT NULL,
   "eventId" TEXT NOT NULL,
