@@ -518,6 +518,286 @@ import {
       };
     }
 
+
+    // =====================================
+    // Razorpay Webhook / Reconciliation
+    // =====================================
+
+    async handleWebhook(rawBody: Buffer | undefined, signatureHeader: string | string[] | undefined, eventIdHeader: string | string[] | undefined) {
+      const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+      const signature = Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader;
+      const eventId = Array.isArray(eventIdHeader) ? eventIdHeader[0] : eventIdHeader;
+
+      if (!webhookSecret || !rawBody || !signature || !eventId) {
+        throw new BadRequestException('Invalid Razorpay webhook request.');
+      }
+
+      const expectedSignature = createHmac('sha256', webhookSecret)
+        .update(rawBody)
+        .digest('hex');
+
+      if (
+        signature.length !== expectedSignature.length ||
+        !/^[a-f0-9]+$/i.test(signature) ||
+        !timingSafeEqual(
+          Buffer.from(expectedSignature, 'hex'),
+          Buffer.from(signature.toLowerCase(), 'hex'),
+        )
+      ) {
+        throw new ForbiddenException('Invalid Razorpay webhook signature.');
+      }
+
+      let payload: any;
+      try {
+        payload = JSON.parse(rawBody.toString('utf8'));
+      } catch {
+        throw new BadRequestException('Invalid Razorpay webhook payload.');
+      }
+
+      const eventType = typeof payload?.event === 'string' ? payload.event : 'unknown';
+      const entity = payload?.payload?.payment?.entity;
+      const orderEntity = payload?.payload?.order?.entity;
+      const razorpayPaymentId = typeof entity?.id === 'string' ? entity.id : undefined;
+      const razorpayOrderId =
+        typeof entity?.order_id === 'string'
+          ? entity.order_id
+          : typeof orderEntity?.id === 'string'
+            ? orderEntity.id
+            : undefined;
+
+      let event;
+      try {
+        event = await this.prisma.paymentWebhookEvent.create({
+          data: {
+            eventId,
+            eventType,
+            razorpayOrderId,
+            razorpayPaymentId,
+            payload,
+          },
+        });
+      } catch (error: any) {
+        if (error?.code === 'P2002') {
+          return { success: true, message: 'Webhook event already processed.' };
+        }
+        throw error;
+      }
+
+      try {
+        if (eventType === 'payment.captured' || eventType === 'order.paid') {
+          if (!razorpayOrderId || !razorpayPaymentId) {
+            throw new BadRequestException('Webhook payment identifiers are missing.');
+          }
+
+          await this.reconcileCapturedPayment(
+            razorpayOrderId,
+            razorpayPaymentId,
+          );
+        } else if (eventType === 'payment.failed') {
+          if (razorpayOrderId) {
+            await this.reconcileFailedPayment(
+              razorpayOrderId,
+              razorpayPaymentId,
+              entity?.error_description ?? entity?.error_reason ?? 'Razorpay payment failed.',
+            );
+          }
+        }
+
+        await this.prisma.paymentWebhookEvent.update({
+          where: { id: event.id },
+          data: {
+            status:
+              eventType === 'payment.captured' ||
+              eventType === 'order.paid' ||
+              eventType === 'payment.failed'
+                ? 'PROCESSED'
+                : 'IGNORED',
+            processedAt: new Date(),
+            errorMessage: null,
+          },
+        });
+
+        return { success: true, message: 'Webhook received.' };
+      } catch (error: any) {
+        await this.prisma.paymentWebhookEvent.update({
+          where: { id: event.id },
+          data: {
+            status: 'FAILED',
+            errorMessage: String(error?.message ?? 'Webhook processing failed.').slice(0, 1000),
+          },
+        });
+        throw error;
+      }
+    }
+
+    private async reconcileCapturedPayment(
+      razorpayOrderId: string,
+      razorpayPaymentId: string,
+    ) {
+      const payment = await this.prisma.payment.findUnique({
+        where: { razorpayOrderId },
+        include: {
+          booking: {
+            include: {
+              property: true,
+              tenant: { select: { id: true, fullName: true, email: true, phone: true } },
+            },
+          },
+        },
+      });
+
+      if (!payment) return;
+      if (payment.status === PaymentStatus.SUCCESS) return;
+
+      let razorpayOrder: any;
+      let razorpayPayment: any;
+      try {
+        [razorpayOrder, razorpayPayment] = await Promise.all([
+          this.razorpay.orders.fetch(razorpayOrderId),
+          this.razorpay.payments.fetch(razorpayPaymentId),
+        ]);
+      } catch {
+        throw new ServiceUnavailableException(
+          'Unable to reconcile the Razorpay payment right now.',
+        );
+      }
+
+      const expectedAmountInPaise = Math.round(Number(payment.amount) * 100);
+      if (
+        razorpayOrder.id !== payment.razorpayOrderId ||
+        razorpayOrder.amount !== expectedAmountInPaise ||
+        razorpayOrder.currency !== payment.currency ||
+        razorpayPayment.id !== razorpayPaymentId ||
+        razorpayPayment.order_id !== payment.razorpayOrderId ||
+        razorpayPayment.amount !== expectedAmountInPaise ||
+        razorpayPayment.currency !== payment.currency ||
+        razorpayPayment.status !== 'captured'
+      ) {
+        throw new BadRequestException('Razorpay webhook payment details failed reconciliation.');
+      }
+
+      const claimed = await this.prisma.payment.updateMany({
+        where: {
+          id: payment.id,
+          status: { in: [PaymentStatus.CREATED, PaymentStatus.PENDING] },
+        },
+        data: {
+          status: PaymentStatus.SUCCESS,
+          razorpayPaymentId,
+          paidAt: new Date(),
+          failedAt: null,
+          failureReason: null,
+        },
+      });
+
+      if (claimed.count !== 1) return;
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.booking.update({
+          where: { id: payment.bookingId },
+          data: { status: BookingStatus.PAID },
+        });
+        await tx.property.update({
+          where: { id: payment.booking.propertyId },
+          data: { isAvailable: false },
+        });
+        await tx.invoice.upsert({
+          where: { invoiceNumber: `RIE-${payment.bookingId}` },
+          update: {
+            status: 'PAID',
+            amount: payment.amount,
+            totalAmount: payment.amount,
+            paymentId: payment.id,
+          },
+          create: {
+            invoiceNumber: `RIE-${payment.bookingId}`,
+            userId: payment.booking.tenantId,
+            paymentId: payment.id,
+            amount: payment.amount,
+            taxAmount: 0,
+            totalAmount: payment.amount,
+            currency: payment.currency,
+            status: 'PAID',
+            description: `Payment invoice for ${payment.booking.property.title}`,
+          },
+        });
+      });
+
+      await this.sendPaymentSuccessNotifications(payment);
+    }
+
+    private async reconcileFailedPayment(
+      razorpayOrderId: string,
+      razorpayPaymentId: string | undefined,
+      reason: string,
+    ) {
+      const payment = await this.prisma.payment.findUnique({
+        where: { razorpayOrderId },
+      });
+
+      if (!payment || payment.status === PaymentStatus.SUCCESS || payment.status === PaymentStatus.REFUNDED) {
+        return;
+      }
+
+      if (razorpayPaymentId && payment.razorpayPaymentId && payment.razorpayPaymentId !== razorpayPaymentId) {
+        return;
+      }
+
+      await this.prisma.payment.updateMany({
+        where: {
+          id: payment.id,
+          status: { in: [PaymentStatus.CREATED, PaymentStatus.PENDING] },
+        },
+        data: {
+          status: PaymentStatus.FAILED,
+          failedAt: new Date(),
+          failureReason: reason.slice(0, 500),
+        },
+      });
+    }
+
+    private async sendPaymentSuccessNotifications(payment: any) {
+      await this.notificationsService.createNotification(
+        payment.booking.tenantId,
+        'Payment Successful',
+        `Payment for "${payment.booking.property.title}" was successful.`,
+        NotificationType.GENERAL,
+        payment.booking.id,
+      );
+
+      await this.pushNotificationsService.sendToUser(
+        payment.booking.tenantId,
+        'Payment Successful',
+        `Payment for "${payment.booking.property.title}" was successful.`,
+        {
+          type: 'PAYMENT_SUCCESS',
+          paymentId: payment.id,
+          bookingId: payment.bookingId,
+          propertyId: payment.booking.propertyId,
+        },
+      );
+
+      await this.notificationsService.createNotification(
+        payment.booking.property.ownerId,
+        'Booking Payment Received',
+        `Payment received for "${payment.booking.property.title}".`,
+        NotificationType.GENERAL,
+        payment.booking.id,
+      );
+
+      await this.pushNotificationsService.sendToUser(
+        payment.booking.property.ownerId,
+        'Booking Payment Received',
+        `Payment received for "${payment.booking.property.title}".`,
+        {
+          type: 'BOOKING_PAYMENT_RECEIVED',
+          paymentId: payment.id,
+          bookingId: payment.bookingId,
+          propertyId: payment.booking.propertyId,
+        },
+      );
+    }
+
     // =====================================
     // Get Payment
     // =====================================
