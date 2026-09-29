@@ -69,11 +69,6 @@ export class ReviewsService {
       message: 'Review saved successfully.',
       review,
     };
-    return {
-      success: true,
-      message: 'Review added successfully.',
-      review,
-    };
   }
 
   // ==========================
