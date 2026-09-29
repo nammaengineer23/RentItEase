@@ -33,6 +33,7 @@ describe('PaymentsService refund reconciliation', () => {
     process.env.RAZORPAY_KEY_ID = 'rzp_test_key';
     process.env.RAZORPAY_KEY_SECRET = 'test_secret';
     service = new PaymentsService(prisma, notifications, push);
+    (service as any).razorpay = { refunds: { fetch: jest.fn() } };
   });
 
   it('reconciles an UNKNOWN refund from the gateway refund record', async () => {
