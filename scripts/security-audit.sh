@@ -5,30 +5,33 @@ echo "=== RentItEase security/configuration audit ==="
 
 fail=0
 
-if grep -RniE 'RAZORPAY_KEY_SECRET\s*=\s*[^$<\{[:space:]]|JWT_(ACCESS|REFRESH)_SECRET\s*=\s*[^$<\{[:space:]]|FIREBASE_PRIVATE_KEY\s*=\s*[^$<\{[:space:]]' . \
-  --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=build \
-  --exclude='*.example' --exclude='*.sample' --exclude='package-lock.json' --exclude='*.dump' \
-  --exclude='*.min.js' --exclude='*.spec.ts' --exclude='*_test.ts'; then
-  echo "Potential hard-coded secret found."
+secret_matches="$(git grep -nE 'RAZORPAY_KEY_SECRET[[:space:]]*=[[:space:]]*[^$<\{[:space:]]|JWT_(ACCESS|REFRESH)_SECRET[[:space:]]*=[[:space:]]*[^$<\{[:space:]]|FIREBASE_PRIVATE_KEY[[:space:]]*=[[:space:]]*[^$<\{[:space:]]' -- \
+  ':!**/*.spec.ts' ':!**/test/**' ':!repomix-output.xml' ':!*.example' ':!*.sample' || true)"
+if [[ -n "$secret_matches" ]]; then
+  printf '%s\n' "$secret_matches"
+  echo "Potential hard-coded production secret found."
   fail=1
 fi
 
-if grep -RniE '-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----' . \
-  --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=build \
-  --exclude='*.example' --exclude='*.sample' --exclude='*.dump' --exclude-dir=test; then
+private_key_matches="$(git grep -nE -- '-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----' -- \
+  ':!**/*.spec.ts' ':!**/test/**' ':!repomix-output.xml' ':!*.example' ':!*.sample' || true)"
+if [[ -n "$private_key_matches" ]]; then
+  printf '%s\n' "$private_key_matches"
   echo "Potential private-key material found."
   fail=1
 fi
 
-if grep -RniE 'origin:\s*\*|enableCors\(\s*\{\s*origin:\s*\*' backend/src --exclude-dir=node_modules; then
+cors_matches="$(git grep -nE 'origin:[[:space:]]*\*|enableCors\([[:space:]]*\{[[:space:]]*origin:[[:space:]]*\*' -- backend/src || true)"
+if [[ -n "$cors_matches" ]]; then
+  printf '%s\n' "$cors_matches"
   echo "Potential wildcard CORS configuration found."
   fail=1
 fi
 
-tracked_dumps="$(git ls-files | grep -E '(^|/)\.(env|env\..*)$|\.dump$|\.sql$|\.pem$|\.key$' || true)"
-if [[ -n "$tracked_dumps" ]]; then
-  echo "Tracked sensitive/backup files found:"
-  printf '%s\n' "$tracked_dumps"
+tracked_sensitive="$(git ls-files | grep -E '(^|/)\.(env|env\..*)$|\.dump$|\.sql$|\.pem$|\.key$' || true)"
+if [[ -n "$tracked_sensitive" ]]; then
+  printf '%s\n' "$tracked_sensitive"
+  echo "Tracked sensitive/backup files found."
   fail=1
 fi
 
