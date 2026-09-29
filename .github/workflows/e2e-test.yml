@@ -16,6 +16,9 @@ concurrency:
   group: rentitease-production-release-e2e
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
 
   # ============================================================
