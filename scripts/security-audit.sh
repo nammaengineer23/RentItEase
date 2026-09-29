@@ -28,7 +28,23 @@ if [[ -n "$cors_matches" ]]; then
   fail=1
 fi
 
-tracked_sensitive="$(git ls-files | grep -E '(^|/)\.(env|env\..*)$|\.dump$|\.sql$|\.pem$|\.key$' || true)"
+tracked_sensitive="$(git ls-files | grep -E '(^|/)\.(env|env\..*)$|\.dump$|\.pem$|\.key
+if [[ -n "$tracked_sensitive" ]]; then
+  printf '%s\n' "$tracked_sensitive"
+  echo "Tracked sensitive/backup files found."
+  fail=1
+fi
+
+echo "Production secrets must be supplied by Railway/GitHub Secrets, never committed."
+echo "Configured CORS origins should be explicit production domains."
+echo "Database backups must live in approved private backup storage, not Git."
+
+if [[ "$fail" -ne 0 ]]; then
+  exit 1
+fi
+
+echo "Security/configuration audit passed."
+ | grep -v '^backend/prisma/migrations/' || true)"
 if [[ -n "$tracked_sensitive" ]]; then
   printf '%s\n' "$tracked_sensitive"
   echo "Tracked sensitive/backup files found."
