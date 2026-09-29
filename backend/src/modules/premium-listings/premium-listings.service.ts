@@ -61,22 +61,32 @@ export class PremiumListingsService {
       Math.ceil((endDate.getTime() - now.getTime()) / 86_400_000),
     );
 
-    return this.prisma.premiumListing.create({
-      data: {
-        propertyId,
-        userId,
-        membershipId: membership.id,
-        membershipPlanId: membership.planId,
-        status: PremiumListingStatus.ACTIVE,
-        startDate: now,
-        endDate,
-        activatedAt: now,
-        durationDays,
-        amount: new Prisma.Decimal(0),
-        currency: 'INR',
-      },
-      include: { property: true, membership: { include: { plan: true } } },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const concurrent = await tx.premiumListing.findFirst({
+        where: {
+          propertyId,
+          status: PremiumListingStatus.ACTIVE,
+        },
+      });
+      if (concurrent) return concurrent;
+
+      return tx.premiumListing.create({
+        data: {
+          propertyId,
+          userId,
+          membershipId: membership.id,
+          membershipPlanId: membership.planId,
+          status: PremiumListingStatus.ACTIVE,
+          startDate: now,
+          endDate,
+          activatedAt: now,
+          durationDays,
+          amount: new Prisma.Decimal(0),
+          currency: 'INR',
+        },
+        include: { property: true, membership: { include: { plan: true } } },
+      });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   // ============================================================
