@@ -31,6 +31,9 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Prisma validate
+        run: npx prisma validate
+
       - name: Prisma generate
         run: npx prisma generate
 
@@ -41,4 +44,7 @@ jobs:
         run: npm run build
 
       - name: Unit Tests
+        run: npm test -- --runInBand
+
+      - name: Property Unit Tests
         run: npm run test:unit:properties
