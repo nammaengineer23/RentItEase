@@ -307,18 +307,49 @@ export class MembershipService {
       );
     }
 
-    const existingActive = await this.prisma.membership.findFirst({
-      where: {
-        userId: membership.userId,
-        status: MembershipStatus.ACTIVE,
-        NOT: { id },
-      },
-    });
+    const startDate = new Date();
+    const endDate = new Date(startDate);
 
-    if (existingActive) {
-      throw new BadRequestException(
-        'User already has another active membership',
-      );
+    endDate.setDate(endDate.getDate() + membership.plan.durationDays);
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const existingActive = await tx.membership.findFirst({
+          where: {
+            userId: membership.userId,
+            status: MembershipStatus.ACTIVE,
+            NOT: { id },
+          },
+        });
+
+        if (existingActive) {
+          throw new BadRequestException(
+            'User already has another active membership',
+          );
+        }
+
+        return tx.membership.update({
+          where: { id },
+          data: {
+            status: MembershipStatus.ACTIVE,
+            startDate,
+            endDate,
+            activatedAt: startDate,
+            expiredAt: null,
+            cancelledAt: null,
+          },
+          include: {
+            plan: true,
+          },
+        });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error: any) {
+      if (error?.code === 'P2034') {
+        throw new BadRequestException(
+          'Another membership activation is in progress. Please retry.',
+        );
+      }
+      throw error;
     }
 
     const startDate = new Date();
