@@ -15,7 +15,7 @@ import {
     UserRole,
   } from '@prisma/client';
   
-  import { createHmac, timingSafeEqual } from 'crypto';
+  import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
   
   import { PrismaService } from '../../prisma/prisma.service';
   import { serializePrisma } from '../../common/utils/prisma-response.util';
@@ -127,6 +127,7 @@ import {
       const currency = 'INR';
       const receipt = 'booking_' + booking.id;
       const reservationOrderId = 'pending_' + booking.id;
+      const reservationStaleAfterMs = 2 * 60 * 1000;
       let reservedPayment = await this.prisma.payment.findUnique({ where: { bookingId: booking.id } });
 
       if (reservedPayment?.status === PaymentStatus.CREATED) {
@@ -136,6 +137,33 @@ import {
         return this.paymentOrderResponse(reservedPayment, booking);
       }
 
+      let reservationToken = randomUUID();
+
+      if (reservedPayment?.status === PaymentStatus.PENDING && reservedPayment.razorpayOrderId === reservationOrderId) {
+        const isStale = Date.now() - reservedPayment.updatedAt.getTime() >= reservationStaleAfterMs;
+
+        if (!isStale) {
+          return this.paymentOrderResponse(reservedPayment, booking);
+        }
+
+        const reclaimed = await this.prisma.payment.updateMany({
+          where: {
+            id: reservedPayment.id,
+            status: PaymentStatus.PENDING,
+            razorpayOrderId: reservationOrderId,
+            orderCreationToken: reservedPayment.orderCreationToken,
+            updatedAt: reservedPayment.updatedAt,
+          },
+          data: { orderCreationToken: reservationToken },
+        });
+
+        if (reclaimed.count !== 1) {
+          const current = await this.prisma.payment.findUnique({ where: { bookingId: booking.id } });
+          if (current) return this.paymentOrderResponse(current, booking);
+          throw new ServiceUnavailableException('Unable to reserve the payment attempt. Please retry.');
+        }
+      }
+
       try {
         reservedPayment = await this.prisma.$transaction(async (tx) => {
           const current = await tx.payment.findUnique({ where: { bookingId: booking.id } });
@@ -143,9 +171,18 @@ import {
           if (current && current.status !== PaymentStatus.FAILED && current.status !== PaymentStatus.REFUNDED) return current;
 
           if (current) {
+            reservationToken = randomUUID();
             const claimed = await tx.payment.updateMany({
               where: { id: current.id, status: { in: [PaymentStatus.FAILED, PaymentStatus.REFUNDED] } },
-              data: { status: PaymentStatus.PENDING, razorpayOrderId: reservationOrderId, amount: totalAmount, currency, failedAt: null, failureReason: null },
+              data: {
+                status: PaymentStatus.PENDING,
+                razorpayOrderId: reservationOrderId,
+                orderCreationToken: reservationToken,
+                amount: totalAmount,
+                currency,
+                failedAt: null,
+                failureReason: null,
+              },
             });
             if (claimed.count !== 1) throw new BadRequestException('Another payment order request is already in progress. Please retry shortly.');
             return tx.payment.findUniqueOrThrow({ where: { id: current.id } });
@@ -159,8 +196,16 @@ import {
             if (transitioned.count !== 1) throw new BadRequestException('Booking state changed while creating the payment order. Please retry.');
           }
 
+          reservationToken = randomUUID();
           return tx.payment.create({
-            data: { bookingId: booking.id, amount: totalAmount, currency, status: PaymentStatus.PENDING, razorpayOrderId: reservationOrderId },
+            data: {
+              bookingId: booking.id,
+              amount: totalAmount,
+              currency,
+              status: PaymentStatus.PENDING,
+              razorpayOrderId: reservationOrderId,
+              orderCreationToken: reservationToken,
+            },
           });
         });
       } catch (error: any) {
@@ -177,7 +222,7 @@ import {
       }
 
       if (!reservedPayment) throw new ServiceUnavailableException('Unable to reserve the payment attempt. Please try again.');
-      if (reservedPayment.status !== PaymentStatus.PENDING || reservedPayment.razorpayOrderId !== reservationOrderId) {
+      if (reservedPayment.status !== PaymentStatus.PENDING || reservedPayment.razorpayOrderId !== reservationOrderId || reservedPayment.orderCreationToken !== reservationToken) {
         return this.paymentOrderResponse(reservedPayment, booking);
       }
 
@@ -191,7 +236,7 @@ import {
         } catch (error) {
           await this.prisma.payment.updateMany({
             where: { id: reservedPayment.id, status: PaymentStatus.PENDING, razorpayOrderId: reservationOrderId },
-            data: { status: PaymentStatus.FAILED, failedAt: new Date(), failureReason: 'Razorpay order creation failed.' },
+            data: { status: PaymentStatus.FAILED, orderCreationToken: null, failedAt: new Date(), failureReason: 'Razorpay order creation failed.' },
           });
           throw error;
         }
@@ -199,7 +244,7 @@ import {
 
       const linked = await this.prisma.payment.updateMany({
         where: { id: reservedPayment.id, status: PaymentStatus.PENDING, razorpayOrderId: reservationOrderId },
-        data: { status: PaymentStatus.CREATED, razorpayOrderId: razorpayOrder.id, failedAt: null, failureReason: null },
+        data: { status: PaymentStatus.CREATED, razorpayOrderId: razorpayOrder.id, orderCreationToken: null, failedAt: null, failureReason: null },
       });
       if (linked.count !== 1) throw new BadRequestException('Payment order state changed while completing the request. Please fetch the current payment status.');
 
