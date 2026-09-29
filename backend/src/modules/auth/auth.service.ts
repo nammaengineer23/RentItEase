@@ -2,7 +2,8 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
-  TooManyRequestsException,
+  HttpException,
+  HttpStatus,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
@@ -206,7 +207,7 @@ export class AuthService {
     });
 
     if (existing?.lastSentAt && now.getTime() - existing.lastSentAt.getTime() < 30_000) {
-      throw new TooManyRequestsException('Please wait before requesting another verification code.');
+      throw new HttpException('Please wait before requesting another verification code.', HttpStatus.TOO_MANY_REQUESTS);
     }
 
     const windowActive =
@@ -215,7 +216,7 @@ export class AuthService {
     const requestCount = windowActive ? existing?.requestCount ?? 0 : 0;
 
     if (requestCount >= 5) {
-      throw new TooManyRequestsException('Too many verification code requests. Please try again later.');
+      throw new HttpException('Too many verification code requests. Please try again later.', HttpStatus.TOO_MANY_REQUESTS);
     }
 
     const otp = this.otpService.generateOtp();
@@ -239,7 +240,7 @@ export class AuthService {
         },
       });
       if (claimed.count !== 1) {
-        throw new TooManyRequestsException('Please wait before requesting another verification code.');
+        throw new HttpException('Please wait before requesting another verification code.', HttpStatus.TOO_MANY_REQUESTS);
       }
     } else {
       try {
@@ -256,7 +257,7 @@ export class AuthService {
         });
       } catch (error: any) {
         if (error?.code === 'P2002') {
-          throw new TooManyRequestsException('Please wait before requesting another verification code.');
+          throw new HttpException('Please wait before requesting another verification code.', HttpStatus.TOO_MANY_REQUESTS);
         }
         throw error;
       }
@@ -606,7 +607,7 @@ export class AuthService {
     const tokens = await this.generateTokens(
       payload.sub,
       payload.email,
-      payload.familyId,
+      payload.familyId as `${string}-${string}-${string}-${string}-${string}`,
     );
 
     const rotated = await this.prisma.$transaction(async (tx) => {
@@ -638,7 +639,7 @@ export class AuthService {
       await tx.refreshToken.create({
         data: {
           jti: decoded.jti,
-          familyId: payload.familyId,
+          familyId: payload.familyId as `${string}-${string}-${string}-${string}-${string}`,
           token: hashedToken,
           userId: payload.sub,
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
