@@ -260,7 +260,7 @@ class _WebLandingPageState extends ConsumerState<WebLandingPage> {
   static final _howItWorksKey = GlobalKey();
 
   static Future<void> _openAdminPanel() => launchUrl(
-        Uri.parse('https://rentitease.com/admin-panel/login'),
+        Uri.parse('https://rentitease.com/admin-panel/#/login'),
         webOnlyWindowName: '_self',
       );
 
@@ -280,7 +280,7 @@ class _WebNavigationMenu extends StatelessWidget {
         onSelected: (path) {
           if (path == '/admin-panel/login') {
             launchUrl(
-              Uri.parse('https://rentitease.com/admin-panel/login'),
+              Uri.parse('https://rentitease.com/admin-panel/#/login'),
               webOnlyWindowName: '_self',
             );
             return;
