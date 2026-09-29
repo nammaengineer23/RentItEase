@@ -57,3 +57,9 @@ jobs:
 
       - name: Property Unit Tests
         run: npm run test:unit:properties
+
+      - name: Security / configuration audit
+        working-directory: .
+        run: |
+          chmod +x scripts/security-audit.sh
+          ./scripts/security-audit.sh
