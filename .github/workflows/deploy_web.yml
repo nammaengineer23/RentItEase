@@ -5,11 +5,6 @@ on:
     workflows: ["RentItEase - Release E2E / RC1"]
     types: [completed]
   workflow_dispatch:
-    inputs:
-      apk_artifact_run_id:
-        description: "Release workflow run containing the website APK artifact"
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -64,7 +59,7 @@ jobs:
       - name: Validate Cloudflare SEO routes
         run: node scripts/test-worker-seo.mjs
 
-      - name: Build production web
+      - name: Build production web artifact
         working-directory: mobile_app
         env:
           FACEBOOK_PAGE_URL: ${{ vars.FACEBOOK_PAGE_URL }}
@@ -102,6 +97,9 @@ jobs:
       # build/web so a normal website deploy cannot be blocked by its size.
       # /download continues to provide the release download URL managed by
       # the Worker/release flow.
+
+      - name: Verify web deployment artifact
+        run: test -f mobile_app/build/web/index.html
 
       - name: Deploy to Cloudflare Workers
         env:
