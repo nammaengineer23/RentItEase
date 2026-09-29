@@ -677,22 +677,42 @@ import {
             ? orderEntity.id
             : undefined;
 
-      let event;
-      try {
-        event = await this.prisma.paymentWebhookEvent.create({
-          data: {
-            eventId,
-            eventType,
-            razorpayOrderId,
-            razorpayPaymentId,
-            payload,
-          },
-        });
-      } catch (error: any) {
-        if (error?.code === 'P2002') {
-          return { success: true, message: 'Webhook event already processed.' };
+      let event = await this.prisma.paymentWebhookEvent.findUnique({
+        where: { eventId },
+      });
+
+      if (event?.status === 'PROCESSED' || event?.status === 'IGNORED') {
+        return { success: true, message: 'Webhook event already processed.' };
+      }
+
+      if (!event) {
+        try {
+          event = await this.prisma.paymentWebhookEvent.create({
+            data: {
+              eventId,
+              eventType,
+              razorpayOrderId,
+              razorpayPaymentId,
+              payload,
+            },
+          });
+        } catch (error: any) {
+          if (error?.code === 'P2002') {
+            event = await this.prisma.paymentWebhookEvent.findUnique({
+              where: { eventId },
+            });
+            if (!event) throw error;
+            if (event.status === 'PROCESSED' || event.status === 'IGNORED') {
+              return { success: true, message: 'Webhook event already processed.' };
+            }
+          } else {
+            throw error;
+          }
         }
-        throw error;
+      }
+
+      if (!event) {
+        throw new ServiceUnavailableException('Unable to record Razorpay webhook event.');
       }
 
       try {
@@ -866,6 +886,152 @@ import {
       if (result.claimed && result.payment) {
         await this.sendPaymentSuccessNotifications(payment);
       }
+    }
+
+    async reconcileRefund(refundId: string, user: any) {
+      if (user.role !== UserRole.ADMIN) {
+        throw new ForbiddenException('Only administrators can reconcile payment refunds.');
+      }
+
+      const refund = await this.prisma.paymentRefund.findUnique({
+        where: { id: refundId },
+        include: { payment: { include: { booking: true } } },
+      });
+
+      if (!refund) throw new NotFoundException('Refund record not found.');
+      if (refund.status === 'PROCESSED' || refund.status === 'FAILED') {
+        return { success: true, message: 'Refund is already reconciled.', data: serializePrisma(refund) };
+      }
+
+      if (!refund.payment.razorpayPaymentId) {
+        throw new BadRequestException('Razorpay payment ID is missing.');
+      }
+
+      let gatewayRefund: any = null;
+      if (refund.razorpayRefundId) {
+        try {
+          gatewayRefund = await this.razorpay.refunds.fetch(refund.razorpayRefundId);
+        } catch {
+          throw new ServiceUnavailableException(
+            'Unable to fetch the Razorpay refund right now. No new refund will be created.',
+          );
+        }
+      } else {
+        try {
+          const gatewayPayment: any = await this.razorpay.payments.fetch(
+            refund.payment.razorpayPaymentId,
+          );
+          const expectedAmountInPaise = Math.round(Number(refund.amount) * 100);
+          const refundedAmount = Number(gatewayPayment?.amount_refunded ?? 0);
+
+          if (
+            gatewayPayment?.id !== refund.payment.razorpayPaymentId ||
+            gatewayPayment?.currency !== refund.currency ||
+            !Number.isSafeInteger(expectedAmountInPaise) ||
+            refundedAmount < expectedAmountInPaise
+          ) {
+            throw new BadRequestException(
+              'Razorpay payment does not confirm this refund. Manual reconciliation is required.',
+            );
+          }
+
+          const processed = gatewayPayment?.refund_status === 'full' ||
+            gatewayPayment?.refund_status === 'processed' ||
+            refundedAmount === expectedAmountInPaise;
+
+          if (!processed) {
+            return {
+              success: true,
+              message: 'Razorpay has not confirmed the refund yet. No new refund was created.',
+              data: serializePrisma(refund),
+            };
+          }
+
+          const updated = await this.prisma.$transaction(async (tx) => {
+            const current = await tx.paymentRefund.update({
+              where: { id: refund.id },
+              data: {
+                status: 'PROCESSED',
+                processedAt: new Date(),
+                failureReason: null,
+              },
+            });
+
+            await tx.payment.updateMany({
+              where: { id: refund.paymentId, status: PaymentStatus.SUCCESS },
+              data: { status: PaymentStatus.REFUNDED },
+            });
+
+            return current;
+          });
+
+          return {
+            success: true,
+            message: 'Refund reconciled from the Razorpay payment record.',
+            data: serializePrisma(updated),
+          };
+        } catch (error: any) {
+          if (
+            error instanceof BadRequestException ||
+            error instanceof NotFoundException
+          ) {
+            throw error;
+          }
+          throw new ServiceUnavailableException(
+            'Unable to fetch the Razorpay payment right now. No new refund will be created.',
+          );
+        }
+      }
+
+      if (
+        gatewayRefund?.payment_id !== refund.payment.razorpayPaymentId ||
+        gatewayRefund?.currency !== refund.currency ||
+        gatewayRefund?.amount !== Math.round(Number(refund.amount) * 100)
+      ) {
+        throw new BadRequestException(
+          'Razorpay refund details do not match the local refund. Manual reconciliation is required.',
+        );
+      }
+
+      const status = gatewayRefund?.status;
+      if (status === 'failed') {
+        const updated = await this.prisma.paymentRefund.update({
+          where: { id: refund.id },
+          data: {
+            status: 'FAILED',
+            failureReason: gatewayRefund?.error_description?.slice(0, 1000) || 'Razorpay refund failed.',
+          },
+        });
+        return { success: true, message: 'Refund failure reconciled.', data: serializePrisma(updated) };
+      }
+
+      if (status !== 'processed') {
+        return {
+          success: true,
+          message: 'Refund is still pending at Razorpay. No new refund was created.',
+          data: serializePrisma(refund),
+        };
+      }
+
+      const updated = await this.prisma.$transaction(async (tx) => {
+        const current = await tx.paymentRefund.update({
+          where: { id: refund.id },
+          data: { status: 'PROCESSED', processedAt: new Date(), failureReason: null },
+        });
+
+        await tx.payment.updateMany({
+          where: { id: refund.paymentId, status: PaymentStatus.SUCCESS },
+          data: { status: PaymentStatus.REFUNDED },
+        });
+
+        return current;
+      });
+
+      return {
+        success: true,
+        message: 'Refund reconciled with Razorpay.',
+        data: serializePrisma(updated),
+      };
     }
 
     private async reconcileRefundWebhook(
