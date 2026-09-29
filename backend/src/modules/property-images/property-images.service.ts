@@ -16,6 +16,10 @@ import { PropertyImageSection, UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { StorageService } from '../../storage/storage.service';
 import { ReorderImagesDto } from './dto/reorder-images.dto';
+import {
+  validateImageContent,
+  validateVideoContent,
+} from '../../common/validators/upload-content.validator';
 
 const execFileAsync = promisify(execFile);
 
@@ -59,6 +63,13 @@ export class PropertyImagesService {
       throw new BadRequestException(
         'Maximum 2 images can be uploaded at a time.',
       );
+    }
+
+    for (const file of files) {
+      if (file.size > 5 * 1024 * 1024) {
+        throw new BadRequestException('Each image must not exceed 5 MB.');
+      }
+      await validateImageContent(file);
     }
 
     // ==========================================
@@ -170,22 +181,15 @@ export class PropertyImagesService {
       throw new BadRequestException('No video uploaded.');
     }
 
-    const allowedMimeTypes = [
-      'video/mp4',
-      'video/quicktime',
-      'video/x-m4v',
-    ];
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException(
-        'Only MP4, MOV and M4V videos are allowed.',
-      );
-    }
+    await validateVideoContent(file);
 
     if (file.size > 100 * 1024 * 1024) {
       throw new BadRequestException(
         'The property video must not exceed 100 MB.',
       );
     }
+
+    await this.readVideoDurationSeconds(file);
 
     const uploaded = await this.storageService.uploadVideo(
       file,
