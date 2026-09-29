@@ -80,7 +80,7 @@ export class FirebaseService {
   }
 
   async verifyToken(idToken: string) {
-    return this.getAuth().verifyIdToken(idToken);
+    return this.getAuth().verifyIdToken(idToken, true);
   }
 
   // =====================================
