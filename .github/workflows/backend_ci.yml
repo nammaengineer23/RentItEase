@@ -52,9 +52,6 @@ jobs:
       - name: Build Backend
         run: npm run build
 
-      - name: Unit Tests
-        run: npm test -- --runInBand
-
       - name: Property Unit Tests
         run: npm run test:unit:properties
 
@@ -63,3 +60,48 @@ jobs:
         run: |
           chmod +x scripts/security-audit.sh
           ./scripts/security-audit.sh
+
+  unit-tests:
+    name: Unit Test — ${{ matrix.test_file }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test_file:
+          - src/app.controller.spec.ts
+          - src/mail/mail.service.spec.ts
+          - src/modules/auth/auth.controller.spec.ts
+          - src/modules/auth/auth.refresh-token-security.spec.ts
+          - src/modules/auth/auth.service.spec.ts
+          - src/modules/favorites/favorites.service.spec.ts
+          - src/modules/properties/properties.service.spec.ts
+          - src/modules/property-images/property-images.service.spec.ts
+          - src/modules/social-media/social-media.service.spec.ts
+          - src/modules/users/users.controller.spec.ts
+          - src/modules/users/users.service.spec.ts
+          - src/storage/storage.service.spec.ts
+          - test/payments-reconciliation.spec.ts
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Run unit test file
+        run: npx jest --runInBand "${{ matrix.test_file }}"
