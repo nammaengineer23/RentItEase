@@ -584,7 +584,7 @@ import {
       }
 
       try {
-        if (eventType === 'payment.captured' || eventType === 'order.paid') {
+        if (eventType === 'payment.captured') {
           if (!razorpayOrderId || !razorpayPaymentId) {
             throw new BadRequestException('Webhook payment identifiers are missing.');
           }
@@ -608,7 +608,6 @@ import {
           data: {
             status:
               eventType === 'payment.captured' ||
-              eventType === 'order.paid' ||
               eventType === 'payment.failed'
                 ? 'PROCESSED'
                 : 'IGNORED',
