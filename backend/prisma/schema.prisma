@@ -501,6 +501,7 @@ model PaymentRefund {
   currency          String             @default("INR")
   status            PaymentRefundStatus @default(PENDING)
   razorpayRefundId  String?            @unique
+  activeKey         String?            @unique
   reason            String?
   failureReason     String?
   createdAt         DateTime           @default(now())
