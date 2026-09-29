@@ -293,7 +293,7 @@ import {
         payment.status !== PaymentStatus.PENDING
       ) {
         throw new BadRequestException(
-          \`Payment cannot be verified from \${payment.status} status.\`,
+          `Payment cannot be verified from \${payment.status} status.`,
         );
       }
 
@@ -305,7 +305,7 @@ import {
       }
 
       const generatedSignature = createHmac('sha256', keySecret)
-        .update(\`\${dto.razorpayOrderId}|\${dto.razorpayPaymentId}\`)
+        .update(`\${dto.razorpayOrderId}|\${dto.razorpayPaymentId}`)
         .digest('hex');
 
       const suppliedSignature = dto.razorpaySignature.trim().toLowerCase();
@@ -402,7 +402,7 @@ import {
         });
 
         await tx.invoice.upsert({
-          where: { invoiceNumber: \`RIE-\${payment.bookingId}\` },
+          where: { invoiceNumber: `RIE-\${payment.bookingId}` },
           update: {
             status: 'PAID',
             amount: payment.amount,
@@ -410,7 +410,7 @@ import {
             paymentId: payment.id,
           },
           create: {
-            invoiceNumber: \`RIE-\${payment.bookingId}\`,
+            invoiceNumber: `RIE-\${payment.bookingId}`,
             userId: payment.booking.tenantId,
             paymentId: payment.id,
             amount: payment.amount,
@@ -418,7 +418,7 @@ import {
             totalAmount: payment.amount,
             currency: payment.currency,
             status: 'PAID',
-            description: \`Payment invoice for \${payment.booking.property.title}\`,
+            description: `Payment invoice for \${payment.booking.property.title}`,
           },
         });
 
@@ -446,7 +446,7 @@ import {
       await this.notificationsService.createNotification(
         payment.booking.tenantId,
         'Payment Successful',
-        \`Payment for "\${payment.booking.property.title}" was successful.\`,
+        `Payment for "\${payment.booking.property.title}" was successful.`,
         NotificationType.GENERAL,
         payment.booking.id,
       );
@@ -454,7 +454,7 @@ import {
       await this.pushNotificationsService.sendToUser(
         payment.booking.tenantId,
         'Payment Successful',
-        \`Payment for "\${payment.booking.property.title}" was successful.\`,
+        `Payment for "\${payment.booking.property.title}" was successful.`,
         {
           type: 'PAYMENT_SUCCESS',
           paymentId: result.payment.id,
@@ -466,7 +466,7 @@ import {
       await this.notificationsService.createNotification(
         payment.booking.property.ownerId,
         'Booking Payment Received',
-        \`Payment received for "\${payment.booking.property.title}".\`,
+        `Payment received for "\${payment.booking.property.title}".`,
         NotificationType.GENERAL,
         payment.booking.id,
       );
@@ -474,7 +474,7 @@ import {
       await this.pushNotificationsService.sendToUser(
         payment.booking.property.ownerId,
         'Booking Payment Received',
-        \`Payment received for "\${payment.booking.property.title}".\`,
+        `Payment received for "\${payment.booking.property.title}".`,
         {
           type: 'BOOKING_PAYMENT_RECEIVED',
           paymentId: result.payment.id,
