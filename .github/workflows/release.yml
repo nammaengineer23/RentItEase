@@ -137,14 +137,6 @@ jobs:
           "$APKSIGNER" verify --print-certs \
             build/app/outputs/flutter-apk/RentItEase-release.apk
 
-      - name: Upload website APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: rentitease-website-apk
-          path: mobile_app/build/app/outputs/flutter-apk/RentItEase-release.apk
-          if-no-files-found: error
-          retention-days: 7
-
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -159,12 +151,3 @@ jobs:
             Google Sign-In is enabled and the APK signing certificate was
             verified against the Firebase Android configuration during build.
 
-
-      - name: Trigger website deployment with latest APK
-        env:
-          GH_TOKEN: ${{ github.token }}
-        working-directory: .
-        run: |
-          gh workflow run deploy_web.yml \
-            --ref main \
-            -f apk_artifact_run_id="${{ github.run_id }}"
