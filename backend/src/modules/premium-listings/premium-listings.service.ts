@@ -67,6 +67,10 @@ export class PremiumListingsService {
           propertyId,
           status: PremiumListingStatus.ACTIVE,
         },
+        include: {
+          property: true,
+          membership: { include: { plan: true } },
+        },
       });
       if (concurrent) return concurrent;
 
@@ -351,21 +355,60 @@ export class PremiumListingsService {
       );
     }
 
-    const existingActive =
-      await this.prisma.premiumListing.findFirst({
-        where: {
-          propertyId: listing.propertyId,
-          status: PremiumListingStatus.ACTIVE,
-          NOT: {
-            id,
-          },
-        },
-      });
+    const startDate = new Date();
+    const endDate = new Date(startDate);
 
-    if (existingActive) {
-      throw new BadRequestException(
-        'This property already has another active premium listing',
-      );
+    endDate.setDate(
+      endDate.getDate() + listing.durationDays,
+    );
+
+    if (membership.endDate && endDate > membership.endDate) {
+      endDate.setTime(membership.endDate.getTime());
+    }
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const existingActive = await tx.premiumListing.findFirst({
+          where: {
+            propertyId: listing.propertyId,
+            status: PremiumListingStatus.ACTIVE,
+            NOT: { id },
+          },
+        });
+
+        if (existingActive) {
+          throw new BadRequestException(
+            'This property already has another active premium listing',
+          );
+        }
+
+        return tx.premiumListing.update({
+          where: { id },
+          data: {
+            status: PremiumListingStatus.ACTIVE,
+            startDate,
+            endDate,
+            activatedAt: startDate,
+            expiredAt: null,
+            cancelledAt: null,
+          },
+          include: {
+            property: true,
+            membership: {
+              include: {
+                plan: true,
+              },
+            },
+          },
+        });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error: any) {
+      if (error?.code === 'P2034') {
+        throw new BadRequestException(
+          'Another premium listing activation is in progress. Please retry.',
+        );
+      }
+      throw error;
     }
 
     const startDate = new Date();
