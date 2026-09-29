@@ -126,6 +126,9 @@ import {
       if (booking.status !== BookingStatus.APPROVED && booking.status !== BookingStatus.PAYMENT_PENDING) {
         throw new BadRequestException('Payment cannot be created for booking in ' + booking.status + ' status.');
       }
+      if (!booking.property.isAvailable && booking.payment?.status !== PaymentStatus.PENDING) {
+        throw new BadRequestException('This property is no longer available for payment.');
+      }
       if (booking.payment?.status === PaymentStatus.SUCCESS) {
         throw new BadRequestException('This booking has already been paid.');
       }
