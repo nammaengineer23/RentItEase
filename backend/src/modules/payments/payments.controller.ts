@@ -51,6 +51,16 @@ import {
     // Verify Payment
     // =====================================
   
+    @Post('webhook')
+    @ApiOperation({ summary: 'Receive Razorpay webhook events' })
+    handleWebhook(@Request() req: any) {
+      return this.paymentsService.handleWebhook(
+        req.rawBody,
+        req.headers['x-razorpay-signature'],
+        req.headers['x-razorpay-event-id'],
+      );
+    }
+
     @Post('verify')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
