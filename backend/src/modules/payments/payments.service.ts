@@ -662,8 +662,14 @@ import {
 
       const eventType = typeof payload?.event === 'string' ? payload.event : 'unknown';
       const entity = payload?.payload?.payment?.entity;
+      const refundEntity = payload?.payload?.refund?.entity;
       const orderEntity = payload?.payload?.order?.entity;
-      const razorpayPaymentId = typeof entity?.id === 'string' ? entity.id : undefined;
+      const razorpayPaymentId =
+        typeof entity?.id === 'string'
+          ? entity.id
+          : typeof refundEntity?.payment_id === 'string'
+            ? refundEntity.payment_id
+            : undefined;
       const razorpayOrderId =
         typeof entity?.order_id === 'string'
           ? entity.order_id
@@ -699,6 +705,23 @@ import {
             razorpayOrderId,
             razorpayPaymentId,
           );
+        } else if (
+          eventType === 'refund.created' ||
+          eventType === 'refund.processed' ||
+          eventType === 'refund.failed'
+        ) {
+          if (!refundEntity?.id) {
+            throw new BadRequestException('Webhook refund identifier is missing.');
+          }
+          await this.reconcileRefundWebhook(
+            refundEntity.id,
+            eventType,
+            refundEntity.payment_id,
+            refundEntity.amount,
+            refundEntity.currency,
+            refundEntity.status,
+            refundEntity.error_description ?? refundEntity.error_reason,
+          );
         } else if (eventType === 'payment.failed') {
           if (razorpayOrderId) {
             await this.reconcileFailedPayment(
@@ -714,7 +737,10 @@ import {
           data: {
             status:
               eventType === 'payment.captured' ||
-              eventType === 'payment.failed'
+              eventType === 'payment.failed' ||
+              eventType === 'refund.created' ||
+              eventType === 'refund.processed' ||
+              eventType === 'refund.failed'
                 ? 'PROCESSED'
                 : 'IGNORED',
             processedAt: new Date(),
@@ -840,6 +866,71 @@ import {
       if (result.claimed && result.payment) {
         await this.sendPaymentSuccessNotifications(payment);
       }
+    }
+
+    private async reconcileRefundWebhook(
+      razorpayRefundId: string,
+      eventType: string,
+      razorpayPaymentId: string | undefined,
+      amount: number | undefined,
+      currency: string | undefined,
+      razorpayStatus: string | undefined,
+      failureReason: string | undefined,
+    ) {
+      const refund = await this.prisma.paymentRefund.findFirst({
+        where: {
+          razorpayRefundId,
+          ...(razorpayPaymentId
+            ? { payment: { razorpayPaymentId } }
+            : {}),
+        },
+        include: { payment: true },
+      });
+
+      if (!refund) return;
+
+      const expectedAmountInPaise = Math.round(Number(refund.amount) * 100);
+      if (
+        !Number.isSafeInteger(expectedAmountInPaise) ||
+        amount !== undefined && amount !== expectedAmountInPaise ||
+        currency !== undefined && currency !== refund.currency
+      ) {
+        throw new BadRequestException('Razorpay refund details failed reconciliation.');
+      }
+
+      const processed =
+        eventType === 'refund.processed' ||
+        razorpayStatus === 'processed';
+      const failed = eventType === 'refund.failed' || razorpayStatus === 'failed';
+
+      if (failed) {
+        await this.prisma.paymentRefund.update({
+          where: { id: refund.id },
+          data: {
+            status: 'FAILED',
+            failureReason: failureReason?.slice(0, 1000) || 'Razorpay refund failed.',
+          },
+        });
+        return;
+      }
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.paymentRefund.update({
+          where: { id: refund.id },
+          data: {
+            status: processed ? 'PROCESSED' : 'PENDING',
+            processedAt: processed ? new Date() : null,
+            failureReason: null,
+          },
+        });
+
+        if (processed && Number(refund.amount) >= Number(refund.payment.amount)) {
+          await tx.payment.updateMany({
+            where: { id: refund.paymentId, status: PaymentStatus.SUCCESS },
+            data: { status: PaymentStatus.REFUNDED },
+          });
+        }
+      });
     }
 
     private async reconcileFailedPayment(
