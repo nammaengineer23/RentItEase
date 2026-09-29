@@ -108,6 +108,17 @@ import {
     // Get Payment
     // =====================================
   
+    @Get(':id/reconciliation')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Check payment, booking, invoice and refund consistency' })
+    reconcilePaymentState(
+      @Param('id') paymentId: string,
+      @Request() req: any,
+    ) {
+      return this.paymentsService.reconcilePaymentState(paymentId, req.user);
+    }
+
     @Get(':id')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
