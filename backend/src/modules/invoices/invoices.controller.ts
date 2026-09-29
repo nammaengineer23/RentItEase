@@ -1,6 +1,9 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
@@ -13,13 +16,21 @@ export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
   @Post()
-  create(@Body() dto: CreateInvoiceDto) {
-    return this.invoicesService.create(dto);
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  create(
+    @Body() dto: CreateInvoiceDto,
+    @CurrentUser() user: { id: string; role: UserRole },
+  ) {
+    return this.invoicesService.create(dto, user);
   }
 
   @Get('user/:userId')
-  findAllByUser(@Param('userId') userId: string) {
-    return this.invoicesService.findAllByUser(userId);
+  findAllByUser(
+    @Param('userId') userId: string,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.invoicesService.findAllByUser(userId, user);
   }
 
   @Get('payment/:paymentId')
@@ -47,22 +58,38 @@ export class InvoicesController {
   }
 
   @Get('number/:invoiceNumber')
-  findByInvoiceNumber(@Param('invoiceNumber') invoiceNumber: string) {
-    return this.invoicesService.findByInvoiceNumber(invoiceNumber);
+  findByInvoiceNumber(
+    @Param('invoiceNumber') invoiceNumber: string,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.invoicesService.findByInvoiceNumber(invoiceNumber, user);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.invoicesService.findOne(id);
+  findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.invoicesService.findOne(id, user);
   }
 
   @Patch(':id/paid')
-  markPaid(@Param('id') id: string) {
-    return this.invoicesService.markPaid(id);
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  markPaid(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string; role: UserRole },
+  ) {
+    return this.invoicesService.markPaid(id, user);
   }
 
   @Patch(':id/cancel')
-  cancel(@Param('id') id: string) {
-    return this.invoicesService.cancel(id);
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  cancel(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string; role: UserRole },
+  ) {
+    return this.invoicesService.cancel(id, user);
   }
 }
