@@ -568,6 +568,7 @@ import {
           amount: payment.amount,
           currency: payment.currency,
           status: 'PENDING',
+          activeKey: payment.id,
           reason: reason?.trim().slice(0, 500) || null,
         },
       });
@@ -590,6 +591,7 @@ import {
           data: {
             razorpayRefundId: razorpayRefund.id,
             status: razorpayRefund.status === 'processed' ? 'PROCESSED' : 'PENDING',
+            activeKey: razorpayRefund.status === 'processed' ? null : payment.id,
             processedAt: razorpayRefund.status === 'processed' ? new Date() : null,
           },
         });
@@ -615,6 +617,7 @@ import {
           where: { id: refund.id },
           data: {
             status: 'UNKNOWN',
+            activeKey: payment.id,
             failureReason: String(error?.message ?? 'Refund request outcome is unknown.').slice(0, 1000),
           },
         });
@@ -952,6 +955,7 @@ import {
               where: { id: refund.id },
               data: {
                 status: 'PROCESSED',
+                activeKey: null,
                 processedAt: new Date(),
                 failureReason: null,
               },
@@ -999,6 +1003,7 @@ import {
           where: { id: refund.id },
           data: {
             status: 'FAILED',
+            activeKey: null,
             failureReason: gatewayRefund?.error_description?.slice(0, 1000) || 'Razorpay refund failed.',
           },
         });
@@ -1016,7 +1021,7 @@ import {
       const updated = await this.prisma.$transaction(async (tx) => {
         const current = await tx.paymentRefund.update({
           where: { id: refund.id },
-          data: { status: 'PROCESSED', processedAt: new Date(), failureReason: null },
+          data: { status: 'PROCESSED', activeKey: null, processedAt: new Date(), failureReason: null },
         });
 
         await tx.payment.updateMany({
@@ -1093,6 +1098,7 @@ import {
           where: { id: refund.id },
           data: {
             status: 'FAILED',
+            activeKey: null,
             failureReason: failureReason?.slice(0, 1000) || 'Razorpay refund failed.',
           },
         });
@@ -1104,6 +1110,7 @@ import {
           where: { id: refund.id },
           data: {
             status: processed ? 'PROCESSED' : 'PENDING',
+            activeKey: processed ? null : refund.paymentId, 
             processedAt: processed ? new Date() : null,
             failureReason: null,
           },
