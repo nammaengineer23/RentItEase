@@ -493,6 +493,24 @@ model Payment {
   @@index([createdAt])
 }
 
+model PaymentWebhookEvent {
+  id                String                  @id @default(cuid())
+  eventId           String                  @unique
+  eventType         String
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  status            PaymentWebhookEventStatus @default(RECEIVED)
+  payload           Json
+  errorMessage      String?
+  processedAt       DateTime?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  @@index([eventType, createdAt])
+  @@index([razorpayOrderId])
+  @@index([razorpayPaymentId])
+}
+
 model Notification {
   id        String           @id @default(cuid())
   userId    String
@@ -667,6 +685,13 @@ enum PremiumListingStatus {
   ACTIVE
   EXPIRED
   CANCELLED
+}
+
+enum PaymentWebhookEventStatus {
+  RECEIVED
+  PROCESSED
+  IGNORED
+  FAILED
 }
 
 enum PaymentStatus {
