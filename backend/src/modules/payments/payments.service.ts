@@ -520,6 +520,112 @@ import {
 
 
     // =====================================
+    // Razorpay Refunds
+    // =====================================
+
+    async refundPayment(paymentId: string, reason: string | undefined, user: any) {
+      if (user.role !== UserRole.ADMIN) {
+        throw new ForbiddenException('Only administrators can initiate payment refunds.');
+      }
+
+      const payment = await this.prisma.payment.findUnique({
+        where: { id: paymentId },
+        include: { booking: true },
+      });
+
+      if (!payment) throw new NotFoundException('Payment not found.');
+      if (payment.status !== PaymentStatus.SUCCESS) {
+        throw new BadRequestException('Only successful payments can be refunded.');
+      }
+      if (!payment.razorpayPaymentId) {
+        throw new BadRequestException('Razorpay payment ID is missing.');
+      }
+
+      const existing = await this.prisma.paymentRefund.findFirst({
+        where: {
+          paymentId: payment.id,
+          status: { in: ['PENDING', 'UNKNOWN', 'PROCESSED'] },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (existing) {
+        return {
+          success: true,
+          message: 'A refund already exists for this payment and requires reconciliation.',
+          data: serializePrisma(existing),
+        };
+      }
+
+      const amountInPaise = Math.round(Number(payment.amount) * 100);
+      if (!Number.isSafeInteger(amountInPaise) || amountInPaise <= 0) {
+        throw new BadRequestException('Invalid refund amount.');
+      }
+
+      const refund = await this.prisma.paymentRefund.create({
+        data: {
+          paymentId: payment.id,
+          amount: payment.amount,
+          currency: payment.currency,
+          status: 'PENDING',
+          reason: reason?.trim().slice(0, 500) || null,
+        },
+      });
+
+      try {
+        const razorpayRefund: any = await this.razorpay.payments.refund(
+          payment.razorpayPaymentId,
+          {
+            amount: amountInPaise,
+            notes: {
+              paymentId: payment.id,
+              bookingId: payment.bookingId,
+              refundId: refund.id,
+            },
+          },
+        );
+
+        await this.prisma.paymentRefund.update({
+          where: { id: refund.id },
+          data: {
+            razorpayRefundId: razorpayRefund.id,
+            status: razorpayRefund.status === 'processed' ? 'PROCESSED' : 'PENDING',
+            processedAt: razorpayRefund.status === 'processed' ? new Date() : null,
+          },
+        });
+
+        if (razorpayRefund.status === 'processed') {
+          await this.prisma.payment.updateMany({
+            where: { id: payment.id, status: PaymentStatus.SUCCESS },
+            data: { status: PaymentStatus.REFUNDED },
+          });
+        }
+
+        return {
+          success: true,
+          message: 'Refund initiated successfully.',
+          data: serializePrisma({
+            ...refund,
+            razorpayRefundId: razorpayRefund.id,
+            status: razorpayRefund.status === 'processed' ? 'PROCESSED' : 'PENDING',
+          }),
+        };
+      } catch (error: any) {
+        await this.prisma.paymentRefund.update({
+          where: { id: refund.id },
+          data: {
+            status: 'UNKNOWN',
+            failureReason: String(error?.message ?? 'Refund request outcome is unknown.').slice(0, 1000),
+          },
+        });
+
+        throw new ServiceUnavailableException(
+          'Refund request outcome could not be confirmed. Reconcile the refund before retrying.',
+        );
+      }
+    }
+
+    // =====================================
     // Razorpay Webhook / Reconciliation
     // =====================================
 
