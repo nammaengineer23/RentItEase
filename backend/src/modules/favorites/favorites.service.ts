@@ -52,13 +52,23 @@ export class FavoritesService {
       );
     }
 
-  const favorite =
-  await this.prisma.favorite.create({
-    data: {
-      userId: user.id,
-      propertyId,
-    },
-  });
+    let favorite;
+    try {
+      // The compound unique constraint is the final concurrency guard.
+      favorite = await this.prisma.favorite.create({
+        data: {
+          userId: user.id,
+          propertyId,
+        },
+      });
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        throw new BadRequestException(
+          'Property already added to favorites.',
+        );
+      }
+      throw error;
+    }
 
 return {
   success: true,
