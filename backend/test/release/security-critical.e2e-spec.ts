@@ -159,4 +159,65 @@ describe('Release E2E • Critical security boundaries', () => {
 
     expect(response.status).toBe(200);
   });
+  it('8. lets admins activate/deactivate users and change owner role', async () => {
+    await request(apiUrl())
+      .patch(`/admin/status/userActive/${ownerId}`)
+      .set(auth(adminToken))
+      .send({ field: 'isActive', value: false })
+      .expect(200);
+
+    await request(apiUrl())
+      .patch(`/admin/status/userActive/${ownerId}`)
+      .set(auth(adminToken))
+      .send({ field: 'isActive', value: true })
+      .expect(200);
+
+    await request(apiUrl())
+      .patch(`/admin/status/user/${ownerId}`)
+      .set(auth(adminToken))
+      .send({ field: 'role', value: 'OWNER' })
+      .expect(200);
+  });
+
+  it('9. lets admins override property conditions without using owner APIs', async () => {
+    const { createApprovedE2EProperty } = await import('./helpers');
+    const propertyId = await createApprovedE2EProperty(
+      ownerToken,
+      adminToken,
+      'Security Status Override',
+    );
+
+    await request(apiUrl())
+      .patch(`/admin/status/propertyAvailable/${propertyId}`)
+      .set(auth(adminToken))
+      .send({ field: 'isAvailable', value: false })
+      .expect(200);
+
+    await request(apiUrl())
+      .patch(`/admin/status/propertyAvailable/${propertyId}`)
+      .set(auth(adminToken))
+      .send({ field: 'isAvailable', value: true })
+      .expect(200);
+  });
+
+  it('10. rejects unsupported status targets and invalid status values', async () => {
+    await request(apiUrl())
+      .patch('/admin/status/unknown/not-real')
+      .set(auth(adminToken))
+      .send({ field: 'status', value: 'ACTIVE' })
+      .expect(400);
+
+    await request(apiUrl())
+      .patch(`/admin/status/user/${ownerId}`)
+      .set(auth(adminToken))
+      .send({ field: 'role', value: 'NOT_A_ROLE' })
+      .expect(400);
+
+    await request(apiUrl())
+      .patch(`/admin/status/userActive/${ownerId}`)
+      .set(auth(adminToken))
+      .send({ field: 'isActive', value: 'true' })
+      .expect(400);
+  });
+
 });
