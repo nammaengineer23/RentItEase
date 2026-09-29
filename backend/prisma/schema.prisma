@@ -580,11 +580,19 @@ model Message {
 
 model RefreshToken {
   id        String   @id @default(uuid())
+  jti       String   @unique
+  familyId  String
   expiresAt DateTime
   userId    String
   createdAt DateTime @default(now())
+  usedAt    DateTime?
+  revokedAt DateTime?
   token     String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, familyId])
+  @@index([familyId])
+  @@index([expiresAt])
 }
 
 model PasswordResetToken {
