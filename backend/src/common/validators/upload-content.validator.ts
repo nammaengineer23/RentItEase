@@ -77,7 +77,7 @@ export async function validateVideoContent(
     throw new BadRequestException('No video content uploaded.');
   }
 
-  const detected = await fileTypeFromBuffer(file.buffer);
+  const detected = await detectFileType(file.buffer);
   if (!detected || !VIDEO_TYPES.has(detected.mime)) {
     throw new BadRequestException(
       'The uploaded video content is not a supported MP4, MOV or M4V video.',
