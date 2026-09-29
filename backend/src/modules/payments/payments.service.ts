@@ -1218,6 +1218,83 @@ import {
       );
     }
 
+    async reconcilePaymentState(paymentId: string, user: any) {
+      if (user.role !== UserRole.ADMIN) {
+        throw new ForbiddenException('Only administrators can reconcile payment state.');
+      }
+
+      const payment = await this.prisma.payment.findUnique({
+        where: { id: paymentId },
+        include: {
+          booking: { include: { property: true } },
+          invoices: true,
+          refunds: { orderBy: { createdAt: 'desc' } },
+        },
+      });
+
+      if (!payment) throw new NotFoundException('Payment not found.');
+
+      const fullRefund = payment.refunds.find(
+        (refund: any) =>
+          refund.status === 'PROCESSED' &&
+          Number(refund.amount) === Number(payment.amount),
+      );
+      const latestActiveRefund = payment.refunds.find(
+        (refund: any) => refund.status === 'PENDING' || refund.status === 'UNKNOWN',
+      );
+      const invoice = payment.invoices.find(
+        (item: any) => item.paymentId === payment.id,
+      );
+
+      const checks = {
+        paymentHasBooking: payment.bookingId === payment.booking.id,
+        bookingMatchesPaymentState:
+          payment.status === PaymentStatus.SUCCESS ||
+          payment.status === PaymentStatus.REFUNDED
+            ? payment.booking.status === BookingStatus.PAID
+            : true,
+        paymentHasInvoice:
+          payment.status === PaymentStatus.SUCCESS ||
+          payment.status === PaymentStatus.REFUNDED
+            ? Boolean(invoice)
+            : true,
+        invoiceAmountMatches:
+          !invoice ||
+          (Number(invoice.amount) === Number(payment.amount) &&
+            Number(invoice.totalAmount) === Number(payment.amount) &&
+            invoice.currency === payment.currency),
+        propertyAvailabilityMatchesPayment:
+          payment.status === PaymentStatus.SUCCESS ||
+          payment.status === PaymentStatus.REFUNDED
+            ? payment.booking.property.isAvailable === false
+            : true,
+        fullRefundMatchesPayment:
+          payment.status === PaymentStatus.REFUNDED
+            ? Boolean(fullRefund)
+            : true,
+        noUnreconciledRefund:
+          payment.status === PaymentStatus.REFUNDED
+            ? !latestActiveRefund
+            : true,
+      };
+
+      const consistent = Object.values(checks).every(Boolean);
+
+      return {
+        success: true,
+        data: serializePrisma({
+          paymentId: payment.id,
+          status: payment.status,
+          bookingId: payment.bookingId,
+          invoiceId: invoice?.id ?? null,
+          refundId: fullRefund?.id ?? null,
+          activeRefundId: latestActiveRefund?.id ?? null,
+          consistent,
+          checks,
+        }),
+      };
+    }
+
     // =====================================
     // Get Payment
     // =====================================
