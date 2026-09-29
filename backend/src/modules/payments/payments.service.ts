@@ -544,7 +544,7 @@ import {
       const existing = await this.prisma.paymentRefund.findFirst({
         where: {
           paymentId: payment.id,
-          status: { in: ['PENDING', 'UNKNOWN', 'PROCESSED'] },
+          status: { in: ['PENDING', 'UNKNOWN'] },
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -562,16 +562,37 @@ import {
         throw new BadRequestException('Invalid refund amount.');
       }
 
-      const refund = await this.prisma.paymentRefund.create({
-        data: {
-          paymentId: payment.id,
-          amount: payment.amount,
-          currency: payment.currency,
-          status: 'PENDING',
-          activeKey: payment.id,
-          reason: reason?.trim().slice(0, 500) || null,
-        },
-      });
+      let refund;
+      try {
+        refund = await this.prisma.paymentRefund.create({
+          data: {
+            paymentId: payment.id,
+            amount: payment.amount,
+            currency: payment.currency,
+            status: 'PENDING',
+            activeKey: payment.id,
+            reason: reason?.trim().slice(0, 500) || null,
+          },
+        });
+      } catch (error: any) {
+        if (error?.code === 'P2002') {
+          const activeRefund = await this.prisma.paymentRefund.findFirst({
+            where: {
+              paymentId: payment.id,
+              status: { in: ['PENDING', 'UNKNOWN'] },
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+          if (activeRefund) {
+            return {
+              success: true,
+              message: 'A refund already exists for this payment and requires reconciliation.',
+              data: serializePrisma(activeRefund),
+            };
+          }
+        }
+        throw error;
+      }
 
       try {
         const razorpayRefund: any = await this.razorpay.payments.refund(
