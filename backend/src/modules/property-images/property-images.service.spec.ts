@@ -18,6 +18,7 @@ describe('PropertyImagesService video tours', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     service = new PropertyImagesService(prisma, storage);
+    jest.spyOn(service as any, 'readVideoDurationSeconds').mockResolvedValue(45);
   });
 
   function videoFile(durationSeconds: number): Express.Multer.File {
