@@ -60,6 +60,8 @@ describe('PropertyImagesService video tours', () => {
       ownerId: 'owner-1',
     });
 
+    (service as any).readVideoDurationSeconds.mockResolvedValueOnce(61);
+
     await expect(
       service.uploadVideo(
         'property-1',
