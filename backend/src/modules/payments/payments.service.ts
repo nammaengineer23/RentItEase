@@ -15,7 +15,7 @@ import {
     UserRole,
   } from '@prisma/client';
   
-  import { createHmac } from 'crypto';
+  import { createHmac, timingSafeEqual } from 'crypto';
   
   import { PrismaService } from '../../prisma/prisma.service';
   import { serializePrisma } from '../../common/utils/prisma-response.util';
@@ -255,49 +255,31 @@ import {
   
     async verifyPayment(dto: VerifyPaymentDto, user: any) {
       const payment = await this.prisma.payment.findUnique({
-        where: {
-          bookingId: dto.bookingId,
-        },
+        where: { bookingId: dto.bookingId },
         include: {
           booking: {
             include: {
               property: true,
-              tenant: {
-                select: {
-                  id: true,
-                  fullName: true,
-                  email: true,
-                  phone: true,
-                },
-              },
+              tenant: { select: { id: true, fullName: true, email: true, phone: true } },
             },
           },
         },
       });
-  
+
       if (!payment) {
-        throw new NotFoundException(
-          'Payment record not found.',
-        );
+        throw new NotFoundException('Payment record not found.');
       }
-  
-      if (
-        user.role !== UserRole.ADMIN &&
-        payment.booking.tenantId !== user.id
-      ) {
+
+      if (user.role !== UserRole.ADMIN && payment.booking.tenantId !== user.id) {
         throw new ForbiddenException(
           'You do not have permission to verify this payment.',
         );
       }
-  
-      if (
-        payment.razorpayOrderId !== dto.razorpayOrderId
-      ) {
-        throw new BadRequestException(
-          'Razorpay order ID does not match.',
-        );
+
+      if (payment.razorpayOrderId !== dto.razorpayOrderId) {
+        throw new BadRequestException('Razorpay order ID does not match.');
       }
-  
+
       if (payment.status === PaymentStatus.SUCCESS) {
         return {
           success: true,
@@ -305,166 +287,209 @@ import {
           data: serializePrisma(payment),
         };
       }
-  
-      // -------------------------------------
-      // Verify Razorpay signature
-      // -------------------------------------
-  
-      const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  
-      if (!keySecret) {
+
+      if (
+        payment.status !== PaymentStatus.CREATED &&
+        payment.status !== PaymentStatus.PENDING
+      ) {
         throw new BadRequestException(
-          'Razorpay secret is not configured.',
+          \`Payment cannot be verified from \${payment.status} status.\`,
         );
       }
-  
-      const generatedSignature = createHmac(
-        'sha256',
-        keySecret,
-      )
-        .update(
-          `${dto.razorpayOrderId}|${dto.razorpayPaymentId}`,
-        )
+
+      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+      if (!keySecret) {
+        throw new ServiceUnavailableException(
+          'Payment verification is temporarily unavailable.',
+        );
+      }
+
+      const generatedSignature = createHmac('sha256', keySecret)
+        .update(\`\${dto.razorpayOrderId}|\${dto.razorpayPaymentId}\`)
         .digest('hex');
-  
-      if (generatedSignature !== dto.razorpaySignature) {
-        await this.prisma.payment.update({
-          where: {
-            id: payment.id,
-          },
-          data: {
-            status: PaymentStatus.FAILED,
-            failedAt: new Date(),
-            failureReason: 'Invalid Razorpay signature.',
-          },
-        });
-  
+
+      const suppliedSignature = dto.razorpaySignature.trim().toLowerCase();
+
+      if (
+        suppliedSignature.length !== generatedSignature.length ||
+        !/^[a-f0-9]+$/.test(suppliedSignature) ||
+        !timingSafeEqual(
+          Buffer.from(generatedSignature, 'hex'),
+          Buffer.from(suppliedSignature, 'hex'),
+        )
+      ) {
+        // Never mutate the pending payment on an invalid callback.
         throw new BadRequestException(
           'Payment signature verification failed.',
         );
       }
-  
-      // -------------------------------------
-      // Mark payment successful
-      // -------------------------------------
-  
-      const updatedPayment = await this.prisma.$transaction(
-        async (tx) => {
-          const updated = await tx.payment.update({
-            where: {
-              id: payment.id,
+
+      let razorpayOrder: any;
+      let razorpayPayment: any;
+
+      try {
+        [razorpayOrder, razorpayPayment] = await Promise.all([
+          this.razorpay.orders.fetch(dto.razorpayOrderId),
+          this.razorpay.payments.fetch(dto.razorpayPaymentId),
+        ]);
+      } catch {
+        throw new ServiceUnavailableException(
+          'Unable to verify the payment with Razorpay right now. Please try again.',
+        );
+      }
+
+      const expectedAmountInPaise = Math.round(Number(payment.amount) * 100);
+
+      if (
+        !Number.isSafeInteger(expectedAmountInPaise) ||
+        expectedAmountInPaise <= 0 ||
+        razorpayOrder.id !== payment.razorpayOrderId ||
+        razorpayOrder.amount !== expectedAmountInPaise ||
+        razorpayOrder.currency !== payment.currency ||
+        razorpayPayment.id !== dto.razorpayPaymentId ||
+        razorpayPayment.order_id !== payment.razorpayOrderId ||
+        razorpayPayment.amount !== expectedAmountInPaise ||
+        razorpayPayment.currency !== payment.currency ||
+        razorpayPayment.status !== 'captured'
+      ) {
+        throw new BadRequestException(
+          'Payment details could not be verified.',
+        );
+      }
+
+      const result = await this.prisma.$transaction(async (tx) => {
+        // Conditional update makes the success transition atomic: only the
+        // first concurrent verifier can claim the payment.
+        const claimed = await tx.payment.updateMany({
+          where: {
+            id: payment.id,
+            status: {
+              in: [PaymentStatus.CREATED, PaymentStatus.PENDING],
             },
-            data: {
-              status: PaymentStatus.SUCCESS,
-              razorpayPaymentId: dto.razorpayPaymentId,
-              razorpaySignature: dto.razorpaySignature,
-              paidAt: new Date(),
-            },
-          });
-  
-          await tx.booking.update({
-            where: {
-              id: payment.bookingId,
-            },
-            data: {
-              status: BookingStatus.PAID,
-            },
+          },
+          data: {
+            status: PaymentStatus.SUCCESS,
+            razorpayPaymentId: dto.razorpayPaymentId,
+            razorpaySignature: suppliedSignature,
+            paidAt: new Date(),
+            failedAt: null,
+            failureReason: null,
+          },
+        });
+
+        if (claimed.count === 0) {
+          const current = await tx.payment.findUnique({
+            where: { id: payment.id },
           });
 
-          // A successfully paid rental is no longer available to other tenants.
-          // Keep this in the same transaction as payment + booking + invoice so
-          // the marketplace can never expose a paid property as available.
-          await tx.property.update({
-            where: {
-              id: payment.booking.propertyId,
-            },
-            data: {
-              isAvailable: false,
-            },
-          });
+          if (current?.status === PaymentStatus.SUCCESS) {
+            return { payment: current, alreadyProcessed: true };
+          }
 
-          await tx.invoice.upsert({
-            where: {
-              invoiceNumber: `RIE-${payment.bookingId}`,
-            },
-            update: {
-              status: 'PAID',
-              amount: payment.amount,
-              totalAmount: payment.amount,
-              paymentId: updated.id,
-            },
-            create: {
-              invoiceNumber: `RIE-${payment.bookingId}`,
-              userId: payment.booking.tenantId,
-              paymentId: updated.id,
-              amount: payment.amount,
-              taxAmount: 0,
-              totalAmount: payment.amount,
-              currency: payment.currency,
-              status: 'PAID',
-              description: `Payment invoice for ${payment.booking.property.title}`,
-            },
-          });
-  
-          return updated;
-        },
-      );
-  
-      // -------------------------------------
-      // Notify tenant
-      // -------------------------------------
-  
+          throw new BadRequestException(
+            'Payment could not be completed because its state changed. Please check the payment status.',
+          );
+        }
+
+        await tx.booking.update({
+          where: { id: payment.bookingId },
+          data: { status: BookingStatus.PAID },
+        });
+
+        await tx.property.update({
+          where: { id: payment.booking.propertyId },
+          data: { isAvailable: false },
+        });
+
+        await tx.invoice.upsert({
+          where: { invoiceNumber: \`RIE-\${payment.bookingId}\` },
+          update: {
+            status: 'PAID',
+            amount: payment.amount,
+            totalAmount: payment.amount,
+            paymentId: payment.id,
+          },
+          create: {
+            invoiceNumber: \`RIE-\${payment.bookingId}\`,
+            userId: payment.booking.tenantId,
+            paymentId: payment.id,
+            amount: payment.amount,
+            taxAmount: 0,
+            totalAmount: payment.amount,
+            currency: payment.currency,
+            status: 'PAID',
+            description: \`Payment invoice for \${payment.booking.property.title}\`,
+          },
+        });
+
+        const current = await tx.payment.findUnique({
+          where: { id: payment.id },
+        });
+
+        if (!current) {
+          throw new NotFoundException(
+            'Payment record not found after verification.',
+          );
+        }
+
+        return { payment: current, alreadyProcessed: false };
+      });
+
+      if (result.alreadyProcessed) {
+        return {
+          success: true,
+          message: 'Payment has already been verified.',
+          data: serializePrisma(result.payment),
+        };
+      }
+
       await this.notificationsService.createNotification(
         payment.booking.tenantId,
         'Payment Successful',
-        `Payment for "${payment.booking.property.title}" was successful.`,
+        \`Payment for "\${payment.booking.property.title}" was successful.\`,
         NotificationType.GENERAL,
         payment.booking.id,
       );
-  
+
       await this.pushNotificationsService.sendToUser(
         payment.booking.tenantId,
         'Payment Successful',
-        `Payment for "${payment.booking.property.title}" was successful.`,
+        \`Payment for "\${payment.booking.property.title}" was successful.\`,
         {
           type: 'PAYMENT_SUCCESS',
-          paymentId: updatedPayment.id,
+          paymentId: result.payment.id,
           bookingId: payment.bookingId,
           propertyId: payment.booking.propertyId,
         },
       );
-  
-      // -------------------------------------
-      // Notify owner
-      // -------------------------------------
-  
+
       await this.notificationsService.createNotification(
         payment.booking.property.ownerId,
         'Booking Payment Received',
-        `Payment received for "${payment.booking.property.title}".`,
+        \`Payment received for "\${payment.booking.property.title}".\`,
         NotificationType.GENERAL,
         payment.booking.id,
       );
-  
+
       await this.pushNotificationsService.sendToUser(
         payment.booking.property.ownerId,
         'Booking Payment Received',
-        `Payment received for "${payment.booking.property.title}".`,
+        \`Payment received for "\${payment.booking.property.title}".\`,
         {
           type: 'BOOKING_PAYMENT_RECEIVED',
-          paymentId: updatedPayment.id,
+          paymentId: result.payment.id,
           bookingId: payment.bookingId,
           propertyId: payment.booking.propertyId,
         },
       );
-  
+
       return {
         success: true,
         message: 'Payment verified successfully.',
-        data: serializePrisma(updatedPayment),
+        data: serializePrisma(result.payment),
       };
     }
-  
+
     // =====================================
     // Get Payment
     // =====================================
