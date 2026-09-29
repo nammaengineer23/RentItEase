@@ -181,18 +181,37 @@ export class MembershipService {
       throw new BadRequestException('User already has an active membership');
     }
 
-    return this.prisma.membership.create({
-      data: {
-        userId,
-        planId,
-        status: MembershipStatus.PENDING,
-        autoRenew,
-        notes,
-      },
-      include: {
-        plan: true,
-      },
-    });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const current = await tx.membership.findFirst({
+          where: {
+            userId,
+            status: MembershipStatus.ACTIVE,
+          },
+        });
+        if (current) {
+          throw new BadRequestException(
+            'User already has an active membership',
+          );
+        }
+
+        return tx.membership.create({
+          data: {
+            userId,
+            planId,
+            status: MembershipStatus.PENDING,
+            autoRenew,
+            notes,
+          },
+          include: {
+            plan: true,
+          },
+        });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw error;
+    }
   }
 
   async getUserMemberships(userId: string) {
