@@ -410,37 +410,6 @@ export class PremiumListingsService {
       }
       throw error;
     }
-
-    const startDate = new Date();
-    const endDate = new Date(startDate);
-
-    endDate.setDate(
-      endDate.getDate() + listing.durationDays,
-    );
-
-    if (membership.endDate && endDate > membership.endDate) {
-      endDate.setTime(membership.endDate.getTime());
-    }
-
-    return this.prisma.premiumListing.update({
-      where: { id },
-      data: {
-        status: PremiumListingStatus.ACTIVE,
-        startDate,
-        endDate,
-        activatedAt: startDate,
-        expiredAt: null,
-        cancelledAt: null,
-      },
-      include: {
-        property: true,
-        membership: {
-          include: {
-            plan: true,
-          },
-        },
-      },
-    });
   }
 
   // ============================================================
