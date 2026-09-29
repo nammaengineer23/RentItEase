@@ -1,5 +1,6 @@
 import {
   Body,
+  Ip,
   Controller,
   Get,
   Patch,
@@ -10,6 +11,7 @@ import {
 
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -29,10 +31,11 @@ import { PhoneOtpLoginDto } from './dto/phone-otp-login.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle({ default: { limit: 5, ttl: 15 * 60 * 1000, blockDuration: 15 * 60 * 1000 } })
   @Post('register/email-otp/request')
   @ApiOperation({ summary: 'Send signup email verification OTP' })
-  requestSignupEmailOtp(@Body() dto: RequestEmailOtpDto) {
-    return this.authService.requestSignupEmailOtp(dto);
+  requestSignupEmailOtp(@Body() dto: RequestEmailOtpDto, @Ip() ip: string) {
+    return this.authService.requestSignupEmailOtp(dto, ip);
   }
 
   @Post('register/email-otp/verify')
@@ -41,10 +44,11 @@ export class AuthController {
     return this.authService.verifySignupEmailOtp(dto);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 15 * 60 * 1000, blockDuration: 15 * 60 * 1000 } })
   @Post('login/email-otp/request')
   @ApiOperation({ summary: 'Send email login OTP' })
-  requestLoginEmailOtp(@Body() dto: RequestEmailOtpDto) {
-    return this.authService.requestLoginEmailOtp(dto);
+  requestLoginEmailOtp(@Body() dto: RequestEmailOtpDto, @Ip() ip: string) {
+    return this.authService.requestLoginEmailOtp(dto, ip);
   }
 
   @Post('login/email-otp/verify')
@@ -53,10 +57,17 @@ export class AuthController {
     return this.authService.loginWithEmailOtp(dto);
   }
 
+  @Throttle({ default: { limit: 8, ttl: 15 * 60 * 1000, blockDuration: 15 * 60 * 1000 } })
   @Post('login/phone-otp')
   @ApiOperation({ summary: 'Login with Firebase phone OTP proof' })
   loginWithPhoneOtp(@Body() dto: PhoneOtpLoginDto) {
     return this.authService.loginWithPhoneOtp(dto.idToken);
+  }
+
+  @Post('register/verified')
+  @ApiOperation({ summary: 'Create an account after email/phone verification' })
+  registerVerified(@Body() dto: import('./dto/verified-register.dto').VerifiedRegisterDto) {
+    return this.authService.registerVerified(dto);
   }
 
   @Post('register')
@@ -81,6 +92,7 @@ export class AuthController {
     return this.authService.firebaseLogin(
       dto.idToken,
       dto.createAccount ?? false,
+      dto.phoneIdToken,
     );
   }
 
