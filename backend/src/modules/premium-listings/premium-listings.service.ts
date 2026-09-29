@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   MembershipStatus,
@@ -171,7 +172,7 @@ export class PremiumListingsService {
   // GET
   // ============================================================
 
-  async findOne(id: string) {
+  async findOne(id: string, user?: { id: string; role: string }) {
     const listing =
       await this.prisma.premiumListing.findUnique({
         where: { id },
@@ -186,15 +187,18 @@ export class PremiumListingsService {
       });
 
     if (!listing) {
-      throw new NotFoundException(
-        'Premium listing not found',
-      );
+      throw new NotFoundException('Premium listing not found');
     }
-
+    if (user && user.role !== 'ADMIN' && listing.userId !== user.id) {
+      throw new ForbiddenException('You do not have access to this premium listing.');
+    }
     return listing;
   }
 
-  async findByUser(userId: string) {
+  async findByUser(userId: string, user?: { id: string; role: string }) {
+    if (user && user.role !== 'ADMIN' && user.id !== userId) {
+      throw new ForbiddenException('You can only access your own premium listings.');
+    }
     return this.prisma.premiumListing.findMany({
       where: { userId },
       include: {
@@ -270,8 +274,9 @@ export class PremiumListingsService {
   async update(
     id: string,
     dto: UpdatePremiumListingDto,
+    user: { id: string; role: string },
   ) {
-    await this.findOne(id);
+    await this.findOne(id, user);
 
     return this.prisma.premiumListing.update({
       where: { id },
@@ -301,8 +306,8 @@ export class PremiumListingsService {
   // ACTIVATE
   // ============================================================
 
-  async activate(id: string) {
-    const listing = await this.findOne(id);
+  async activate(id: string, user: { id: string; role: string }) {
+    const listing = await this.findOne(id, user);
 
     if (listing.status === PremiumListingStatus.ACTIVE) {
       throw new BadRequestException(
@@ -389,8 +394,8 @@ export class PremiumListingsService {
   // CANCEL
   // ============================================================
 
-  async cancel(id: string) {
-    const listing = await this.findOne(id);
+  async cancel(id: string, user: { id: string; role: string }) {
+    const listing = await this.findOne(id, user);
 
     if (listing.status === PremiumListingStatus.CANCELLED) {
       throw new BadRequestException(
@@ -425,8 +430,8 @@ export class PremiumListingsService {
   // EXPIRY
   // ============================================================
 
-  async expire(id: string) {
-    const listing = await this.findOne(id);
+  async expire(id: string, user: { id: string; role: string }) {
+    const listing = await this.findOne(id, user);
 
     if (listing.status !== PremiumListingStatus.ACTIVE) {
       throw new BadRequestException(
