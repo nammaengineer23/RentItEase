@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  TooManyRequestsException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
@@ -37,15 +38,13 @@ export class AuthService {
   private readonly signupEmailPurpose = 'SIGNUP_EMAIL';
   private readonly loginEmailPurpose = 'LOGIN_EMAIL';
 
-  async requestSignupEmailOtp(dto: RequestEmailOtpDto) {
+  async requestSignupEmailOtp(dto: RequestEmailOtpDto, ip?: string) {
     const email = dto.email.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({ where: { email } });
 
-    if (existing) {
-      throw new ConflictException('Email already exists.');
+    if (!existing) {
+      await this.createEmailOtpChallenge(email, this.signupEmailPurpose, ip);
     }
-
-    await this.createEmailOtpChallenge(email, this.signupEmailPurpose);
 
     return {
       success: true,
@@ -89,7 +88,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email verification proof.');
     }
 
-    const phone = dto.phone?.trim() || null;
+    const phone = dto.phone ? this.normalizePhone(dto.phone) : null;
     if (phone != null) {
       if (!dto.phoneIdToken) {
         throw new UnauthorizedException(
@@ -126,12 +125,12 @@ export class AuthService {
     });
   }
 
-  async requestLoginEmailOtp(dto: RequestEmailOtpDto) {
+  async requestLoginEmailOtp(dto: RequestEmailOtpDto, ip?: string) {
     const email = dto.email.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({ where: { email } });
 
     if (user?.isActive) {
-      await this.createEmailOtpChallenge(email, this.loginEmailPurpose);
+      await this.createEmailOtpChallenge(email, this.loginEmailPurpose, ip);
     }
 
     return {
@@ -163,14 +162,8 @@ export class AuthService {
     }
 
     const normalized = this.normalizePhone(phone);
-    const digits = normalized.replace(/\D/g, '');
-    const user = await this.prisma.user.findFirst({
-      where: {
-        isActive: true,
-        phone: {
-          in: [normalized, digits, digits.substring(digits.length - 10)],
-        },
-      },
+    const user = await this.prisma.user.findUnique({
+      where: { phone: normalized },
     });
 
     if (!user) {
@@ -180,22 +173,74 @@ export class AuthService {
     return this.createSession(user);
   }
 
-  private async createEmailOtpChallenge(target: string, purpose: string) {
+  private async createEmailOtpChallenge(
+    target: string,
+    purpose: string,
+    ip?: string,
+  ) {
+    const now = new Date();
+    const existing = await this.prisma.authOtpChallenge.findUnique({
+      where: { target_purpose: { target, purpose } },
+    });
+
+    if (existing?.lastSentAt && now.getTime() - existing.lastSentAt.getTime() < 30_000) {
+      throw new TooManyRequestsException('Please wait before requesting another verification code.');
+    }
+
+    const windowActive =
+      existing?.windowStartedAt &&
+      now.getTime() - existing.windowStartedAt.getTime() < 15 * 60 * 1000;
+    const requestCount = windowActive ? existing?.requestCount ?? 0 : 0;
+
+    if (requestCount >= 5) {
+      throw new TooManyRequestsException('Too many verification code requests. Please try again later.');
+    }
+
     const otp = this.otpService.generateOtp();
     const otpHash = await this.otpService.hashOtp(otp);
 
-    await this.prisma.authOtpChallenge.deleteMany({
-      where: { target, purpose },
-    });
-    await this.prisma.authOtpChallenge.create({
-      data: {
-        target,
-        purpose,
-        otpHash,
-        expiresAt: this.otpService.getExpiryDate(),
-      },
-    });
+    if (existing) {
+      const claimed = await this.prisma.authOtpChallenge.updateMany({
+        where: {
+          id: existing.id,
+          lastSentAt: existing.lastSentAt,
+          requestCount: existing.requestCount,
+        },
+        data: {
+          otpHash,
+          attempts: 0,
+          expiresAt: this.otpService.getExpiryDate(),
+          consumedAt: null,
+          lastSentAt: now,
+          windowStartedAt: windowActive ? existing.windowStartedAt : now,
+          requestCount: requestCount + 1,
+        },
+      });
+      if (claimed.count !== 1) {
+        throw new TooManyRequestsException('Please wait before requesting another verification code.');
+      }
+    } else {
+      try {
+        await this.prisma.authOtpChallenge.create({
+          data: {
+            target,
+            purpose,
+            otpHash,
+            expiresAt: this.otpService.getExpiryDate(),
+            lastSentAt: now,
+            windowStartedAt: now,
+            requestCount: 1,
+          },
+        });
+      } catch (error: any) {
+        if (error?.code === 'P2002') {
+          throw new TooManyRequestsException('Please wait before requesting another verification code.');
+        }
+        throw error;
+      }
+    }
 
+    void ip;
     await this.mailService.sendAuthenticationOtp(target, otp);
   }
 
@@ -204,13 +249,13 @@ export class AuthService {
     purpose: string,
     otp: string,
   ) {
-    const challenge = await this.prisma.authOtpChallenge.findFirst({
-      where: { target, purpose },
-      orderBy: { createdAt: 'desc' },
+    const challenge = await this.prisma.authOtpChallenge.findUnique({
+      where: { target_purpose: { target, purpose } },
     });
 
     if (
       !challenge ||
+      challenge.consumedAt ||
       challenge.expiresAt < new Date() ||
       challenge.attempts >= 5
     ) {
@@ -219,23 +264,44 @@ export class AuthService {
 
     const matches = await this.otpService.verifyOtp(otp, challenge.otpHash);
     if (!matches) {
-      await this.prisma.authOtpChallenge.update({
-        where: { id: challenge.id },
+      const claimed = await this.prisma.authOtpChallenge.updateMany({
+        where: { id: challenge.id, consumedAt: null, attempts: { lt: 5 } },
         data: { attempts: { increment: 1 } },
       });
+      if (claimed.count !== 1) {
+        throw new UnauthorizedException('Invalid or expired verification code.');
+      }
       throw new UnauthorizedException('Invalid or expired verification code.');
     }
 
-    await this.prisma.authOtpChallenge.delete({
-      where: { id: challenge.id },
+    const consumed = await this.prisma.authOtpChallenge.updateMany({
+      where: {
+        id: challenge.id,
+        consumedAt: null,
+        attempts: { lt: 5 },
+        expiresAt: { gt: new Date() },
+      },
+      data: { consumedAt: new Date() },
     });
+
+    if (consumed.count !== 1) {
+      throw new UnauthorizedException('Invalid or expired verification code.');
+    }
   }
 
   private normalizePhone(phone: string) {
     const digits = phone.replace(/\D/g, '');
-    if (digits.length === 10) return `+91${digits}`;
-    if (digits.length === 12 && digits.startsWith('91')) return `+${digits}`;
-    return phone.startsWith('+') ? phone : `+${digits}`;
+    if (digits.length === 10 && /^[6-9]\d{9}$/.test(digits)) {
+      return '+91' + digits;
+    }
+    if (
+      digits.length === 12 &&
+      digits.startsWith('91') &&
+      /^[6-9]\d{9}$/.test(digits.slice(2))
+    ) {
+      return '+' + digits;
+    }
+    throw new UnauthorizedException('Invalid Indian mobile number.');
   }
 
   private async createSession(user: {
@@ -268,6 +334,13 @@ export class AuthService {
   // Register
   // ==========================================
   async register(dto: RegisterDto) {
+    if (dto.phone) {
+      throw new UnauthorizedException(
+        'Phone verification is required before registering a mobile number.',
+      );
+    }
+
+    const email = dto.email.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({
       where: {
         email: dto.email,
@@ -283,7 +356,7 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: {
         fullName: dto.fullName,
-        email: dto.email,
+        email,
         phone: dto.phone,
         passwordHash: hashedPassword,
       },
@@ -370,10 +443,16 @@ export class AuthService {
   // ==========================================
   // Firebase Login
   // ==========================================
-  async firebaseLogin(idToken: string, createAccount = false) {
+  async firebaseLogin(
+    idToken: string,
+    createAccount = false,
+    phoneIdToken?: string,
+  ) {
     const decoded = await this.firebaseService.verifyToken(idToken);
 
-    const phone = decoded.phone_number?.trim();
+    const phone = decoded.phone_number
+      ? this.normalizePhone(decoded.phone_number)
+      : null;
     const email = decoded.email?.trim().toLowerCase();
 
     if (!phone && !email) {
@@ -403,10 +482,39 @@ export class AuthService {
         );
       }
 
+      if (!phoneIdToken) {
+        throw new UnauthorizedException(
+          'Phone verification is required before creating a new account.',
+        );
+      }
+
+      const phoneProof = await this.firebaseService.verifyToken(phoneIdToken);
+      if (!phoneProof.phone_number) {
+        throw new UnauthorizedException(
+          'Verified phone number not found in Firebase token.',
+        );
+      }
+
+      const verifiedPhone = this.normalizePhone(phoneProof.phone_number);
+      if (phone && verifiedPhone !== phone) {
+        throw new UnauthorizedException(
+          'Verified phone number does not match the Firebase account.',
+        );
+      }
+
+      const phoneOwner = await this.prisma.user.findUnique({
+        where: { phone: verifiedPhone },
+      });
+      if (phoneOwner) {
+        throw new ConflictException(
+          'This mobile number is already registered. Please sign in with that account.',
+        );
+      }
+
       user = await this.prisma.user.create({
         data: {
           fullName: decoded.name ?? 'RentItEase User',
-          phone: null,
+          phone: verifiedPhone,
           email,
           passwordHash: '',
           photoUrl: decoded.picture,
@@ -774,8 +882,9 @@ export class AuthService {
     }
 
     if (dto.phone != null) {
+      const normalizedPhone = this.normalizePhone(dto.phone);
       const phoneOwner = await this.prisma.user.findUnique({
-        where: { phone: dto.phone },
+        where: { phone: normalizedPhone },
         select: { id: true },
       });
       if (phoneOwner != null && phoneOwner.id != userId) {
@@ -789,7 +898,7 @@ export class AuthService {
       where: { id: userId },
       data: {
         ...(dto.fullName != null && { fullName: dto.fullName.trim() }),
-        ...(dto.phone != null && { phone: dto.phone }),
+        ...(dto.phone != null && { phone: this.normalizePhone(dto.phone) }),
         ...(dto.photoUrl != null && { photoUrl: dto.photoUrl }),
       },
       select: {
