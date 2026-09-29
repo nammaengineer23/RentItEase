@@ -414,48 +414,26 @@ export class LeaseService {
 
   async complete(id: string, user: any) {
     const lease = await this.getLeaseForUpdate(id);
-
     this.ensureOwnerOrAdmin(lease, user);
-
     if (lease.status !== LeaseStatus.ACTIVE) {
-      throw new BadRequestException(
-        `Lease cannot be completed from ${lease.status} status.`,
-      );
+      throw new BadRequestException(`Lease cannot be completed from ${lease.status} status.`);
     }
-
-    const updated = await this.prisma.lease.update({
-      where: {
-        id,
-      },
-      data: {
-        status: LeaseStatus.COMPLETED,
-        completedAt: new Date(),
-      },
-    });
-
-    await this.prisma.property.update({
-      where: {
-        id: lease.propertyId,
-      },
-      data: {
-        isAvailable: true,
-      },
-    });
-
-    await this.notificationsService.createNotification(
-      lease.tenantId,
-      'Lease Completed',
-      `Your lease for "${lease.property.title}" has been completed.`,
-      NotificationType.GENERAL,
-      lease.id,
-    );
-
-    return {
-      success: true,
-      message: 'Lease completed successfully.',
-      data: serializePrisma(updated),
-    };
+    let updated;
+    try {
+      updated = await this.prisma.$transaction(async (tx) => {
+        const changed = await tx.lease.updateMany({ where: { id, status: LeaseStatus.ACTIVE }, data: { status: LeaseStatus.COMPLETED, completedAt: new Date() } });
+        if (changed.count !== 1) throw new BadRequestException('Lease status changed; please retry.');
+        await tx.property.update({ where: { id: lease.propertyId }, data: { isAvailable: true } });
+        return tx.lease.findUniqueOrThrow({ where: { id }, include: { property: true, tenant: true, booking: true } });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') throw new BadRequestException('Property availability changed concurrently. Please retry.');
+      throw error;
+    }
+    await this.notificationsService.createNotification(lease.tenantId, 'Lease Completed', `Your lease for "${lease.property.title}" has been completed.`, NotificationType.GENERAL, lease.id);
+    return { success: true, message: 'Lease completed successfully.', data: serializePrisma(updated) };
   }
+
 
   // =====================================
   // Terminate Lease
@@ -463,55 +441,26 @@ export class LeaseService {
 
   async terminate(id: string, user: any) {
     const lease = await this.getLeaseForUpdate(id);
-
     const isTenant = lease.tenantId === user.id;
     const isOwner = lease.property.ownerId === user.id;
-
-    if (!isTenant && !isOwner && user.role !== UserRole.ADMIN) {
-      throw new ForbiddenException(
-        'You do not have permission to terminate this lease.',
-      );
+    if (!isTenant && !isOwner && user.role !== UserRole.ADMIN) throw new ForbiddenException('You do not have permission to terminate this lease.');
+    if (lease.status !== LeaseStatus.ACTIVE) throw new BadRequestException(`Lease cannot be terminated from ${lease.status} status.`);
+    let updated;
+    try {
+      updated = await this.prisma.$transaction(async (tx) => {
+        const changed = await tx.lease.updateMany({ where: { id, status: LeaseStatus.ACTIVE }, data: { status: LeaseStatus.TERMINATED, terminatedAt: new Date() } });
+        if (changed.count !== 1) throw new BadRequestException('Lease status changed; please retry.');
+        await tx.property.update({ where: { id: lease.propertyId }, data: { isAvailable: true } });
+        return tx.lease.findUniqueOrThrow({ where: { id }, include: { property: true, tenant: true, booking: true } });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') throw new BadRequestException('Property availability changed concurrently. Please retry.');
+      throw error;
     }
-
-    if (lease.status !== LeaseStatus.ACTIVE) {
-      throw new BadRequestException(
-        `Lease cannot be terminated from ${lease.status} status.`,
-      );
-    }
-
-    const updated = await this.prisma.lease.update({
-      where: {
-        id,
-      },
-      data: {
-        status: LeaseStatus.TERMINATED,
-        terminatedAt: new Date(),
-      },
-    });
-
-    await this.prisma.property.update({
-      where: {
-        id: lease.propertyId,
-      },
-      data: {
-        isAvailable: true,
-      },
-    });
-
-    await this.notificationsService.createNotification(
-      lease.tenantId,
-      'Lease Terminated',
-      `Your lease for "${lease.property.title}" has been terminated.`,
-      NotificationType.GENERAL,
-      lease.id,
-    );
-
-    return {
-      success: true,
-      message: 'Lease terminated successfully.',
-      data: serializePrisma(updated),
-    };
+    await this.notificationsService.createNotification(lease.tenantId, 'Lease Terminated', `Your lease for "${lease.property.title}" has been terminated.`, NotificationType.GENERAL, lease.id);
+    return { success: true, message: 'Lease terminated successfully.', data: serializePrisma(updated) };
   }
+
 
   // =====================================
   // Cancel Lease
@@ -519,39 +468,23 @@ export class LeaseService {
 
   async cancel(id: string, user: any) {
     const lease = await this.getLeaseForUpdate(id);
-
     this.ensureOwnerOrAdmin(lease, user);
-
-    if (lease.status !== LeaseStatus.ACTIVE) {
-      throw new BadRequestException(
-        `Lease cannot be cancelled from ${lease.status} status.`,
-      );
+    if (lease.status !== LeaseStatus.ACTIVE) throw new BadRequestException(`Lease cannot be cancelled from ${lease.status} status.`);
+    let updated;
+    try {
+      updated = await this.prisma.$transaction(async (tx) => {
+        const changed = await tx.lease.updateMany({ where: { id, status: LeaseStatus.ACTIVE }, data: { status: LeaseStatus.CANCELLED } });
+        if (changed.count !== 1) throw new BadRequestException('Lease status changed; please retry.');
+        await tx.property.update({ where: { id: lease.propertyId }, data: { isAvailable: true } });
+        return tx.lease.findUniqueOrThrow({ where: { id }, include: { property: true, tenant: true, booking: true } });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') throw new BadRequestException('Property availability changed concurrently. Please retry.');
+      throw error;
     }
-
-    const updated = await this.prisma.lease.update({
-      where: {
-        id,
-      },
-      data: {
-        status: LeaseStatus.CANCELLED,
-      },
-    });
-
-    await this.prisma.property.update({
-      where: {
-        id: lease.propertyId,
-      },
-      data: {
-        isAvailable: true,
-      },
-    });
-
-    return {
-      success: true,
-      message: 'Lease cancelled successfully.',
-      data: serializePrisma(updated),
-    };
+    return { success: true, message: 'Lease cancelled successfully.', data: serializePrisma(updated) };
   }
+
 
   // =====================================
   // Internal Helpers
