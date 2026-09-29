@@ -646,8 +646,7 @@ import {
         },
       });
 
-      if (!payment) return;
-      if (payment.status === PaymentStatus.SUCCESS) return;
+      if (!payment || payment.status === PaymentStatus.SUCCESS) return;
 
       let razorpayOrder: any;
       let razorpayPayment: any;
@@ -664,6 +663,8 @@ import {
 
       const expectedAmountInPaise = Math.round(Number(payment.amount) * 100);
       if (
+        !Number.isSafeInteger(expectedAmountInPaise) ||
+        expectedAmountInPaise <= 0 ||
         razorpayOrder.id !== payment.razorpayOrderId ||
         razorpayOrder.amount !== expectedAmountInPaise ||
         razorpayOrder.currency !== payment.currency ||
@@ -676,31 +677,36 @@ import {
         throw new BadRequestException('Razorpay webhook payment details failed reconciliation.');
       }
 
-      const claimed = await this.prisma.payment.updateMany({
-        where: {
-          id: payment.id,
-          status: { in: [PaymentStatus.CREATED, PaymentStatus.PENDING] },
-        },
-        data: {
-          status: PaymentStatus.SUCCESS,
-          razorpayPaymentId,
-          paidAt: new Date(),
-          failedAt: null,
-          failureReason: null,
-        },
-      });
+      const result = await this.prisma.$transaction(async (tx) => {
+        const claimed = await tx.payment.updateMany({
+          where: {
+            id: payment.id,
+            status: { in: [PaymentStatus.CREATED, PaymentStatus.PENDING] },
+          },
+          data: {
+            status: PaymentStatus.SUCCESS,
+            razorpayPaymentId,
+            paidAt: new Date(),
+            failedAt: null,
+            failureReason: null,
+          },
+        });
 
-      if (claimed.count !== 1) return;
+        if (claimed.count !== 1) {
+          const current = await tx.payment.findUnique({ where: { id: payment.id } });
+          return { payment: current, claimed: false };
+        }
 
-      await this.prisma.$transaction(async (tx) => {
         await tx.booking.update({
           where: { id: payment.bookingId },
           data: { status: BookingStatus.PAID },
         });
+
         await tx.property.update({
           where: { id: payment.booking.propertyId },
           data: { isAvailable: false },
         });
+
         await tx.invoice.upsert({
           where: { invoiceNumber: `RIE-${payment.bookingId}` },
           update: {
@@ -721,9 +727,14 @@ import {
             description: `Payment invoice for ${payment.booking.property.title}`,
           },
         });
+
+        const current = await tx.payment.findUnique({ where: { id: payment.id } });
+        return { payment: current, claimed: true };
       });
 
-      await this.sendPaymentSuccessNotifications(payment);
+      if (result.claimed && result.payment) {
+        await this.sendPaymentSuccessNotifications(payment);
+      }
     }
 
     private async reconcileFailedPayment(
