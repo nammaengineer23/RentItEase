@@ -10,6 +10,7 @@ import { FilterPropertiesDto } from './dto/filter-property.dto';
 import { NearbyPropertiesDto } from './dto/nearby-properties.dto';
 import { UpdatePropertyAmenitiesDto } from './dto/update-property-amenities.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
+import { AiSuggestionDto } from './dto/ai-suggestion.dto';
 import { ListingAiService } from './listing-ai.service';
 import { PropertiesService } from './properties.service';
 
@@ -30,7 +31,7 @@ export class PropertiesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER)
   @ApiBearerAuth()
-  suggestListing(@Body() body: Record<string, unknown>) { return this.listingAi.suggest(body); }
+  suggestListing(@Body() dto: AiSuggestionDto) { return this.listingAi.suggest(dto); }
 
   @Get()
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
