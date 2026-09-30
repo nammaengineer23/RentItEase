@@ -105,6 +105,16 @@ import { StorageModule } from './storage/storage.module';
         NODE_ENV: Joi.string()
           .valid('development', 'production', 'test')
           .default('development'),
+
+        OPENAI_API_KEY: Joi.string().min(20).optional(),
+
+        OPENAI_LISTING_MODEL: Joi.string()
+          .pattern(/^[a-zA-Z0-9._:-]{1,80}$/)
+          .default('gpt-4o-mini'),
+
+        OPENAI_BASE_URL: Joi.string()
+          .uri({ scheme: ['https'] })
+          .default('https://api.openai.com/v1'),
       }),
     }),
 
