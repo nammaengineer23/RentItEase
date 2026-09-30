@@ -5,7 +5,10 @@ import { AdminAuditContext, AdminAuditService } from '../admin/admin-audit.servi
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService, private readonly audit: AdminAuditService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AdminAuditService,
+  ) {}
 
   async requestOwnerRole(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -17,7 +20,7 @@ export class UsersService {
       throw new BadRequestException('Owner request is already pending.');
     }
 
-    const updated = await this.prisma.user.update({
+    return this.prisma.user.update({
       where: { id: userId },
       data: {
         ownerRequestStatus: OwnerRequestStatus.PENDING,
@@ -43,25 +46,37 @@ export class UsersService {
     });
   }
 
-  async reviewOwnerRequest(userId: string, approve: boolean, context: AdminAuditContext) {
+  async reviewOwnerRequest(
+    userId: string,
+    approve: boolean,
+    context: AdminAuditContext,
+  ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found.');
     if (user.ownerRequestStatus !== OwnerRequestStatus.PENDING) {
       throw new BadRequestException('No pending owner request found.');
     }
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
         role: approve ? UserRole.OWNER : user.role,
         ownerRequestStatus: approve
-            ? OwnerRequestStatus.APPROVED
-            : OwnerRequestStatus.REJECTED,
+          ? OwnerRequestStatus.APPROVED
+          : OwnerRequestStatus.REJECTED,
         ownerReviewedAt: new Date(),
       },
       select: { id: true, role: true, ownerRequestStatus: true, ownerReviewedAt: true },
     });
-    await this.audit.record(context, approve ? 'OWNER_REQUEST_APPROVE' : 'OWNER_REQUEST_REJECT', 'USER', userId, user, updated);
+
+    await this.audit.record(
+      context,
+      approve ? 'OWNER_REQUEST_APPROVE' : 'OWNER_REQUEST_REJECT',
+      'USER',
+      userId,
+      user,
+      updated,
+    );
     return updated;
   }
 }
