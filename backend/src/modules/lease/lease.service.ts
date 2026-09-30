@@ -98,6 +98,8 @@ export class LeaseService {
       }
     }
 
+    const bookingPaymentId = booking.payment.id;
+
     const invoice = await this.prisma.invoice.findFirst({
       where: { paymentId: booking.payment.id },
       select: { id: true, userId: true, totalAmount: true, status: true },
@@ -128,7 +130,7 @@ export class LeaseService {
             bookingId: booking.id,
             propertyId: booking.propertyId,
             tenantId: booking.tenantId,
-            paymentId: booking.payment.id,
+            paymentId: bookingPaymentId,
             invoiceId: invoice.id,
             status: LeaseStatus.ACTIVE,
             monthlyRent: booking.monthlyRent,
