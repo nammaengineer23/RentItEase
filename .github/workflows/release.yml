@@ -65,6 +65,13 @@ jobs:
           flutter-version: "3.44.8"
           channel: stable
 
+      - name: Configure Firebase Android configuration
+        env:
+          FIREBASE_ANDROID_GOOGLE_SERVICES_JSON: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON }}
+        run: |
+          test -n "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON"
+          printf '%s' "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON" > android/app/google-services.json
+
       - name: Configure Android release signing
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
