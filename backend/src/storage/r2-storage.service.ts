@@ -54,7 +54,7 @@ export class R2StorageService {
       : this.requiredConfig('R2_BUCKET_NAME');
     const expires = Math.min(Math.max(Math.floor(expiresInSeconds), 60), 3600);
     const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
-    const url = new URL(`${endpoint}/${this.encodePath(targetBucket)}/${this.encodePath(key)}`);
+    const url = new URL(`${endpoint}/${this.encodePath(bucketName)}/${this.encodePath(key)}`);
     const now = new Date();
     const timestamp = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
     const dateStamp = timestamp.slice(0, 8);
