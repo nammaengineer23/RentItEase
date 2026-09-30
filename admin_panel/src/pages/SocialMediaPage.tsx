@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { socialMediaApi, type GenerateVideoResponse, type SocialAnalytics, type SocialAuditEvent, type SocialPlatform, type SocialPost, type SocialPostStatus, type SocialProperty, type SocialSettings } from '../api/socialMediaApi';
 import '../styles/social-media.css';
+import { futureDateTime, requiredText } from '../forms/validation';
 
 export function SocialMediaPage() {
   const [searchParams] = useSearchParams();
@@ -83,6 +84,8 @@ export function SocialMediaPage() {
 
   async function publishSelected() {
     if (!selectedPlatforms.length) return setError('Select at least one connected platform.');
+    const captionError = requiredText(captionForPublish(), 'Caption', 5000);
+    if (captionError) return setError(captionError);
     setError('');
     for (const platform of selectedPlatforms) {
       await publish(platform);
@@ -92,6 +95,8 @@ export function SocialMediaPage() {
 
   async function generateVideo() {
     if (!propertyId.trim()) return setError('Choose a consented property.');
+    const titleError = videoTitle ? requiredText(videoTitle, 'Video title', 200) : null;
+    if (titleError) return setError(titleError);
     setLoading(true); setError(''); setMessage('');
     try { const result = await socialMediaApi.generate(propertyId.trim()); setVideo(result); setCaption(result.caption); setVideoTitle(result.videoTitle); setMessage('Property content generated successfully.'); }
     catch (e) { setError(e instanceof Error ? e.message : 'Video generation failed.'); }
@@ -108,7 +113,8 @@ export function SocialMediaPage() {
 
   async function schedule(platform: SocialPlatform) {
     const date = new Date(scheduledAt);
-    if (!propertyId.trim() || !scheduledAt || Number.isNaN(date.getTime()) || date <= new Date()) return setError('Choose a consented property and future schedule time.');
+    const scheduleError = futureDateTime(scheduledAt, 'Schedule time');
+    if (!propertyId.trim() || scheduleError) return setError(scheduleError ?? 'Choose a consented property and future schedule time.');
     setPublishing(platform); setError('');
     try { await socialMediaApi.schedule(propertyId.trim(), platform, date.toISOString(), caption || video?.caption, videoTitle || video?.videoTitle); setMessage(`${platform} post scheduled successfully.`); await loadDashboard(); }
     catch (e) { setError(e instanceof Error ? e.message : `Unable to schedule ${platform}.`); }
