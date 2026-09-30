@@ -21,7 +21,6 @@ export class FirebaseService {
             .get<string>('FIREBASE_PRIVATE_KEY')
             ?.replace(/\\n/g, '\n'),
         }),
-
         storageBucket: this.configService.get<string>(
           'FIREBASE_STORAGE_BUCKET',
         ),
@@ -31,17 +30,11 @@ export class FirebaseService {
     }
   }
 
-  // =====================================
-  // Firebase Storage
-  // =====================================
-
   getStorage() {
     return getStorage(getApp());
   }
 
-  async uploadImage(file: Express.Multer.File, folder = 'properties') {
-    const bucket = this.getStorage().bucket();
-
+  private buildStorageFileName(file: Express.Multer.File, folder: string): string {
     const safeFolder = folder
       .split('/')
       .map((part) => part.replace(/[^a-zA-Z0-9_-]/g, ''))
@@ -53,8 +46,13 @@ export class FirebaseService {
       .replace(/-+/g, '-')
       .replace(/^[.-]+/, '')
       .slice(-120) || 'upload';
-    const fileName = `${safeFolder}/${randomUUID()}-${safeName}`;
 
+    return `${safeFolder}/${randomUUID()}-${safeName}`;
+  }
+
+  async uploadImage(file: Express.Multer.File, folder = 'properties') {
+    const bucket = this.getStorage().bucket();
+    const fileName = this.buildStorageFileName(file, folder);
     const firebaseFile = bucket.file(fileName);
 
     await firebaseFile.save(file.buffer, {
@@ -69,6 +67,23 @@ export class FirebaseService {
       publicId: fileName,
       imageUrl,
     };
+  }
+
+  async uploadPrivateFile(
+    file: Express.Multer.File,
+    folder = 'chat-attachments',
+  ): Promise<{ publicId: string }> {
+    const bucket = this.getStorage().bucket();
+    const fileName = this.buildStorageFileName(file, folder);
+    const firebaseFile = bucket.file(fileName);
+
+    await firebaseFile.save(file.buffer, {
+      metadata: {
+        contentType: file.mimetype,
+      },
+    });
+
+    return { publicId: fileName };
   }
 
   async getSignedDownloadUrl(publicId: string, expiresInSeconds = 900): Promise<string> {
@@ -92,10 +107,6 @@ export class FirebaseService {
     return true;
   }
 
-  // =====================================
-  // Firebase Auth
-  // =====================================
-
   getAuth() {
     return getAuth();
   }
@@ -103,10 +114,6 @@ export class FirebaseService {
   async verifyToken(idToken: string) {
     return this.getAuth().verifyIdToken(idToken);
   }
-
-  // =====================================
-  // Firebase Messaging
-  // =====================================
 
   getMessaging() {
     return getMessaging();
@@ -129,34 +136,34 @@ export class FirebaseService {
   }
 
   async sendToDevices(
-  tokens: string[],
-  title: string,
-  body: string,
-  data?: Record<string, string>,
-) {
-  if (!tokens.length) {
-    console.log('⚠️ No FCM tokens found.');
-    return;
-  }
+    tokens: string[],
+    title: string,
+    body: string,
+    data?: Record<string, string>,
+  ) {
+    if (!tokens.length) {
+      console.log('⚠️ No FCM tokens found.');
+      return;
+    }
 
-  try {
-    const response =
-      await this.getMessaging().sendEachForMulticast({
-        tokens,
-        notification: {
-          title,
-          body,
-        },
-        data,
-      });
+    try {
+      const response =
+        await this.getMessaging().sendEachForMulticast({
+          tokens,
+          notification: {
+            title,
+            body,
+          },
+          data,
+        });
 
-    return response;
-  } catch (error) {
-    console.error(
-      '❌ Firebase send failed:',
-      error,
-    );
-    throw error;
+      return response;
+    } catch (error) {
+      console.error(
+        '❌ Firebase send failed:',
+        error,
+      );
+      throw error;
+    }
   }
-}
 }
