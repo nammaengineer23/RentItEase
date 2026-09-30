@@ -552,7 +552,9 @@ model Message {
   conversation       Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 
-  @@index([conversationId])
+  @@index([conversationId, createdAt])
+  @@index([conversationId, senderId, createdAt])
+  @@index([conversationId, readAt, senderId])
 }
 
 model RefreshToken {
