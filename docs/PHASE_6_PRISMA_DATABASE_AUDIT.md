@@ -102,10 +102,18 @@ The audit currently reports 67 ordered migrations.
 
 ### Destructive migrations
 
-Destructive SQL is reviewed by CI. The two known data-destructive migrations are explicit and allowlisted:
+Destructive SQL is reviewed by CI. The migration history contains a small set of reviewed destructive schema/data changes, all explicitly allowlisted by migration ID:
 
-- `20260929210000_harden_refresh_token_rotation` deletes existing refresh tokens because the rotation model changes their required identity/family contract.
-- `20260929223000_harden_auth_otp_challenges` removes older duplicate OTP challenges before enforcing the new uniqueness rule.
+- `20260710095240_improve_refresh_token_model` — replaces the earlier refresh-token representation.
+- `20260710130312_add_phone_role` — replaces the intermediate user/password/refresh-token representation.
+- `20260711173917_property_image_order` — replaces the temporary user password field with `passwordHash`.
+- `20260723113507_remove_device_token_model` — removes the superseded device-token table.
+- `20260725053152_add_email_otp` — replaces the legacy email-verification table with `OtpCode`.
+- `20260830040000_harden_social_marketing_workflow` — removes superseded social-consent fields while introducing the replacement workflow.
+- `20260929210000_harden_refresh_token_rotation` — intentionally invalidates old refresh tokens because the rotation model changes their required identity/family contract.
+- `20260929223000_harden_auth_otp_challenges` — removes older duplicate OTP challenges before enforcing the new uniqueness rule.
+
+The legacy directory `20260906_make_user_phone_optional` is also explicitly allowlisted because it predates the current 14-digit timestamp naming convention.
 
 Any new DROP/TRUNCATE/DELETE migration outside the reviewed allowlist fails the audit.
 
