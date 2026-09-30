@@ -278,18 +278,21 @@ model Favorite {
 }
 
 model Review {
-  id         String   @id @default(cuid())
+  id         String       @id @default(cuid())
   rating     Int
   comment    String?
   userId     String
   propertyId String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status     ReviewStatus @default(APPROVED)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  property   Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, propertyId])
-  @@index([propertyId])
+  @@index([propertyId, status, createdAt])
+  @@index([propertyId, status, rating])
+  @@index([userId, createdAt])
 }
 
 model PropertyVisit {
@@ -721,6 +724,12 @@ enum PropertyStatus {
   ACTIVE
   INACTIVE
   RENTED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum VisitStatus {
