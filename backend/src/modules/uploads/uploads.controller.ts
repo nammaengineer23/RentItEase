@@ -4,6 +4,7 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 
 import {
   FileInterceptor,
@@ -30,6 +31,7 @@ export class UploadsController {
   ) {}
 
   @Post('image')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @UseInterceptors(
     FileInterceptor(
       'file',
@@ -89,6 +91,7 @@ export class UploadsController {
   }
 
   @Post('file')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
