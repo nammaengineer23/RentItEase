@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,7 @@ import '../../domain/entities/payment_entity.dart';
 import '../../providers/payment_provider.dart';
 import '../../utils/invoice_download.dart';
 import '../../widgets/payment_card.dart';
+import '../../utils/razorpay_config.dart';
 
 class PaymentPage extends ConsumerStatefulWidget {
   const PaymentPage({super.key, required this.bookingId});
@@ -17,16 +20,21 @@ class PaymentPage extends ConsumerStatefulWidget {
   ConsumerState<PaymentPage> createState() => _PaymentPageState();
 }
 
-class _PaymentPageState extends ConsumerState<PaymentPage> {
+class _PaymentPageState extends ConsumerState<PaymentPage> with WidgetsBindingObserver {
   late final Razorpay _razorpay;
   PaymentEntity? _payment;
   bool _isLoading = true;
   bool _isVerifying = false;
+  bool _checkoutInProgress = false;
+  bool _refreshingState = false;
   String? _errorMessage;
+  String? _verificationPaymentId;
+  Timer? _checkoutTimeout;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _razorpay = Razorpay()
       ..on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess)
       ..on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError)
@@ -49,10 +57,16 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
 
   void _openCheckout() {
     final payment = _payment;
-    if (payment == null) return;
+    if (payment == null || _isVerifying || _checkoutInProgress) return;
     final keyId = payment.keyId;
-    if (keyId == null || keyId.isEmpty) { _showError('Razorpay key is not configured.'); return; }
+    if (!isValidRazorpayKeyId(keyId)) {
+      _showError('Razorpay checkout is not securely configured.');
+      return;
+    }
     try {
+      _checkoutInProgress = true;
+      _checkoutTimeout?.cancel();
+      _checkoutTimeout = Timer(const Duration(minutes: 5), _handleCheckoutTimeout);
       _razorpay.open({
         'key': keyId, 'amount': payment.amountInPaise, 'currency': payment.currency,
         'name': 'RentItEase', 'description': 'Booking payment', 'order_id': payment.razorpayOrderId,
@@ -63,30 +77,69 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         },
         'theme': {'color': '#16784A'},
       });
-    } catch (_) { _showError('Unable to open Razorpay checkout.'); }
+    } catch (_) {
+      _checkoutInProgress = false;
+      _checkoutTimeout?.cancel();
+      _showError('Unable to open Razorpay checkout.');
+    }
   }
 
-  Future<void> _handlePaymentSuccess(PaymentSuccessResponse response) async {
+  void _handleCheckoutTimeout() {
+    if (!_checkoutInProgress || !mounted) return;
+    _checkoutInProgress = false;
+    _showError('Payment checkout timed out. We will check the server for the latest payment status.');
+    unawaited(_refreshBackendPayment());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _checkoutInProgress && !_isVerifying) {
+      unawaited(_refreshBackendPayment());
+    }
+  }
+
+  Future<void> _refreshBackendPayment() async {(PaymentSuccessResponse response) async {
+    _checkoutInProgress = false;
+    _checkoutTimeout?.cancel();
     final orderId = response.orderId, paymentId = response.paymentId, signature = response.signature;
-    if (orderId == null || paymentId == null || signature == null) { _showError('Razorpay returned incomplete payment information.'); return; }
+    if (orderId == null || paymentId == null || signature == null) {
+      _showError('Razorpay returned incomplete payment information.');
+      await _refreshBackendPayment();
+      return;
+    }
+    if (_verificationPaymentId == paymentId) return;
+    _verificationPaymentId = paymentId;
     try {
       setState(() { _isVerifying = true; _errorMessage = null; });
       final verified = await ref.read(paymentRepositoryProvider).verifyPayment(
         bookingId: widget.bookingId, razorpayOrderId: orderId, razorpayPaymentId: paymentId, razorpaySignature: signature);
       if (!mounted) return;
       setState(() { _payment = verified; _isVerifying = false; });
-      await _showPaymentSuccess();
+      await _refreshBackendPayment();
+      if (!mounted) return;
+      if (_payment?.status.toUpperCase() == 'SUCCESS') {
+        await _showPaymentSuccess();
+      } else {
+        _showError('Payment verification is still pending. We have not marked this payment as successful.');
+      }
     } catch (error) {
       if (!mounted) return;
       setState(() { _isVerifying = false; _errorMessage = _errorMessageFrom(error); });
+      await _refreshBackendPayment();
       _showError(_errorMessage ?? 'Payment verification failed.');
     }
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
+    _checkoutInProgress = false;
+    _checkoutTimeout?.cancel();
     if (!mounted) return;
-    setState(() { _isVerifying = false; _errorMessage = response.message ?? 'Payment failed.'; });
-    _showError(response.message ?? 'Payment failed.');
+    final message = response.code == Razorpay.PAYMENT_CANCELLED
+        ? 'Payment checkout was cancelled. Your payment status was not assumed to be successful.'
+        : (response.message ?? 'Payment failed.');
+    setState(() { _isVerifying = false; _errorMessage = message; });
+    _showError(message);
+    unawaited(_refreshBackendPayment());
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {
@@ -139,7 +192,12 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
   }
 
   @override
-  void dispose() { _razorpay.clear(); super.dispose(); }
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _checkoutTimeout?.cancel();
+    _razorpay.clear();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Payment')), body: _buildBody());
@@ -154,11 +212,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
     }
     final payment = _payment;
     if (payment == null) return const Center(child: Text('Payment information unavailable.'));
-    final isPaid = payment.status.toUpperCase() == 'SUCCESS';
+    final status = payment.status.toUpperCase();
+    final isPaid = status == 'SUCCESS';
+    final isPending = status == 'CREATED' || status == 'PENDING' || status == 'AUTHORIZED';
     return SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       const SizedBox(height: 8), Icon(isPaid ? Icons.check_circle_outline : Icons.account_balance_wallet_outlined, size: 64, color: isPaid ? Colors.green : Theme.of(context).colorScheme.primary),
       const SizedBox(height: 16), Text(isPaid ? 'Payment Completed' : 'Complete Your Payment', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-      const SizedBox(height: 8), Text(isPaid ? 'Your booking payment has been verified.' : 'Pay the rent and security deposit to complete your booking.', textAlign: TextAlign.center),
+      const SizedBox(height: 8), Text(isPaid ? 'Your booking payment has been verified.' : isPending ? 'Payment has not been confirmed by the server yet. You can retry checkout safely.' : 'Pay the rent and security deposit to complete your booking.', textAlign: TextAlign.center),
       const SizedBox(height: 24), PaymentCard(payment: payment),
       if (!isPaid) ...[
         const SizedBox(height: 20), Text('Payment options', style: Theme.of(context).textTheme.titleMedium), const SizedBox(height: 8),
@@ -167,7 +227,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
       ],
       const Spacer(),
       if (_errorMessage != null) Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(_errorMessage!, textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.error))),
-      if (!isPaid) PrimaryButton(label: _isVerifying ? 'Verifying Payment...' : 'Pay ₹${payment.amount.toStringAsFixed(2)}', onPressed: _isVerifying ? null : _openCheckout),
+      if (!isPaid) PrimaryButton(label: _isVerifying ? 'Verifying Payment...' : _checkoutInProgress ? 'Checkout Open...' : 'Pay ₹${payment.amount.toStringAsFixed(2)}', onPressed: (_isVerifying || _checkoutInProgress) ? null : _openCheckout),
       if (isPaid) OutlinedButton.icon(onPressed: () => context.push('/lease/create/${widget.bookingId}'), icon: const Icon(Icons.description_outlined), label: const Text('Create Lease')),
       if (isPaid) const SizedBox(height: 12),
       if (isPaid) PrimaryButton(label: 'Download Invoice', onPressed: _downloadInvoice),
