@@ -59,6 +59,8 @@ async function bootstrap() {
     bodyParser: false,
   });
 
+  app.enableShutdownHooks();
+
   app.getHttpAdapter().getInstance().set('trust proxy', getTrustProxy());
 
   const isProduction = process.env.NODE_ENV === 'production';
