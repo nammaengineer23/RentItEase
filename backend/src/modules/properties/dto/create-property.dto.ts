@@ -9,6 +9,7 @@ import {
   IsPositive,
   Max,
   MaxLength,
+  Min,
   ValidateIf,
 } from 'class-validator';
 
