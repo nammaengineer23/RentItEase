@@ -25,7 +25,6 @@ export class SocialMediaService {
   ) {}
 
   async generate(dto: GenerateVideoDto) {
-    await this.requireConsent(dto.propertyId);
     const consent = await this.requireConsent(dto.propertyId);
     const generated = await this.remotionVideo.generate(dto.propertyId);
     // Keep the completed self-hosted Remotion render in our
@@ -66,6 +65,7 @@ export class SocialMediaService {
     );
     const title = body.title?.trim() || generated.videoTitle;
     const caption = body.caption?.trim() || generated.caption;
+    this.validatePlatformContent(SocialPlatform.INSTAGRAM, title, caption);
 
     const previousPreparedVideo = await this.prisma.socialMarketingConsent.findUnique({ where: { propertyId }, select: { preparedVideoUrl: true } });
     await this.storage.deleteStoredVideo(previousPreparedVideo?.preparedVideoUrl);
@@ -101,6 +101,7 @@ export class SocialMediaService {
     const videoUrl = await this.storage.uploadBuffer(file.buffer, propertyId, file.mimetype || 'video/mp4');
     const title = body.title?.trim() || property.title || 'RentItEase property tour';
     const caption = body.caption?.trim() || '';
+    this.validatePlatformContent(SocialPlatform.INSTAGRAM, title, caption);
     const previousPreparedVideo = await this.prisma.socialMarketingConsent.findUnique({ where: { propertyId }, select: { preparedVideoUrl: true } });
     await this.storage.deleteStoredVideo(previousPreparedVideo?.preparedVideoUrl);
     await this.prisma.socialMarketingConsent.update({
