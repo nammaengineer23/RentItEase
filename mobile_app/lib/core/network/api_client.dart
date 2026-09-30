@@ -72,7 +72,7 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
       // Do not silently fabricate or reuse an expired token.
     }
 
-    if (!_isAuthPath(options) {
+    if (!_isAuthPath(options)) {
       final token = await _storage.getString(StorageService.accessTokenKey);
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
