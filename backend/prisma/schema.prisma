@@ -335,6 +335,7 @@ model Booking {
   propertyId      String
   tenantId        String
   visitId         String        @unique
+  activePropertyKey String?     @unique
   status          BookingStatus @default(PENDING)
   monthlyRent     Decimal       @db.Decimal(10, 2)
   securityDeposit Decimal       @db.Decimal(10, 2)
