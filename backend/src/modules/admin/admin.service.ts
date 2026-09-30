@@ -538,21 +538,47 @@ async getProperty(id: string) {
     if (!property) throw new NotFoundException('Property not found.');
     if (property.isVerified) throw new BadRequestException('Property is already approved.');
 
-    const approved = await this.prisma.$transaction(async (prisma) => {
-      const updated = await prisma.property.update({
-        where: { id },
-        data: { isVerified: true, isAvailable: true },
-      });
-      await prisma.user.update({
-        where: { id: property.ownerId },
-        data: {
-          role: 'OWNER',
-          ownerRequestStatus: 'APPROVED',
-          ownerReviewedAt: new Date(),
-        },
-      });
-      return updated;
-    });
+    const approved = await this.prisma.$transaction(
+      async (tx) => {
+        const updated = await tx.property.update({
+          where: { id },
+          data: { isVerified: true, isAvailable: true },
+        });
+        const ownerBefore = await tx.user.findUnique({
+          where: { id: property.ownerId },
+          select: { id: true, role: true, ownerRequestStatus: true },
+        });
+        const ownerAfter = await tx.user.update({
+          where: { id: property.ownerId },
+          data: {
+            role: UserRole.OWNER,
+            ownerRequestStatus: 'APPROVED',
+            ownerReviewedAt: new Date(),
+          },
+          select: { id: true, role: true, ownerRequestStatus: true },
+        });
+        await this.audit.recordTx(
+          tx,
+          context,
+          'PROPERTY_APPROVE',
+          'PROPERTY',
+          id,
+          { isVerified: property.isVerified, isAvailable: property.isAvailable },
+          { isVerified: updated.isVerified, isAvailable: updated.isAvailable },
+        );
+        await this.audit.recordTx(
+          tx,
+          context,
+          'USER_ROLE_PROMOTION',
+          'USER',
+          property.ownerId,
+          ownerBefore,
+          ownerAfter,
+        );
+        return updated;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
 
     // Prepare marketing content only after the approval transaction commits.
     // Generation must never block or roll back property approval; the admin can
@@ -564,8 +590,6 @@ async getProperty(id: string) {
       });
     });
 
-    await this.audit.record(context, 'PROPERTY_APPROVE', 'PROPERTY', id, { isVerified: property.isVerified, isAvailable: property.isAvailable }, { isVerified: approved.isVerified, isAvailable: approved.isAvailable });
-    await this.audit.record(context, 'USER_ROLE_PROMOTION', 'USER', property.ownerId, null, { role: UserRole.OWNER, reason: 'Property approval' });
     return serializePrisma(approved);
   }
 
