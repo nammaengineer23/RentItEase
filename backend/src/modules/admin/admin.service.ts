@@ -512,6 +512,18 @@ async getProperty(id: string) {
       );
     }
 
+    const [activeBookings, activeLeases] = await Promise.all([
+      this.prisma.booking.count({
+        where: {
+          propertyId: id,
+          status: { in: [BookingStatus.PENDING, BookingStatus.APPROVED, BookingStatus.PAYMENT_PENDING, BookingStatus.PAID] },
+        },
+      }),
+      this.prisma.lease.count({ where: { propertyId: id, status: LeaseStatus.ACTIVE } }),
+    ]);
+    if (activeBookings || activeLeases) {
+      throw new BadRequestException('A property with an active booking or lease cannot be made available.');
+    }
     const updated = await this.prisma.property.update({
       where: { id },
       data: { isAvailable: true },
