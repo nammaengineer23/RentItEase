@@ -19,6 +19,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { assertBookingTransition } from './booking-state-machine';
 
 @Injectable()
 export class BookingService {
@@ -123,6 +124,7 @@ export class BookingService {
         monthlyRent: visit.property.price,
         securityDeposit: visit.property.securityDeposit,
         notes: dto.notes,
+        activePropertyKey: visit.propertyId,
       },
       include: {
         property: {
@@ -345,11 +347,7 @@ export class BookingService {
 
     this.ensureOwner(booking, user);
 
-    if (booking.status !== BookingStatus.PENDING) {
-      throw new BadRequestException(
-        `Booking cannot be approved from ${booking.status} status.`,
-      );
-    }
+    assertBookingTransition(booking.status, BookingStatus.APPROVED);
 
     if (!booking.property.isAvailable) {
       throw new BadRequestException(
@@ -357,14 +355,14 @@ export class BookingService {
       );
     }
 
-    const updated = await this.prisma.booking.update({
-      where: {
-        id,
-      },
-      data: {
-        status: BookingStatus.APPROVED,
-        approvedAt: new Date(),
-      },
+    const result = await this.prisma.booking.updateMany({
+      where: { id, status: BookingStatus.PENDING },
+      data: { status: BookingStatus.APPROVED, approvedAt: new Date() },
+    });
+    if (result.count !== 1) throw new BadRequestException('Booking status changed before approval could be completed.');
+
+    const updated = await this.prisma.booking.findUnique({
+      where: { id },
       include: {
         property: true,
         tenant: {
@@ -414,19 +412,16 @@ export class BookingService {
 
     this.ensureOwner(booking, user);
 
-    if (booking.status !== BookingStatus.PENDING) {
-      throw new BadRequestException(
-        `Booking cannot be rejected from ${booking.status} status.`,
-      );
-    }
+    assertBookingTransition(booking.status, BookingStatus.REJECTED);
 
-    const updated = await this.prisma.booking.update({
-      where: {
-        id,
-      },
-      data: {
-        status: BookingStatus.REJECTED,
-      },
+    const result = await this.prisma.booking.updateMany({
+      where: { id, status: BookingStatus.PENDING },
+      data: { status: BookingStatus.REJECTED, activePropertyKey: null },
+    });
+    if (result.count !== 1) throw new BadRequestException('Booking status changed before rejection could be completed.');
+
+    const updated = await this.prisma.booking.findUnique({
+      where: { id },
       include: {
         property: true,
         tenant: {
@@ -476,20 +471,14 @@ export class BookingService {
 
     this.ensureTenant(booking, user);
 
-    if (booking.status !== BookingStatus.APPROVED) {
-      throw new BadRequestException(
-        'Only an approved booking can move to payment.',
-      );
-    }
+    assertBookingTransition(booking.status, BookingStatus.PAYMENT_PENDING);
 
-    const updated = await this.prisma.booking.update({
-      where: {
-        id,
-      },
-      data: {
-        status: BookingStatus.PAYMENT_PENDING,
-      },
+    const result = await this.prisma.booking.updateMany({
+      where: { id, status: BookingStatus.APPROVED },
+      data: { status: BookingStatus.PAYMENT_PENDING },
     });
+    if (result.count !== 1) throw new BadRequestException('Booking status changed before payment could be started.');
+    const updated = await this.prisma.booking.findUnique({ where: { id } });
 
     return {
       success: true,
@@ -526,15 +515,12 @@ async cancel(id: string, user: any) {
     );
   }
 
-  const updated = await this.prisma.booking.update({
-    where: {
-      id,
-    },
-    data: {
-      status: BookingStatus.CANCELLED,
-      cancelledAt: new Date(),
-    },
+  const result = await this.prisma.booking.updateMany({
+    where: { id, status: booking.status },
+    data: { status: BookingStatus.CANCELLED, cancelledAt: new Date(), activePropertyKey: null },
   });
+  if (result.count !== 1) throw new BadRequestException('Booking status changed before cancellation could be completed.');
+  const updated = await this.prisma.booking.findUnique({ where: { id } });
 
   return {
     success: true,
@@ -552,19 +538,14 @@ async cancel(id: string, user: any) {
 
     this.ensureOwner(booking, user);
 
-    if (booking.status !== BookingStatus.PAID) {
-      throw new BadRequestException('Only a paid booking can be completed.');
-    }
+    assertBookingTransition(booking.status, BookingStatus.COMPLETED);
 
-    const updated = await this.prisma.booking.update({
-      where: {
-        id,
-      },
-      data: {
-        status: BookingStatus.COMPLETED,
-        completedAt: new Date(),
-      },
+    const result = await this.prisma.booking.updateMany({
+      where: { id, status: BookingStatus.PAID },
+      data: { status: BookingStatus.COMPLETED, completedAt: new Date(), activePropertyKey: null },
     });
+    if (result.count !== 1) throw new BadRequestException('Booking status changed before completion could be completed.');
+    const updated = await this.prisma.booking.findUnique({ where: { id } });
 
     return {
       success: true,
