@@ -73,6 +73,7 @@ jobs:
           - src/modules/auth/auth.controller.spec.ts
           - src/modules/auth/auth.refresh-token-security.spec.ts
           - src/modules/auth/auth.service.spec.ts
+          - test/jwt-secret.service.spec.ts
           - src/modules/favorites/favorites.service.spec.ts
           - src/modules/properties/properties.service.spec.ts
           - src/modules/property-images/property-images.service.spec.ts
