@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
 export interface AdminAuditContext {
@@ -11,6 +12,15 @@ export interface AdminAuditContext {
 @Injectable()
 export class AdminAuditService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private json(value: unknown): Prisma.InputJsonValue | undefined {
+    if (value === undefined) return undefined;
+    return JSON.parse(
+      JSON.stringify(value, (_key, current) =>
+        typeof current === 'bigint' ? current.toString() : current,
+      ),
+    ) as Prisma.InputJsonValue;
+  }
 
   async record(
     context: AdminAuditContext,
@@ -26,8 +36,8 @@ export class AdminAuditService {
         action,
         resource,
         resourceId,
-        before: before as any,
-        after: after as any,
+        before: this.json(before),
+        after: this.json(after),
         ipAddress: context.ipAddress ?? null,
         device: context.device ?? null,
         reason: context.reason ?? null,
