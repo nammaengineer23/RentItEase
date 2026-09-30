@@ -4,7 +4,7 @@ import { ClassSerializerInterceptor } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Prisma } from '@prisma/client';
 import helmet from 'helmet';
-import { json, urlencoded } from 'express';
+import { json, urlencoded, type NextFunction, type Request, type Response } from 'express';
 
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception/global-exception.filter';
@@ -58,7 +58,7 @@ async function bootstrap() {
     bodyParser: false,
   });
 
-  app.set('trust proxy', getTrustProxy());
+  app.getHttpAdapter().getInstance().set('trust proxy', getTrustProxy());
 
   const isProduction = process.env.NODE_ENV === 'production';
 
@@ -89,7 +89,7 @@ async function bootstrap() {
   );
 
   if (isProduction) {
-    app.use((req, res, next) => {
+    app.use((req: Request, res: Response, next: NextFunction) => {
       if (!req.secure) {
         const host = req.get('host');
         if (!host) {
