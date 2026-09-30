@@ -57,3 +57,16 @@ export async function getMe(): Promise<AdminUser> {
   const response = await apiRequest<MeResponse>("/auth/me");
   return response.data;
 }
+
+
+export async function refreshSession(refreshToken: string): Promise<LoginData> {
+  const response = await apiRequest<LoginResponse>("/auth/refresh", {
+    method: "POST",
+    body: JSON.stringify({ refreshToken }),
+  });
+  return response.data;
+}
+
+export async function logout(): Promise<void> {
+  await apiRequest("/auth/logout", { method: "POST" }, false);
+}
