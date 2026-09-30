@@ -1,4 +1,9 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
+
+// Keep unit tests isolated from Firebase/JWKS ESM dependencies pulled in by push notifications.
+jest.mock('../push-notifications/push-notifications.service', () => ({
+  PushNotificationsService: class PushNotificationsService {},
+}));
 import { PropertyVisitsService } from './property-visits.service';
 import { VisitStatus, UserRole } from '@prisma/client';
 
