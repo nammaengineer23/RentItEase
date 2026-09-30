@@ -1,11 +1,14 @@
 import {
   IsArray,
+  ArrayMaxSize,
   IsBoolean,
   IsEnum,
   IsNumber,
   IsOptional,
   IsString,
   IsPositive,
+  Max,
+  MaxLength,
   ValidateIf,
 } from 'class-validator';
 
@@ -21,24 +24,28 @@ export class CreatePropertyDto {
     example: '',
   })
   @IsString()
+  @MaxLength(200)
   title!: string;
 
   @ApiProperty({
     example: 'Spacious apartment with modern amenities.',
   })
   @IsString()
+  @MaxLength(10000)
   description!: string;
 
   @ApiProperty({
     example: 25000,
   })
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
   price!: number;
 
   @ApiProperty({
     example: '123 MG Road',
   })
   @IsString()
+  @MaxLength(300)
   address!: string;
 
   @ApiProperty({
@@ -61,24 +68,28 @@ export class CreatePropertyDto {
     example: 'Bangalore',
   })
   @IsString()
+  @MaxLength(100)
   city!: string;
 
   @ApiProperty({
     example: 'Karnataka',
   })
   @IsString()
+  @MaxLength(100)
   state!: string;
 
   @ApiProperty({
     example: 'India',
   })
   @IsString()
+  @MaxLength(100)
   country!: string;
 
   @ApiProperty({
     example: '560102',
   })
   @IsString()
+  @MaxLength(20)
   pincode!: string;
 
   @ApiProperty({
@@ -87,6 +98,8 @@ export class CreatePropertyDto {
   })
   @IsOptional()
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   latitude?: number;
 
   @ApiProperty({
@@ -95,39 +108,53 @@ export class CreatePropertyDto {
   })
   @IsOptional()
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   longitude?: number;
 
   @ApiProperty({
     example: 2,
   })
   @IsNumber()
+  @Min(0)
+  @Max(100)
   bedrooms!: number;
 
   @ApiProperty({
     example: 2,
   })
   @IsNumber()
+  @Min(0)
+  @Max(100)
   bathrooms!: number;
 
   @ApiProperty({ example: 1, required: false, default: 0 })
   @IsOptional()
   @IsNumber()
+  @Min(0)
+  @Max(100)
   balconies?: number;
 
   @ApiProperty({ example: 2, required: false, default: 0 })
   @IsOptional()
   @IsNumber()
+  @Min(0)
+  @Max(1000)
   floor?: number;
 
   @ApiProperty({ example: 5, required: false, default: 0 })
   @IsOptional()
   @IsNumber()
+  @Min(0)
+  @Max(1000)
   totalFloors?: number;
 
   @ApiProperty({
     example: 1200,
   })
   @IsNumber()
+  @Min(0)
+  @Max(10000000)
   area!: number;
 
   @ApiProperty({
@@ -177,7 +204,7 @@ export class CreatePropertyDto {
     description: 'Owner-defined daily rent in INR',
   })
   @ValidateIf((dto: CreatePropertyDto) => dto.dailyRentEnabled === true)
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
   dailyRent?: number;
 
@@ -193,5 +220,6 @@ export class CreatePropertyDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
+  @ArrayMaxSize(100)
   amenityIds?: string[];
 }
