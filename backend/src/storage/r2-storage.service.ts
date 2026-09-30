@@ -93,6 +93,25 @@ export class R2StorageService {
     return `${url.origin}${url.pathname}?${params.toString()}`;
   }
 
+  async listObjects(): Promise<Array<{ publicId: string; createdAt: Date }>> {
+    const objects: Array<{ publicId: string; createdAt: Date }> = [];
+    let continuationToken: string | undefined;
+
+    do {
+      const page = await this.listObjectsPage(continuationToken);
+      for (const object of page.objects) {
+        if (!object.key || !object.lastModified) continue;
+        objects.push({
+          publicId: `r2:${object.key}`,
+          createdAt: new Date(object.lastModified),
+        });
+      }
+      continuationToken = page.nextToken;
+    } while (continuationToken);
+
+    return objects;
+  }
+
   async deleteImage(publicId: string): Promise<boolean> {
     const key = publicId.startsWith('r2:') ? publicId.slice(3) : publicId;
 
@@ -102,6 +121,89 @@ export class R2StorageService {
 
     await this.signedRequest('DELETE', key);
     return true;
+  }
+
+  private async listObjectsPage(continuationToken?: string): Promise<{
+    objects: Array<{ key: string; lastModified: string }>;
+    nextToken?: string;
+  }> {
+    const accountId = this.requiredConfig('R2_ACCOUNT_ID');
+    const accessKeyId = this.requiredConfig('R2_ACCESS_KEY_ID');
+    const secretAccessKey = this.requiredConfig('R2_SECRET_ACCESS_KEY');
+    const bucketName = this.requiredConfig('R2_BUCKET_NAME');
+    const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
+    const url = new URL(`${endpoint}/${this.encodePath(bucketName)}`);
+    const params = new URLSearchParams({ 'list-type': '2', 'max-keys': '1000' });
+    if (continuationToken) params.set('continuation-token', continuationToken);
+    url.search = params.toString();
+
+    const timestamp = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
+    const dateStamp = timestamp.slice(0, 8);
+    const scope = `${dateStamp}/auto/s3/aws4_request`;
+    const canonicalQuery = Array.from(params.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+      .join('&');
+    const canonicalRequest = [
+      'GET',
+      url.pathname,
+      canonicalQuery,
+      `host:${url.host}\n`,
+      'host',
+      'UNSIGNED-PAYLOAD',
+    ].join('\n');
+    const stringToSign = [
+      'AWS4-HMAC-SHA256',
+      timestamp,
+      scope,
+      this.sha256(canonicalRequest),
+    ].join('\n');
+    const dateKey = this.hmac(`AWS4${secretAccessKey}`, dateStamp);
+    const regionKey = this.hmac(dateKey, 'auto');
+    const serviceKey = this.hmac(regionKey, 's3');
+    const signingKey = this.hmac(serviceKey, 'aws4_request');
+    const signature = this.hmac(signingKey, stringToSign).toString('hex');
+    const authorization =
+      `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${scope}, SignedHeaders=host, Signature=${signature}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: authorization,
+        'x-amz-content-sha256': 'UNSIGNED-PAYLOAD',
+        'x-amz-date': timestamp,
+      },
+    });
+
+    if (!response.ok) {
+      throw new InternalServerErrorException('R2 object listing failed.');
+    }
+
+    const xml = await response.text();
+    const objects = Array.from(xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g))
+      .map((match) => {
+        const key = this.decodeXml(match[1].match(/<Key>([\s\S]*?)<\/Key>/)?.[1] ?? '');
+        const lastModified = this.decodeXml(
+          match[1].match(/<LastModified>([\s\S]*?)<\/LastModified>/)?.[1] ?? '',
+        );
+        return { key, lastModified };
+      })
+      .filter((object) => object.key && object.lastModified);
+
+    const nextToken = this.decodeXml(
+      xml.match(/<NextContinuationToken>([\s\S]*?)<\/NextContinuationToken>/)?.[1] ?? '',
+    );
+
+    return { objects, nextToken: nextToken || undefined };
+  }
+
+  private decodeXml(value: string): string {
+    return value
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'");
   }
 
   private buildKey(file: Express.Multer.File, folder: string): string {
