@@ -189,6 +189,9 @@ model Property {
   @@index([dailyRentEnabled])
   @@index([ownerId])
   @@index([city, state])
+  @@index([lifecycleStatus, createdAt])
+  @@index([lifecycleStatus, city, createdAt])
+  @@index([latitude, longitude])
 }
 
 model Amenity {
@@ -807,6 +810,17 @@ enum FurnishingType {
   UNFURNISHED
   SEMI_FURNISHED
   FULLY_FURNISHED
+}
+
+enum PropertyLifecycleStatus {
+  DRAFT
+  SUBMITTED
+  VERIFIED
+  PUBLISHED
+  BOOKED
+  OCCUPIED
+  UNAVAILABLE
+  ARCHIVED
 }
 
 enum PropertyStatus {
