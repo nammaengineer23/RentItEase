@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../common/app_exception.dart';
 import '../../config/environment.dart';
@@ -24,6 +25,8 @@ class ApiClient {
   }
 
   static final ApiClient shared = ApiClient();
+
+  VoidCallback? onSessionExpired;
 
   late final Dio _dio;
 
@@ -111,6 +114,7 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
       handler.resolve(retry);
     } catch (_) {
       await _storage.clearTokens();
+      onSessionExpired?.call();
       handler.next(error);
     }
   }
