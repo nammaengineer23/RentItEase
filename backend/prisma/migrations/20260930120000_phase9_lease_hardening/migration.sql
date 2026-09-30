@@ -1,4 +1,7 @@
 -- Phase 9: lease lifecycle hardening
+ALTER TABLE "Invoice"
+  ADD COLUMN "leaseId" TEXT;
+
 ALTER TABLE "Lease"
   ADD COLUMN "paymentId" TEXT,
   ADD COLUMN "invoiceId" TEXT,
@@ -8,6 +11,7 @@ ALTER TABLE "Lease"
 
 CREATE UNIQUE INDEX "Lease_paymentId_key" ON "Lease"("paymentId");
 CREATE UNIQUE INDEX "Lease_invoiceId_key" ON "Lease"("invoiceId");
+CREATE UNIQUE INDEX "Invoice_leaseId_key" ON "Invoice"("leaseId");
 CREATE UNIQUE INDEX "Lease_active_property_unique"
   ON "Lease"("propertyId")
   WHERE "status" = 'ACTIVE';
