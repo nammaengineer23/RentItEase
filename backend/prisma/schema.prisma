@@ -54,8 +54,29 @@ model User {
   devices                 UserDevice[]
   settings                UserSettings?
   appFeedback             AppFeedback[]
+  adminAuditLogs           AdminAuditLog[] @relation("AdminAuditLogs")
 
   @@index([ownerRequestStatus])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String?
+  action     String
+  resource   String
+  resourceId String?
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  device     String?
+  reason     String?
+  createdAt  DateTime @default(now())
+  admin      User?    @relation("AdminAuditLogs", fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([adminId, createdAt])
+  @@index([resource, resourceId, createdAt])
+  @@index([action, createdAt])
+  @@index([createdAt])
 }
 
 model AppDownload {
