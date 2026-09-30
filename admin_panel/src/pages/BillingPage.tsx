@@ -25,6 +25,7 @@ import {
   type Payment,
   type PremiumListing,
 } from "../api/billingApi";
+import { positiveNumber, requiredText } from "../forms/validation";
 
 type Tab = "overview" | "plans" | "memberships" | "premium" | "payments" | "invoices";
 
@@ -75,6 +76,7 @@ export function BillingPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [actionBusy, setActionBusy] = useState(false);
 
   const [planName, setPlanName] = useState("");
   const [planCode, setPlanCode] = useState<"FREE" | "PREMIUM">("PREMIUM");
@@ -127,21 +129,29 @@ export function BillingPage() {
     [plans],
   );
 
-  async function runAction(action: () => Promise<unknown>, message: string) {
+  async function runAction(action: () => Promise<unknown>, message: string, confirmation?: string) {
+    if (confirmation && !window.confirm(confirmation)) return;
+    if (actionBusy) return;
+    setActionBusy(true);
     setError("");
     try {
       await action();
       await loadAll();
     } catch (err) {
       setError(err instanceof Error ? err.message : message);
+    } finally {
+      setActionBusy(false);
     }
   }
 
   async function handleCreatePlan() {
     const price = Number(planPrice);
     const durationDays = Number(planDuration);
-    if (!planName.trim() || !Number.isFinite(price) || !Number.isFinite(durationDays)) {
-      setError("Enter a valid plan name, price and duration.");
+    const nameError = requiredText(planName, "Plan name", 100);
+    const priceError = positiveNumber(planPrice, "Price", true);
+    const durationError = positiveNumber(planDuration, "Duration", false);
+    if (nameError || priceError || durationError || !Number.isFinite(price) || !Number.isFinite(durationDays)) {
+      setError(nameError ?? priceError ?? durationError ?? "Enter valid plan values.");
       return;
     }
 
@@ -223,7 +233,7 @@ export function BillingPage() {
               <input value={planPrice} onChange={(e) => setPlanPrice(e.target.value)} type="number" min="0" placeholder="Price (INR)" />
               <input value={planDuration} onChange={(e) => setPlanDuration(e.target.value)} type="number" min="1" placeholder="Duration days" />
               <input value={planDescription} onChange={(e) => setPlanDescription(e.target.value)} placeholder="Description" />
-              <button className="primary-button" disabled={savingPlan} onClick={() => void handleCreatePlan()}>
+              <button className="primary-button" disabled={savingPlan || actionBusy} onClick={() => void handleCreatePlan()}>
                 {savingPlan ? "Saving…" : "Create plan"}
               </button>
             </div>
@@ -244,7 +254,7 @@ export function BillingPage() {
                       <td><span className={item.isActive ? "status-badge status-active" : "status-badge status-inactive"}>{item.isActive ? "Active" : "Inactive"}</span></td>
                       <td>
                         {item.isActive && (
-                          <button className="table-button danger-button" onClick={() => void runAction(() => deactivateBillingPlan(item.id), "Unable to deactivate plan.")}>
+                          <button className="table-button danger-button" onClick={() => void runAction(() => deactivateBillingPlan(item.id), "Unable to deactivate plan.", "Deactivate this billing plan?")}>
                             Deactivate
                           </button>
                         )}
@@ -274,9 +284,9 @@ export function BillingPage() {
                     <td>{item.autoRenew ? "Yes" : "No"}</td>
                     <td><div className="table-actions">
                       {item.status === "PENDING" && <button className="table-button" onClick={() => void runAction(() => activateAdminMembership(item.id), "Unable to activate membership.")}>Activate</button>}
-                      {item.status === "ACTIVE" && <button className="table-button" onClick={() => void runAction(() => expireAdminMembership(item.id), "Unable to expire membership.")}>Expire</button>}
+                      {item.status === "ACTIVE" && <button className="table-button" onClick={() => void runAction(() => expireAdminMembership(item.id), "Unable to expire membership.", "Expire this membership?")}>Expire</button>}
                       {(item.status === "ACTIVE" || item.status === "EXPIRED") && <button className="table-button" onClick={() => void runAction(() => renewAdminMembership(item.id), "Unable to renew membership.")}>Renew</button>}
-                      {item.status !== "CANCELLED" && item.status !== "EXPIRED" && <button className="table-button danger-button" onClick={() => void runAction(() => cancelAdminMembership(item.id), "Unable to cancel membership.")}>Cancel</button>}
+                      {item.status !== "CANCELLED" && item.status !== "EXPIRED" && <button className="table-button danger-button" onClick={() => void runAction(() => cancelAdminMembership(item.id), "Unable to cancel membership.", "Cancel this membership?")}>Cancel</button>}
                     </div></td>
                   </tr>
                 ))}
@@ -303,8 +313,8 @@ export function BillingPage() {
                     <td>{date(item.startDate)} → {date(item.endDate)}</td>
                     <td><div className="table-actions">
                       {item.status === "PENDING" && <button className="table-button" onClick={() => void runAction(() => activateAdminPremiumListing(item.id), "Unable to activate premium listing.")}>Activate</button>}
-                      {item.status === "ACTIVE" && <button className="table-button" onClick={() => void runAction(() => expireAdminPremiumListing(item.id), "Unable to expire premium listing.")}>Expire</button>}
-                      {item.status !== "CANCELLED" && item.status !== "EXPIRED" && <button className="table-button danger-button" onClick={() => void runAction(() => cancelAdminPremiumListing(item.id), "Unable to cancel premium listing.")}>Cancel</button>}
+                      {item.status === "ACTIVE" && <button className="table-button" onClick={() => void runAction(() => expireAdminPremiumListing(item.id), "Unable to expire premium listing.", "Expire this premium listing?")}>Expire</button>}
+                      {item.status !== "CANCELLED" && item.status !== "EXPIRED" && <button className="table-button danger-button" onClick={() => void runAction(() => cancelAdminPremiumListing(item.id), "Unable to cancel premium listing.", "Cancel this premium listing?")}>Cancel</button>}
                     </div></td>
                   </tr>
                 ))}
@@ -356,7 +366,7 @@ export function BillingPage() {
                     <td>{date(item.invoiceDate)}</td>
                     <td><div className="table-actions">
                       {item.status === "GENERATED" && <button className="table-button" onClick={() => void runAction(() => markAdminInvoicePaid(item.id), "Unable to mark invoice paid.")}>Mark paid</button>}
-                      {item.status !== "CANCELLED" && item.status !== "PAID" && <button className="table-button danger-button" onClick={() => void runAction(() => cancelAdminInvoice(item.id), "Unable to cancel invoice.")}>Cancel</button>}
+                      {item.status !== "CANCELLED" && item.status !== "PAID" && <button className="table-button danger-button" onClick={() => void runAction(() => cancelAdminInvoice(item.id), "Unable to cancel invoice.", "Cancel this invoice?")}>Cancel</button>}
                     </div></td>
                   </tr>
                 ))}
