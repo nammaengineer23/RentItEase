@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { getMe, login, type AdminUser } from "../api/authApi";
+import { getMe, login, logout as logoutApi, type AdminUser } from "../api/authApi";
 import { clearSessionTokens, getAccessToken, setSessionTokens } from "./session";
 
 interface AuthContextValue {
@@ -26,6 +26,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const signOut = useCallback(() => {
+    if (getAccessToken()) void logoutApi().catch(() => undefined);
     clearSessionTokens();
     setUser(null);
   }, []);
