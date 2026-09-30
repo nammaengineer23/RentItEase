@@ -144,9 +144,7 @@ class _ApiErrorInterceptor extends Interceptor {
   @override
   void onError(DioException error, ErrorInterceptorHandler handler) {
     final data = error.response?.data;
-    final message = data is Map
-        ? _messageFromMap(Map<String, dynamic>.from(data))
-        : error.message ?? 'Network request failed.';
+    final message = _mapError(error, data);
     handler.reject(
       DioException(
         requestOptions: error.requestOptions,
@@ -155,6 +153,22 @@ class _ApiErrorInterceptor extends Interceptor {
         error: ApiException(message, statusCode: error.response?.statusCode),
       ),
     );
+  }
+
+  String _mapError(DioException error, dynamic data) {
+    if (error.type == DioExceptionType.cancel) return 'Request cancelled.';
+    if (error.type == DioExceptionType.connectionError ||
+        error.type == DioExceptionType.connectionTimeout) {
+      return 'You appear to be offline. Check your internet connection and try again.';
+    }
+    if (error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return 'The server took too long to respond. Please try again.';
+    }
+    if (data is Map) {
+      return _messageFromMap(Map<String, dynamic>.from(data));
+    }
+    return error.message ?? 'Network request failed.';
   }
 
   String _messageFrom(dynamic value) => value is List
