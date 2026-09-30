@@ -7,6 +7,7 @@ import {
 
 import {
   BookingStatus,
+  PropertyLifecycleStatus,
   NotificationType,
   UserRole,
   VisitStatus,
@@ -130,51 +131,81 @@ export class BookingService {
 
     let booking: any;
     try {
-      booking = await this.prisma.booking.create({
-      data: {
-        propertyId: visit.propertyId,
-        tenantId: user.id,
-        visitId: visit.id,
-        monthlyRent: visit.property.price,
-        securityDeposit: visit.property.securityDeposit,
-        notes: dto.notes,
-        activePropertyKey: visit.propertyId,
-      },
-      include: {
-        property: {
-          include: {
-            owner: {
-              select: {
-                id: true,
-                fullName: true,
-                email: true,
-                phone: true,
-              },
+      const created = await this.prisma.$transaction(
+        async (tx) => {
+          const createdBooking = await tx.booking.create({
+            data: {
+              propertyId: visit.propertyId,
+              tenantId: user.id,
+              visitId: visit.id,
+              monthlyRent: visit.property.price,
+              securityDeposit: visit.property.securityDeposit,
+              notes: dto.notes,
+              activePropertyKey: visit.propertyId,
             },
-            images: {
-              where: {
-                isPrimary: true,
+          });
+
+          const propertyTransition = await tx.property.updateMany({
+            where: {
+              id: visit.propertyId,
+              lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
+              isAvailable: true,
+            },
+            data: {
+              lifecycleStatus: PropertyLifecycleStatus.BOOKED,
+              isAvailable: false,
+            },
+          });
+
+          if (propertyTransition.count !== 1) {
+            throw new BadRequestException(
+              'This property is no longer available for booking.',
+            );
+          }
+
+          return createdBooking;
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+
+      booking = await this.prisma.booking.findUnique({
+        where: { id: created.id },
+        include: {
+          property: {
+            include: {
+              owner: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  email: true,
+                  phone: true,
+                },
               },
-              orderBy: {
-                displayOrder: 'asc',
+              images: {
+                where: { isPrimary: true },
+                orderBy: { displayOrder: 'asc' },
               },
             },
           },
-        },
-        tenant: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            phone: true,
+          tenant: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+            },
           },
+          visit: true,
         },
-        visit: true,
-      },
-    });
+      });
+
+      if (!booking) throw new NotFoundException('Booking could not be loaded after creation.');
     } catch (error: any) {
       if (error?.code === 'P2002') {
         throw new BadRequestException('This property already has an active booking.');
+      }
+      if (error?.code === 'P2034') {
+        throw new BadRequestException('Property availability changed concurrently. Please retry.');
       }
       throw error;
     }
@@ -440,6 +471,11 @@ export class BookingService {
     });
     if (result.count !== 1) throw new BadRequestException('Booking status changed before rejection could be completed.');
 
+    await this.prisma.property.updateMany({
+      where: { id: booking.propertyId, lifecycleStatus: PropertyLifecycleStatus.BOOKED },
+      data: { lifecycleStatus: PropertyLifecycleStatus.PUBLISHED, isAvailable: true },
+    });
+
     const updated = await this.prisma.booking.findUnique({
       where: { id },
       include: {
@@ -540,6 +576,11 @@ async cancel(id: string, user: any) {
     data: { status: BookingStatus.CANCELLED, cancelledAt: new Date(), activePropertyKey: null },
   });
   if (result.count !== 1) throw new BadRequestException('Booking status changed before cancellation could be completed.');
+  await this.prisma.property.updateMany({
+    where: { id: booking.propertyId, lifecycleStatus: PropertyLifecycleStatus.BOOKED },
+    data: { lifecycleStatus: PropertyLifecycleStatus.PUBLISHED, isAvailable: true },
+  });
+
   const updated = await this.prisma.booking.findUnique({ where: { id } });
 
   return {
@@ -565,6 +606,11 @@ async cancel(id: string, user: any) {
       data: { status: BookingStatus.COMPLETED, completedAt: new Date(), activePropertyKey: null },
     });
     if (result.count !== 1) throw new BadRequestException('Booking status changed before completion could be completed.');
+    await this.prisma.property.updateMany({
+      where: { id: booking.propertyId, lifecycleStatus: PropertyLifecycleStatus.BOOKED },
+      data: { lifecycleStatus: PropertyLifecycleStatus.PUBLISHED, isAvailable: true },
+    });
+
     const updated = await this.prisma.booking.findUnique({ where: { id } });
 
     return {
