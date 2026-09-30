@@ -389,6 +389,7 @@ model Invoice {
   membership    Membership?   @relation(fields: [membershipId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([userId, status, invoiceDate])
   @@index([paymentId])
   @@index([membershipId])
   @@index([status])
