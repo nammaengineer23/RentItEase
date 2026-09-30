@@ -308,7 +308,7 @@ export class MembershipService {
 
     endDate.setDate(endDate.getDate() + membership.plan.durationDays);
 
-    return this.prisma.membership.update({
+    const updated = await this.prisma.membership.update({
       where: { id },
       data: {
         status: MembershipStatus.ACTIVE,
@@ -322,6 +322,14 @@ export class MembershipService {
         plan: true,
       },
     });
+    await this.prisma.billingAuditEvent.create({
+      data: {
+        membershipId: id,
+        action: 'MEMBERSHIP_ACTIVATED',
+        details: { isTrial: membership.isTrial },
+      },
+    });
+    return updated;
   }
 
   // ============================================================
