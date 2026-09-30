@@ -450,7 +450,7 @@ export class AuthService {
   // Login
   // ==========================================
   async login(dto: LoginDto, ip?: string) {
-    const login = dto.login.trim(); = dto.login.trim();
+    const login = dto.login.trim();
     const normalizedEmail = login.toLowerCase();
     const normalizedPhone = /^\+?\d[\d\s().-]{8,}$/.test(login)
       ? this.normalizePhone(login)
