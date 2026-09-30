@@ -411,6 +411,7 @@ model MembershipPlan {
 
   @@index([code])
   @@index([isActive])
+  @@index([displayOrder])
 }
 
 model Membership {
@@ -470,6 +471,7 @@ model PremiumListing {
 
   @@index([propertyId])
   @@index([userId])
+  @@index([userId, status])
   @@index([membershipId])
   @@index([status])
   @@index([startDate])
