@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { apiRequest, ApiError } from './http';
-import { clearSessionTokens, setSessionTokens } from '../auth/session';
+import { apiRequest, ApiError } from '../src/api/http';
+import { clearSessionTokens, setSessionTokens } from '../src/auth/session';
 
 describe('admin API security client', () => {
   beforeEach(() => {
