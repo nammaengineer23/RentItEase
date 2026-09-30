@@ -13,10 +13,14 @@ import { UpdatePropertyDto } from './dto/update-property.dto';
 import { FilterPropertiesDto } from './dto/filter-property.dto';
 import { UpdatePropertyAmenitiesDto } from './dto/update-property-amenities.dto';
 import { NearbyPropertiesDto } from './dto/nearby-properties.dto';
+import { StorageService } from '../../storage/storage.service';
 
 @Injectable()
 export class PropertiesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
+  ) {}
 
   async suggestListingText(input: {
     propertyType?: string;
@@ -1091,11 +1095,33 @@ export class PropertiesService {
       );
     }
 
-    await this.prisma.property.delete({
-      where: {
-        id,
-      },
+    const imageRows = await this.prisma.propertyImage.findMany({
+      where: { propertyId: id },
+      select: { publicId: true },
     });
+    const storageObjects = imageRows
+      .map((image) => image.publicId)
+      .filter((publicId): publicId is string => Boolean(publicId));
+
+    if (property.videoPublicId) {
+      storageObjects.push(property.videoPublicId);
+    }
+
+    await this.prisma.property.delete({
+      where: { id },
+    });
+
+    await Promise.all(
+      storageObjects.map((publicId) =>
+        this.storageService.deleteImage(publicId).catch((error) => {
+          console.error('Failed to delete property storage object', {
+            propertyId: id,
+            publicId,
+            error,
+          });
+        }),
+      ),
+    );
 
     return {
       success: true,
