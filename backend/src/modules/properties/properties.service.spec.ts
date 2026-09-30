@@ -16,11 +16,13 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
     membership,
   } as any;
 
+  const storageService = { deleteImage: jest.fn() } as any;
+
   let service: PropertiesService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new PropertiesService(prisma);
+    service = new PropertiesService(prisma, storageService);
   });
 
   it('limits every home collection to verified, available properties', async () => {
