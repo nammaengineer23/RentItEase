@@ -243,8 +243,9 @@ class MediaService {
       MediaKind.audio => MediaLimits.maxAudioBytes,
     };
     if (bytes > limit) {
+      final limitMb = limit ~/ (1024 * 1024);
       throw MediaUploadException(
-        'This $kind file exceeds ${limit ~/ (1024 * 1024)} MB limit.',
+        'This $kind file exceeds $limitMb MB limit.',
       );
     }
   }
