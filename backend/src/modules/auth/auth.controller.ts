@@ -55,16 +55,16 @@ export class AuthController {
 
   @Post('login/email-otp/verify')
   @ApiOperation({ summary: 'Login with email OTP' })
-  loginWithEmailOtp(@Body() dto: VerifyEmailOtpDto) {
-    return this.authService.loginWithEmailOtp(dto);
+  loginWithEmailOtp(@Body() dto: VerifyEmailOtpDto, @Ip() ip: string) {
+    return this.authService.loginWithEmailOtp(dto, ip);
   }
 
   @Throttle({ default: { limit: 8, ttl: 15 * 60 * 1000, blockDuration: 15 * 60 * 1000 } })
   @Post('login/phone-otp')
   @UseGuards(FirebaseAppCheckGuard)
   @ApiOperation({ summary: 'Login with Firebase phone OTP proof' })
-  loginWithPhoneOtp(@Body() dto: PhoneOtpLoginDto) {
-    return this.authService.loginWithPhoneOtp(dto.idToken);
+  loginWithPhoneOtp(@Body() dto: PhoneOtpLoginDto, @Ip() ip: string) {
+    return this.authService.loginWithPhoneOtp(dto.idToken, ip);
   }
 
   @Post('register/verified')
@@ -84,8 +84,8 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'Login user' })
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  login(@Body() loginDto: LoginDto, @Ip() ip: string) {
+    return this.authService.login(loginDto, ip);
   }
 
   @Post('firebase-login')
