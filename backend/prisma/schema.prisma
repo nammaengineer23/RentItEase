@@ -187,6 +187,10 @@ model Property {
   socialMediaPosts       SocialMediaPost[]
 
   @@index([dailyRentEnabled])
+  @@index([isVerified, isAvailable, createdAt])
+  @@index([isVerified, isAvailable, city, createdAt])
+  @@index([ownerId, createdAt])
+  @@index([latitude, longitude, isVerified, isAvailable])
 }
 
 model Amenity {
@@ -296,6 +300,7 @@ model Favorite {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, propertyId])
+  @@index([userId, createdAt])
 }
 
 model Review {
@@ -311,6 +316,7 @@ model Review {
 
   @@unique([userId, propertyId])
   @@index([propertyId])
+  @@index([propertyId, createdAt])
 }
 
 model PropertyVisit {
@@ -329,6 +335,8 @@ model PropertyVisit {
   @@index([propertyId])
   @@index([tenantId])
   @@index([visitDate])
+  @@index([tenantId, createdAt])
+  @@index([propertyId, visitDate, status])
 }
 
 model Booking {
@@ -356,6 +364,8 @@ model Booking {
   @@index([tenantId])
   @@index([status])
   @@index([bookingDate])
+  @@index([tenantId, createdAt])
+  @@index([propertyId, status])
 }
 
 model Invoice {
@@ -511,6 +521,7 @@ model Payment {
 
   @@index([status])
   @@index([createdAt])
+  @@index([status, createdAt])
 }
 
 model Notification {
@@ -526,6 +537,8 @@ model Notification {
 
   @@index([userId])
   @@index([relatedId])
+  @@index([userId, isRead, createdAt])
+  @@index([userId, createdAt])
 }
 
 model Conversation {
@@ -541,6 +554,8 @@ model Conversation {
   messages   Message[]
 
   @@unique([propertyId, ownerId, tenantId])
+  @@index([ownerId, updatedAt])
+  @@index([tenantId, updatedAt])
 }
 
 model Message {
@@ -558,6 +573,8 @@ model Message {
   sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
+  @@index([conversationId, createdAt])
+  @@index([conversationId, readAt, senderId])
 }
 
 model RefreshToken {
