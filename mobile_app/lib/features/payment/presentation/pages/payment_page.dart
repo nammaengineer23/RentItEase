@@ -134,7 +134,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> with WidgetsBindingOb
     _checkoutInProgress = false;
     _checkoutTimeout?.cancel();
     if (!mounted) return;
-    final message = response.code == Razorpay.PAYMENT_CANCELLED
+    final message = response.code == 0
         ? 'Payment checkout was cancelled. Your payment status was not assumed to be successful.'
         : (response.message ?? 'Payment failed.');
     setState(() { _isVerifying = false; _errorMessage = message; });
