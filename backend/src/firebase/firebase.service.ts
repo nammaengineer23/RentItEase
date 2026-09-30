@@ -6,6 +6,7 @@ import { cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
 import { getStorage, getDownloadURL } from 'firebase-admin/storage';
 
 import { getAuth } from 'firebase-admin/auth';
+import { getAppCheck } from 'firebase-admin/app-check';
 import { getMessaging } from 'firebase-admin/messaging';
 
 @Injectable()
@@ -81,6 +82,10 @@ export class FirebaseService {
 
   async verifyToken(idToken: string) {
     return this.getAuth().verifyIdToken(idToken, true);
+  }
+
+  async verifyAppCheckToken(appCheckToken: string) {
+    return getAppCheck().verifyToken(appCheckToken);
   }
 
   // =====================================
