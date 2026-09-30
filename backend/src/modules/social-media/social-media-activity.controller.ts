@@ -28,7 +28,7 @@ export class SocialMediaActivityController {
         analyticsSnapshots: { orderBy: { capturedAt: 'desc' }, take: 1 },
       },
       orderBy: { createdAt: 'desc' },
-      take: 200,
+      take: 100,
     }));
   }
 
@@ -44,10 +44,12 @@ export class SocialMediaActivityController {
     if (!cancellableStatuses.includes(post.status)) {
       throw new BadRequestException(`A ${post.status.toLowerCase()} post cannot be cancelled.`);
     }
-    const updated = await this.prisma.socialMediaPost.update({
-      where: { id: postId },
-      data: { status: SocialPostStatus.CANCELLED, scheduledAt: null, nextRetryAt: null },
+    const claimed = await this.prisma.socialMediaPost.updateMany({
+      where: { id: postId, status: { in: cancellableStatuses } },
+      data: { status: SocialPostStatus.CANCELLED, scheduledAt: null, nextRetryAt: null, processingToken: null, processingLeaseUntil: null },
     });
+    if (claimed.count !== 1) throw new BadRequestException('Post changed state before cancellation; refresh and try again.');
+    const updated = await this.prisma.socialMediaPost.findUnique({ where: { id: postId } });
     await this.prisma.socialMediaAuditEvent.create({
       data: { propertyId: post.propertyId, postId, actorId: req.user.id, eventType: 'POST_CANCELLED', details: { previousStatus: post.status } },
     });
