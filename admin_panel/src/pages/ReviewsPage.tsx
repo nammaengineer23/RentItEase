@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Pagination } from '../components/Pagination';
 import { deleteReview, getReviews, updateReview, type AdminReview } from '../api/reviewsApi';
 
 function formatDate(value: string): string {
@@ -21,6 +22,8 @@ export function ReviewsPage() {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
 
   async function loadReviews() {
     setLoading(true); setError('');
@@ -48,6 +51,9 @@ export function ReviewsPage() {
     if (!q) return reviews;
     return reviews.filter((r) => r.user.fullName.toLowerCase().includes(q) || r.user.email.toLowerCase().includes(q) || r.property.title.toLowerCase().includes(q) || r.property.city.toLowerCase().includes(q) || (r.comment ?? '').toLowerCase().includes(q));
   }, [reviews, search]);
+
+  useEffect(() => { setPage(1); }, [search]);
+  const paginatedReviews = filteredReviews.slice((page - 1) * pageSize, page * pageSize);
 
   function openReview(review: AdminReview) {
     setSelected(review); setRating(review.rating); setComment(review.comment ?? ''); setError('');
@@ -81,8 +87,9 @@ export function ReviewsPage() {
       <div className="users-toolbar"><input className="search-input" type="search" placeholder="Search user, property or review..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
       <div className="table-summary">Showing {filteredReviews.length} of {reviews.length} reviews</div>
       {filteredReviews.length === 0 ? <div className="empty-state"><h3>No reviews found</h3></div> : <div className="table-container"><table className="data-table"><thead><tr><th>User</th><th>Property</th><th>Rating</th><th>Comment</th><th>Updated</th><th>Action</th></tr></thead><tbody>
-        {filteredReviews.map((r) => <tr key={r.id}><td><div className="user-cell"><strong>{r.user.fullName}</strong><span>{r.user.email}</span></div></td><td><div className="user-cell"><strong>{r.property.title}</strong><span>{r.property.city}{r.property.locality ? `, ${r.property.locality}` : ''}</span></div></td><td><span className="rating-stars"><Stars rating={r.rating} /></span> {r.rating}/5</td><td><div className="review-comment">{r.comment || 'No comment'}</div></td><td>{formatDate(r.updatedAt || r.createdAt)}</td><td><button className="table-button" onClick={() => openReview(r)}>Details / Edit</button></td></tr>)}
+        {paginatedReviews.map((r) => <tr key={r.id}><td><div className="user-cell"><strong>{r.user.fullName}</strong><span>{r.user.email}</span></div></td><td><div className="user-cell"><strong>{r.property.title}</strong><span>{r.property.city}{r.property.locality ? `, ${r.property.locality}` : ''}</span></div></td><td><span className="rating-stars"><Stars rating={r.rating} /></span> {r.rating}/5</td><td><div className="review-comment">{r.comment || 'No comment'}</div></td><td>{formatDate(r.updatedAt || r.createdAt)}</td><td><button className="table-button" onClick={() => openReview(r)}>Details / Edit</button></td></tr>)}
       </tbody></table></div>}
+      <Pagination page={page} pageSize={pageSize} total={filteredReviews.length} onChange={setPage} />
     </div>
     {selected && <div className="modal-backdrop" role="presentation" onMouseDown={() => !busy && setSelected(null)}><div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="review-dialog-title" onMouseDown={(e) => e.stopPropagation()}>
       <div className="section-heading"><div><h3 id="review-dialog-title">Review details</h3><p className="muted">ID: {selected.id}</p></div><button className="secondary-button" disabled={busy} onClick={() => setSelected(null)}>Close</button></div>
