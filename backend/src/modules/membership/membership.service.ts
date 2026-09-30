@@ -187,6 +187,7 @@ export class MembershipService {
         planId,
         status: MembershipStatus.PENDING,
         autoRenew,
+        amount: plan.price,
         notes,
       },
       include: {
@@ -282,7 +283,7 @@ export class MembershipService {
       throw new BadRequestException('Cancelled membership cannot be activated');
     }
 
-    if (membership.razorpayOrderId && !membership.paidAt) {
+    if (!membership.isTrial && (!membership.paidAt || !membership.razorpayPaymentId)) {
       throw new BadRequestException(
         'Premium membership payment has not been verified',
       );
