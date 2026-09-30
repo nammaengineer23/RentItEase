@@ -4,7 +4,7 @@
 
 This audit reconciles `backend/prisma/schema.prisma`, the complete Prisma migration history, database-level race protections, query indexes, and CI migration verification.
 
-The repository currently contains **67 ordered migrations**, ending at `20260930183500_add_invoice_query_index`.
+The repository currently contains **66 ordered migrations**, ending at `20260930183500_add_invoice_query_index`.
 
 ## 6.1 Constraints
 
@@ -98,7 +98,7 @@ Migration directories are required to:
 2. sort strictly lexicographically;
 3. contain exactly a `migration.sql`.
 
-The audit currently reports 67 ordered migrations.
+The audit currently reports 66 ordered migrations.
 
 ### Destructive migrations
 
