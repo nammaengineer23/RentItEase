@@ -38,6 +38,30 @@ export class ReviewsController {
     return this.reviewsService.create(propertyId, user.id, dto);
   }
 
+  // Keep admin/static routes before parameter routes so they cannot be
+  // shadowed by /:propertyId during framework route registration.
+  @Get('admin/moderation')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List pending reviews for moderation' })
+  getModerationQueue() {
+    return this.reviewsService.getModerationQueue();
+  }
+
+  @Patch('admin/:reviewId/moderate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Approve or reject a review' })
+  moderate(
+    @Param('reviewId') reviewId: string,
+    @Body('status') status: ReviewStatus,
+    @CurrentUser() user: any,
+  ) {
+    return this.reviewsService.moderate(reviewId, status, user.role);
+  }
+
   @Get(':propertyId')
   @ApiOperation({ summary: 'Get approved property reviews' })
   @ApiParam({ name: 'propertyId' })
@@ -78,27 +102,5 @@ export class ReviewsController {
   @ApiOperation({ summary: 'Delete your review' })
   remove(@Param('reviewId') reviewId: string, @CurrentUser() user: any) {
     return this.reviewsService.remove(reviewId, user.id);
-  }
-
-  @Get('admin/moderation')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'List pending reviews for moderation' })
-  getModerationQueue() {
-    return this.reviewsService.getModerationQueue();
-  }
-
-  @Patch('admin/:reviewId/moderate')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Approve or reject a review' })
-  moderate(
-    @Param('reviewId') reviewId: string,
-    @Body('status') status: ReviewStatus,
-    @CurrentUser() user: any,
-  ) {
-    return this.reviewsService.moderate(reviewId, status, user.role);
   }
 }
