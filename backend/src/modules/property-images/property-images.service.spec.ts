@@ -10,6 +10,7 @@ describe('PropertyImagesService video tours', () => {
   const prisma = { property } as any;
   const storage = {
     uploadImage: jest.fn(),
+    uploadVideo: jest.fn(),
     deleteImage: jest.fn(),
   } as any;
 
@@ -52,7 +53,7 @@ describe('PropertyImagesService video tours', () => {
     expect(storage.uploadImage).not.toHaveBeenCalled();
   });
 
-  it('rejects videos longer than 60 seconds', async () => {
+  it('rejects videos over the 100 MB upload limit', async () => {
     property.findUnique.mockResolvedValue({
       id: 'property-1',
       ownerId: 'owner-1',
@@ -61,7 +62,7 @@ describe('PropertyImagesService video tours', () => {
     await expect(
       service.uploadVideo(
         'property-1',
-        videoFile(61),
+        { ...videoFile(30), size: 101 * 1024 * 1024 },
         { id: 'owner-1', role: 'OWNER' },
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -76,7 +77,7 @@ describe('PropertyImagesService video tours', () => {
       videoUrl: 'https://media.example/old.mp4',
       videoPublicId: 'r2:old.mp4',
     });
-    storage.uploadImage.mockResolvedValue({
+    storage.uploadVideo.mockResolvedValue({
       imageUrl: 'https://media.example/new.mp4',
       publicId: 'r2:new.mp4',
     });
@@ -92,7 +93,7 @@ describe('PropertyImagesService video tours', () => {
       { id: 'owner-1', role: 'OWNER' },
     );
 
-    expect(storage.uploadImage).toHaveBeenCalledWith(
+    expect(storage.uploadVideo).toHaveBeenCalledWith(
       expect.any(Object),
       'property-videos',
     );
