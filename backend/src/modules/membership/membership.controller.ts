@@ -123,6 +123,36 @@ export class MembershipController {
     return this.membershipService.getActiveMembership(userId);
   }
 
+
+  @Post(':id/refund')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  refundMembership(
+    @Param('id') id: string,
+    @Request() req: any,
+    @Body() body: { reason?: string },
+  ) {
+    return this.membershipService.refundMembership(
+      id,
+      req.user.id,
+      body?.reason,
+    );
+  }
+
+  @Post('billing/reconcile')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  reconcileBilling(@Request() req: any) {
+    return this.membershipService.reconcileBilling(req.user.id);
+  }
+
+  @Get('billing/audit')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getBillingAudit(@Query('limit') limit?: string) {
+    return this.membershipService.getBillingAudit(Number(limit) || 100);
+  }
+
   @Get(':id')
   getMembership(@Param('id') id: string) {
     return this.membershipService.getMembership(id);
