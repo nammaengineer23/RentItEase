@@ -201,9 +201,16 @@ describe('Phase 30 critical backend security regression suite', () => {
     };
     const service = new ReviewsService(prisma);
 
-    await expect(
-      service.create('property-1', 'tenant-1', { rating: 5, comment: 'Good' } as any),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    const result = await service.create(
+      'property-1',
+      'tenant-1',
+      { rating: 5, comment: 'Good' } as any,
+    );
+
+    expect(result.message).toContain('updated');
+    expect(prisma.review.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'review-1' } }),
+    );
   });
 
   it('Chat blocks message access for a non-participant', async () => {
