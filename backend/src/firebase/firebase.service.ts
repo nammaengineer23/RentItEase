@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
+import { randomUUID } from 'crypto';
 
 import { getStorage, getDownloadURL } from 'firebase-admin/storage';
 
@@ -41,7 +42,18 @@ export class FirebaseService {
   async uploadImage(file: Express.Multer.File, folder = 'properties') {
     const bucket = this.getStorage().bucket();
 
-    const fileName = `${folder}/${Date.now()}-${file.originalname}`;
+    const safeFolder = folder
+      .split('/')
+      .map((part) => part.replace(/[^a-zA-Z0-9_-]/g, ''))
+      .filter(Boolean)
+      .join('/') || 'uploads';
+    const safeName = file.originalname
+      .normalize('NFKD')
+      .replace(/[^a-zA-Z0-9._-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^[.-]+/, '')
+      .slice(-120) || 'upload';
+    const fileName = `${safeFolder}/${randomUUID()}-${safeName}`;
 
     const firebaseFile = bucket.file(fileName);
 
