@@ -13,6 +13,7 @@ import { ReviewsService } from '../reviews/reviews.service';
 import { ChatService } from '../chat/chat.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MembershipService } from '../membership/membership.service';
+import { SettingsService } from '../settings/settings.service';
 
 describe('Phase 30 critical backend security regression suite', () => {
   afterEach(() => {
@@ -287,5 +288,55 @@ describe('Phase 30 critical backend security regression suite', () => {
     await expect(
       service.complete('lease-1', { id: 'owner-1', role: UserRole.OWNER }),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('Account deletion anonymizes PII and revokes active sessions', async () => {
+    const prisma: any = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'user-1',
+          role: UserRole.USER,
+          email: 'user@example.com',
+        }),
+      },
+      $transaction: jest.fn(async (callback: any) => callback({
+        userDevice: { deleteMany: jest.fn() },
+        refreshToken: { deleteMany: jest.fn() },
+        otpCode: { deleteMany: jest.fn() },
+        passwordResetToken: { deleteMany: jest.fn() },
+        notification: { deleteMany: jest.fn() },
+        favorite: { deleteMany: jest.fn() },
+        appFeedback: { deleteMany: jest.fn() },
+        review: { deleteMany: jest.fn() },
+        userSettings: { deleteMany: jest.fn() },
+        message: { updateMany: jest.fn() },
+        socialMarketingConsent: { updateMany: jest.fn() },
+        user: { update: jest.fn().mockResolvedValue({ id: 'user-1', isActive: false }) },
+      })),
+    };
+    const service = new SettingsService(prisma);
+
+    await expect(service.deleteAccount('user-1')).resolves.toEqual({
+      message: expect.stringContaining('anonymized'),
+    });
+
+    expect(prisma.$transaction).toHaveBeenCalled();
+  });
+
+  it('Account deletion refuses administrator self-deletion', async () => {
+    const prisma: any = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'admin-1',
+          role: UserRole.ADMIN,
+          email: 'admin@example.com',
+        }),
+      },
+    };
+    const service = new SettingsService(prisma);
+
+    await expect(service.deleteAccount('admin-1')).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 });
