@@ -80,7 +80,10 @@ export function PremiumManagementPage() {
   }
 
   async function saveMembership(status?: Membership['status']) {
-    if (!membershipDialog) return;
+    if (!membershipDialog || busy) return;
+    const extendError = integerInRange(Number(extendDays), 'Extend days', 0, 3650);
+    if (extendError) { setError(extendError); return; }
+    if (status === 'CANCELLED' && !window.confirm('Cancel this membership? This action should only be used when cancellation is intended.')) return;
     setBusy(true); setError('');
     try {
       await updateMembershipAccount(membershipDialog.id, {
