@@ -61,6 +61,81 @@ jobs:
           chmod +x scripts/security-audit.sh
           ./scripts/security-audit.sh
 
+
+  database-audit:
+    name: Prisma / Database Audit
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: prisma
+          POSTGRES_PASSWORD: prisma
+          POSTGRES_DB: rentitease
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prisma -d rentitease"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: postgresql://prisma:prisma@localhost:5432/rentitease
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Validate Prisma schema
+        run: npx prisma validate
+
+      - name: Audit migration history and required constraints
+        working-directory: .
+        run: |
+          chmod +x scripts/prisma-database-audit.sh
+          ./scripts/prisma-database-audit.sh
+
+      - name: Apply complete migration history to a fresh PostgreSQL database
+        run: npx prisma migrate deploy
+
+      - name: Verify migration history has no drift or failed migrations
+        run: npx prisma migrate status
+
+      - name: Verify live database matches Prisma schema
+        run: npx prisma migrate diff --exit-code --from-url "$DATABASE_URL" --to-schema ./prisma/schema.prisma
+
+      - name: Exercise schema with production-like rows
+        run: |
+          psql "$DATABASE_URL" <<'SQL'
+          INSERT INTO "User" ("id","fullName","email","passwordHash")
+          VALUES ('phase6-audit-user','Phase 6 Audit','phase6-audit@example.invalid','audit-hash');
+
+          INSERT INTO "MembershipPlan" ("id","name","code","price","durationDays","isActive","createdAt","updatedAt")
+          VALUES ('phase6-audit-plan','Audit Premium','PREMIUM','99.00',30,true,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+          ON CONFLICT ("code") DO NOTHING;
+
+          SELECT "id","email","createdAt" FROM "User" WHERE "id"='phase6-audit-user';
+          SELECT "code","price" FROM "MembershipPlan" WHERE "code"='PREMIUM';
+          SQL
+
+      - name: Re-check migration state after data compatibility smoke test
+        run: npx prisma migrate status
+
   unit-tests:
     name: Unit Test — ${{ matrix.test_file }}
     runs-on: ubuntu-latest
