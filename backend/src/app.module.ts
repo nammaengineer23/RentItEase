@@ -54,7 +54,7 @@ import { StorageModule } from './storage/storage.module';
 
         JWT_ACCESS_SECRET: Joi.string().min(32).required(),
 
-        JWT_REFRESH_SECRET: Joi.string().min(16).required(),
+        JWT_REFRESH_SECRET: Joi.string().min(32).required(),
 
         RAZORPAY_WEBHOOK_SECRET: Joi.string().min(16).optional(),
 
