@@ -1,3 +1,8 @@
+jest.mock('../push-notifications/push-notifications.service', () => ({ PushNotificationsService: class {} }));
+jest.mock('../notifications/notifications.service', () => ({ NotificationsService: class {} }));
+jest.mock('../../storage/storage.service', () => ({ StorageService: class {} }));
+jest.mock('../../storage/file-scan.service', () => ({ FileScanService: class {} }));
+
 import { ChatService } from './chat.service';
 import { ForbiddenException, BadRequestException } from '@nestjs/common';
 
