@@ -8,6 +8,7 @@ import {
 import {
   BookingStatus,
   LeaseStatus,
+  PropertyLifecycleStatus,
   NotificationType,
   UserRole,
   Prisma,
@@ -162,9 +163,12 @@ export class LeaseService {
           const availabilityUpdate = await tx.property.updateMany({
             where: {
               id: booking.propertyId,
-              isAvailable: true,
+              lifecycleStatus: PropertyLifecycleStatus.BOOKED,
             },
-            data: { isAvailable: false },
+            data: {
+              lifecycleStatus: PropertyLifecycleStatus.OCCUPIED,
+              isAvailable: false,
+            },
           });
 
           if (availabilityUpdate.count !== 1) {
@@ -417,7 +421,7 @@ export class LeaseService {
       updated = await this.prisma.$transaction(async (tx) => {
         const changed = await tx.lease.updateMany({ where: { id, status: LeaseStatus.ACTIVE }, data: { status: LeaseStatus.COMPLETED, completedAt: new Date() } });
         if (changed.count !== 1) throw new BadRequestException('Lease status changed; please retry.');
-        await tx.property.update({ where: { id: lease.propertyId }, data: { isAvailable: true } });
+        await tx.property.update({ where: { id: lease.propertyId }, data: { lifecycleStatus: PropertyLifecycleStatus.PUBLISHED, isAvailable: true, isVerified: true } });
         return tx.lease.findUniqueOrThrow({ where: { id }, include: { property: true, tenant: true, booking: true } });
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (error) {
