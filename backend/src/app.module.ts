@@ -112,6 +112,11 @@ import { StorageModule } from './storage/storage.module';
       {
         ttl: 60_000,
         limit: 100,
+        getTracker: (request) => {
+          const deviceId = request.headers['x-device-id'];
+          const normalizedDevice = Array.isArray(deviceId) ? deviceId[0] : deviceId;
+          return `${request.ip}:${normalizedDevice || 'no-device'}`;
+        },
       },
     ]),
 
