@@ -106,6 +106,10 @@ import { StorageModule } from './storage/storage.module';
 
         TRUST_PROXY: Joi.alternatives().try(Joi.boolean(), Joi.number().integer().min(0)).optional(),
 
+        SWAGGER_ENABLED: Joi.boolean().default(false),
+
+        SWAGGER_DOCS_TOKEN: Joi.string().min(32).optional(),
+
         NODE_ENV: Joi.string()
           .valid('development', 'production', 'test')
           .default('development'),
