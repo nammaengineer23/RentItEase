@@ -1,21 +1,29 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { ConfigService } from '@nestjs/config';
+import { JwtSecretService } from '../../../common/auth/jwt-secret.service';
 import { PrismaService } from '../../../database/prisma.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly prisma: PrismaService,
-    configService: ConfigService,
+    jwtSecretService: JwtSecretService,
   ) {
-    const accessSecret = configService.getOrThrow<string>('JWT_ACCESS_SECRET');
-
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: accessSecret,
+      secretOrKeyProvider: (_request, rawJwtToken, done) => {
+        try {
+          const header = JSON.parse(
+            Buffer.from(rawJwtToken.split('.')[0], 'base64url').toString('utf8'),
+          ) as { kid?: string };
+
+          done(null, jwtSecretService.selectAccessSecret(header.kid));
+        } catch (error) {
+          done(error instanceof Error ? error : new Error('Invalid JWT.'));
+        }
+      },
     });
   }
 
