@@ -19,7 +19,7 @@ for migration in "${migrations[@]}"; do
     echo "ERROR: invalid migration directory name: $migration"
     fail=1
   fi
-  if [[ -n "$prev" && "$migration" <= "$prev" ]]; then
+  if [[ -n "$prev" && ( "$migration" == "$prev" || "$migration" < "$prev" ) ]]; then
     echo "ERROR: migration ordering is not strictly increasing: $prev -> $migration"
     fail=1
   fi
