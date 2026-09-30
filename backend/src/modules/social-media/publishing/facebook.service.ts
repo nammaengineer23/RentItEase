@@ -1,10 +1,17 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { SocialAccountService } from '../accounts/social-account.service';
+
 @Injectable()
 export class FacebookService {
   private readonly graphVersion = process.env.META_GRAPH_VERSION || 'v23.0';
+  constructor(private readonly accounts: SocialAccountService) {}
+
   async publish(params: { videoUrl: string; caption: string }): Promise<{ externalId: string; url?: string }> {
-    const accessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
-    const pageId = process.env.FACEBOOK_PAGE_ID;
+    const configuredToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+    const configuredId = process.env.FACEBOOK_PAGE_ID;
+    const credentials = await this.accounts.getCredentials('FACEBOOK', { accessToken: configuredToken, accountId: configuredId });
+    const accessToken = credentials.accessToken;
+    const pageId = credentials.accountId;
     if (!accessToken || !pageId) throw new ServiceUnavailableException('Facebook publishing is not configured.');
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       const controller = new AbortController();
