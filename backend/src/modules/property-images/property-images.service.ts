@@ -16,6 +16,7 @@ import { PropertyImageSection, UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { StorageService } from '../../storage/storage.service';
 import { ReorderImagesDto } from './dto/reorder-images.dto';
+import { validateImageUpload, validateVideoUpload } from '../../common/validators/upload-file.validator';
 
 const execFileAsync = promisify(execFile);
 
@@ -107,32 +108,37 @@ export class PropertyImagesService {
       });
     }
 
+    const uploadedObjects: string[] = [];
     const images = [];
 
-    // ==========================================
-    // Upload files
-    // ==========================================
+    try {
+      for (let index = 0; index < files.length; index++) {
+        const uploadResult = await this.storageService.uploadImage(
+          files[index],
+          'properties',
+        );
+        uploadedObjects.push(uploadResult.publicId);
 
-    for (let index = 0; index < files.length; index++) {
-      const file = files[index];
+        const image = await this.prisma.propertyImage.create({
+          data: {
+            propertyId,
+            imageUrl: uploadResult.imageUrl,
+            publicId: uploadResult.publicId,
+            displayOrder: currentCount + index,
+            section,
+            isPrimary: isPrimary && index === 0,
+          },
+        });
 
-      const uploadResult = await this.storageService.uploadImage(
-        file,
-        'properties',
+        images.push(image);
+      }
+    } catch (error) {
+      await Promise.all(
+        uploadedObjects.map((publicId) =>
+          this.storageService.deleteImage(publicId).catch(() => undefined),
+        ),
       );
-
-      const image = await this.prisma.propertyImage.create({
-        data: {
-          propertyId,
-          imageUrl: uploadResult.imageUrl,
-          publicId: uploadResult.publicId,
-          displayOrder: currentCount + index,
-          section,
-          isPrimary: isPrimary && index === 0,
-        },
-      });
-
-      images.push(image);
+      throw error;
     }
 
     return {
@@ -170,22 +176,7 @@ export class PropertyImagesService {
       throw new BadRequestException('No video uploaded.');
     }
 
-    const allowedMimeTypes = [
-      'video/mp4',
-      'video/quicktime',
-      'video/x-m4v',
-    ];
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException(
-        'Only MP4, MOV and M4V videos are allowed.',
-      );
-    }
-
-    if (file.size > 100 * 1024 * 1024) {
-      throw new BadRequestException(
-        'The property video must not exceed 100 MB.',
-      );
-    }
+    await validateVideoUpload(file);
 
     const uploaded = await this.storageService.uploadVideo(
       file,
