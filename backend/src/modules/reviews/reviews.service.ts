@@ -163,13 +163,15 @@ export class ReviewsService {
       this.prisma.review.groupBy({
         by: ['rating'],
         where: { propertyId },
+        orderBy: { rating: 'desc' },
         _count: { rating: true },
       }),
     ]);
 
     const ratings = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     for (const group of grouped) {
-      ratings[group.rating as keyof typeof ratings] = group._count.rating;
+      const count = group._count?.rating ?? 0;
+      ratings[group.rating as keyof typeof ratings] = count;
     }
 
     return {
