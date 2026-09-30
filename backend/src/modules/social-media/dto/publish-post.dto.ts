@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export enum SocialPublishPlatform {
   INSTAGRAM = 'INSTAGRAM',
@@ -12,9 +12,11 @@ export class PublishPostDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2200)
   caption?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   title?: string;
 }
