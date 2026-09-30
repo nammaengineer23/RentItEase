@@ -37,9 +37,9 @@ export class AuthRateLimitService {
 
             if (row.blockedUntil && row.blockedUntil > now) {
               throw new HttpException(
-                'Too many authentication attempts. Please try again later.',
-              HttpStatus.TOO_MANY_REQUESTS,
-              );
+      'Too many authentication attempts. Please try again later.',
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
             }
 
             const nextCount = row.failureCount + 1;
@@ -52,9 +52,9 @@ export class AuthRateLimitService {
                 },
               });
               throw new HttpException(
-                'Too many authentication attempts. Please try again later.',
-              HttpStatus.TOO_MANY_REQUESTS,
-              );
+      'Too many authentication attempts. Please try again later.',
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
             }
 
             await tx.authRateLimit.update({
@@ -66,7 +66,7 @@ export class AuthRateLimitService {
         );
         return;
       } catch (error: any) {
-        if (error instanceof TooManyRequestsException) throw error;
+        if (error instanceof HttpException) throw error;
         if (error?.code !== 'P2034' || attempt === 2) throw error;
       }
     }
@@ -79,9 +79,9 @@ export class AuthRateLimitService {
 
     if (row?.blockedUntil && row.blockedUntil > now) {
       throw new HttpException(
-        'Too many authentication attempts. Please try again later.',
+      'Too many authentication attempts. Please try again later.',
       HttpStatus.TOO_MANY_REQUESTS,
-      );
+    );
     }
 
     if (!row || now.getTime() - row.windowStartedAt.getTime() >= this.windowMs) {
@@ -90,9 +90,9 @@ export class AuthRateLimitService {
 
     if (row.failureCount >= limit) {
       throw new HttpException(
-        'Too many authentication attempts. Please try again later.',
+      'Too many authentication attempts. Please try again later.',
       HttpStatus.TOO_MANY_REQUESTS,
-      );
+    );
     }
   }
 
