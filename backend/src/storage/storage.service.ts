@@ -49,6 +49,14 @@ export class StorageService {
     return this.firebaseService.uploadImage(file, folder);
   }
 
+  async getPrivateUrl(publicId: string, expiresInSeconds = 900): Promise<string> {
+    if (publicId.startsWith('r2:')) {
+      return this.r2StorageService.getSignedUrl(publicId, expiresInSeconds);
+    }
+
+    return this.firebaseService.getSignedDownloadUrl(publicId, expiresInSeconds);
+  }
+
   deleteImage(publicId: string): Promise<boolean> {
     if (publicId.startsWith('r2:')) {
       return this.r2StorageService.deleteImage(publicId);
