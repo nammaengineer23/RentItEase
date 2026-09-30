@@ -4,7 +4,7 @@
 
 This phase hardens the payment boundary where RentItEase moves a booking from approved/payment-pending to paid.
 
-Razorpay's current security guidance requires server-side order IDs and amounts, callback signature validation, backend verification of captured status/amount, and HMAC validation for webhooks. urlRazorpay security checklisthttps://razorpay.com/security/checklist
+Razorpay's current security guidance requires server-side order IDs and amounts, callback signature validation, backend verification of captured status/amount, and HMAC validation for webhooks. [Razorpay security checklist](https://razorpay.com/security/checklist)
 
 ## 4.1 Order creation
 
@@ -39,7 +39,7 @@ Before success is recorded the backend:
 8. Rejects unavailable properties and invalid booking states before committing success.
 9. Never changes a legitimate pending/created Payment record when the supplied signature is invalid.
 
-Razorpay documents server-side signature validation and backend verification of captured payment status/amount. urlRazorpay payment integration guidancehttps://razorpay.com/docs/server-integration/python/test-app/
+Razorpay documents server-side signature validation and backend verification of captured payment status/amount. [Razorpay payment integration guidance](https://razorpay.com/docs/server-integration/python/test-app/)
 
 ## 4.3 Atomic success transition
 
