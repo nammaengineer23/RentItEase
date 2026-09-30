@@ -98,35 +98,88 @@ class _PaymentPageState extends ConsumerState<PaymentPage> with WidgetsBindingOb
     }
   }
 
-  Future<void> _refreshBackendPayment() async {(PaymentSuccessResponse response) async {
+  Future<void> _refreshBackendPayment() async {
+    final payment = _payment;
+    if (payment == null || payment.paymentId.isEmpty || _refreshingState) return;
+    _refreshingState = true;
+    try {
+      final latest = await ref.read(paymentRepositoryProvider).getPayment(
+        paymentId: payment.paymentId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _payment = latest;
+        if (latest.status.toUpperCase() == 'SUCCESS') {
+          _checkoutInProgress = false;
+          _checkoutTimeout?.cancel();
+          _errorMessage = null;
+        }
+      });
+    } catch (_) {
+      // A refresh failure must never be interpreted as payment success.
+    } finally {
+      _refreshingState = false;
+    }
+  }
+
+  Future<void> _handlePaymentSuccess(PaymentSuccessResponse response) async {
     _checkoutInProgress = false;
     _checkoutTimeout?.cancel();
-    final orderId = response.orderId, paymentId = response.paymentId, signature = response.signature;
+
+    final orderId = response.orderId;
+    final paymentId = response.paymentId;
+    final signature = response.signature;
+
     if (orderId == null || paymentId == null || signature == null) {
       _showError('Razorpay returned incomplete payment information.');
       await _refreshBackendPayment();
       return;
     }
+
     if (_verificationPaymentId == paymentId) return;
     _verificationPaymentId = paymentId;
+
     try {
-      setState(() { _isVerifying = true; _errorMessage = null; });
+      if (mounted) {
+        setState(() {
+          _isVerifying = true;
+          _errorMessage = null;
+        });
+      }
+
       final verified = await ref.read(paymentRepositoryProvider).verifyPayment(
-        bookingId: widget.bookingId, razorpayOrderId: orderId, razorpayPaymentId: paymentId, razorpaySignature: signature);
+        bookingId: widget.bookingId,
+        razorpayOrderId: orderId,
+        razorpayPaymentId: paymentId,
+        razorpaySignature: signature,
+      );
+
       if (!mounted) return;
-      setState(() { _payment = verified; _isVerifying = false; });
+      setState(() {
+        _payment = verified;
+        _isVerifying = false;
+      });
+
       await _refreshBackendPayment();
       if (!mounted) return;
+
       if (_payment?.status.toUpperCase() == 'SUCCESS') {
         await _showPaymentSuccess();
       } else {
-        _showError('Payment verification is still pending. We have not marked this payment as successful.');
+        _showError(
+          'Payment verification is still pending. We have not marked this payment as successful.',
+        );
       }
     } catch (error) {
       if (!mounted) return;
-      setState(() { _isVerifying = false; _errorMessage = _errorMessageFrom(error); });
+      setState(() {
+        _isVerifying = false;
+        _errorMessage = _errorMessageFrom(error);
+      });
       await _refreshBackendPayment();
-      _showError(_errorMessage ?? 'Payment verification failed.');
+      if (mounted) {
+        _showError(_errorMessage ?? 'Payment verification failed.');
+      }
     }
   }
 
@@ -217,7 +270,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> with WidgetsBindingOb
     final isPending = status == 'CREATED' || status == 'PENDING' || status == 'AUTHORIZED';
     return SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       const SizedBox(height: 8), Icon(isPaid ? Icons.check_circle_outline : Icons.account_balance_wallet_outlined, size: 64, color: isPaid ? Colors.green : Theme.of(context).colorScheme.primary),
-      const SizedBox(height: 16), Text(isPaid ? 'Payment Completed' : 'Complete Your Payment', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+      const SizedBox(height: 16), Text(isPaid ? 'Payment Completed' : isPending ? 'Payment Pending' : 'Complete Your Payment', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
       const SizedBox(height: 8), Text(isPaid ? 'Your booking payment has been verified.' : isPending ? 'Payment has not been confirmed by the server yet. You can retry checkout safely.' : 'Pay the rent and security deposit to complete your booking.', textAlign: TextAlign.center),
       const SizedBox(height: 24), PaymentCard(payment: payment),
       if (!isPaid) ...[
