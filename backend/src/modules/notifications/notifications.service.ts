@@ -40,8 +40,9 @@ export class NotificationsService {
       return serializePrisma(existing);
     }
 
-    const notification = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.notification.create({
+    try {
+      const notification = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.notification.create({
         data: {
           userId,
           title: title.trim().slice(0, 200),
@@ -67,10 +68,19 @@ export class NotificationsService {
         });
       }
 
-      return created;
-    });
+        return created;
+      });
 
-    return serializePrisma(notification);
+      return serializePrisma(notification);
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        const existing = await this.prisma.notification.findUnique({
+          where: { dedupeKey: stableKey },
+        });
+        if (existing) return serializePrisma(existing);
+      }
+      throw error;
+    }
   }
 
   async getMyNotifications(
