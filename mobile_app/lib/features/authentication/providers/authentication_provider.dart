@@ -233,15 +233,35 @@ class AuthenticationProvider extends ChangeNotifier {
     _errorMessage = null;
     try { await _pushNotificationService.deactivate(); } catch (_) {}
     try { await _repository.logout(); } catch (_) {}
-    finally { _authResponse = null; _isLoading = false; await RoutePersistenceService.clear(); notifyListeners(); }
+    try { await FirebaseAuth.instance.signOut(); } catch (_) {}
+    finally {
+      _authResponse = null;
+      _isLoading = false;
+      _pendingGoogleIdToken = null;
+      await RoutePersistenceService.clear();
+      notifyListeners();
+    }
   }
 
   Future<void> loadSavedSession() => _sessionRestoreFuture ??= _restoreSavedSession();
 
   Future<void> _restoreSavedSession() async {
-    try { _authResponse = await _repository.restoreSession(); if (_authResponse != null) await _pushNotificationService.activate(); }
-    catch (_) { _authResponse = null; }
-    finally { _sessionRestored = true; notifyListeners(); }
+    try {
+      _authResponse = await _repository.restoreSession();
+      if (_authResponse != null) {
+        await _pushNotificationService.activate();
+      }
+    } catch (error) {
+      // A rejected /auth/me response includes expired, revoked, and inactive
+      // accounts. Never keep a stale local session in memory in any of those
+      // cases; the backend remains authoritative for account state.
+      _authResponse = null;
+      try { await _pushNotificationService.deactivate(); } catch (_) {}
+      try { await FirebaseAuth.instance.signOut(); } catch (_) {}
+    } finally {
+      _sessionRestored = true;
+      notifyListeners();
+    }
   }
 
   Future<void> _saveSession(AuthResponse response) async {
