@@ -24,74 +24,40 @@ export class AdminService {
   // ==========================
   async getDashboard() {
     const [
-      users,
-      properties,
-      reviews,
-      favorites,
-      visits,
-    ] = await Promise.all([
-      this.prisma.user.findMany(),
-      this.prisma.property.findMany(),
-      this.prisma.review.findMany(),
-      this.prisma.favorite.findMany(),
-      this.prisma.propertyVisit.findMany(),
+      totalUsers,
+      totalOwners,
+      totalAdmins,
+      totalProperties,
+      activeProperties,
+      totalReviews,
+      totalFavorites,
+      totalVisits,
+      pendingVisits,
+      approvedVisits,
+      completedVisits,
+    ] = await this.prisma.$transaction([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { role: UserRole.OWNER } }),
+      this.prisma.user.count({ where: { role: UserRole.ADMIN } }),
+      this.prisma.property.count(),
+      this.prisma.property.count({ where: { isAvailable: true } }),
+      this.prisma.review.count(),
+      this.prisma.favorite.count(),
+      this.prisma.propertyVisit.count(),
+      this.prisma.propertyVisit.count({ where: { status: 'PENDING' } }),
+      this.prisma.propertyVisit.count({ where: { status: 'APPROVED' } }),
+      this.prisma.propertyVisit.count({ where: { status: 'COMPLETED' } }),
     ]);
 
-    const totalUsers = users.length;
-
-    const totalOwners = users.filter(
-      (u) => u.role === 'OWNER',
-    ).length;
-
-    const totalAdmins = users.filter(
-      (u) => u.role === 'ADMIN',
-    ).length;
-
-    const totalProperties = properties.length;
-
-    const activeProperties = properties.filter(
-      (p) => p.isAvailable,
-    ).length;
-
-    const rentedProperties =
-      totalProperties - activeProperties;
-
-    const pendingVisits = visits.filter(
-      (v) => v.status === 'PENDING',
-    ).length;
-
-    const approvedVisits = visits.filter(
-      (v) => v.status === 'APPROVED',
-    ).length;
-
-    const completedVisits = visits.filter(
-      (v) => v.status === 'COMPLETED',
-    ).length;
-
     return serializePrisma({
-      users: {
-        totalUsers,
-        totalOwners,
-        totalAdmins,
-      },
-
+      users: { totalUsers, totalOwners, totalAdmins },
       properties: {
         totalProperties,
         activeProperties,
-        rentedProperties,
+        rentedProperties: totalProperties - activeProperties,
       },
-
-      engagement: {
-        totalReviews: reviews.length,
-        totalFavorites: favorites.length,
-      },
-
-      visits: {
-        totalVisits: visits.length,
-        pendingVisits,
-        approvedVisits,
-        completedVisits,
-      },
+      engagement: { totalReviews, totalFavorites },
+      visits: { totalVisits, pendingVisits, approvedVisits, completedVisits },
     });
   }
 
@@ -100,30 +66,29 @@ export class AdminService {
   // ==========================
   async getUsers() {
     const users = await this.prisma.user.findMany({
-      include: {
-        properties: {
-          select: {
-            id: true,
-          },
-        },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        _count: { select: { properties: true } },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
 
-    return serializePrisma(
-      users.map((user) => ({
-        id: user.id,
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        isActive: user.isActive,
-        createdAt: user.createdAt,
-        totalProperties: user.properties.length,
-      })),
-    );
+    return serializePrisma(users.map((user) => ({
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      totalProperties: user._count.properties,
+    })));
   }
 
   // ==========================
@@ -332,53 +297,48 @@ visits: {
   // ==========================
   async getProperties() {
     const properties = await this.prisma.property.findMany({
-      include: {
-        owner: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-          },
-        },
+      select: {
+        id: true,
+        title: true,
+        city: true,
+        locality: true,
+        price: true,
+        isVerified: true,
+        isAvailable: true,
+        createdAt: true,
+        owner: { select: { id: true, fullName: true, email: true } },
         images: {
-          where: {
-            isPrimary: true,
-          },
+          where: { isPrimary: true },
+          orderBy: { displayOrder: 'asc' },
           take: 1,
+          select: { imageUrl: true },
         },
-        favorites: true,
-        visits: true,
-        reviews: true,
+        _count: {
+          select: { favorites: true, visits: true, reviews: true },
+        },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
 
-    return serializePrisma(
-      properties.map((property) => ({
-        id: property.id,
-        title: property.title,
-        city: property.city,
-        locality: property.locality,
-        price: Number(property.price),
-        owner: property.owner,
-        isVerified: property.isVerified,
-        isAvailable: property.isAvailable,
-        totalFavorites: property.favorites.length,
-        totalVisits: property.visits.length,
-        totalReviews: property.reviews.length,
-        primaryImage:
-          property.images.length > 0
-            ? property.images[0].imageUrl
-            : null,
-        createdAt: property.createdAt,
-      })),
-    );
+    return serializePrisma(properties.map((property) => ({
+      id: property.id,
+      title: property.title,
+      city: property.city,
+      locality: property.locality,
+      price: Number(property.price),
+      owner: property.owner,
+      isVerified: property.isVerified,
+      isAvailable: property.isAvailable,
+      totalFavorites: property._count.favorites,
+      totalVisits: property._count.visits,
+      totalReviews: property._count.reviews,
+      primaryImage: property.images[0]?.imageUrl ?? null,
+      createdAt: property.createdAt,
+    })));
   }
 
   // ==========================
-// Get Property Details
+  // Get Property Details
 // ==========================
 async getProperty(id: string) {
   const property = await this.prisma.property.findUnique({
