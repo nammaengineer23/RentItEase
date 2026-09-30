@@ -11,7 +11,7 @@ import { tmpdir } from 'os';
 import { extname, join } from 'path';
 import { promisify } from 'util';
 
-import { PropertyImageSection, UserRole } from '@prisma/client';
+import { PropertyImageSection, PropertyLifecycleStatus, UserRole } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
 import { StorageService } from '../../storage/storage.service';
@@ -146,6 +146,10 @@ export class PropertyImagesService {
       images.push(image);
     }
 
+    if (user.role !== UserRole.ADMIN) {
+      await this.markOwnerMediaChanged(propertyId, user.id);
+    }
+
     return {
       success: true,
       message: 'Images uploaded successfully.',
@@ -194,6 +198,8 @@ export class PropertyImagesService {
       throw new BadRequestException('The property video must not exceed 60 seconds.');
     }
 
+    this.assertMediaMutationAllowed(property, user);
+
     const uploaded = await this.storageService.uploadVideo(
       file,
       'property-videos',
@@ -225,6 +231,10 @@ export class PropertyImagesService {
       });
     }
 
+    if (user.role !== UserRole.ADMIN) {
+      await this.markOwnerMediaChanged(propertyId, user.id);
+    }
+
     return {
       success: true,
       message: property.videoUrl
@@ -248,6 +258,7 @@ export class PropertyImagesService {
         'You are not allowed to delete this property video.',
       );
     }
+    this.assertMediaMutationAllowed(property, user);
 
     await this.prisma.property.update({
       where: { id: propertyId },
@@ -259,6 +270,9 @@ export class PropertyImagesService {
 
     if (property.videoPublicId) {
       await this.storageService.deleteImage(property.videoPublicId);
+    }
+    if (user.role !== UserRole.ADMIN) {
+      await this.markOwnerMediaChanged(propertyId, user.id);
     }
 
     return {
@@ -323,6 +337,7 @@ export class PropertyImagesService {
     if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Access denied.');
     }
+    this.assertMediaMutationAllowed(property, user);
 
     // IMPORTANT:
     // Verify the image belongs to this property.
@@ -357,6 +372,10 @@ export class PropertyImagesService {
       }),
     ]);
 
+    if (user.role !== UserRole.ADMIN) {
+      await this.markOwnerMediaChanged(propertyId, user.id);
+    }
+
     return {
       success: true,
       message: 'Primary image updated successfully.',
@@ -381,6 +400,7 @@ export class PropertyImagesService {
     if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Access denied.');
     }
+    this.assertMediaMutationAllowed(property, user);
 
     for (const image of dto.images) {
       const existing = await this.prisma.propertyImage.findFirst({
@@ -410,6 +430,10 @@ export class PropertyImagesService {
       ),
     );
 
+    if (user.role !== UserRole.ADMIN) {
+      await this.markOwnerMediaChanged(propertyId, user.id);
+    }
+
     return {
       success: true,
       message: 'Images reordered successfully.',
@@ -434,6 +458,7 @@ export class PropertyImagesService {
     if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Access denied.');
     }
+    this.assertMediaMutationAllowed(property, user);
 
     const image = await this.prisma.propertyImage.findFirst({
       where: {
@@ -482,11 +507,41 @@ export class PropertyImagesService {
       }
     }
 
+    if (user.role !== UserRole.ADMIN) {
+      await this.markOwnerMediaChanged(propertyId, user.id);
+    }
+
     return {
       success: true,
       message: 'Image deleted successfully.',
     };
   }
+  private assertMediaMutationAllowed(property: any, user: any) {
+    if ([PropertyLifecycleStatus.BOOKED, PropertyLifecycleStatus.OCCUPIED, PropertyLifecycleStatus.ARCHIVED].includes(property.lifecycleStatus)) {
+      throw new BadRequestException('Property media cannot be changed in the current lifecycle state.');
+    }
+    if (user.role === UserRole.ADMIN) return;
+  }
+
+  private async markOwnerMediaChanged(propertyId: string, userId: string) {
+    const property = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { ownerId: true, lifecycleStatus: true },
+    });
+    if (!property || property.ownerId !== userId) return;
+
+    if (property.lifecycleStatus === PropertyLifecycleStatus.DRAFT) return;
+
+    await this.prisma.property.update({
+      where: { id: propertyId },
+      data: {
+        lifecycleStatus: PropertyLifecycleStatus.SUBMITTED,
+        isVerified: false,
+        isAvailable: false,
+      },
+    });
+  }
+
   private async readVideoDurationSeconds(
     file: Express.Multer.File,
   ): Promise<number> {
