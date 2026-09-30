@@ -1,4 +1,4 @@
-import { Injectable, TooManyRequestsException } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -36,8 +36,9 @@ export class AuthRateLimitService {
             }
 
             if (row.blockedUntil && row.blockedUntil > now) {
-              throw new TooManyRequestsException(
+              throw new HttpException(
                 'Too many authentication attempts. Please try again later.',
+              HttpStatus.TOO_MANY_REQUESTS,
               );
             }
 
@@ -50,8 +51,9 @@ export class AuthRateLimitService {
                   blockedUntil: new Date(now.getTime() + this.blockMs),
                 },
               });
-              throw new TooManyRequestsException(
+              throw new HttpException(
                 'Too many authentication attempts. Please try again later.',
+              HttpStatus.TOO_MANY_REQUESTS,
               );
             }
 
@@ -76,8 +78,9 @@ export class AuthRateLimitService {
     const now = new Date();
 
     if (row?.blockedUntil && row.blockedUntil > now) {
-      throw new TooManyRequestsException(
+      throw new HttpException(
         'Too many authentication attempts. Please try again later.',
+      HttpStatus.TOO_MANY_REQUESTS,
       );
     }
 
@@ -86,8 +89,9 @@ export class AuthRateLimitService {
     }
 
     if (row.failureCount >= limit) {
-      throw new TooManyRequestsException(
+      throw new HttpException(
         'Too many authentication attempts. Please try again later.',
+      HttpStatus.TOO_MANY_REQUESTS,
       );
     }
   }
