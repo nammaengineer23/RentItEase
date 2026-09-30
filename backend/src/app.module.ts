@@ -62,6 +62,43 @@ import { StorageModule } from './storage/storage.module';
 
         FIREBASE_PRIVATE_KEY: Joi.string().required(),
 
+        FIREBASE_STORAGE_BUCKET: Joi.string().when('NODE_ENV', {
+          is: 'production',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+
+        PASSWORD_RESET_URL: Joi.string().uri().default('https://rentitease.com/reset-password'),
+
+        MAIL_HOST: Joi.string().when('NODE_ENV', {
+          is: 'production',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+        MAIL_PORT: Joi.number().port().default(587),
+        MAIL_USER: Joi.string().when('NODE_ENV', {
+          is: 'production',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+        MAIL_PASSWORD: Joi.string().when('NODE_ENV', {
+          is: 'production',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+        MAIL_FROM: Joi.string().email().default('no-reply@rentitease.com'),
+
+        RAZORPAY_KEY_ID: Joi.string().when('NODE_ENV', {
+          is: 'production',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+        RAZORPAY_KEY_SECRET: Joi.string().when('NODE_ENV', {
+          is: 'production',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+
         STORAGE_DRIVER: Joi.string().valid('firebase', 'r2').default('firebase'),
 
         R2_ACCOUNT_ID: Joi.string().when('STORAGE_DRIVER', {
@@ -99,6 +136,14 @@ import { StorageModule } from './storage/storage.module';
           .default('GENERATE_ONLY'),
 
         SOCIAL_SCHEDULER_ENABLED: Joi.boolean().default(false),
+
+        SOCIAL_ACCOUNT_ENCRYPTION_KEY: Joi.string()
+          .pattern(/^[0-9a-fA-F]{64}$/)
+          .when('NODE_ENV', {
+            is: 'production',
+            then: Joi.required(),
+            otherwise: Joi.optional(),
+          }),
 
         PORT: Joi.number().default(3000),
 
