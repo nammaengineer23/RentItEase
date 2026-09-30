@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -193,7 +194,7 @@ class MediaService {
         fieldName: await MultipartFile.fromFile(
           file.path,
           filename: file.uri.pathSegments.last,
-          contentType: DioMediaType.parse(type),
+          contentType: MediaType.parse(type),
         ),
       });
 
