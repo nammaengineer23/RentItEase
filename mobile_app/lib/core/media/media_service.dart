@@ -204,7 +204,7 @@ class MediaService {
           data: request,
           cancelToken: cancelToken,
           onSendProgress: onProgress,
-          options: Options(headers: {'X-Upload-Attempt': '${attempt}'}),
+          options: Options(headers: {'X-Upload-Attempt': '$attempt'}),
         );
 
         final body = response.data;
@@ -244,7 +244,7 @@ class MediaService {
     };
     if (bytes > limit) {
       throw MediaUploadException(
-        'This ${kind.name} file exceeds the ${limit ~/ (1024 * 1024)} MB limit.',
+        'This $kind file exceeds ${limit ~/ (1024 * 1024)} MB limit.',
       );
     }
   }
