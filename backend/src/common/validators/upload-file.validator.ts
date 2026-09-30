@@ -129,7 +129,7 @@ export async function validateChatFileUpload(
       throw new BadRequestException('Invalid text attachment MIME type.');
     }
     const text = file.buffer.toString('utf8');
-    if (text.includes('\uFFFD') || /\u0000/.test(text)) {
+    if (text.includes('\uFFFD') || text.includes('\0')) {
       throw new BadRequestException('Invalid text attachment content.');
     }
     return;
