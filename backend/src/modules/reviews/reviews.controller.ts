@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  Query,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -23,6 +24,7 @@ import { Throttle } from '@nestjs/throttler';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
+import { ReviewPaginationDto } from './dto/review-pagination.dto';
 
 @ApiTags('Reviews')
 @Controller('reviews')
@@ -70,9 +72,12 @@ export class ReviewsController {
   })
   findByProperty(
     @Param('propertyId') propertyId: string,
+    @Query() query: ReviewPaginationDto,
   ) {
     return this.reviewsService.findByProperty(
       propertyId,
+      query.page,
+      query.limit,
     );
   }
 
