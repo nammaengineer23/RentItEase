@@ -82,6 +82,7 @@ jobs:
           - src/modules/users/users.service.spec.ts
           - src/storage/storage.service.spec.ts
           - test/payments-reconciliation.spec.ts
+          - test/payments-security.spec.ts
 
     defaults:
       run:
