@@ -32,6 +32,7 @@ jobs:
           channel: stable
 
       - name: Configure Android release signing
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -55,6 +56,7 @@ jobs:
           } > android/key.properties
 
       - name: Validate mobile API URL
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
         run: |
@@ -77,6 +79,7 @@ jobs:
         run: flutter test test/integration/p0_chat_flow_test.dart
 
       - name: Build Debug APK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: |
@@ -86,6 +89,7 @@ jobs:
             --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1
 
       - name: Sign Debug APK with stable upload key
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
@@ -110,12 +114,14 @@ jobs:
             build/app/outputs/flutter-apk/app-debug.apk
 
       - name: Upload Debug APK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: RentItEase-debug-apk
           path: mobile_app/build/app/outputs/flutter-apk/app-debug.apk
 
       - name: Build Release APK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: |
@@ -127,12 +133,14 @@ jobs:
             --dart-define=ENABLE_PHONE_OTP=false
 
       - name: Upload Release APK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: RentItEase-release-apk
           path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
 
       - name: Build Release AAB
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: |
@@ -144,6 +152,7 @@ jobs:
             --dart-define=ENABLE_PHONE_OTP=false
 
       - name: Upload Release AAB
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: RentItEase-release-aab
