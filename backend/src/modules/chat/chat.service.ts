@@ -76,6 +76,7 @@ export class ChatService {
           orderBy: { createdAt: 'desc' },
           take: 1,
         },
+        _count: { select: { messages: { where: { deletedAt: null, readAt: null, senderId: { not: userId } } } } },
       },
       orderBy: { updatedAt: 'desc' },
     });
@@ -87,6 +88,7 @@ export class ChatService {
         property: conversation.property,
         otherUser,
         lastMessage: conversation.messages.length ? conversation.messages[0] : null,
+        unreadCount: conversation._count.messages,
         updatedAt: conversation.updatedAt,
       };
     });
@@ -113,6 +115,9 @@ export class ChatService {
     if (senderId !== conversation.ownerId && senderId !== conversation.tenantId) {
       throw new ForbiddenException('You are not part of this conversation.');
     }
+
+    const participants = await this.prisma.user.findMany({ where: { id: { in: [conversation.ownerId, conversation.tenantId] } }, select: { id: true, isActive: true } });
+    if (participants.some((participant) => !participant.isActive)) throw new ForbiddenException('Chat is unavailable because a participant is inactive.');
 
     const normalizedText = text.trim();
     if (!normalizedText || normalizedText.length > 2000) throw new BadRequestException('Message must be between 1 and 2000 characters.');
@@ -175,6 +180,9 @@ export class ChatService {
     if (senderId !== conversation.ownerId && senderId !== conversation.tenantId) {
       throw new ForbiddenException('You are not part of this conversation.');
     }
+
+    const participants = await this.prisma.user.findMany({ where: { id: { in: [conversation.ownerId, conversation.tenantId] } }, select: { id: true, isActive: true } });
+    if (participants.some((participant) => !participant.isActive)) throw new ForbiddenException('Chat is unavailable because a participant is inactive.');
 
     await validateChatFileUpload(file);
     await this.fileScanService.scan(file);
