@@ -69,46 +69,52 @@ export class PropertiesService {
 
   async create(createPropertyDto: CreatePropertyDto, user: any) {
     const { amenityIds, ...propertyData } = createPropertyDto;
+    const forbiddenClientFields = ['ownerId', 'isAvailable', 'isVerified', 'lifecycleStatus', 'createdAt', 'updatedAt'];
+    if (forbiddenClientFields.some((field) => Object.prototype.hasOwnProperty.call(createPropertyDto as object, field))) {
+      throw new BadRequestException('Property lifecycle and ownership fields are server controlled.');
+    }
+
+    if ((propertyData.latitude === undefined) !== (propertyData.longitude === undefined)) {
+      throw new BadRequestException('Latitude and longitude must be supplied together.');
+    }
+    if (propertyData.dailyRentEnabled && propertyData.dailyRent === undefined) {
+      throw new BadRequestException('Daily rent is required when daily rent is enabled.');
+    }
+    if (!propertyData.dailyRentEnabled && propertyData.dailyRent !== undefined) {
+      throw new BadRequestException('Daily rent cannot be supplied when daily rent is disabled.');
+    }
+
+    if (amenityIds?.length) {
+      const amenities = await this.prisma.amenity.findMany({
+        where: { id: { in: amenityIds } },
+        select: { id: true },
+      });
+      if (amenities.length !== amenityIds.length) {
+        throw new BadRequestException('One or more amenity IDs are invalid.');
+      }
+    }
 
     const property = await this.prisma.property.create({
       data: {
         ...propertyData,
-
         ownerId: user.id,
         isAvailable: false,
         isVerified: false,
-
+        lifecycleStatus: PropertyLifecycleStatus.DRAFT,
         amenities: amenityIds?.length
           ? {
               create: amenityIds.map((amenityId) => ({
-                amenity: {
-                  connect: {
-                    id: amenityId,
-                  },
-                },
+                amenity: { connect: { id: amenityId } },
               })),
             }
           : undefined,
       },
-
       include: {
         owner: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            phone: true,
-          },
+          select: { id: true, fullName: true, email: true, phone: true },
         },
-
-        amenities: {
-          include: {
-            amenity: true,
-          },
-        },
-
+        amenities: { include: { amenity: true } },
         reviews: true,
-
         images: true,
       },
     });
@@ -119,6 +125,7 @@ export class PropertiesService {
       property: serializePrisma(property),
     };
   }
+
 
   private buildPropertyWhere(
     filterDto: FilterPropertiesDto,
@@ -924,6 +931,11 @@ export class PropertiesService {
     }
 
     const { amenityIds, ...propertyData } = updatePropertyDto;
+    const forbiddenClientFields = ['ownerId', 'isAvailable', 'isVerified', 'lifecycleStatus', 'createdAt', 'updatedAt'];
+    if (forbiddenClientFields.some((field) => Object.prototype.hasOwnProperty.call(updatePropertyDto as object, field))) {
+      throw new BadRequestException('Property lifecycle and ownership fields are server controlled.');
+    }
+
 
     if ((propertyData.latitude === undefined) !== (propertyData.longitude === undefined)) {
       throw new BadRequestException('Latitude and longitude must be supplied together.');
