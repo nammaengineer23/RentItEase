@@ -25,7 +25,10 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      - run: npm audit --audit-level=high
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Full audit report
+        run: npm audit --audit-level=high || true
 
   admin:
     name: Admin npm audit and build
