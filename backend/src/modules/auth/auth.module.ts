@@ -9,6 +9,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { MailModule } from '../../mail/mail.module';
 import { OtpModule } from '../../common/otp/otp.module';
+import { FirebaseAppCheckGuard } from '../../firebase/firebase-app-check.guard';
 
 
 @Module({
@@ -43,6 +44,7 @@ import { OtpModule } from '../../common/otp/otp.module';
   providers: [
     AuthService,
     JwtStrategy,
+    FirebaseAppCheckGuard,
   ],
 
   exports: [
