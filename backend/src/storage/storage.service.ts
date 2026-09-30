@@ -47,7 +47,7 @@ export class StorageService {
   }
 
   async getPrivateUrl(publicId: string, expiresInSeconds = 900): Promise<string> {
-    if (publicId.startsWith('r2:')) {
+    if (publicId.startsWith('r2:') || publicId.startsWith('r2p:')) {
       return this.r2StorageService.getSignedUrl(publicId, expiresInSeconds);
     }
 
