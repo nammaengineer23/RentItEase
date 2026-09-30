@@ -48,6 +48,21 @@ export class PropertyVisitsService {
       );
     }
 
+    const recentVisitCount = await this.prisma.propertyVisit.count({
+      where: {
+        tenantId: user.id,
+        createdAt: {
+          gte: new Date(Date.now() - 60 * 60 * 1000),
+        },
+      },
+    });
+
+    if (recentVisitCount >= 10) {
+      throw new BadRequestException(
+        'Hourly property visit request limit reached. Please try again later.',
+      );
+    }
+
     // Prevent owner from booking a visit on their own property.
     if (property.ownerId === user.id) {
       throw new BadRequestException(
