@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, SocialPlatform, SocialPostStatus } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../database/prisma.service';
 import { GenerateVideoDto } from './dto/generate-video.dto';
 import { PublishPostDto } from './dto/publish-post.dto';
@@ -111,37 +112,24 @@ export class SocialMediaService {
     return this.publishPost(post.id, dto.actorId);
   }
 
-  async saveOwnerConsent(dto: {
-    propertyId: string;
-    ownerId: string;
-    approved: boolean;
-    consentVersion?: string;
-  }) {
-    const property = await this.prisma.property.findFirst({
-      where: { id: dto.propertyId, ownerId: dto.ownerId },
-      select: { id: true },
-    });
-    if (!property)
-      throw new NotFoundException(
-        'Property not found or does not belong to the authenticated owner.',
-      );
-
-    return this.prisma.socialMarketingConsent.upsert({
+  async saveOwnerConsent(dto: { propertyId: string; ownerId: string; approved: boolean; consentVersion?: string }) {
+    const property = await this.prisma.property.findFirst({ where: { id: dto.propertyId, ownerId: dto.ownerId }, select: { id: true } });
+    if (!property) throw new NotFoundException('Property not found or does not belong to the authenticated owner.');
+    const consent = await this.prisma.socialMarketingConsent.upsert({
       where: { propertyId: dto.propertyId },
-      create: {
-        propertyId: dto.propertyId,
-        ownerId: dto.ownerId,
-        approved: dto.approved,
-        consentVersion: dto.consentVersion || '1.0',
-        consentedAt: new Date(),
-      },
-      update: {
-        approved: dto.approved,
-        consentVersion: dto.consentVersion || '1.0',
-        consentedAt: new Date(),
-        revokedAt: dto.approved ? null : new Date(),
-      },
+      create: { propertyId: dto.propertyId, ownerId: dto.ownerId, approved: dto.approved, consentVersion: dto.consentVersion || '1.0', consentedAt: dto.approved ? new Date() : null, revokedAt: dto.approved ? null : new Date() },
+      update: { approved: dto.approved, consentVersion: dto.consentVersion || '1.0', consentedAt: dto.approved ? new Date() : undefined, revokedAt: dto.approved ? null : new Date() },
     });
+    if (!dto.approved) {
+      const cancelled = await this.prisma.socialMediaPost.updateMany({
+        where: { propertyId: dto.propertyId, status: { in: [SocialPostStatus.PENDING, SocialPostStatus.READY, SocialPostStatus.FAILED] } },
+        data: { status: SocialPostStatus.CANCELLED, scheduledAt: null, nextRetryAt: null, processingToken: null, processingLeaseUntil: null },
+      });
+      if (cancelled.count) await this.audit(dto.propertyId, dto.ownerId, 'CONSENT_REVOKED_POSTS_CANCELLED', undefined, { count: cancelled.count });
+    } else {
+      await this.audit(dto.propertyId, dto.ownerId, 'CONSENT_GRANTED', undefined, { consentVersion: consent.consentVersion });
+    }
+    return consent;
   }
 
   async getOwnerConsent(propertyId: string, ownerId: string) {
@@ -227,74 +215,41 @@ export class SocialMediaService {
     };
   }
 
-  listProperties() {
-    return this.prisma.property.findMany({
-      where: { socialMarketingConsent: { approved: true } },
-      select: {
-        id: true,
-        title: true,
-        city: true,
-        locality: true,
-        createdAt: true,
-        videoUrl: true,
-        owner: { select: { id: true, fullName: true } },
-        socialMarketingConsent: {
-          select: {
-            id: true,
-            approved: true,
-            consentVersion: true,
-            consentedAt: true,
-            preparedVideoUrl: true,
-            preparedCaption: true,
-            preparedTitle: true,
-            preparedAt: true,
-          },
+  async listProperties(page = 1, limit = 20) {
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(100, Math.max(1, limit));
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.property.findMany({
+        where: { socialMarketingConsent: { approved: true } },
+        select: {
+          id: true, title: true, city: true, locality: true, createdAt: true, videoUrl: true,
+          owner: { select: { id: true, fullName: true } },
+          socialMarketingConsent: { select: { id: true, approved: true, consentVersion: true, consentedAt: true, preparedVideoUrl: true, preparedCaption: true, preparedTitle: true, preparedAt: true } },
+          images: { where: { isPrimary: true }, select: { id: true, imageUrl: true }, take: 1 },
         },
-        images: {
-          where: { isPrimary: true },
-          select: { id: true, imageUrl: true },
-          take: 1,
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+        skip: (safePage - 1) * safeLimit,
+        take: safeLimit,
+      }),
+      this.prisma.property.count({ where: { socialMarketingConsent: { approved: true } } }),
+    ]);
+    return { data, pagination: { page: safePage, limit: safeLimit, total, totalPages: Math.ceil(total / safeLimit) } };
   }
 
   async analytics() {
-    const [posts, snapshots] = await Promise.all([
-      this.prisma.socialMediaPost.findMany({
-        select: { platform: true, status: true },
-      }),
-      this.prisma.socialAnalyticsSnapshot.findMany({
-        select: {
-          impressions: true,
-          clicks: true,
-          likes: true,
-          shares: true,
-          leads: true,
-        },
-      }),
+    const [totalPosts, published, failed, pending, instagram, facebook, youtube, engagement] = await Promise.all([
+      this.prisma.socialMediaPost.count(),
+      this.prisma.socialMediaPost.count({ where: { status: SocialPostStatus.PUBLISHED } }),
+      this.prisma.socialMediaPost.count({ where: { status: SocialPostStatus.FAILED } }),
+      this.prisma.socialMediaPost.count({ where: { status: SocialPostStatus.PENDING } }),
+      this.prisma.socialMediaPost.count({ where: { platform: SocialPlatform.INSTAGRAM } }),
+      this.prisma.socialMediaPost.count({ where: { platform: SocialPlatform.FACEBOOK } }),
+      this.prisma.socialMediaPost.count({ where: { platform: SocialPlatform.YOUTUBE } }),
+      this.prisma.socialAnalyticsSnapshot.aggregate({ _sum: { impressions: true, clicks: true, likes: true, shares: true, leads: true } }),
     ]);
-    return {
-      totalPosts: posts.length,
-      published: posts.filter((post) => post.status === 'PUBLISHED').length,
-      failed: posts.filter((post) => post.status === 'FAILED').length,
-      pending: posts.filter((post) => post.status === 'PENDING').length,
-      instagram: posts.filter((post) => post.platform === 'INSTAGRAM').length,
-      facebook: posts.filter((post) => post.platform === 'FACEBOOK').length,
-      youtube: posts.filter((post) => post.platform === 'YOUTUBE').length,
-      scheduled: posts.filter((post) => post.status === 'PENDING').length,
-      engagement: snapshots.reduce(
-        (total, snapshot) => ({
-          impressions: total.impressions + snapshot.impressions,
-          clicks: total.clicks + snapshot.clicks,
-          likes: total.likes + snapshot.likes,
-          shares: total.shares + snapshot.shares,
-          leads: total.leads + snapshot.leads,
-        }),
-        { impressions: 0, clicks: 0, likes: 0, shares: 0, leads: 0 },
-      ),
-    };
+    return { totalPosts, published, failed, pending, instagram, facebook, youtube, scheduled: pending, engagement: {
+      impressions: engagement._sum.impressions ?? 0, clicks: engagement._sum.clicks ?? 0, likes: engagement._sum.likes ?? 0, shares: engagement._sum.shares ?? 0, leads: engagement._sum.leads ?? 0,
+    } };
   }
 
   async recordAnalytics(
@@ -365,20 +320,20 @@ export class SocialMediaService {
 
   async processDuePosts() {
     const now = new Date();
-    const posts = await this.prisma.socialMediaPost.findMany({
-      where: {
-        OR: [
-          { status: SocialPostStatus.PENDING, scheduledAt: { lte: now } },
-          { status: SocialPostStatus.FAILED, nextRetryAt: { lte: now } },
-        ],
-      },
-      select: { id: true, propertyId: true },
-      take: 20,
-      orderBy: { scheduledAt: 'asc' },
+    const candidates = await this.prisma.socialMediaPost.findMany({
+      where: { attemptCount: { lt: 3 }, OR: [
+        { status: SocialPostStatus.PENDING, scheduledAt: { lte: now } },
+        { status: SocialPostStatus.READY, scheduledAt: { lte: now } },
+        { status: SocialPostStatus.FAILED, nextRetryAt: { lte: now } },
+        { status: SocialPostStatus.PUBLISHING, processingLeaseUntil: { lt: now } },
+      ] },
+      select: { id: true }, take: 20, orderBy: { scheduledAt: 'asc' },
     });
-    return Promise.all(
-      posts.map((post) => this.publishPost(post.id, 'system')),
-    );
+    const results = [];
+    for (const post of candidates) {
+      try { results.push(await this.publishPost(post.id, 'system')); } catch { results.push({ id: post.id, failed: true }); }
+    }
+    return results;
   }
 
   async retry(postId: string, actorId: string) {
@@ -433,13 +388,11 @@ export class SocialMediaService {
     };
     const autoCaption = this.template.buildPlatformCaption(templateData, dto.platform);
     const autoTitle = this.template.buildTitle(templateData, dto.platform);
-    const post = await this.prisma.socialMediaPost.create({
-      data: {
-        propertyId: dto.propertyId,
-        consentId: consent.id,
-        platform: dto.platform as SocialPlatform,
-        caption: dto.caption?.trim() || autoCaption,
-      },
+    const idempotencyKey = [dto.propertyId, dto.platform, consent.id, consent.preparedAt?.toISOString() || 'none'].join(':');
+    const post = await this.prisma.socialMediaPost.upsert({
+      where: { idempotencyKey },
+      create: { propertyId: dto.propertyId, consentId: consent.id, platform: dto.platform as SocialPlatform, idempotencyKey, caption: dto.caption?.trim() || autoCaption },
+      update: { caption: dto.caption?.trim() || autoCaption, consentId: consent.id },
     });
     // Keep the platform-specific generated title with the prepared content so
     // the publisher can use it immediately. Manual admin text still wins.
@@ -457,85 +410,44 @@ export class SocialMediaService {
   }
 
   private async publishPost(postId: string, actorId: string) {
-    const post = await this.prisma.socialMediaPost.findUnique({
-      where: { id: postId },
+    const now = new Date();
+    const processingToken = randomUUID();
+    const claimed = await this.prisma.socialMediaPost.updateMany({
+      where: { id: postId, attemptCount: { lt: 3 }, OR: [
+        { status: { in: [SocialPostStatus.PENDING, SocialPostStatus.READY, SocialPostStatus.FAILED] }, processingLeaseUntil: null },
+        { status: { in: [SocialPostStatus.PENDING, SocialPostStatus.READY, SocialPostStatus.FAILED] }, processingLeaseUntil: { lt: now } },
+        { status: SocialPostStatus.PUBLISHING, processingLeaseUntil: { lt: now } },
+      ] },
+      data: { status: SocialPostStatus.PUBLISHING, attemptCount: { increment: 1 }, lastAttemptAt: now, nextRetryAt: null, processingToken, processingLeaseUntil: new Date(Date.now() + 10 * 60_000) },
     });
+    if (claimed.count !== 1) {
+      const current = await this.prisma.socialMediaPost.findUnique({ where: { id: postId } });
+      if (current?.status === SocialPostStatus.PUBLISHED) return current;
+      throw new BadRequestException('Social post is already being processed or is not eligible for publishing.');
+    }
+    const post = await this.prisma.socialMediaPost.findUnique({ where: { id: postId } });
     if (!post) throw new NotFoundException('Social post not found.');
-    const consent = await this.prisma.socialMarketingConsent.findUnique({
-      where: { propertyId: post.propertyId },
-    });
-    if (!consent?.approved)
-      throw new BadRequestException(
-        'Owner marketing consent has been revoked or is missing.',
-      );
-    const attemptCount = post.attemptCount + 1;
-    await this.prisma.socialMediaPost.update({
-      where: { id: postId },
-      data: {
-        status: SocialPostStatus.PUBLISHING,
-        attemptCount,
-        lastAttemptAt: new Date(),
-        nextRetryAt: null,
-      },
-    });
+    let filePath: string | undefined;
     try {
-      if (!consent.preparedVideoUrl) {
-        throw new BadRequestException(
-          'No prepared reel is available. Generate and review the reel before publishing.',
-        );
-      }
-      const videoUrl = consent.preparedVideoUrl;
-      const filePath =
-        post.platform === SocialPlatform.YOUTUBE
-          ? await this.storage.downloadVideo(videoUrl, post.propertyId)
-          : undefined;
-      const published = await this.publishing.publish(post.platform as any, {
-        videoUrl,
-        filePath,
-        caption: post.caption || consent.preparedCaption || '',
-        title: consent.preparedTitle || 'RentItEase property tour',
-      });
-      const result = await this.prisma.socialMediaPost.update({
-        where: { id: postId },
-        data: {
-          status: SocialPostStatus.PUBLISHED,
-          videoUrl,
-          externalId: published.externalId,
-          publishedAt: new Date(),
-          error: null,
-        },
-      });
-      await this.audit(post.propertyId, actorId, 'POST_PUBLISHED', postId, {
-        platform: post.platform,
-        externalId: published.externalId,
-      });
-      return result;
+      const consent = await this.prisma.socialMarketingConsent.findUnique({ where: { propertyId: post.propertyId } });
+      if (!consent?.approved) throw new BadRequestException('Owner marketing consent has been revoked or is missing.');
+      if (!consent.preparedVideoUrl) throw new BadRequestException('No prepared reel is available. Generate and review the reel before publishing.');
+      try {
+        if (post.platform === SocialPlatform.YOUTUBE) filePath = await this.storage.downloadVideo(consent.preparedVideoUrl, post.propertyId);
+        const published = await this.publishing.publish(post.platform as any, { videoUrl: consent.preparedVideoUrl, filePath, caption: post.caption || consent.preparedCaption || '', title: consent.preparedTitle || 'RentItEase property tour' });
+        const saved = await this.prisma.socialMediaPost.updateMany({ where: { id: postId, processingToken }, data: { status: SocialPostStatus.PUBLISHED, videoUrl: consent.preparedVideoUrl, externalId: published.externalId, publishedAt: new Date(), error: null, processingToken: null, processingLeaseUntil: null } });
+        if (saved.count !== 1) throw new BadRequestException('Publication claim expired before completion.');
+        const result = await this.prisma.socialMediaPost.findUnique({ where: { id: postId } });
+        await this.audit(post.propertyId, actorId, 'POST_PUBLISHED', postId, { platform: post.platform, externalId: published.externalId });
+        return result;
+      } finally { await this.storage.cleanupTempFile(filePath); }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const retryAt =
-        attemptCount < post.maxAttempts
-          ? new Date(Date.now() + 2 ** attemptCount * 60_000)
-          : null;
-      await this.prisma.socialMediaPost.update({
-        where: { id: postId },
-        data: {
-          status: SocialPostStatus.FAILED,
-          error: message,
-          nextRetryAt: retryAt,
-        },
-      });
-      await this.audit(post.propertyId, actorId, 'POST_FAILED', postId, {
-        attemptCount,
-        retryAt: retryAt?.toISOString(),
-        message,
-      });
-      // The publish endpoint is an explicit admin action. Returning a FAILED
-      // database row as HTTP success makes the app report "Submitted" even
-      // though no platform received the reel. Surface the platform failure to
-      // the caller while preserving the FAILED post for history/retry.
-      throw new BadRequestException(
-        `${post.platform} publish failed: ${message}`,
-      );
+      const raw = error instanceof Error ? error.message : 'Social provider failure.';
+      const message = raw.replace(/https?:\/\/\S+/g, '[redacted-url]').slice(0, 500);
+      const retryAt = post.attemptCount < post.maxAttempts ? new Date(Date.now() + Math.min(60 * 60_000, 2 ** post.attemptCount * 60_000)) : null;
+      await this.prisma.socialMediaPost.updateMany({ where: { id: postId, processingToken }, data: { status: SocialPostStatus.FAILED, error: message, nextRetryAt: retryAt, processingToken: null, processingLeaseUntil: null } });
+      await this.audit(post.propertyId, actorId, 'POST_FAILED', postId, { attemptCount: post.attemptCount, retryAt: retryAt?.toISOString(), message });
+      throw new BadRequestException(post.platform + ' publish failed.');
     }
   }
 
