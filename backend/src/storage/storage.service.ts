@@ -24,24 +24,21 @@ export class StorageService {
     return this.firebaseService.uploadImage(file, folder);
   }
 
-  uploadFile(
+  async uploadPrivateFile(
     file: Express.Multer.File,
     folder = 'chat-attachments',
-  ): Promise<StoredImage> {
+  ): Promise<{ publicId: string }> {
     if (this.driver === 'r2') {
-      return this.r2StorageService.uploadImage(file, folder);
+      return this.r2StorageService.uploadPrivateFile(file, folder);
     }
 
-    return this.firebaseService.uploadImage(file, folder);
+    return this.firebaseService.uploadPrivateFile(file, folder);
   }
 
   uploadVideo(
     file: Express.Multer.File,
     folder = 'property-videos',
   ): Promise<StoredImage> {
-    // Both storage drivers preserve the supplied MIME type and raw bytes.
-    // Keep a separate video entry point so video uploads do not depend on
-    // image-specific behavior as the storage layer evolves.
     if (this.driver === 'r2') {
       return this.r2StorageService.uploadImage(file, folder);
     }
