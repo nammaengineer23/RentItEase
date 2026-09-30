@@ -55,9 +55,11 @@ describe('AdminService', () => {
   });
 
   it('rejects deleting a user with owned properties', async () => {
-    prisma.user.findUnique
-      .mockResolvedValueOnce({ id: 'owner-1', role: UserRole.OWNER, isActive: true, fullName: 'Owner', email: 'owner@example.com' })
-      .mockResolvedValueOnce({ id: 'admin-1', role: UserRole.ADMIN, isActive: true });
+    prisma.user.findUnique.mockImplementation(async ({ where }: any) =>
+      where.id === 'admin-1'
+        ? { id: 'admin-1', role: UserRole.ADMIN, isActive: true }
+        : { id: 'owner-1', role: UserRole.OWNER, isActive: true, fullName: 'Owner', email: 'owner@example.com' },
+    );
     prisma.user.count.mockResolvedValue(2);
     prisma.property.count = jest.fn().mockResolvedValue(1);
     prisma.booking.count.mockResolvedValue(0);
