@@ -342,7 +342,7 @@ export class PropertiesService {
       pagination: {
         total,
         page,
-        limit,
+        limit: safeLimit,
         totalPages: Math.ceil(total / safeLimit),
       },
     };
