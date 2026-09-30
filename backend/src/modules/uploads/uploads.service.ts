@@ -7,12 +7,14 @@ import {
   validateChatFileUpload,
   validateImageUpload,
 } from '../../common/validators/upload-file.validator';
+import { FileScanService } from '../../storage/file-scan.service';
 import { StorageService } from '../../storage/storage.service';
 
 @Injectable()
 export class UploadsService {
   constructor(
     private readonly storageService: StorageService,
+    private readonly fileScanService: FileScanService,
   ) {}
 
   async uploadImage(file: Express.Multer.File) {
@@ -21,6 +23,7 @@ export class UploadsService {
     }
 
     await validateImageUpload(file);
+    await this.fileScanService.scan(file);
 
     const uploadResult = await this.storageService.uploadImage(file, 'uploads/images');
 
@@ -40,6 +43,7 @@ export class UploadsService {
     }
 
     await validateChatFileUpload(file);
+    await this.fileScanService.scan(file);
 
     const result = await this.storageService.uploadFile(
       file,
