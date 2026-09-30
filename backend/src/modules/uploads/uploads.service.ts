@@ -3,52 +3,49 @@ import {
   Injectable,
 } from '@nestjs/common';
 
-import { ImageFileValidator } from '../../common/validators/image-file.validator';
+import {
+  validateChatFileUpload,
+  validateImageUpload,
+} from '../../common/validators/upload-file.validator';
 import { StorageService } from '../../storage/storage.service';
-
 
 @Injectable()
 export class UploadsService {
-
- constructor(
+  constructor(
     private readonly storageService: StorageService,
   ) {}
 
-
-  async uploadImage(
-    file: Express.Multer.File,
-  ) {
+  async uploadImage(file: Express.Multer.File) {
     if (!file) {
-      throw new BadRequestException(
-        'No file uploaded',
-      );
+      throw new BadRequestException('No file uploaded');
     }
 
-    const validator =
-      new ImageFileValidator();
+    await validateImageUpload(file);
 
-    if (!validator.isValid(file)) {
-      throw new BadRequestException(
-        validator.buildErrorMessage(),
-      );
-    }
+    const uploadResult = await this.storageService.uploadImage(file, 'uploads/images');
 
-    const uploadResult =
-  await this.storageService.uploadImage(file);
-
-return {
-  success: true,
-  imageUrl: uploadResult.imageUrl,
-  filename: uploadResult.publicId,
-  originalName: file.originalname,
-  mimetype: file.mimetype,
-  size: file.size,
-};
+    return {
+      success: true,
+      imageUrl: uploadResult.imageUrl,
+      filename: uploadResult.publicId,
+      originalName: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+    };
   }
 
   async uploadFile(file: Express.Multer.File) {
-    if (!file) throw new BadRequestException('No file uploaded');
-    const result = await this.storageService.uploadImage(file, 'chat');
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    await validateChatFileUpload(file);
+
+    const result = await this.storageService.uploadFile(
+      file,
+      'chat-attachments',
+    );
+
     return {
       success: true,
       fileUrl: result.imageUrl,
