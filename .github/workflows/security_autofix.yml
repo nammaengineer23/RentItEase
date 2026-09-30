@@ -29,19 +29,19 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm install
       - run: npm audit fix
-      - name: Production dependency audit
-        run: npm audit --omit=dev --audit-level=high
-      - name: Full audit report
-        run: npm audit --audit-level=high || true
       - name: Commit safe audit fixes
         working-directory: .
         run: |
           if git diff --quiet; then
             echo "No dependency changes were produced."
-            exit 0
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add backend/package.json backend/package-lock.json
+            git commit -m "security: apply npm audit fixes [audit-fix]"
+            git push
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add backend/package.json backend/package-lock.json
-          git commit -m "security: apply npm audit fixes [audit-fix]"
-          git push
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high || true
+      - name: Full audit report
+        run: npm audit --audit-level=high || true
