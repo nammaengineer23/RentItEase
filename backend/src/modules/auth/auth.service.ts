@@ -23,6 +23,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { RequestEmailOtpDto } from './dto/request-email-otp.dto';
 import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
 import { VerifiedRegisterDto } from './dto/verified-register.dto';
+import { AuthRateLimitService } from '../../common/auth/auth-rate-limit.service';
 
 @Injectable()
 export class AuthService {
@@ -34,6 +35,7 @@ export class AuthService {
     private readonly firebaseService: FirebaseService,
     private readonly mailService: MailService,
     private readonly otpService: OtpService,
+    private readonly authRateLimitService: AuthRateLimitService,
   ) {}
 
   private readonly signupEmailPurpose = 'SIGNUP_EMAIL';
@@ -162,9 +164,20 @@ export class AuthService {
     };
   }
 
-  async loginWithEmailOtp(dto: VerifyEmailOtpDto) {
+  async loginWithEmailOtp(dto: VerifyEmailOtpDto, ip?: string) {
+    if (ip) await this.authRateLimitService.assertAllowed('otp-verify-ip', ip, 10);
+    await this.authRateLimitService.assertAllowed('otp-verify-target', dto.email.trim().toLowerCase(), 5);
     const email = dto.email.trim().toLowerCase();
-    await this.consumeEmailOtpChallenge(email, this.loginEmailPurpose, dto.otp);
+    try {
+      await this.consumeEmailOtpChallenge(email, this.loginEmailPurpose, dto.otp);
+    } catch (error) {
+      if (ip) await this.authRateLimitService.recordFailure('otp-verify-ip', ip, 10);
+      await this.authRateLimitService.recordFailure('otp-verify-target', email, 5);
+      throw error;
+    }
+
+    if (ip) await this.authRateLimitService.clear('otp-verify-ip', ip);
+    await this.authRateLimitService.clear('otp-verify-target', email);
 
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || !user.isActive) {
@@ -174,7 +187,8 @@ export class AuthService {
     return this.createSession(user);
   }
 
-  async loginWithPhoneOtp(idToken: string) {
+  async loginWithPhoneOtp(idToken: string, ip?: string) {
+    if (ip) await this.authRateLimitService.assertAllowed('firebase-login-ip', ip, 10);
     const decoded = await this.firebaseService.verifyToken(idToken);
     const phone = decoded.phone_number;
 
@@ -190,9 +204,11 @@ export class AuthService {
     });
 
     if (!user || !user.isActive) {
+      if (ip) await this.authRateLimitService.recordFailure('firebase-login-ip', ip, 10);
       throw new UnauthorizedException('Invalid or inactive account.');
     }
 
+    if (ip) await this.authRateLimitService.clear('firebase-login-ip', ip);
     return this.createSession(user);
   }
 
@@ -432,8 +448,8 @@ export class AuthService {
   // ==========================================
   // Login
   // ==========================================
-  async login(dto: LoginDto) {
-    const login = dto.login.trim();
+  async login(dto: LoginDto, ip?: string) {
+    const login = dto.login.trim(); = dto.login.trim();
     const normalizedEmail = login.toLowerCase();
     const normalizedPhone = /^\+?\d[\d\s().-]{8,}$/.test(login)
       ? this.normalizePhone(login)
@@ -449,6 +465,8 @@ export class AuthService {
     });
 
     if (!user) {
+      if (ip) await this.authRateLimitService.recordFailure('password-login-ip', ip, 10);
+      await this.authRateLimitService.recordFailure('password-login-account', normalizedEmail, 5);
       throw new UnauthorizedException('Invalid email or password.');
     }
 
@@ -459,8 +477,13 @@ export class AuthService {
     const matched = await bcrypt.compare(dto.password, user.passwordHash);
 
     if (!matched) {
+      if (ip) await this.authRateLimitService.recordFailure('password-login-ip', ip, 10);
+      await this.authRateLimitService.recordFailure('password-login-account', normalizedEmail, 5);
       throw new UnauthorizedException('Invalid email or password.');
     }
+
+    if (ip) await this.authRateLimitService.clear('password-login-ip', ip);
+    await this.authRateLimitService.clear('password-login-account', normalizedEmail);
 
     const tokens = await this.generateTokens(user.id, user.email);
 
