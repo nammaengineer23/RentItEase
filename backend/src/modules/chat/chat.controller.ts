@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  Query,
   Post,
   UseGuards,
   UploadedFile,
@@ -124,11 +125,10 @@ export class ChatController {
   getMessages(
     @Param('conversationId') conversationId: string,
     @CurrentUser() user: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.chatService.getMessages(
-      conversationId,
-      user.id,
-    );
+    return this.chatService.getMessages(conversationId, user.id, page === undefined ? 1 : Number(page), limit === undefined ? 50 : Number(limit));
   }
 
 
