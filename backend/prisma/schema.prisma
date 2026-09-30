@@ -31,6 +31,7 @@ model User {
   ownerReviewedAt         DateTime?
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
+  deletedAt               DateTime?
   passwordHash            String
   isActive                Boolean                  @default(true)
   photoUrl                String?
