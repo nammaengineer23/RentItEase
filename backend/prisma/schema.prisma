@@ -308,6 +308,7 @@ model PropertyVisit {
   @@index([propertyId])
   @@index([tenantId])
   @@index([visitDate])
+  @@index([propertyId, visitDate, status])
 }
 
 model Booking {
