@@ -6,6 +6,7 @@ import {
 
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
+import { OwnerRequestStatus, UserRole } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
 
@@ -141,7 +142,7 @@ export class SettingsService {
       throw new NotFoundException('User not found');
     }
 
-    if (user.role === 'ADMIN') {
+    if (user.role === UserRole.ADMIN) {
       throw new UnauthorizedException(
         'Administrator accounts must be deactivated through the admin security workflow.',
       );
@@ -187,7 +188,7 @@ export class SettingsService {
           photoUrl: null,
           isActive: false,
           deletedAt: new Date(),
-          ownerRequestStatus: 'NONE',
+          ownerRequestStatus: OwnerRequestStatus.NONE,
         },
       });
     });
