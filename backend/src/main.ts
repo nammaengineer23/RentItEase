@@ -30,7 +30,7 @@ async function bootstrap() {
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Firebase-AppCheck'],
   });
   app.setGlobalPrefix('api/v1', {
     exclude: ['privacy-policy', 'terms', 'terms-of-service', 'delete-account'],
