@@ -112,6 +112,7 @@ model UserDevice {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
 
   @@index([userId])
 }
@@ -514,10 +515,32 @@ model Notification {
   createdAt DateTime         @default(now())
   type      NotificationType @default(GENERAL)
   relatedId String?
+  dedupeKey String           @unique
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
 
-  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([userId, isRead, createdAt])
   @@index([relatedId])
+}
+
+model NotificationDelivery {
+  id             String                    @id @default(cuid())
+  notificationId String
+  deviceId       String
+  status         NotificationDeliveryStatus @default(PENDING)
+  attemptCount   Int                       @default(0)
+  nextRetryAt    DateTime                  @default(now())
+  lastError      String?
+  sentAt         DateTime?
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+  notification   Notification              @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  device         UserDevice                @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, deviceId])
+  @@index([status, nextRetryAt])
+  @@index([deviceId, status])
 }
 
 model Conversation {
@@ -747,6 +770,12 @@ enum MessageType {
   IMAGE
   DOCUMENT
   VOICE
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
 }
 
 enum NotificationType {
