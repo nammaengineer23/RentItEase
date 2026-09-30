@@ -1,8 +1,10 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { SocialAccountService } from '../accounts/social-account.service';
 
 @Injectable()
 export class InstagramService {
   private readonly graphVersion = process.env.META_GRAPH_VERSION || 'v23.0';
+  constructor(private readonly accounts: SocialAccountService) {}
 
   private async request(url: string, body: URLSearchParams) {
     for (let attempt = 1; attempt <= 3; attempt += 1) {
@@ -23,8 +25,11 @@ export class InstagramService {
   }
 
   async publish(params: { videoUrl: string; caption: string }): Promise<{ externalId: string; url?: string }> {
-    const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
-    const instagramUserId = process.env.INSTAGRAM_USER_ID;
+    const configuredToken = process.env.INSTAGRAM_ACCESS_TOKEN;
+    const configuredId = process.env.INSTAGRAM_USER_ID;
+    const credentials = await this.accounts.getCredentials('INSTAGRAM', { accessToken: configuredToken, accountId: configuredId });
+    const accessToken = credentials.accessToken;
+    const instagramUserId = credentials.accountId;
     if (!accessToken || !instagramUserId) throw new ServiceUnavailableException('Instagram publishing is not configured.');
     const base = 'https://graph.facebook.com/' + this.graphVersion;
     const creation = await this.request(base + '/' + instagramUserId + '/media', new URLSearchParams({ media_type: 'REELS', video_url: params.videoUrl, caption: params.caption, access_token: accessToken }));
