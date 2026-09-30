@@ -63,6 +63,7 @@ model User {
   appFeedback             AppFeedback[]
 
   @@index([ownerRequestStatus])
+  @@index([role, createdAt])
 }
 
 
@@ -186,6 +187,8 @@ model Property {
   socialMediaPosts       SocialMediaPost[]
 
   @@index([dailyRentEnabled])
+  @@index([ownerId])
+  @@index([city, state])
 }
 
 model Amenity {
@@ -326,7 +329,9 @@ model PropertyVisit {
   tenant     User        @relation("TenantVisits", fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
+  @@index([propertyId, visitDate])
   @@index([tenantId])
+  @@index([tenantId, visitDate])
   @@index([visitDate])
 }
 
@@ -355,7 +360,9 @@ model Booking {
   payment         Payment?
 
   @@index([propertyId])
+  @@index([propertyId, status])
   @@index([tenantId])
+  @@index([tenantId, status])
   @@index([status])
   @@index([bookingDate])
 }
@@ -431,6 +438,7 @@ model Membership {
   invoices          Invoice[]
 
   @@index([userId])
+  @@index([userId, status])
   @@index([planId])
   @@index([status])
   @@index([startDate])
@@ -489,6 +497,7 @@ model Lease {
 
   @@index([propertyId])
   @@index([tenantId])
+  @@index([tenantId, status])
   @@index([status])
   @@index([startDate])
   @@index([endDate])
@@ -514,6 +523,7 @@ model Payment {
   refunds           PaymentRefund[]
 
   @@index([status])
+  @@index([status, createdAt])
   @@index([createdAt])
 }
 
@@ -566,6 +576,7 @@ model Notification {
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, isRead, createdAt])
   @@index([relatedId])
 }
 
@@ -582,6 +593,9 @@ model Conversation {
   messages   Message[]
 
   @@unique([propertyId, ownerId, tenantId])
+  @@index([propertyId])
+  @@index([ownerId, updatedAt])
+  @@index([tenantId, updatedAt])
 }
 
 model Message {
@@ -599,6 +613,7 @@ model Message {
   sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
+  @@index([conversationId, createdAt])
 }
 
 model RefreshToken {
