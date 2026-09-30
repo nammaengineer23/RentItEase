@@ -115,6 +115,9 @@ export class PropertyImagesService {
 
     try {
       for (let index = 0; index < files.length; index++) {
+        await validateImageUpload(files[index]);
+        await this.fileScanService.scan(files[index]);
+
         const uploadResult = await this.storageService.uploadImage(
           files[index],
           'properties',
