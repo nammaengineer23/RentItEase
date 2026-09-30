@@ -226,7 +226,7 @@ class MediaService {
     }
 
     throw MediaUploadException(
-      'Media upload failed after ${maxAttempts} attempts: ${lastError}',
+      'Media upload failed after $maxAttempts attempts: $lastError',
     );
   }
 
