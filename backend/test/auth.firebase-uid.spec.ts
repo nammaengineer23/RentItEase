@@ -38,6 +38,7 @@ describe('AuthService Firebase UID mapping', () => {
       firebaseService as any,
       mailService as any,
       otpService as any,
+      { assertAllowed: jest.fn(), recordFailure: jest.fn(), clear: jest.fn() } as any,
     );
     jwtService.signAsync.mockResolvedValueOnce('access-token').mockResolvedValueOnce('refresh-token');
     jwtService.decode.mockReturnValue({
