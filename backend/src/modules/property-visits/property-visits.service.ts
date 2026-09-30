@@ -32,6 +32,10 @@ export class PropertyVisitsService {
   // ============================================================
 
   async create(dto: CreatePropertyVisitDto, user: any) {
+    if (user.role !== UserRole.USER) {
+      throw new ForbiddenException('Only tenants can create property visits.');
+    }
+
     const property = await this.prisma.property.findUnique({
       where: {
         id: dto.propertyId,
@@ -739,14 +743,24 @@ export class PropertyVisitsService {
 
     const isTenant = visit.tenantId === user.id;
 
-    const updatedVisit = await this.prisma.propertyVisit.update({
+    const transition = await this.prisma.propertyVisit.updateMany({
       where: {
         id,
+        status: {
+          in: [VisitStatus.PENDING, VisitStatus.APPROVED],
+        },
       },
-
       data: {
         status: VisitStatus.CANCELLED,
       },
+    });
+
+    if (transition.count !== 1) {
+      throw new BadRequestException('This visit can no longer be cancelled.');
+    }
+
+    const updatedVisit = await this.prisma.propertyVisit.findUniqueOrThrow({
+      where: { id },
 
       include: {
         property: {
