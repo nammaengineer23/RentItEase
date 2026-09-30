@@ -112,41 +112,41 @@ export class ReviewsService {
   // ==========================
   // Get Reviews
   // ==========================
-  async findByProperty(propertyId: string) {
-    const reviews = await this.prisma.review.findMany({
-      where: {
-        propertyId,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
+  async findByProperty(
+    propertyId: string,
+    page = 1,
+    limit = 20,
+  ) {
+    const skip = (page - 1) * limit;
+    const [reviews, total, aggregate] = await this.prisma.$transaction([
+      this.prisma.review.findMany({
+        where: { propertyId },
+        include: {
+          user: {
+            select: { id: true, fullName: true },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    const averageRating =
-      reviews.length > 0
-        ? Number(
-            (
-              reviews.reduce(
-                (sum, review) => sum + review.rating,
-                0,
-              ) / reviews.length
-            ).toFixed(1),
-          )
-        : 0;
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.review.count({ where: { propertyId } }),
+      this.prisma.review.aggregate({
+        where: { propertyId },
+        _avg: { rating: true },
+      }),
+    ]);
 
     return {
       success: true,
-      total: reviews.length,
-      averageRating,
+      total,
+      averageRating: Number((aggregate._avg.rating ?? 0).toFixed(1)),
       data: reviews,
+      pagination: {
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -154,49 +154,28 @@ export class ReviewsService {
   // Review Statistics
   // ==========================
   async getStats(propertyId: string) {
-    const reviews = await this.prisma.review.findMany({
-      where: {
-        propertyId,
-      },
-      select: {
-        rating: true,
-      },
-    });
+    const [aggregate, grouped] = await this.prisma.$transaction([
+      this.prisma.review.aggregate({
+        where: { propertyId },
+        _count: { id: true },
+        _avg: { rating: true },
+      }),
+      this.prisma.review.groupBy({
+        by: ['rating'],
+        where: { propertyId },
+        _count: { rating: true },
+      }),
+    ]);
 
-    const totalReviews = reviews.length;
-
-    const ratings = {
-      5: 0,
-      4: 0,
-      3: 0,
-      2: 0,
-      1: 0,
-    };
-
-    if (totalReviews === 0) {
-      return {
-        success: true,
-        averageRating: 0,
-        totalReviews: 0,
-        ratings,
-      };
-    }
-
-    let totalRating = 0;
-
-    for (const review of reviews) {
-      totalRating += review.rating;
-      ratings[
-        review.rating as keyof typeof ratings
-      ]++;
+    const ratings = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    for (const group of grouped) {
+      ratings[group.rating as keyof typeof ratings] = group._count.rating;
     }
 
     return {
       success: true,
-      averageRating: Number(
-        (totalRating / totalReviews).toFixed(1),
-      ),
-      totalReviews,
+      averageRating: Number((aggregate._avg.rating ?? 0).toFixed(1)),
+      totalReviews: aggregate._count.id,
       ratings,
     };
   }
