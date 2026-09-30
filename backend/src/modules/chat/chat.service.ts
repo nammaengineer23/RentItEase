@@ -334,18 +334,16 @@ export class ChatService {
   async getMessages(
     conversationId: string,
     userId: string,
+    page = 1,
+    limit = 50,
   ) {
-    const conversation =
-      await this.prisma.conversation.findUnique({
-        where: {
-          id: conversationId,
-        },
-      });
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: { id: true, ownerId: true, tenantId: true },
+    });
 
     if (!conversation) {
-      throw new NotFoundException(
-        'Conversation not found.',
-      );
+      throw new NotFoundException('Conversation not found.');
     }
 
     const isParticipant =
@@ -358,23 +356,33 @@ export class ChatService {
       );
     }
 
-    return this.prisma.message.findMany({
-      where: {
-        conversationId,
-        deletedAt: null,
-      },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            fullName: true,
+    const skip = (page - 1) * limit;
+    const [messages, total] = await this.prisma.$transaction([
+      this.prisma.message.findMany({
+        where: { conversationId, deletedAt: null },
+        include: {
+          sender: {
+            select: { id: true, fullName: true },
           },
         },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.message.count({
+        where: { conversationId, deletedAt: null },
+      }),
+    ]);
+
+    return {
+      data: messages.reverse(),
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: {
-        createdAt: 'asc',
-      },
-    });
+    };
   }
     // ==========================================
   // Mark Messages As Read
