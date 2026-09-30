@@ -81,59 +81,36 @@ export class NotificationsService {
 
   async getMyNotifications(
     user: any,
+    page = 1,
+    limit = 20,
   ) {
-
-
-    const notifications =
-
-      await this.prisma.notification.findMany({
-
-        where: {
-
-          userId: user.id,
-
-        },
-
-
-        orderBy: {
-
-          createdAt: 'desc',
-
-        },
-
-
-      });
-
-
-
+    const skip = (page - 1) * limit;
+    const [notifications, total, unread] = await this.prisma.$transaction([
+      this.prisma.notification.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.notification.count({
+        where: { userId: user.id },
+      }),
+      this.prisma.notification.count({
+        where: { userId: user.id, isRead: false },
+      }),
+    ]);
 
     return serializePrisma({
-
-      total: notifications.length,
-
-
-      unread:
-
-        notifications.filter(
-
-          (n) => !n.isRead,
-
-        ).length,
-
-
+      total,
+      unread,
       notifications,
-
-
+      pagination: {
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     });
-
-
   }
-
-
-
-
-
-
 
   // ==========================================
   // Get Unread Notification Count
