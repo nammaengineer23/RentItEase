@@ -83,45 +83,45 @@ Status legend:
 - [ ] Offline/error states
 
 ## Phase 32 — Admin testing
-- [x] Login
-- [x] Logout
-- [x] Expired session
-- [x] Unauthorized route
-- [x] Dashboard
-- [x] Users
-- [x] Properties
-- [x] Owner requests
-- [x] Reviews
-- [x] Visits
-- [x] Billing
-- [x] Premium
-- [x] Social media
-- [x] Analytics
-- [x] Destructive actions
+- [ ] Login
+- [ ] Logout
+- [ ] Expired session
+- [ ] Unauthorized route
+- [ ] Dashboard
+- [ ] Users
+- [ ] Properties
+- [ ] Owner requests
+- [ ] Reviews
+- [ ] Visits
+- [ ] Billing
+- [ ] Premium
+- [ ] Social media
+- [ ] Analytics
+- [ ] Destructive actions
 
 ## Phase 33 — Dependency/security audit
 ### Backend
-- [x] npm audit
-- [x] Outdated dependency review
-- [x] Prisma version review
-- [x] NestJS version review
-- [x] Razorpay SDK review
-- [x] Firebase Admin review
-- [x] Multer/sharp review
+- [ ] npm audit
+- [ ] Outdated dependency review
+- [ ] Prisma version review
+- [ ] NestJS version review
+- [ ] Razorpay SDK review
+- [ ] Firebase Admin review
+- [ ] Multer/sharp review
 
 ### Flutter
-- [x] flutter pub outdated
-- [x] Security-sensitive package review
-- [x] Firebase packages
-- [x] Razorpay
-- [x] Google Maps
-- [x] WebView/YouTube components
-- [x] Permissions
+- [ ] flutter pub outdated
+- [ ] Security-sensitive package review
+- [ ] Firebase packages
+- [ ] Razorpay
+- [ ] Google Maps
+- [ ] WebView/YouTube components
+- [ ] Permissions
 
 ### Admin
-- [x] npm dependency audit
-- [x] React/React Router/Vite review
-- [x] Build tool vulnerabilities
+- [ ] npm dependency audit
+- [ ] React/React Router/Vite review
+- [ ] Build tool vulnerabilities
 
 ## Phase 34 — Environment & secrets
 - [x] Inventory every environment variable
@@ -154,31 +154,31 @@ Status legend:
 
 ## Phase 36 — Deployment
 ### Backend
-- [x] Production build
+- [ ] Production build
 - [ ] Migration deployment
-- [x] Health check
-- [x] Graceful shutdown
+- [ ] Health check
+- [ ] Graceful shutdown
 - [ ] Process restart
 - [ ] Database connection handling
-- [x] Environment validation
-- [x] Logging
+- [ ] Environment validation
+- [ ] Logging
 - [ ] Monitoring
 ### Web
-- [x] Flutter web build
+- [ ] Flutter web build
 - [ ] Admin build
-- [x] SPA routing
+- [ ] SPA routing
 - [ ] Cache headers
 - [ ] CDN configuration
 - [ ] HTTPS
 - [ ] Domain configuration
 ### Android
-- [x] Release build
-- [x] Signing
+- [ ] Release build
+- [ ] Signing
 - [ ] Play App Integrity
 - [ ] ProGuard/R8
-- [x] App bundle
-- [x] Versioning
-- [x] Production API URL
+- [ ] App bundle
+- [ ] Versioning
+- [ ] Production API URL
 ### iOS
 - [ ] Signing
 - [ ] Bundle configuration
@@ -304,10 +304,10 @@ Status legend:
 - Phase 30: added backend security regression suite; expanded backend CI to run the complete Jest unit suite.
 - Phase 31: added Flutter authentication provider tests; existing network/media/maps/payment/chat tests remain active.
 - Phase 32: added executable admin API security tests and a dedicated admin CI gate.
-- Phase 33: added npm/Flutter dependency audit workflow; reviewed current upstream versions and deferred major/toolchain-breaking upgrades.
+- Phase 33: added npm/Flutter dependency audit workflow; direct safe dependency fixes were applied, but the audit still reports 3 high/2 moderate upstream Prisma/Swagger transitive findings; major upgrades remain intentionally deferred.
 - Phase 34: added tracked backend/admin environment templates, production validation for sensitive configuration, and secret-handling documentation.
 - Phase 35: hardened Flutter App Check providers and attached App Check tokens to API requests; Firebase Console enforcement/restriction state remains external verification.
-- Phase 36: enabled graceful shutdown hooks and added an iOS build/test workflow; production signing/CDN/domain deployment remains environment-specific.
+- Phase 36: enabled graceful shutdown hooks and added an iOS build/test workflow with generated-source analysis exclusions; production signing/CDN/domain deployment remains environment-specific.
 - Phase 39: changed account deletion to transactional PII anonymization/session revocation and added deletion-state migration/tests.
 - Phase 40: added architecture, state-machine, production, privacy, testing and release documentation.
 - Phase 41: not fully completed; broad UX review still requires screen-by-screen validation.
