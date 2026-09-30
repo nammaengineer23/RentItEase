@@ -8,8 +8,6 @@ on:
     paths:
       - "mobile_app/**"
       - ".github/workflows/flutter_fast_check.yml"
-    branches-ignore:
-      - main
   pull_request:
     paths:
       - "mobile_app/**"
