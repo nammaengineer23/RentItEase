@@ -22,7 +22,3 @@ ALTER TABLE "Lease"
   FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id")
   ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE "Invoice"
-  ADD CONSTRAINT "Invoice_leaseId_fkey"
-  FOREIGN KEY ("leaseId") REFERENCES "Lease"("id")
-  ON DELETE SET NULL ON UPDATE CASCADE;
