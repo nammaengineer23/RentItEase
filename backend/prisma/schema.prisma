@@ -414,6 +414,7 @@ model Membership {
   user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   premiumListings   PremiumListing[]
   invoices          Invoice[]
+  billingAuditEvents BillingAuditEvent[]
 
   @@index([userId])
   @@index([planId])
@@ -506,6 +507,7 @@ model Payment {
   booking           Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   lease             Lease?
   invoices          Invoice[]
+  billingAuditEvents BillingAuditEvent[]
 
   @@index([status])
   @@index([createdAt])
