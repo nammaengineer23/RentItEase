@@ -1,6 +1,9 @@
 import { ForbiddenException } from '@nestjs/common';
 import { MembershipStatus, UserRole } from '@prisma/client';
 
+jest.mock('../../firebase/firebase.service', () => ({ FirebaseService: class {} }));
+jest.mock('../../storage/r2-storage.service', () => ({ R2StorageService: class {} }));
+
 import { PropertiesService } from './properties.service';
 
 describe('PropertiesService public discovery and owner-contact privacy', () => {
