@@ -59,6 +59,14 @@ class AuthenticationProvider extends ChangeNotifier {
   bool get isLoggedIn => _authResponse != null;
   bool get isSessionRestored => _sessionRestored;
 
+  @override
+  void dispose() {
+    if (ApiClient.shared.onSessionExpired == _handleSessionExpired) {
+      ApiClient.shared.onSessionExpired = null;
+    }
+    super.dispose();
+  }
+
   void togglePasswordVisibility() {
     _obscurePassword = !_obscurePassword;
     notifyListeners();
