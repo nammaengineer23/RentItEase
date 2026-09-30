@@ -57,38 +57,4 @@ export class UploadsController {
     return this.uploadsService.uploadImage(file);
   }
 
-  @Post('file')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: memoryStorage(),
-      limits: {
-        fileSize: 15 * 1024 * 1024,
-      },
-      fileFilter: (_request, file, callback) => {
-        const allowed = new Map([
-          ['.pdf', 'application/pdf'],
-          ['.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-          ['.txt', 'text/plain'],
-          ['.m4a', 'audio/mp4'],
-          ['.aac', 'audio/aac'],
-          ['.mp3', 'audio/mpeg'],
-          ['.wav', 'audio/wav'],
-          ['.ogg', 'audio/ogg'],
-        ]);
-        const extension = extname(file.originalname).toLowerCase();
-        const expectedMime = allowed.get(extension);
-        const valid = Boolean(expectedMime && expectedMime === file.mimetype);
-
-        callback(
-          valid ? null : new Error('Unsupported attachment type.'),
-          valid,
-        );
-      },
-    }),
-  )
-  uploadFile(
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.uploadsService.uploadFile(file);
-  }
 }
