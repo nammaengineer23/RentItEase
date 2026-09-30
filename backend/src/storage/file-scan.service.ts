@@ -17,9 +17,13 @@ export class FileScanService {
   constructor(private readonly configService: ConfigService) {}
 
   async scan(file: Express.Multer.File): Promise<void> {
+    const enabledValue = this.configService.get<boolean | string>('CLAMAV_ENABLED');
     const enabled =
-      this.configService.get<string>('CLAMAV_ENABLED')?.toLowerCase() === 'true';
-    const production = this.configService.get<string>('NODE_ENV') === 'production';
+      enabledValue === true ||
+      (typeof enabledValue === 'string' && enabledValue.toLowerCase() === 'true');
+
+    const nodeEnv = this.configService.get<string>('NODE_ENV')?.toLowerCase();
+    const production = nodeEnv === 'production';
 
     if (!enabled) {
       if (production) {
@@ -36,7 +40,8 @@ export class FileScanService {
 
     try {
       await writeFile(inputPath, file.buffer);
-      const scanner = this.configService.get<string>('CLAMAV_PATH')?.trim() || 'clamscan';
+      const scanner =
+        this.configService.get<string>('CLAMAV_PATH')?.trim() || 'clamscan';
 
       try {
         await execFileAsync(
@@ -46,11 +51,13 @@ export class FileScanService {
         );
       } catch (error: any) {
         const exitCode = typeof error?.code === 'number' ? error.code : null;
+
         if (exitCode === 1) {
           throw new BadRequestException(
             'The uploaded file was rejected by the security scanner.',
           );
         }
+
         throw new InternalServerErrorException(
           'File security scanning failed. Please try again later.',
         );
