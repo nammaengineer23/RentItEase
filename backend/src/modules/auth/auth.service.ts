@@ -804,7 +804,7 @@ export class AuthService {
       },
       {
         secret: this.getCurrentAccessSecret(),
-        header: { kid: this.getCurrentAccessKeyId() },
+        header: { alg: 'HS256', kid: this.getCurrentAccessKeyId() },
         expiresIn: '15m',
       },
     );
