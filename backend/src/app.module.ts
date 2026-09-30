@@ -82,6 +82,12 @@ import { StorageModule } from './storage/storage.module';
           otherwise: Joi.optional(),
         }),
 
+        R2_PRIVATE_BUCKET_NAME: Joi.string().when('STORAGE_DRIVER', {
+          is: 'r2',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+
         R2_BUCKET_NAME: Joi.string().when('STORAGE_DRIVER', {
           is: 'r2',
           then: Joi.required(),
