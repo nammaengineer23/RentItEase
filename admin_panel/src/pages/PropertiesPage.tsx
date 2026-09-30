@@ -11,6 +11,7 @@ import {
   type AdminPropertyDetails,
   type AdminPropertyListItem,
 } from "../api/propertiesApi";
+import { Pagination } from "../components/Pagination";
 
 type StatusFilter = "ALL" | "PENDING" | "AVAILABLE" | "HIDDEN";
 
@@ -107,6 +108,8 @@ export function PropertiesPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [selectedProperty, setSelectedProperty] = useState<AdminPropertyDetails | null>(null);
   const [busyPropertyId, setBusyPropertyId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
 
   async function loadProperties() {
     setLoading(true);
@@ -137,6 +140,9 @@ export function PropertiesPage() {
       return matchesSearch && matchesStatus;
     });
   }, [properties, search, statusFilter]);
+
+  useEffect(() => { setPage(1); }, [search, statusFilter]);
+  const paginatedProperties = filteredProperties.slice((page - 1) * pageSize, page * pageSize);
 
   async function handleViewProperty(id: string) {
     try { setSelectedProperty(await getProperty(id)); }
@@ -200,7 +206,7 @@ export function PropertiesPage() {
         {filteredProperties.length === 0 ? <div className="empty-state"><h3>No properties found</h3><p>Try changing the search or filter criteria.</p></div> : (
           <div className="table-container"><table className="data-table">
             <thead><tr><th>Property</th><th>Owner</th><th>Location</th><th>Rent</th><th>Status</th><th>Activity</th><th>Created</th><th>Actions</th></tr></thead>
-            <tbody>{filteredProperties.map((property) => {
+            <tbody>{paginatedProperties.map((property) => {
               const busy = busyPropertyId === property.id;
               return <tr key={property.id}>
                 <td><div className="user-cell">{property.primaryImage && <img className="property-table-image" src={property.primaryImage} alt="" />}<div><strong>{property.title}</strong><span>{property.id}</span></div></div></td>
