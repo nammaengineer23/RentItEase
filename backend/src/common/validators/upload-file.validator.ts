@@ -72,7 +72,14 @@ export async function validateImageUpload(
 
     await sharp(file.buffer, {
       limitInputPixels: MAX_IMAGE_PIXELS,
-    }).ensureAlpha().raw().toBuffer();
+    })
+      .resize({
+        width: 1,
+        height: 1,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .toBuffer();
   } catch (error) {
     if (error instanceof BadRequestException) throw error;
     throw new BadRequestException(
