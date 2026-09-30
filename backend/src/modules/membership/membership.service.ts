@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { MembershipStatus, Prisma, UserRole } from '@prisma/client';
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 import Razorpay from 'razorpay';
 
 import { PrismaService } from '../../database/prisma.service';
@@ -23,6 +23,22 @@ export class MembershipService {
     if (keyId && keySecret) {
       this.razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
     }
+  }
+
+  private amountToPaise(amount: Prisma.Decimal | string | number): number {
+    const decimal = new Prisma.Decimal(amount);
+    if (!decimal.isFinite() || decimal.isNegative()) {
+      throw new BadRequestException('Invalid monetary amount.');
+    }
+    const paise = decimal.mul(100);
+    if (!paise.isInteger()) {
+      throw new BadRequestException('Monetary amount must have at most two decimal places.');
+    }
+    const value = paise.toNumber();
+    if (!Number.isSafeInteger(value)) {
+      throw new BadRequestException('Monetary amount exceeds the supported gateway range.');
+    }
+    return value;
   }
 
   private async ensurePremiumPlan() {
@@ -552,8 +568,8 @@ export class MembershipService {
         checkout: {
           keyId: process.env.RAZORPAY_KEY_ID,
           razorpayOrderId: pending.razorpayOrderId,
-          amount: Number(pending.amount),
-          amountInPaise: Math.round(Number(pending.amount) * 100),
+          amount: new Prisma.Decimal(pending.amount).toNumber(),
+          amountInPaise: this.amountToPaise(pending.amount),
           currency: 'INR',
           customer: user,
         },
@@ -603,9 +619,13 @@ export class MembershipService {
       throw new BadRequestException('Premium payment is not configured');
     }
 
-    const amount = 99;
+    const amount = new Prisma.Decimal(plan.price);
+    const amountInPaise = this.amountToPaise(amount);
+    if (amount.lte(0)) {
+      throw new BadRequestException('Premium membership plan has an invalid price.');
+    }
     const order = await this.razorpay.orders.create({
-      amount: amount * 100,
+      amount: amountInPaise,
       currency: 'INR',
       receipt: `premium_${userId}_${Date.now()}`.slice(0, 40),
       notes: { userId, planId: plan.id, purpose: 'PREMIUM_MEMBERSHIP' },
@@ -615,7 +635,7 @@ export class MembershipService {
         userId,
         planId: plan.id,
         status: MembershipStatus.PENDING,
-        amount: new Prisma.Decimal(amount),
+        amount,
         razorpayOrderId: order.id,
         notes: 'Premium membership purchase',
       },
@@ -628,8 +648,9 @@ export class MembershipService {
       checkout: {
         keyId: process.env.RAZORPAY_KEY_ID,
         razorpayOrderId: order.id,
-        amount,
-        amountInPaise: amount * 100,
+        amount: amount.toNumber(),
+        amountInPaise,
+
         currency: 'INR',
         customer: user,
       },
@@ -678,8 +699,38 @@ export class MembershipService {
     const signature = createHmac('sha256', secret)
       .update(`${body.razorpayOrderId}|${body.razorpayPaymentId}`)
       .digest('hex');
-    if (signature !== body.razorpaySignature) {
+    const expected = Buffer.from(signature, 'utf8');
+    const supplied = Buffer.from(body.razorpaySignature, 'utf8');
+    if (
+      expected.length !== supplied.length ||
+      !timingSafeEqual(expected, supplied)
+    ) {
       throw new BadRequestException('Payment signature verification failed');
+    }
+
+    let razorpayOrder: any;
+    let razorpayPayment: any;
+    try {
+      [razorpayOrder, razorpayPayment] = await Promise.all([
+        this.razorpay?.orders.fetch(body.razorpayOrderId),
+        this.razorpay?.payments.fetch(body.razorpayPaymentId),
+      ]);
+    } catch {
+      throw new BadRequestException('Unable to verify the Razorpay payment right now.');
+    }
+
+    const expectedAmountInPaise = this.amountToPaise(membership.amount);
+    if (
+      razorpayOrder?.id !== membership.razorpayOrderId ||
+      razorpayOrder?.amount !== expectedAmountInPaise ||
+      razorpayOrder?.currency !== 'INR' ||
+      razorpayPayment?.id !== body.razorpayPaymentId ||
+      razorpayPayment?.order_id !== membership.razorpayOrderId ||
+      razorpayPayment?.amount !== expectedAmountInPaise ||
+      razorpayPayment?.currency !== 'INR' ||
+      razorpayPayment?.status !== 'captured'
+    ) {
+      throw new BadRequestException('Razorpay membership payment failed reconciliation.');
     }
 
     const startDate = new Date();
