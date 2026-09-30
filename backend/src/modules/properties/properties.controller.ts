@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
+import { Throttle } from '@nestjs/throttler';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -25,12 +26,14 @@ export class PropertiesController {
   create(@Body() dto: CreatePropertyDto, @Request() req: any) { return this.propertiesService.create(dto, req.user); }
 
   @Post('ai-suggestion')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER)
   @ApiBearerAuth()
   suggestListing(@Body() body: Record<string, unknown>) { return this.listingAi.suggest(body); }
 
   @Get()
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @ApiOperation({ summary: 'Get All Properties' })
   findAll(@Query() dto: FilterPropertiesDto) { return this.propertiesService.findAll(dto); }
 
@@ -51,6 +54,7 @@ export class PropertiesController {
   home() { return this.propertiesService.home(); }
 
   @Get('nearby')
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @ApiOperation({ summary: 'Find nearby properties' })
   nearby(@Query() query: NearbyPropertiesDto) { return this.propertiesService.findNearby(query); }
 
@@ -60,6 +64,7 @@ export class PropertiesController {
   recordView(@Param('id') id: string, @Request() req: any) { return this.propertiesService.recordView(id, req.user); }
 
   @Get(':id/contact')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get owner contact for an eligible member' })
