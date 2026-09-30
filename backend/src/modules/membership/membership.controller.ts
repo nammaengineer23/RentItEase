@@ -142,8 +142,8 @@ export class MembershipController {
   @Patch(':id/expire')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  expireMembership(@Param('id') id: string) {
-    return this.membershipService.expireMembership(id);
+  expireMembership(@Param('id') id: string, @Request() req: any) {
+    return this.membershipService.expireMembership(id, req.user);
   }
 
   @Patch(':id/renew')
