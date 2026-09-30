@@ -245,7 +245,7 @@ export class R2StorageService {
 
     const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
     const url = new URL(
-      `${endpoint}/${this.encodePath(bucketName)}/${this.encodePath(key)}`,
+      `${endpoint}/${this.encodePath(targetBucket)}/${this.encodePath(key)}`,
     );
 
     const payloadHash = this.sha256(body ?? Buffer.alloc(0));
