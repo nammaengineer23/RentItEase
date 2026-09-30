@@ -29,7 +29,6 @@
     "cleanup:e2e": "ts-node scripts/cleanup-e2e-data.ts"
   },
   "dependencies": {
-    "@nestjs-modules/mailer": "^2.3.7",
     "@nestjs/common": "^11.1.6",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.6",
