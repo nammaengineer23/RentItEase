@@ -33,6 +33,43 @@ export class R2StorageService {
     };
   }
 
+  async getSignedUrl(publicId: string, expiresInSeconds = 900): Promise<string> {
+    const key = publicId.startsWith('r2:') ? publicId.slice(3) : publicId;
+    if (!key) throw new InternalServerErrorException('Invalid storage object.');
+    const accountId = this.requiredConfig('R2_ACCOUNT_ID');
+    const accessKeyId = this.requiredConfig('R2_ACCESS_KEY_ID');
+    const secretAccessKey = this.requiredConfig('R2_SECRET_ACCESS_KEY');
+    const bucketName = this.requiredConfig('R2_BUCKET_NAME');
+    const expires = Math.min(Math.max(Math.floor(expiresInSeconds), 60), 3600);
+    const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
+    const url = new URL(`${endpoint}/${this.encodePath(bucketName)}/${this.encodePath(key)}`);
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[:-]|\\.\\d{3}/g, '');
+    const dateStamp = timestamp.slice(0, 8);
+    const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
+    const credential = `${accessKeyId}/${credentialScope}`;
+    const params = new URLSearchParams({
+      'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
+      'X-Amz-Credential': credential,
+      'X-Amz-Date': timestamp,
+      'X-Amz-Expires': String(expires),
+      'X-Amz-SignedHeaders': 'host',
+    });
+    const canonicalQuery = Array.from(params.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+      .join('&');
+    const canonicalRequest = ['GET', url.pathname, canonicalQuery, `host:${url.host}\\n`, 'host', 'UNSIGNED-PAYLOAD'].join('\\n');
+    const stringToSign = ['AWS4-HMAC-SHA256', timestamp, credentialScope, this.sha256(canonicalRequest)].join('\\n');
+    const dateKey = this.hmac(`AWS4${secretAccessKey}`, dateStamp);
+    const regionKey = this.hmac(dateKey, 'auto');
+    const serviceKey = this.hmac(regionKey, 's3');
+    const signingKey = this.hmac(serviceKey, 'aws4_request');
+    const signature = this.hmac(signingKey, stringToSign).toString('hex');
+    params.set('X-Amz-Signature', signature);
+    return `${url.origin}${url.pathname}?${params.toString()}`;
+  }
+
   async deleteImage(publicId: string): Promise<boolean> {
     const key = publicId.startsWith('r2:') ? publicId.slice(3) : publicId;
 
