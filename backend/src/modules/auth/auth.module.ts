@@ -10,6 +10,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { MailModule } from '../../mail/mail.module';
 import { OtpModule } from '../../common/otp/otp.module';
 import { FirebaseAppCheckGuard } from '../../firebase/firebase-app-check.guard';
+import { AuthRateLimitModule } from '../../common/auth/auth-rate-limit.module';
 
 
 @Module({
@@ -18,6 +19,7 @@ import { FirebaseAppCheckGuard } from '../../firebase/firebase-app-check.guard';
     FirebaseModule,
     MailModule,
     OtpModule,
+    AuthRateLimitModule,
     PassportModule.register({
       defaultStrategy: 'jwt',
     }),
