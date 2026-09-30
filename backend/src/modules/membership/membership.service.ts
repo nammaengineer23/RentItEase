@@ -403,36 +403,60 @@ export class MembershipService {
   async renewMembership(id: string) {
     const membership = await this.getMembership(id);
 
-    if (
-      membership.status !== MembershipStatus.EXPIRED &&
-      membership.status !== MembershipStatus.ACTIVE
-    ) {
+    if (membership.status !== MembershipStatus.EXPIRED) {
       throw new BadRequestException(
-        'Only active or expired memberships can be renewed',
+        'Only expired memberships can be renewed through a new paid checkout',
       );
     }
 
-    const startDate = new Date();
-    const endDate = new Date(startDate);
+    if (!this.razorpay || !process.env.RAZORPAY_KEY_ID) {
+      throw new BadRequestException('Premium payment is not configured');
+    }
 
-    endDate.setDate(endDate.getDate() + membership.plan.durationDays);
-
-    return this.prisma.membership.update({
-      where: { id },
-      data: {
-        status: MembershipStatus.ACTIVE,
-        startDate,
-        endDate,
-        activatedAt: membership.activatedAt ?? startDate,
-        expiredAt: null,
-        cancelledAt: null,
+    const existingPending = await this.prisma.membership.findFirst({
+      where: {
+        userId: membership.userId,
+        planId: membership.planId,
+        status: MembershipStatus.PENDING,
+        pendingKey: 'PREMIUM:' + membership.userId,
       },
-      include: {
-        plan: true,
+      include: { plan: true },
+    });
+
+    if (existingPending) {
+      return existingPending;
+    }
+
+    const amount = Number(membership.plan.price);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Premium plan has an invalid billing amount');
+    }
+
+    const order = await this.razorpay.orders.create({
+      amount: Math.round(amount * 100),
+      currency: 'INR',
+      receipt: ('renew_' + membership.userId + '_' + Date.now()).slice(0, 40),
+      notes: {
+        userId: membership.userId,
+        planId: membership.planId,
+        purpose: 'PREMIUM_MEMBERSHIP_RENEWAL',
       },
     });
-  }
 
+    return this.prisma.membership.create({
+      data: {
+        userId: membership.userId,
+        planId: membership.planId,
+        status: MembershipStatus.PENDING,
+        amount: new Prisma.Decimal(amount),
+        razorpayOrderId: order.id,
+        pendingKey: 'PREMIUM:' + membership.userId,
+        autoRenew: membership.autoRenew,
+        notes: 'Premium membership renewal',
+      },
+      include: { plan: true },
+    });
+  }
   // ============================================================
   // AUTO RENEW
   // ============================================================
