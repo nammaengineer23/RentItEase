@@ -125,7 +125,7 @@ import {
       if (booking.status !== BookingStatus.APPROVED && booking.status !== BookingStatus.PAYMENT_PENDING) {
         throw new BadRequestException('Payment cannot be created for booking in ' + booking.status + ' status.');
       }
-      if (!booking.property.isAvailable && booking.payment?.status !== PaymentStatus.PENDING) {
+      if (!booking.property.isAvailable) {
         throw new BadRequestException('This property is no longer available for payment.');
       }
       if (booking.payment?.status === PaymentStatus.SUCCESS) {
@@ -468,8 +468,9 @@ import {
     private async runPaymentSuccessTransaction(
       paymentId: string,
       razorpayPaymentId: string,
-      razorpaySignature: string,
+      razorpaySignature: string | undefined,
       payment: any,
+      allowFailed = false,
     ) {
       const maxAttempts = 3;
 
@@ -479,12 +480,16 @@ import {
             const claimed = await tx.payment.updateMany({
               where: {
                 id: paymentId,
-                status: { in: [PaymentStatus.CREATED, PaymentStatus.PENDING] },
+                status: {
+                  in: allowFailed
+                    ? [PaymentStatus.CREATED, PaymentStatus.PENDING, PaymentStatus.FAILED]
+                    : [PaymentStatus.CREATED, PaymentStatus.PENDING],
+                },
               },
               data: {
                 status: PaymentStatus.SUCCESS,
                 razorpayPaymentId,
-                razorpaySignature,
+                ...(razorpaySignature ? { razorpaySignature } : {}),
                 paidAt: new Date(),
                 failedAt: null,
                 failureReason: null,
@@ -894,62 +899,15 @@ import {
         throw new BadRequestException('Razorpay webhook payment details failed reconciliation.');
       }
 
-      const result = await this.prisma.$transaction(async (tx) => {
-        const claimed = await tx.payment.updateMany({
-          where: {
-            id: payment.id,
-            status: { in: [PaymentStatus.CREATED, PaymentStatus.PENDING, PaymentStatus.FAILED] },
-          },
-          data: {
-            status: PaymentStatus.SUCCESS,
-            razorpayPaymentId,
-            paidAt: new Date(),
-            failedAt: null,
-            failureReason: null,
-          },
-        });
+      const result = await this.runPaymentSuccessTransaction(
+        payment.id,
+        razorpayPaymentId,
+        undefined,
+        payment,
+        true,
+      );
 
-        if (claimed.count !== 1) {
-          const current = await tx.payment.findUnique({ where: { id: payment.id } });
-          return { payment: current, claimed: false };
-        }
-
-        await tx.booking.update({
-          where: { id: payment.bookingId },
-          data: { status: BookingStatus.PAID },
-        });
-
-        await tx.property.update({
-          where: { id: payment.booking.propertyId },
-          data: { isAvailable: false },
-        });
-
-        await tx.invoice.upsert({
-          where: { invoiceNumber: `RIE-${payment.bookingId}` },
-          update: {
-            status: 'PAID',
-            amount: payment.amount,
-            totalAmount: payment.amount,
-            paymentId: payment.id,
-          },
-          create: {
-            invoiceNumber: `RIE-${payment.bookingId}`,
-            userId: payment.booking.tenantId,
-            paymentId: payment.id,
-            amount: payment.amount,
-            taxAmount: 0,
-            totalAmount: payment.amount,
-            currency: payment.currency,
-            status: 'PAID',
-            description: `Payment invoice for ${payment.booking.property.title}`,
-          },
-        });
-
-        const current = await tx.payment.findUnique({ where: { id: payment.id } });
-        return { payment: current, claimed: true };
-      });
-
-      if (result.claimed && result.payment) {
+      if (!result.alreadyProcessed && result.payment) {
         await this.sendPaymentSuccessNotifications(payment);
       }
     }
