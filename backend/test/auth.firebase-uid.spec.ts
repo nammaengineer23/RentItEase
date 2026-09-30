@@ -13,7 +13,7 @@ describe('AuthService Firebase UID mapping', () => {
       create: jest.fn(),
     },
   };
-  const jwtService = { signAsync: jest.fn() };
+  const jwtService = { signAsync: jest.fn(), decode: jest.fn() };
   const mailService = {};
   const otpService = {};
 
@@ -40,6 +40,10 @@ describe('AuthService Firebase UID mapping', () => {
       otpService as any,
     );
     jwtService.signAsync.mockResolvedValueOnce('access-token').mockResolvedValueOnce('refresh-token');
+    jwtService.decode.mockReturnValue({
+      jti: 'refresh-jti',
+      familyId: '11111111-1111-1111-1111-111111111111',
+    });
     prisma.refreshToken.create.mockResolvedValue({ id: 'refresh-1' });
   });
 
@@ -50,7 +54,7 @@ describe('AuthService Firebase UID mapping', () => {
       email: 'user@example.com',
       email_verified: true,
     });
-    prisma.user.findUnique.mockResolvedValue(user);
+    prisma.user.findUnique.mockResolvedValue({ ...user, firebaseUid: 'firebase-123' });
 
     const result = await service.firebaseLogin('id-token');
 
