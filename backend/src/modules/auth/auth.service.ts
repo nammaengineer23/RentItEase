@@ -374,7 +374,7 @@ export class AuthService {
       throw new ConflictException('Email already exists.');
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const hashedPassword = await bcrypt.hash(dto.password, 12);
 
     const user = await this.prisma.user.create({
       data: {
@@ -635,7 +635,7 @@ export class AuthService {
         throw new UnauthorizedException('Unable to rotate refresh token.');
       }
 
-      const hashedToken = await bcrypt.hash(tokens.refreshToken, 10);
+      const hashedToken = await bcrypt.hash(tokens.refreshToken, 12);
       await tx.refreshToken.create({
         data: {
           jti: decoded.jti,
@@ -696,7 +696,7 @@ export class AuthService {
       );
     }
 
-    const hashedToken = await bcrypt.hash(token, 10);
+    const hashedToken = await bcrypt.hash(token, 12);
 
     await this.prisma.refreshToken.create({
       data: {
@@ -823,7 +823,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired reset token.');
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const hashedPassword = await bcrypt.hash(dto.password, 12);
 
     await this.prisma.$transaction([
       this.prisma.user.update({
@@ -926,7 +926,7 @@ export class AuthService {
       throw new UnauthorizedException('Old password is incorrect.');
     }
 
-    const hashed = await bcrypt.hash(dto.newPassword, 10);
+    const hashed = await bcrypt.hash(dto.newPassword, 12);
 
     await this.prisma.$transaction([
       this.prisma.user.update({
