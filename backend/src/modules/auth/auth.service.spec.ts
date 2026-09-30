@@ -8,6 +8,7 @@ describe('AuthService', () => {
       {} as any,
       {} as any,
       {} as any,
+      {} as any,
     );
     expect(service).toBeDefined();
   });
