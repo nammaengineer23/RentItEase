@@ -468,7 +468,7 @@ export class PropertiesService {
 
         return {
           ...this.toPublicProperty(property),
-          averageRating:
+          averageRating,
           totalReviews: property.reviews.length,
         };
       })
