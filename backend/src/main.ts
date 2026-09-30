@@ -9,6 +9,7 @@ import { json, urlencoded, type NextFunction, type Request, type Response } from
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception/global-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging/logging.interceptor';
+import { RequestIdInterceptor } from './common/interceptors/request-id/request-id.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform/transform.interceptor';
 
 // Prisma Decimal values must be JSON-safe for mobile and web clients.
@@ -130,6 +131,7 @@ async function bootstrap() {
 
   // Global Interceptors
   app.useGlobalInterceptors(
+    new RequestIdInterceptor(),
     new LoggingInterceptor(),
     new TransformInterceptor(),
     new ClassSerializerInterceptor(app.get(Reflector)),
