@@ -7,6 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+
+const _appCheckWebSiteKey = String.fromEnvironment(
+  'APP_CHECK_WEB_SITE_KEY',
+  defaultValue: '6LeUVawtAAAAAON8Mbvx2xNyYkpGv_LULjgRMF_A',
+);
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -27,14 +32,18 @@ Future<void> _activateAppCheck() async {
   try {
     await FirebaseAppCheck.instance
         .activate(
-          providerWeb: ReCaptchaEnterpriseProvider(
-            '6LeUVawtAAAAAON8Mbvx2xNyYkpGv_LULjgRMF_A',
-          ),
+          providerWeb: kDebugMode
+              ? WebDebugProvider()
+              : ReCaptchaEnterpriseProvider(_appCheckWebSiteKey),
           providerAndroid: kDebugMode
               ? const AndroidDebugProvider()
               : const AndroidPlayIntegrityProvider(),
+          providerApple: kDebugMode
+              ? const AppleDebugProvider()
+              : const AppleAppAttestWithDeviceCheckFallbackProvider(),
         )
         .timeout(const Duration(seconds: 10));
+    await FirebaseAppCheck.instance.setTokenAutoRefreshEnabled(true);
   } catch (error, stackTrace) {
     debugPrint('Firebase App Check activation deferred: $error');
     debugPrintStack(stackTrace: stackTrace);
