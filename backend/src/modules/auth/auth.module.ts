@@ -11,6 +11,7 @@ import { MailModule } from '../../mail/mail.module';
 import { OtpModule } from '../../common/otp/otp.module';
 import { FirebaseAppCheckGuard } from '../../firebase/firebase-app-check.guard';
 import { AuthRateLimitModule } from '../../common/auth/auth-rate-limit.module';
+import { JwtSecretService } from '../../common/auth/jwt-secret.service';
 
 
 @Module({
@@ -47,6 +48,7 @@ import { AuthRateLimitModule } from '../../common/auth/auth-rate-limit.module';
     AuthService,
     JwtStrategy,
     FirebaseAppCheckGuard,
+    JwtSecretService,
   ],
 
   exports: [
