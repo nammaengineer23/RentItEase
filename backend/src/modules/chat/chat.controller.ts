@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  Query,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -21,6 +22,7 @@ import { Throttle } from '@nestjs/throttler';
 import { ChatService } from './chat.service';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { SendMessageDto } from './dto/send-message.dto';
+import { ChatPaginationDto } from './dto/chat-pagination.dto';
 
 @ApiTags('Chat')
 @Controller('chat')
@@ -96,10 +98,13 @@ export class ChatController {
   getMessages(
     @Param('conversationId') conversationId: string,
     @CurrentUser() user: any,
+    @Query() query: ChatPaginationDto,
   ) {
     return this.chatService.getMessages(
       conversationId,
       user.id,
+      query.page,
+      query.limit,
     );
   }
 
