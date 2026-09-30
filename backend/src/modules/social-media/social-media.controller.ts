@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Query,
   Post,
   Req,
   UploadedFile,
@@ -32,8 +33,8 @@ export class SocialMediaController {
   }
 
   @Get('properties')
-  getProperties() {
-    return this.service.listProperties();
+  getProperties(@Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.service.listProperties(Number(page) || 1, Number(limit) || 20);
   }
 
   @Get('analytics')
