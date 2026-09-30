@@ -45,13 +45,24 @@ export class FirebaseService {
 
     const firebaseFile = bucket.file(fileName);
 
-    await firebaseFile.save(file.buffer, {
-      metadata: {
-        contentType: file.mimetype,
-      },
-    });
+    await this.withRetry(
+      () =>
+        this.withTimeout(
+          firebaseFile.save(file.buffer, {
+            metadata: {
+              contentType: file.mimetype,
+            },
+          }),
+          15_000,
+        ),
+      3,
+      'Firebase Storage upload',
+    );
 
-    const imageUrl = await getDownloadURL(firebaseFile);
+    const imageUrl = await this.withTimeout(
+      getDownloadURL(firebaseFile),
+      15_000,
+    );
 
     return {
       publicId: fileName,
@@ -64,9 +75,15 @@ export class FirebaseService {
 
     const file = bucket.file(publicId);
 
-    await file.delete({
-      ignoreNotFound: true,
-    });
+    await this.withRetry(
+      () =>
+        this.withTimeout(
+          file.delete({ ignoreNotFound: true }),
+          15_000,
+        ),
+      3,
+      'Firebase Storage delete',
+    );
 
     return true;
   }
@@ -80,7 +97,10 @@ export class FirebaseService {
   }
 
   async verifyToken(idToken: string) {
-    return this.getAuth().verifyIdToken(idToken);
+    return this.withTimeout(
+      this.getAuth().verifyIdToken(idToken),
+      15_000,
+    );
   }
 
   // =====================================
@@ -97,14 +117,19 @@ export class FirebaseService {
     body: string,
     data?: Record<string, string>,
   ) {
-    return this.getMessaging().send({
-      token,
-      notification: {
-        title,
-        body,
-      },
-      data,
-    });
+    return this.withRetry(
+      () =>
+        this.withTimeout(
+          this.getMessaging().send({
+            token,
+            notification: { title, body },
+            data,
+          }),
+          15_000,
+        ),
+      2,
+      'FCM device notification',
+    );
   }
 
   async sendToDevices(
@@ -119,15 +144,19 @@ export class FirebaseService {
   }
 
   try {
-    const response =
-      await this.getMessaging().sendEachForMulticast({
-        tokens,
-        notification: {
-          title,
-          body,
-        },
-        data,
-      });
+    const response = await this.withRetry(
+      () =>
+        this.withTimeout(
+          this.getMessaging().sendEachForMulticast({
+            tokens,
+            notification: { title, body },
+            data,
+          }),
+          15_000,
+        ),
+      2,
+      'FCM multicast notification',
+    );
 
     return response;
   } catch (error) {
@@ -136,6 +165,50 @@ export class FirebaseService {
       error,
     );
     throw error;
+  }
+
+  private async withRetry<T>(
+    operation: () => Promise<T>,
+    maxAttempts: number,
+    operationName: string,
+  ): Promise<T> {
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error;
+        if (attempt === maxAttempts) {
+          console.error(
+            `Firebase operation failed: ${operationName}, attempts=${attempt}, type=${error instanceof Error ? error.name : 'unknown'}`,
+          );
+          throw error;
+        }
+        await new Promise((resolve) => setTimeout(resolve, attempt * 300));
+      }
+    }
+
+    throw lastError;
+  }
+
+  private async withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+  ): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        reject(new Error('Firebase operation timed out.'));
+      }, timeoutMs);
+    });
+
+    try {
+      return await Promise.race([promise, timeout]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   }
 }
 }
