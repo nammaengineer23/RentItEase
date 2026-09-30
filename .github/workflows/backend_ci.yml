@@ -52,8 +52,8 @@ jobs:
       - name: Build Backend
         run: npm run build
 
-      - name: Property Unit Tests
-        run: npm run test:unit:properties
+      - name: Full Unit Test Suite
+        run: npm test
 
       - name: Security / configuration audit
         working-directory: .
