@@ -12,6 +12,7 @@ import {
   Prisma,
     NotificationType,
     PaymentStatus,
+  PropertyLifecycleStatus,
     UserRole,
   } from '@prisma/client';
   
@@ -127,8 +128,8 @@ import {
       if (booking.status !== BookingStatus.APPROVED && booking.status !== BookingStatus.PAYMENT_PENDING) {
         throw new BadRequestException('Payment cannot be created for booking in ' + booking.status + ' status.');
       }
-      if (!booking.property.isAvailable) {
-        throw new BadRequestException('This property is no longer available for payment.');
+      if (booking.property.lifecycleStatus !== PropertyLifecycleStatus.BOOKED) {
+        throw new BadRequestException('This property is no longer reserved for payment.');
       }
       if (booking.payment?.status === PaymentStatus.SUCCESS) {
         throw new BadRequestException('This booking has already been paid.');
@@ -331,9 +332,9 @@ import {
         );
       }
 
-      if (!payment.booking.property.isAvailable) {
+      if (payment.booking.property.lifecycleStatus !== PropertyLifecycleStatus.BOOKED) {
         throw new BadRequestException(
-          'This property is no longer available for payment.',
+          'This property is no longer reserved for payment.',
         );
       }
 
@@ -524,7 +525,7 @@ import {
             }
 
             const propertyTransition = await tx.property.updateMany({
-              where: { id: payment.booking.propertyId, isAvailable: true },
+              where: { id: payment.booking.propertyId, lifecycleStatus: PropertyLifecycleStatus.BOOKED },
               data: { isAvailable: false },
             });
             if (propertyTransition.count !== 1) {
