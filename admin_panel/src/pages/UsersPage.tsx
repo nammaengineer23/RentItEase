@@ -12,6 +12,7 @@ import {
   type AdminUserListItem,
   type UserRole,
 } from "../api/usersApi";
+import { Pagination } from "../components/Pagination";
 
 type StatusFilter = "ALL" | "ACTIVE" | "INACTIVE";
 type RoleFilter = "ALL" | UserRole;
@@ -157,6 +158,8 @@ export function UsersPage() {
   );
 
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
 
   async function loadUsers() {
     setLoading(true);
@@ -207,6 +210,9 @@ export function UsersPage() {
       return matchesSearch && matchesRole && matchesStatus;
     });
   }, [users, search, roleFilter, statusFilter]);
+
+  useEffect(() => { setPage(1); }, [search, roleFilter, statusFilter]);
+  const paginatedUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize);
 
   async function handleViewUser(id: string) {
     try {
@@ -412,7 +418,7 @@ export function UsersPage() {
               </thead>
 
               <tbody>
-                {filteredUsers.map((user) => {
+                {paginatedUsers.map((user) => {
                   const busy = busyUserId === user.id;
 
                   return (
