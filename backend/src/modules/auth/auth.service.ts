@@ -821,6 +821,46 @@ export class AuthService {
     };
   }
 
+  private getCurrentAccessSecret(): string {
+    return this.jwtSecretService?.getCurrentAccessSecret() ?? process.env.JWT_ACCESS_SECRET ?? '';
+  }
+
+  private getCurrentAccessKeyId(): string {
+    return this.jwtSecretService?.getCurrentAccessKeyId() ?? 'v1';
+  }
+
+  private getCurrentRefreshSecret(): string {
+    return this.jwtSecretService?.getCurrentRefreshSecret() ?? process.env.JWT_REFRESH_SECRET ?? '';
+  }
+
+  private getCurrentRefreshKeyId(): string {
+    return this.jwtSecretService?.getCurrentRefreshKeyId() ?? 'v1';
+  }
+
+  private async verifyAccessTokenWithRotation<T>(token: string): Promise<T> {
+    const header = this.readJwtHeader(token);
+    const secret = this.jwtSecretService?.selectAccessSecret(header.kid) ?? this.getCurrentAccessSecret();
+    return this.jwtService.verifyAsync<T>(token, { secret });
+  }
+
+  private async verifyRefreshTokenWithRotation<T>(token: string): Promise<T> {
+    const header = this.readJwtHeader(token);
+    const secret = this.jwtSecretService?.selectRefreshSecret(header.kid) ?? this.getCurrentRefreshSecret();
+    return this.jwtService.verifyAsync<T>(token, { secret });
+  }
+
+  private readJwtHeader(token: string): { kid?: string } {
+    try {
+      const encodedHeader = token.split('.')[0];
+      if (!encodedHeader) throw new Error('Invalid JWT.');
+      return JSON.parse(
+        Buffer.from(encodedHeader, 'base64url').toString('utf8'),
+      ) as { kid?: string };
+    } catch {
+      throw new UnauthorizedException('Invalid token.');
+    }
+  }
+
   async forgotPassword(dto: ForgotPasswordDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email.trim().toLowerCase() },
