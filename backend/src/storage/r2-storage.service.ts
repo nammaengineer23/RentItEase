@@ -118,20 +118,54 @@ export class R2StorageService {
       requestHeaders['Content-Type'] = contentType;
     }
 
-    const response = await fetch(url, {
-      method,
-      headers: requestHeaders,
-      body: method === 'PUT' ? body : undefined,
-    });
+    let lastError: unknown;
 
-    if (!response.ok) {
-      this.logger.error(
-        `R2 ${method} failed with HTTP ${response.status} for ${key}`,
-      );
-      throw new InternalServerErrorException(
-        'Image storage operation failed.',
-      );
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15_000);
+
+      try {
+        const response = await fetch(url, {
+          method,
+          headers: requestHeaders,
+          body: method === 'PUT' ? body : undefined,
+          signal: controller.signal,
+        });
+
+        if (response.ok) {
+          return;
+        }
+
+        if (response.status >= 400 && response.status < 500) {
+          this.logger.warn(
+            `R2 ${method} rejected with HTTP ${response.status}; no retry`,
+          );
+          throw new InternalServerErrorException(
+            'Image storage operation failed.',
+          );
+        }
+
+        lastError = new Error(`R2 HTTP ${response.status}`);
+      } catch (error) {
+        lastError = error;
+        if (error instanceof InternalServerErrorException) {
+          throw error;
+        }
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      if (attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+      }
     }
+
+    this.logger.error(
+      `R2 ${method} failed after retries for storage operation`,
+    );
+    throw new InternalServerErrorException(
+      'Image storage operation failed.',
+    );
   }
 
   private publicUrl(key: string): string {
