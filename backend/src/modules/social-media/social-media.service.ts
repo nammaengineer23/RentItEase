@@ -26,6 +26,7 @@ export class SocialMediaService {
 
   async generate(dto: GenerateVideoDto) {
     await this.requireConsent(dto.propertyId);
+    const consent = await this.requireConsent(dto.propertyId);
     const generated = await this.remotionVideo.generate(dto.propertyId);
     // Keep the completed self-hosted Remotion render in our
     // Firebase storage before presenting it to the admin for review/publish.
@@ -33,6 +34,7 @@ export class SocialMediaService {
       generated.videoUrl,
       dto.propertyId,
     );
+    await this.storage.deleteStoredVideo(consent.preparedVideoUrl);
     await this.prisma.socialMarketingConsent.update({
       where: { propertyId: dto.propertyId },
       data: {
@@ -65,6 +67,8 @@ export class SocialMediaService {
     const title = body.title?.trim() || generated.videoTitle;
     const caption = body.caption?.trim() || generated.caption;
 
+    const previousPreparedVideo = await this.prisma.socialMarketingConsent.findUnique({ where: { propertyId }, select: { preparedVideoUrl: true } });
+    await this.storage.deleteStoredVideo(previousPreparedVideo?.preparedVideoUrl);
     await this.prisma.socialMarketingConsent.update({
       where: { propertyId },
       data: {
@@ -97,6 +101,8 @@ export class SocialMediaService {
     const videoUrl = await this.storage.uploadBuffer(file.buffer, propertyId, file.mimetype || 'video/mp4');
     const title = body.title?.trim() || property.title || 'RentItEase property tour';
     const caption = body.caption?.trim() || '';
+    const previousPreparedVideo = await this.prisma.socialMarketingConsent.findUnique({ where: { propertyId }, select: { preparedVideoUrl: true } });
+    await this.storage.deleteStoredVideo(previousPreparedVideo?.preparedVideoUrl);
     await this.prisma.socialMarketingConsent.update({
       where: { propertyId },
       data: { preparedVideoUrl: videoUrl, preparedTitle: title, preparedCaption: caption, preparedAt: new Date() },
@@ -348,6 +354,19 @@ export class SocialMediaService {
     return this.publishPost(postId, actorId);
   }
 
+  private validatePlatformContent(platform: SocialPlatform, title: string, caption: string) {
+    if (/<script\b|javascript:/i.test(title + '\n' + caption)) throw new BadRequestException('Social content contains disallowed script content.');
+    const limits: Record<SocialPlatform, number> = {
+      [SocialPlatform.INSTAGRAM]: 2200,
+      [SocialPlatform.FACEBOOK]: 63206,
+      [SocialPlatform.YOUTUBE]: 5000,
+    };
+    if (title.length > 100) throw new BadRequestException('Social title exceeds the 100 character platform limit.');
+    if (caption.length > limits[platform]) throw new BadRequestException('Social caption exceeds the selected platform limit.');
+    const hashtagCount = (caption.match(/#[A-Za-z0-9_]+/g) || []).length;
+    if (hashtagCount > 30) throw new BadRequestException('Too many hashtags in social caption.');
+  }
+
   private async requireConsent(propertyId: string) {
     const consent = await this.prisma.socialMarketingConsent.findUnique({ where: { propertyId } });
     if (!consent?.approved) throw new BadRequestException('Owner marketing consent is required before preparing content.');
@@ -388,6 +407,7 @@ export class SocialMediaService {
     };
     const autoCaption = this.template.buildPlatformCaption(templateData, dto.platform);
     const autoTitle = this.template.buildTitle(templateData, dto.platform);
+    this.validatePlatformContent(dto.platform as SocialPlatform, dto.title?.trim() || autoTitle, dto.caption?.trim() || autoCaption);
     const idempotencyKey = [dto.propertyId, dto.platform, consent.id, consent.preparedAt?.toISOString() || 'none'].join(':');
     const post = await this.prisma.socialMediaPost.upsert({
       where: { idempotencyKey },
