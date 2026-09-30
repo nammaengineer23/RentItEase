@@ -1,3 +1,8 @@
+jest.mock('../../common/validators/upload-content.validator', () => ({
+  validateImageContent: jest.fn().mockResolvedValue(undefined),
+  validateVideoContent: jest.fn().mockResolvedValue(undefined),
+}));
+
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 
 import { PropertyImagesService } from './property-images.service';
