@@ -21,7 +21,13 @@ class ApiClient {
             headers: const {'Accept': Headers.jsonContentType},
           ),
         );
-    _dio.interceptors.add(_AuthenticationInterceptor(_dio, _storage));
+    _dio.interceptors.add(
+      _AuthenticationInterceptor(
+        _dio,
+        _storage,
+        onSessionExpired: () => onSessionExpired?.call(),
+      ),
+    );
     _dio.interceptors.add(_ApiErrorInterceptor());
   }
 
@@ -32,7 +38,6 @@ class ApiClient {
   late final Dio _dio;
 
   final StorageService _storage;
-  Future<void>? _refreshInFlight;
 
   Dio get dio => _dio;
 
@@ -46,10 +51,16 @@ class ApiClient {
 }
 
 class _AuthenticationInterceptor extends QueuedInterceptor {
-  _AuthenticationInterceptor(this._dio, this._storage);
+  _AuthenticationInterceptor(
+    this._dio,
+    this._storage, {
+    required this.onSessionExpired,
+  });
 
   final Dio _dio;
   final StorageService _storage;
+  final VoidCallback? onSessionExpired;
+  Future<void>? _refreshInFlight;
 
   bool _isAuthPath(RequestOptions options) =>
       options.path == ApiPaths.login ||
@@ -141,7 +152,6 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
       accessToken: accessToken,
       refreshToken: nextRefreshToken,
     );
-  }
   }
 }
 
