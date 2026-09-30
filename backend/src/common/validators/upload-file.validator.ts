@@ -81,6 +81,30 @@ export async function validateImageUpload(
   }
 }
 
+export async function validateVideoUpload(
+  file: Express.Multer.File,
+): Promise<void> {
+  if (!file) throw new BadRequestException('No video uploaded.');
+  if (file.size > 100 * 1024 * 1024) {
+    throw new BadRequestException('Video must not exceed 100 MB.');
+  }
+
+  const allowed = new Map([
+    ['mp4', 'video/mp4'],
+    ['mov', 'video/quicktime'],
+    ['m4v', 'video/x-m4v'],
+  ]);
+  const ext = extensionOf(file.originalname);
+  const detected = await fileTypeFromBuffer(file.buffer);
+  const expectedMime = allowed.get(ext);
+
+  if (!expectedMime || !detected || detected.mime !== expectedMime || file.mimetype !== detected.mime) {
+    throw new BadRequestException(
+      'Invalid video content. The extension, MIME type and actual file format must match.',
+    );
+  }
+}
+
 export async function validateChatFileUpload(
   file: Express.Multer.File,
 ): Promise<void> {
