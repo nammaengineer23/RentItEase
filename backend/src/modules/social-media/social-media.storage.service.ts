@@ -107,6 +107,20 @@ export class SocialMediaStorageService {
     throw new Error('Video storage operation failed.');
   }
 
+  async deleteStoredVideo(videoUrl: string | null | undefined) {
+    if (!videoUrl) return;
+    try {
+      const bucketName = getStorage().bucket().name;
+      const prefix = 'https://storage.googleapis.com/' + bucketName + '/';
+      if (!videoUrl.startsWith(prefix)) return;
+      const objectPath = decodeURIComponent(videoUrl.slice(prefix.length));
+      if (!objectPath.startsWith('social-videos/')) return;
+      await getStorage().bucket().file(objectPath).delete({ ignoreNotFound: true });
+    } catch {
+      // Cleanup is best-effort and must never block a successful replacement.
+    }
+  }
+
   async uploadVideo(filePath: string, propertyId: string): Promise<string> {
     if (!existsSync(filePath)) throw new Error('Generated video not found.');
     const buffer = await readFile(filePath);
