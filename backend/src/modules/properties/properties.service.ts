@@ -939,7 +939,7 @@ export class PropertiesService {
       throw new ForbiddenException('You are not allowed to update this property.');
     }
 
-    if [PropertyLifecycleStatus.BOOKED, PropertyLifecycleStatus.OCCUPIED, PropertyLifecycleStatus.ARCHIVED].includes(property.lifecycleStatus as any) {
+    if ([PropertyLifecycleStatus.BOOKED, PropertyLifecycleStatus.OCCUPIED, PropertyLifecycleStatus.ARCHIVED].includes(property.lifecycleStatus as any)) {
       throw new BadRequestException('This property cannot be edited in its current lifecycle state.');
     }
 
