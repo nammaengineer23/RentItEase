@@ -67,6 +67,10 @@ export class BookingService {
       throw new NotFoundException('Property visit not found.');
     }
 
+    if (![UserRole.USER, UserRole.OWNER].includes(user.role)) {
+      throw new ForbiddenException('Only eligible tenant accounts can create bookings.');
+    }
+
     if (visit.tenantId !== user.id) {
       throw new ForbiddenException(
         'You can only create a booking for your own visit.',
@@ -95,6 +99,14 @@ export class BookingService {
       throw new BadRequestException('This property is no longer available.');
     }
 
+    if (!visit.property.isVerified) {
+      throw new BadRequestException('This property is not verified for booking.');
+    }
+
+    if (visit.visitDate.getTime() <= Date.now()) {
+      throw new BadRequestException('The requested visit date has already passed.');
+    }
+
     const existingBooking = await this.prisma.booking.findFirst({
       where: {
         propertyId: visit.propertyId,
@@ -116,7 +128,9 @@ export class BookingService {
       );
     }
 
-    const booking = await this.prisma.booking.create({
+    let booking: any;
+    try {
+      booking = await this.prisma.booking.create({
       data: {
         propertyId: visit.propertyId,
         tenantId: user.id,
@@ -158,6 +172,12 @@ export class BookingService {
         visit: true,
       },
     });
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        throw new BadRequestException('This property already has an active booking.');
+      }
+      throw error;
+    }
 
     await this.notificationsService.createNotification(
       visit.property.owner.id,
