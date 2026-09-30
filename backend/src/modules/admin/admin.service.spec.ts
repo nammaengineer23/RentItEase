@@ -3,7 +3,7 @@ import { UserRole } from '@prisma/client';
 import { AdminService } from './admin.service';
 
 describe('AdminService', () => {
-  const audit = { record: jest.fn() };
+  const audit = { record: jest.fn(), recordTx: jest.fn() };
   const socialMediaService = { onPropertyApproved: jest.fn().mockResolvedValue(undefined) };
   const prisma: any = {
     user: {
