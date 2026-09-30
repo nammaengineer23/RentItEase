@@ -63,8 +63,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handleExpired = () => signOut();
+    const handleForbidden = () => signOut();
     window.addEventListener("rentease:auth-expired", handleExpired);
-    return () => window.removeEventListener("rentease:auth-expired", handleExpired);
+    window.addEventListener("rentease:forbidden", handleForbidden);
+    return () => {
+      window.removeEventListener("rentease:auth-expired", handleExpired);
+      window.removeEventListener("rentease:forbidden", handleForbidden);
+    };
   }, [signOut]);
 
   const signIn = useCallback(
