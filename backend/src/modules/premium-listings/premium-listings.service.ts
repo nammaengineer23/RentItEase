@@ -168,8 +168,8 @@ export class PremiumListingsService {
         membershipPlanId: activeMembership.planId,
         status: PremiumListingStatus.PENDING,
         durationDays,
-        amount: new Prisma.Decimal(dto.amount),
-        currency: dto.currency ?? 'INR',
+        amount: new Prisma.Decimal(0),
+        currency: 'INR',
       },
       include: {
         property: true,
@@ -298,12 +298,7 @@ export class PremiumListingsService {
         ...(dto.durationDays !== undefined && {
           durationDays: dto.durationDays,
         }),
-        ...(dto.amount !== undefined && {
-          amount: new Prisma.Decimal(dto.amount),
-        }),
-        ...(dto.currency !== undefined && {
-          currency: dto.currency,
-        }),
+
       },
       include: {
         property: true,
