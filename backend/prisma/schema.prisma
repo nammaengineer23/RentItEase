@@ -356,6 +356,7 @@ model Invoice {
   updatedAt     DateTime      @updatedAt
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   payment       Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  lease         Lease?
   membership    Membership?   @relation(fields: [membershipId], references: [id], onDelete: SetNull)
 
   @@index([userId])
@@ -449,6 +450,8 @@ model Lease {
   bookingId       String      @unique
   propertyId      String
   tenantId        String
+  paymentId       String?     @unique
+  invoiceId       String?     @unique
   status          LeaseStatus @default(ACTIVE)
   monthlyRent     Decimal     @db.Decimal(10, 2)
   securityDeposit Decimal     @db.Decimal(10, 2)
@@ -457,12 +460,17 @@ model Lease {
   signedAt        DateTime?
   terminatedAt    DateTime?
   completedAt     DateTime?
+  expiredAt       DateTime?
+  renewedAt       DateTime?
+  renewalCount    Int         @default(0)
   notes           String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   booking         Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   property        Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   tenant          User        @relation("TenantLeases", fields: [tenantId], references: [id], onDelete: Cascade)
+  payment         Payment?    @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  invoice         Invoice?    @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
   @@index([propertyId])
   @@index([tenantId])
@@ -486,6 +494,7 @@ model Payment {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   booking           Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  lease             Lease?
   invoices          Invoice[]
 
   @@index([status])
@@ -762,6 +771,7 @@ enum LeaseStatus {
   COMPLETED
   TERMINATED
   CANCELLED
+  EXPIRED
 }
 
 enum MembershipPlanCode {
