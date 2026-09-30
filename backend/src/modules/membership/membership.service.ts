@@ -571,6 +571,7 @@ export class MembershipService {
         status: MembershipStatus.PENDING,
         amount: new Prisma.Decimal(amount),
         razorpayOrderId: order.id,
+        pendingKey: `PREMIUM:${userId}`,
         notes: 'Premium membership purchase',
       },
       include: { plan: true },
