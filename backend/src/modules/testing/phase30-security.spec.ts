@@ -197,6 +197,7 @@ describe('Phase 30 critical backend security regression suite', () => {
       property: { findUnique: jest.fn().mockResolvedValue({ id: 'property-1', ownerId: 'owner-1' }) },
       review: {
         findFirst: jest.fn().mockResolvedValue({ id: 'review-1' }),
+        update: jest.fn().mockResolvedValue({ id: 'review-1' }),
       },
     };
     const service = new ReviewsService(prisma);
