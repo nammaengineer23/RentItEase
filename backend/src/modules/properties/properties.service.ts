@@ -460,8 +460,8 @@ export class PropertiesService {
             : 0;
 
         return {
-          ...serializePrisma(property),
-          averageRating,
+          ...this.toPublicProperty(property),
+          averageRating:
           totalReviews: property.reviews.length,
         };
       })
@@ -824,6 +824,7 @@ export class PropertiesService {
           not: id,
         },
 
+        lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
         isAvailable: true,
         isVerified: true,
 
@@ -886,7 +887,7 @@ export class PropertiesService {
           : 0;
 
       return {
-        ...serializePrisma(property),
+        ...this.toPublicProperty(property),
         averageRating,
         totalReviews: property.reviews.length,
         totalFavorites: property.favorites.length,
