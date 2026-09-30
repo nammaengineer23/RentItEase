@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:mobile_app/features/authentication/data/models/auth_response.dart';
 import 'package:mobile_app/features/authentication/data/models/login_request.dart';
-import 'package:mobile_app/features/authentication/data/models/register_request.dart';
 import 'package:mobile_app/features/authentication/data/repositories/authentication_repository_impl.dart';
 import 'package:mobile_app/features/authentication/providers/authentication_provider.dart';
 
@@ -75,13 +74,4 @@ class _FakeAuthRepository extends AuthenticationRepositoryImpl {
 
   @override
   Future<void> saveSession(AuthResponse response) async {}
-
-  @override
-  Future<void> registerVerified(
-    RegisterRequest request, {
-    required String emailVerificationToken,
-    String? phoneIdToken,
-  }) async {
-    throw UnimplementedError();
-  }
 }
