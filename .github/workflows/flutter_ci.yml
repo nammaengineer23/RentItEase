@@ -1,11 +1,8 @@
 name: Flutter Android Build
 
 on:
+  # Full Android build is milestone/RC-only. Routine updates use Flutter Fast Check.
   workflow_dispatch:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
 
 permissions:
   contents: read
