@@ -45,6 +45,30 @@ export class AdminAuditService {
     });
   }
 
+  async recordTx(
+    tx: Prisma.TransactionClient,
+    context: AdminAuditContext,
+    action: string,
+    resource: string,
+    resourceId: string | null,
+    before?: unknown,
+    after?: unknown,
+  ) {
+    return tx.adminAuditLog.create({
+      data: {
+        adminId: context.adminId,
+        action,
+        resource,
+        resourceId,
+        before: this.json(before),
+        after: this.json(after),
+        ipAddress: context.ipAddress ?? null,
+        device: context.device ?? null,
+        reason: context.reason ?? null,
+      },
+    });
+  }
+
   async list(limit = 100) {
     const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
     return this.prisma.adminAuditLog.findMany({
