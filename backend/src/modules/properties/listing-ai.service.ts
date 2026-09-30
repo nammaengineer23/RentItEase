@@ -1,7 +1,7 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { AiSuggestionDto } from './dto/ai-suggestion.dto';
 
-interface AiSuggestion {
+export interface AiSuggestion {
   title: string;
   description: string;
 }
