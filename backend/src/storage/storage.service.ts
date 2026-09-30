@@ -54,6 +54,13 @@ export class StorageService {
     return this.firebaseService.getSignedDownloadUrl(publicId, expiresInSeconds);
   }
 
+  async listObjects() {
+    if (this.driver === 'r2') return this.r2StorageService.listObjects();
+    return this.firebaseService.listObjects();
+  }
+
+  get driverName(): string { return this.driver; }
+
   deleteImage(publicId: string): Promise<boolean> {
     if (publicId.startsWith('r2:')) {
       return this.r2StorageService.deleteImage(publicId);
