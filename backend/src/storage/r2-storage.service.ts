@@ -118,8 +118,6 @@ export class R2StorageService {
       requestHeaders['Content-Type'] = contentType;
     }
 
-    let lastError: unknown;
-
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15_000);
@@ -145,9 +143,8 @@ export class R2StorageService {
           );
         }
 
-        lastError = new Error(`R2 HTTP ${response.status}`);
+        // Retry transient 5xx responses.
       } catch (error) {
-        lastError = error;
         if (error instanceof InternalServerErrorException) {
           throw error;
         }
