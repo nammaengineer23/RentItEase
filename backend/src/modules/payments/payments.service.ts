@@ -19,6 +19,7 @@ import {
   
   import { PrismaService } from '../../prisma/prisma.service';
   import { serializePrisma } from '../../common/utils/prisma-response.util';
+  import { toPaise } from '../../common/utils/money.util';
   
   import { NotificationsService } from '../notifications/notifications.service';
   import { PushNotificationsService } from '../push-notifications/push-notifications.service';
@@ -53,25 +54,6 @@ import {
     // =====================================
     // Create Razorpay Order
     // =====================================
-
-    private amountToPaise(amount: Prisma.Decimal | string | number): number {
-      const decimal = new Prisma.Decimal(amount);
-      if (!decimal.isFinite() || decimal.isNegative()) {
-        throw new BadRequestException('Invalid monetary amount.');
-      }
-
-      const paise = decimal.mul(100);
-      if (!paise.isInteger()) {
-        throw new BadRequestException('Monetary amount must have at most two decimal places.');
-      }
-
-      const value = paise.toNumber();
-      if (!Number.isSafeInteger(value)) {
-        throw new BadRequestException('Monetary amount exceeds the supported gateway range.');
-      }
-
-      return value;
-    }
 
     private async createRazorpayOrderWithRetry(options: any) {
       const maxAttempts = 3;
@@ -155,7 +137,7 @@ import {
       const totalAmount = new Prisma.Decimal(booking.monthlyRent).add(
         new Prisma.Decimal(booking.securityDeposit),
       );
-      const amountInPaise = this.amountToPaise(totalAmount);
+      const amountInPaise = toPaise(totalAmount);
       if (totalAmount.lte(0)) {
         throw new BadRequestException('Invalid booking payment amount.');
       }
@@ -294,7 +276,7 @@ import {
         message: payment.status === PaymentStatus.CREATED ? 'Existing payment order found.' : 'Payment order is being prepared.',
         data: {
           paymentId: payment.id, bookingId: booking.id, razorpayOrderId: payment.razorpayOrderId,
-          amount: new Prisma.Decimal(payment.amount).toNumber(), amountInPaise: this.amountToPaise(payment.amount),
+          amount: new Prisma.Decimal(payment.amount).toNumber(), amountInPaise: toPaise(payment.amount),
           currency: payment.currency, status: payment.status, keyId: process.env.RAZORPAY_KEY_ID,
           customer: { name: booking.tenant.fullName, email: booking.tenant.email, phone: booking.tenant.phone },
         },
@@ -405,7 +387,7 @@ import {
         );
       }
 
-      const expectedAmountInPaise = this.amountToPaise(payment.amount);
+      const expectedAmountInPaise = toPaise(payment.amount);
 
       if (
         !Number.isSafeInteger(expectedAmountInPaise) ||
@@ -626,7 +608,7 @@ import {
         };
       }
 
-      const amountInPaise = this.amountToPaise(payment.amount);
+      const amountInPaise = toPaise(payment.amount);
       if (!Number.isSafeInteger(amountInPaise) || amountInPaise <= 0) {
         throw new BadRequestException('Invalid refund amount.');
       }
@@ -905,7 +887,7 @@ import {
         );
       }
 
-      const expectedAmountInPaise = this.amountToPaise(payment.amount);
+      const expectedAmountInPaise = toPaise(payment.amount);
       if (
         !Number.isSafeInteger(expectedAmountInPaise) ||
         expectedAmountInPaise <= 0 ||
@@ -967,7 +949,7 @@ import {
           const gatewayPayment: any = await this.razorpay.payments.fetch(
             refund.payment.razorpayPaymentId,
           );
-          const expectedAmountInPaise = this.amountToPaise(refund.amount);
+          const expectedAmountInPaise = toPaise(refund.amount);
           const refundedAmount = Number(gatewayPayment?.amount_refunded ?? 0);
 
           if (
@@ -1033,7 +1015,7 @@ import {
       if (
         gatewayRefund?.payment_id !== refund.payment.razorpayPaymentId ||
         gatewayRefund?.currency !== refund.currency ||
-        gatewayRefund?.amount !== this.amountToPaise(refund.amount)
+        gatewayRefund?.amount !== toPaise(refund.amount)
       ) {
         throw new BadRequestException(
           'Razorpay refund details do not match the local refund. Manual reconciliation is required.',
@@ -1122,7 +1104,7 @@ import {
 
       if (!refund) return;
 
-      const expectedAmountInPaise = this.amountToPaise(refund.amount);
+      const expectedAmountInPaise = toPaise(refund.amount);
       if (
         !Number.isSafeInteger(expectedAmountInPaise) ||
         amount !== undefined && amount !== expectedAmountInPaise ||
