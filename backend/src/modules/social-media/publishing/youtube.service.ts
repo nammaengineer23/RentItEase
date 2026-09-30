@@ -1,13 +1,20 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { createReadStream } from 'node:fs';
 import { google } from 'googleapis';
+import { SocialAccountService } from '../accounts/social-account.service';
+
 @Injectable()
 export class YouTubeService {
+  constructor(private readonly accounts: SocialAccountService) {}
+
   async publish(params: { filePath: string; title: string; description: string }): Promise<{ externalId: string; url?: string }> {
     const clientId = process.env.YOUTUBE_CLIENT_ID;
     const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-    const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
-    if (!clientId || !clientSecret || !refreshToken) throw new ServiceUnavailableException('YouTube publishing is not configured.');
+    const fallbackRefreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
+    if (!clientId || !clientSecret) throw new ServiceUnavailableException('YouTube publishing is not configured.');
+    const credentials = await this.accounts.getCredentials('YOUTUBE', { refreshToken: fallbackRefreshToken });
+    const refreshToken = credentials.refreshToken;
+    if (!refreshToken) throw new ServiceUnavailableException('YouTube account connection is missing or expired.');
     const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, process.env.YOUTUBE_REDIRECT_URI);
     oauth2Client.setCredentials({ refresh_token: refreshToken });
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
