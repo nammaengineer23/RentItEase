@@ -8,12 +8,14 @@ import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
 import { SocialMediaService } from '../social-media/social-media.service';
+import { PropertiesService } from '../properties/properties.service';
 
 @Injectable()
 export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly socialMediaService: SocialMediaService,
+    private readonly propertiesService: PropertiesService,
   ) {}
 
   // ==========================
@@ -466,106 +468,29 @@ async getProperty(id: string) {
   // Hide Property
   // ==========================
   async hideProperty(id: string) {
-    const property = await this.prisma.property.findUnique({
-      where: { id },
-    });
+    return this.propertiesService.setUnavailable(id, { id: 'admin', role: UserRole.ADMIN });
 
-    if (!property) {
-      throw new NotFoundException(
-        'Property not found.',
-      );
-    }
-
-    return serializePrisma(
-      await this.prisma.property.update({
-        where: { id },
-        data: {
-          isAvailable: false,
-        },
-      }),
-    );
   }
 
   // ==========================
   // Unhide Property
   // ==========================
   async unhideProperty(id: string) {
-    const property = await this.prisma.property.findUnique({
-      where: { id },
-    });
+    return this.propertiesService.publish(id, { id: 'admin', role: UserRole.ADMIN });
 
-    if (!property) {
-      throw new NotFoundException(
-        'Property not found.',
-      );
-    }
-
-    return serializePrisma(
-      await this.prisma.property.update({
-        where: { id },
-        data: {
-          isAvailable: true,
-        },
-      }),
-    );
   }
 
   async approveProperty(id: string) {
-    const property = await this.prisma.property.findUnique({ where: { id } });
-    if (!property) throw new NotFoundException('Property not found.');
+    return this.propertiesService.approve(id);
 
-    const approved = await this.prisma.$transaction(async (prisma) => {
-      const updated = await prisma.property.update({
-        where: { id },
-        data: { isVerified: true, isAvailable: true },
-      });
-      await prisma.user.update({
-        where: { id: property.ownerId },
-        data: {
-          role: 'OWNER',
-          ownerRequestStatus: 'APPROVED',
-          ownerReviewedAt: new Date(),
-        },
-      });
-      return updated;
-    });
-
-    // Prepare marketing content only after the approval transaction commits.
-    // Generation must never block or roll back property approval; the admin can
-    // regenerate from Social Media if preparation fails.
-    void this.socialMediaService.onPropertyApproved(id).catch((error) => {
-      console.error('Automatic reel preparation failed after property approval', {
-        propertyId: id,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    });
-
-    return serializePrisma(approved);
   }
 
   // ==========================
   // Delete Property
   // ==========================
   async deleteProperty(id: string) {
-    const property = await this.prisma.property.findUnique({
-      where: { id },
-    });
+    return this.propertiesService.archive(id, { id: 'admin', role: UserRole.ADMIN });
 
-    if (!property) {
-      throw new NotFoundException(
-        'Property not found.',
-      );
-    }
-
-    await this.prisma.property.delete({
-      where: { id },
-    });
-
-    return {
-      success: true,
-      message:
-        'Property deleted successfully.',
-    };
   }
 
   // ==========================
