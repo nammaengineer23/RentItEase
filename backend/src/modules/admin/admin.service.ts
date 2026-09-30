@@ -1,18 +1,22 @@
 import {
+  BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
 import { SocialMediaService } from '../social-media/social-media.service';
+import { AdminAuditService, AdminAuditContext } from './admin-audit.service';
 
 @Injectable()
 export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly socialMediaService: SocialMediaService,
+    private readonly audit: AdminAuditService,
   ) {}
 
   // ==========================
@@ -193,81 +197,57 @@ visits: {
     });
   }
 
-  // ==========================
-  // Activate User
-  // ==========================
-  // ==========================
-// Activate User
-// ==========================
-async activateUser(id: string) {
-  const user = await this.prisma.user.findUnique({
-    where: { id },
-  });
-
-  if (!user) {
-    throw new NotFoundException('User not found.');
-  }
-
-  const updatedUser = await this.prisma.user.update({
-    where: { id },
-    data: {
-      isActive: true,
-    },
-    select: {
-      id: true,
-      fullName: true,
-      email: true,
-      phone: true,
-      role: true,
-      isActive: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
-
-  return serializePrisma(updatedUser);
-}
-  // ==========================
-// Deactivate User
-// ==========================
-async deactivateUser(id: string) {
-  const user = await this.prisma.user.findUnique({
-    where: { id },
-  });
-
-  if (!user) {
-    throw new NotFoundException('User not found.');
-  }
-
-  const updatedUser = await this.prisma.user.update({
-    where: { id },
-    data: {
-      isActive: false,
-    },
-    select: {
-      id: true,
-      fullName: true,
-      email: true,
-      phone: true,
-      role: true,
-      isActive: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
-
-  return serializePrisma(updatedUser);
-}
-  // ==========================
-  // Update User Role
-  // ==========================
-  async updateUserRole(id: string, role: UserRole) {
-    if (!Object.values(UserRole).includes(role)) {
-      throw new NotFoundException('Invalid user role.');
+  private async assertAdminActor(actorId: string) {
+    const actor = await this.prisma.user.findUnique({ where: { id: actorId } });
+    if (!actor || actor.role !== UserRole.ADMIN || !actor.isActive) {
+      throw new ForbiddenException('Active admin authorization is required.');
     }
-    const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException('User not found.');
+    return actor;
+  }
 
+  private async activeAdminCount() {
+    return this.prisma.user.count({ where: { role: UserRole.ADMIN, isActive: true } });
+  }
+
+  async activateUser(id: string, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
+    const user = await this.prisma.user.findUnique({ where: { id }, select: { id: true, role: true, isActive: true } });
+    if (!user) throw new NotFoundException('User not found.');
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: { isActive: true },
+      select: { id: true, fullName: true, email: true, phone: true, role: true, isActive: true, createdAt: true, updatedAt: true },
+    });
+    await this.audit.record(context, 'USER_ACTIVATE', 'USER', id, user, updatedUser);
+    return serializePrisma(updatedUser);
+  }
+
+  async deactivateUser(id: string, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
+    if (id === actorId) throw new BadRequestException('Admins cannot deactivate their own account.');
+    const user = await this.prisma.user.findUnique({ where: { id }, select: { id: true, role: true, isActive: true } });
+    if (!user) throw new NotFoundException('User not found.');
+    if (user.role === UserRole.ADMIN && user.isActive && (await this.activeAdminCount()) <= 1) {
+      throw new BadRequestException('The last active admin cannot be deactivated.');
+    }
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: { isActive: false },
+      select: { id: true, fullName: true, email: true, phone: true, role: true, isActive: true, createdAt: true, updatedAt: true },
+    });
+    await this.audit.record(context, 'USER_DEACTIVATE', 'USER', id, user, updatedUser);
+    return serializePrisma(updatedUser);
+  }
+
+  async updateUserRole(id: string, role: UserRole, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
+    if (!Object.values(UserRole).includes(role)) throw new BadRequestException('Invalid user role.');
+    if (id === actorId) throw new BadRequestException('Admins cannot change their own role.');
+    const user = await this.prisma.user.findUnique({ where: { id }, select: { id: true, role: true, isActive: true, ownerRequestStatus: true } });
+    if (!user) throw new NotFoundException('User not found.');
+    if (user.role === UserRole.ADMIN && role !== UserRole.ADMIN && user.isActive && (await this.activeAdminCount()) <= 1) {
+      throw new BadRequestException('The last active admin cannot be demoted.');
+    }
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: {
@@ -278,44 +258,39 @@ async deactivateUser(id: string) {
             ? { ownerReviewedAt: null }
             : {}),
       },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        phone: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: { id: true, fullName: true, email: true, phone: true, role: true, isActive: true, createdAt: true, updatedAt: true },
     });
+    await this.audit.record(context, 'USER_ROLE_CHANGE', 'USER', id, user, updatedUser);
     return serializePrisma(updatedUser);
   }
 
-  // ==========================
-  // Delete User
-  // ==========================
-  async deleteUser(id: string) {
+  async deleteUser(id: string, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
+    if (id === actorId) throw new BadRequestException('Admins cannot delete their own account.');
     const user = await this.prisma.user.findUnique({
       where: { id },
+      select: { id: true, role: true, isActive: true, fullName: true, email: true },
     });
-
-    if (!user) {
-      throw new NotFoundException(
-        'User not found.',
-      );
+    if (!user) throw new NotFoundException('User not found.');
+    if (user.role === UserRole.ADMIN && user.isActive && (await this.activeAdminCount()) <= 1) {
+      throw new BadRequestException('The last active admin cannot be deleted.');
     }
 
-    await this.prisma.user.delete({
-      where: { id },
-    });
+    const [propertyCount, activeBookingCount, activeLeaseCount, activeMembershipCount] = await Promise.all([
+      this.prisma.property.count({ where: { ownerId: id } }),
+      this.prisma.booking.count({ where: { tenantId: id, status: { in: ['PENDING', 'APPROVED', 'PAYMENT_PENDING', 'PAID'] } } }),
+      this.prisma.lease.count({ where: { tenantId: id, status: 'ACTIVE' } }),
+      this.prisma.membership.count({ where: { userId: id, status: 'ACTIVE' } }),
+    ]);
+    if (propertyCount || activeBookingCount || activeLeaseCount || activeMembershipCount) {
+      throw new BadRequestException('User cannot be deleted while they own properties or have active rental, lease, or membership records. Deactivate the account instead.');
+    }
 
-    return {
-      success: true,
-      message:
-        'User deleted successfully.',
-    };
+    await this.prisma.user.delete({ where: { id } });
+    await this.audit.record(context, 'USER_DELETE', 'USER', id, user, null);
+    return { success: true, message: 'User deleted successfully.' };
   }
+
     // ==========================
   // Get All Properties
   // ==========================
@@ -464,7 +439,8 @@ async getProperty(id: string) {
   // ==========================
   // Hide Property
   // ==========================
-  async hideProperty(id: string) {
+  async hideProperty(id: string, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
     const property = await this.prisma.property.findUnique({
       where: { id },
     });
@@ -475,20 +451,21 @@ async getProperty(id: string) {
       );
     }
 
-    return serializePrisma(
-      await this.prisma.property.update({
+    const updated = await this.prisma.property.update({
         where: { id },
         data: {
           isAvailable: false,
         },
-      }),
-    );
+      });
+    await this.audit.record(context, 'PROPERTY_HIDE', 'PROPERTY', id, property, updated);
+    return serializePrisma(updated);
   }
 
   // ==========================
   // Unhide Property
   // ==========================
-  async unhideProperty(id: string) {
+  async unhideProperty(id: string, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
     const property = await this.prisma.property.findUnique({
       where: { id },
     });
@@ -499,19 +476,19 @@ async getProperty(id: string) {
       );
     }
 
-    return serializePrisma(
-      await this.prisma.property.update({
-        where: { id },
-        data: {
-          isAvailable: true,
-        },
-      }),
-    );
+    const updated = await this.prisma.property.update({
+      where: { id },
+      data: { isAvailable: true },
+    });
+    await this.audit.record(context, 'PROPERTY_UNHIDE', 'PROPERTY', id, property, updated);
+    return serializePrisma(updated);
   }
 
-  async approveProperty(id: string) {
+  async approveProperty(id: string, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
     const property = await this.prisma.property.findUnique({ where: { id } });
     if (!property) throw new NotFoundException('Property not found.');
+    if (property.isVerified) throw new BadRequestException('Property is already approved.');
 
     const approved = await this.prisma.$transaction(async (prisma) => {
       const updated = await prisma.property.update({
@@ -539,13 +516,16 @@ async getProperty(id: string) {
       });
     });
 
+    await this.audit.record(context, 'PROPERTY_APPROVE', 'PROPERTY', id, { isVerified: property.isVerified, isAvailable: property.isAvailable }, { isVerified: approved.isVerified, isAvailable: approved.isAvailable });
+    await this.audit.record(context, 'USER_ROLE_PROMOTION', 'USER', property.ownerId, null, { role: UserRole.OWNER, reason: 'Property approval' });
     return serializePrisma(approved);
   }
 
   // ==========================
   // Delete Property
   // ==========================
-  async deleteProperty(id: string) {
+  async deleteProperty(id: string, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
     const property = await this.prisma.property.findUnique({
       where: { id },
     });
@@ -556,15 +536,16 @@ async getProperty(id: string) {
       );
     }
 
-    await this.prisma.property.delete({
-      where: { id },
-    });
-
-    return {
-      success: true,
-      message:
-        'Property deleted successfully.',
-    };
+    const [activeBookings, activeLeases] = await Promise.all([
+      this.prisma.booking.count({ where: { propertyId: id, status: { in: ['PENDING', 'APPROVED', 'PAYMENT_PENDING', 'PAID'] } } }),
+      this.prisma.lease.count({ where: { propertyId: id, status: 'ACTIVE' } }),
+    ]);
+    if (activeBookings || activeLeases) {
+      throw new BadRequestException('Property cannot be deleted while it has an active booking or lease.');
+    }
+    await this.prisma.property.delete({ where: { id } });
+    await this.audit.record(context, 'PROPERTY_DELETE', 'PROPERTY', id, property, null);
+    return { success: true, message: 'Property deleted successfully.' };
   }
 
   // ==========================
@@ -600,7 +581,8 @@ async getReviews() {
 // ==========================
 // Delete Review
 // ==========================
-async deleteReview(id: string) {
+async deleteReview(id: string, actorId: string, context: AdminAuditContext) {
+  await this.assertAdminActor(actorId);
   const review = await this.prisma.review.findUnique({
     where: { id },
   });
@@ -609,14 +591,9 @@ async deleteReview(id: string) {
     throw new NotFoundException('Review not found.');
   }
 
-  await this.prisma.review.delete({
-    where: { id },
-  });
-
-  return {
-    success: true,
-    message: 'Review deleted successfully.',
-  };
+  await this.prisma.review.delete({ where: { id } });
+  await this.audit.record(context, 'REVIEW_DELETE', 'REVIEW', id, review, null);
+  return { success: true, message: 'Review deleted successfully.' };
 }
 
 // ==========================
