@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
@@ -35,7 +36,7 @@ export class AuthService {
     private readonly firebaseService: FirebaseService,
     private readonly mailService: MailService,
     private readonly otpService: OtpService,
-    private readonly authRateLimitService: AuthRateLimitService,
+    @Optional() private readonly authRateLimitService: AuthRateLimitService,
   ) {}
 
   private readonly signupEmailPurpose = 'SIGNUP_EMAIL';
