@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/app_exception.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/config/auth_features.dart';
 import '../../../core/navigation/route_persistence_service.dart';
 import '../data/models/auth_response.dart';
@@ -25,6 +26,7 @@ class AuthenticationProvider extends ChangeNotifier {
   }) : _repository = repository ?? AuthenticationRepositoryImpl(),
        _pushNotificationService = pushNotificationService ?? PushNotificationService() {
     _loadRememberMePreference();
+    ApiClient.shared.onSessionExpired = _handleSessionExpired;
   }
 
   static const _rememberMeKey = 'auth_remember_me';
@@ -227,6 +229,17 @@ class AuthenticationProvider extends ChangeNotifier {
     if (normalized.contains('developer_error') || normalized.contains('api_exception: 10') || normalized.contains('configuration')) return 'Google sign-in is not configured for this app build. Please contact support.';
     if (normalized.contains('invalid-credential') || normalized.contains('credential') || normalized.contains('id token')) return 'Your Google sign-in session expired. Please try again.';
     return 'Google sign-in could not be completed during $stage. Please try again.';
+  }
+
+  void _handleSessionExpired() {
+    if (_authResponse == null) return;
+    _authResponse = null;
+    _isLoading = false;
+    _pendingGoogleIdToken = null;
+    unawaited(_pushNotificationService.deactivate());
+    unawaited(FirebaseAuth.instance.signOut());
+    unawaited(RoutePersistenceService.clear());
+    notifyListeners();
   }
 
   Future<void> logout() async {
