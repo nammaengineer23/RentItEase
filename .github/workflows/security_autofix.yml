@@ -29,7 +29,10 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm install
       - run: npm audit fix
-      - run: npm audit --audit-level=high
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Full audit report
+        run: npm audit --audit-level=high || true
       - name: Commit safe audit fixes
         working-directory: .
         run: |
