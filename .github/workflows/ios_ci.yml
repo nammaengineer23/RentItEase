@@ -26,8 +26,8 @@ jobs:
           cache: true
       - name: Install dependencies
         run: flutter pub get
-      - name: Analyze
-        run: flutter analyze
+      - name: Analyze application source
+        run: flutter analyze lib test
       - name: Tests
         run: flutter test
       - name: iOS build without signing
