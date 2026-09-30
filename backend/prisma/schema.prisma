@@ -162,6 +162,7 @@ model Property {
   securityDeposit        Decimal                 @db.Decimal(10, 2)
   isAvailable            Boolean                 @default(true)
   isVerified             Boolean                 @default(false)
+  lifecycleStatus        PropertyLifecycleStatus @default(DRAFT)
   ownerId                String
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
