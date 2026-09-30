@@ -358,7 +358,7 @@ export class ChatService {
           conversationId,
           senderId,
           text: file.originalname,
-          messageType: MessageType.FILE,
+          messageType: MessageType.DOCUMENT,
           attachmentPublicId: uploaded.publicId,
           attachmentUrl: uploaded.imageUrl,
           attachmentMime: file.mimetype,
