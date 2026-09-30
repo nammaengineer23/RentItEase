@@ -133,38 +133,36 @@ export class FirebaseService {
   }
 
   async sendToDevices(
-  tokens: string[],
-  title: string,
-  body: string,
-  data?: Record<string, string>,
-) {
-  if (!tokens.length) {
-    console.log('⚠️ No FCM tokens found.');
-    return;
-  }
+    tokens: string[],
+    title: string,
+    body: string,
+    data?: Record<string, string>,
+  ) {
+    if (!tokens.length) {
+      console.log('⚠️ No FCM tokens found.');
+      return;
+    }
 
-  try {
-    const response = await this.withRetry(
-      () =>
-        this.withTimeout(
-          this.getMessaging().sendEachForMulticast({
-            tokens,
-            notification: { title, body },
-            data,
-          }),
-          15_000,
-        ),
-      2,
-      'FCM multicast notification',
-    );
+    try {
+      const response = await this.withRetry(
+        () =>
+          this.withTimeout(
+            this.getMessaging().sendEachForMulticast({
+              tokens,
+              notification: { title, body },
+              data,
+            }),
+            15_000,
+          ),
+        2,
+        'FCM multicast notification',
+      );
 
-    return response;
-  } catch (error) {
-    console.error(
-      '❌ Firebase send failed:',
-      error,
-    );
-    throw error;
+      return response;
+    } catch (error) {
+      console.error('❌ Firebase send failed:', error);
+      throw error;
+    }
   }
 
   private async withRetry<T>(
