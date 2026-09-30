@@ -248,13 +248,17 @@ export class PropertiesService {
       order = 'desc',
     } = filterDto;
 
+    const safeLimit = Math.min(limit, 50);
+    const allowedSorts = new Set(['createdAt', 'price', 'area', 'viewCount']);
+    const safeSortBy = allowedSorts.has(sortBy) ? sortBy : 'createdAt';
+
     const where = this.buildPropertyWhere(filterDto);
 
     // -----------------------
     // Pagination
     // -----------------------
 
-    const skip = (page - 1) * limit;
+    const skip = (page - 1) * safeLimit;
 
     const [properties, total] = await this.prisma.$transaction([
       this.prisma.property.findMany({
