@@ -26,7 +26,7 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: backend/package-lock.json
-      - run: npm ci
+      - run: npm install
       - run: npm audit fix
       - run: npm audit --audit-level=high
       - name: Commit safe audit fixes
