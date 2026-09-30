@@ -20,7 +20,7 @@ export class R2StorageService {
   ): Promise<StoredImage> {
     const key = this.buildKey(file, folder);
 
-    await this.signedRequest('PUT', key, file.buffer, file.mimetype);
+    await this.signedRequest('PUT', key, file.buffer, file.mimetype, this.requiredConfig('R2_BUCKET_NAME'));
 
     return {
       publicId: `r2:${key}`,
@@ -34,24 +34,27 @@ export class R2StorageService {
   ): Promise<{ publicId: string }> {
     const key = this.buildKey(file, folder);
 
-    await this.signedRequest('PUT', key, file.buffer, file.mimetype);
+    await this.signedRequest('PUT', key, file.buffer, file.mimetype, this.requiredConfig('R2_PRIVATE_BUCKET_NAME'));
 
     return {
-      publicId: `r2:${key}`,
+      publicId: `r2p:${key}`,
     };
   }
 
   async getSignedUrl(publicId: string, expiresInSeconds = 900): Promise<string> {
-    const key = publicId.startsWith('r2:') ? publicId.slice(3) : publicId;
+    const isPrivate = publicId.startsWith('r2p:');
+    const key = isPrivate ? publicId.slice(4) : publicId.startsWith('r2:') ? publicId.slice(3) : publicId;
     if (!key) throw new InternalServerErrorException('Invalid storage object.');
 
     const accountId = this.requiredConfig('R2_ACCOUNT_ID');
     const accessKeyId = this.requiredConfig('R2_ACCESS_KEY_ID');
     const secretAccessKey = this.requiredConfig('R2_SECRET_ACCESS_KEY');
-    const bucketName = this.requiredConfig('R2_BUCKET_NAME');
+    const bucketName = isPrivate
+      ? this.requiredConfig('R2_PRIVATE_BUCKET_NAME')
+      : this.requiredConfig('R2_BUCKET_NAME');
     const expires = Math.min(Math.max(Math.floor(expiresInSeconds), 60), 3600);
     const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
-    const url = new URL(`${endpoint}/${this.encodePath(bucketName)}/${this.encodePath(key)}`);
+    const url = new URL(`${endpoint}/${this.encodePath(targetBucket)}/${this.encodePath(key)}`);
     const now = new Date();
     const timestamp = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
     const dateStamp = timestamp.slice(0, 8);
@@ -95,10 +98,10 @@ export class R2StorageService {
 
   async listObjects(): Promise<Array<{ publicId: string; createdAt: Date }>> {
     const objects: Array<{ publicId: string; createdAt: Date }> = [];
-    for (const prefix of ['properties/', 'property-videos/', 'chat-attachments/']) {
+    for (const prefix of ['properties/', 'property-videos/']) {
       let continuationToken: string | undefined;
       do {
-        const page = await this.listObjectsPage(prefix, continuationToken);
+        const page = await this.listObjectsPage(prefix, continuationToken, this.requiredConfig('R2_BUCKET_NAME'));
         for (const object of page.objects) {
           if (!object.key || !object.lastModified) continue;
           objects.push({
@@ -109,30 +112,42 @@ export class R2StorageService {
         continuationToken = page.nextToken;
       } while (continuationToken);
     }
+    for (const prefix of ['chat-attachments/']) {
+      let continuationToken: string | undefined;
+      do {
+        const page = await this.listObjectsPage(prefix, continuationToken, this.requiredConfig('R2_PRIVATE_BUCKET_NAME'));
+        for (const object of page.objects) {
+          if (!object.key || !object.lastModified) continue;
+          objects.push({ publicId: `r2p:${object.key}`, createdAt: new Date(object.lastModified) });
+        }
+        continuationToken = page.nextToken;
+      } while (continuationToken);
+    }
     return objects;
   }
 
   async deleteImage(publicId: string): Promise<boolean> {
-    const key = publicId.startsWith('r2:') ? publicId.slice(3) : publicId;
+    const isPrivate = publicId.startsWith('r2p:');
+    const key = isPrivate ? publicId.slice(4) : publicId.startsWith('r2:') ? publicId.slice(3) : publicId;
 
     if (!key) {
       return true;
     }
 
-    await this.signedRequest('DELETE', key);
+    await this.signedRequest('DELETE', key, undefined, undefined, isPrivate ? this.requiredConfig('R2_PRIVATE_BUCKET_NAME') : this.requiredConfig('R2_BUCKET_NAME'));
     return true;
   }
 
-  private async listObjectsPage(prefix: string, continuationToken?: string): Promise<{
+  private async listObjectsPage(prefix: string, continuationToken?: string, bucketName?: string): Promise<{
     objects: Array<{ key: string; lastModified: string }>;
     nextToken?: string;
   }> {
     const accountId = this.requiredConfig('R2_ACCOUNT_ID');
     const accessKeyId = this.requiredConfig('R2_ACCESS_KEY_ID');
     const secretAccessKey = this.requiredConfig('R2_SECRET_ACCESS_KEY');
-    const bucketName = this.requiredConfig('R2_BUCKET_NAME');
+    const targetBucket = bucketName ?? this.requiredConfig('R2_BUCKET_NAME');
     const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
-    const url = new URL(`${endpoint}/${this.encodePath(bucketName)}`);
+    const url = new URL(`${endpoint}/${this.encodePath(targetBucket)}`);
     const params = new URLSearchParams({ 'list-type': '2', 'max-keys': '1000', prefix });
     if (continuationToken) params.set('continuation-token', continuationToken);
     url.search = params.toString();
@@ -221,11 +236,12 @@ export class R2StorageService {
     key: string,
     body?: Buffer,
     contentType?: string,
+    bucketName?: string,
   ): Promise<void> {
     const accountId = this.requiredConfig('R2_ACCOUNT_ID');
     const accessKeyId = this.requiredConfig('R2_ACCESS_KEY_ID');
     const secretAccessKey = this.requiredConfig('R2_SECRET_ACCESS_KEY');
-    const bucketName = this.requiredConfig('R2_BUCKET_NAME');
+    const targetBucket = bucketName ?? this.requiredConfig('R2_BUCKET_NAME');
 
     const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
     const url = new URL(
