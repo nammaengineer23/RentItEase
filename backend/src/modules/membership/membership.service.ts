@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { MembershipStatus, Prisma } from '@prisma/client';
+import { MembershipStatus, Prisma, UserRole } from '@prisma/client';
 import { createHmac } from 'crypto';
 import Razorpay from 'razorpay';
 
@@ -11,6 +11,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
+import { ForbiddenException } from '@nestjs/common';
 
 @Injectable()
 export class MembershipService {
@@ -214,7 +215,23 @@ export class MembershipService {
     }
   }
 
-  async getUserMemberships(userId: string) {
+  private assertUserAccess(targetUserId: string, user: { id: string; role: UserRole }) {
+    if (user.role !== UserRole.ADMIN && user.id !== targetUserId) {
+      throw new ForbiddenException('You can only access your own membership data.');
+    }
+  }
+
+  private async getMembershipForUser(id: string, user: { id: string; role: UserRole }) {
+    const membership = await this.prisma.membership.findUnique({ where: { id } });
+    if (!membership) throw new NotFoundException('Membership not found');
+    if (user.role !== UserRole.ADMIN && membership.userId !== user.id) {
+      throw new ForbiddenException('You do not have access to this membership.');
+    }
+    return membership;
+  }
+
+  async getUserMemberships(userId: string, user: { id: string; role: UserRole }) {
+    this.assertUserAccess(userId, user);
     const memberships = await this.prisma.membership.findMany({
       where: { userId },
       include: {
@@ -227,7 +244,7 @@ export class MembershipService {
     return serializePrisma(memberships);
   }
 
-  async getMembership(id: string) {
+  async getMembership(id: string, user: { id: string; role: UserRole }) {
     const membership = await this.prisma.membership.findUnique({
       where: { id },
       include: {
@@ -246,11 +263,13 @@ export class MembershipService {
     if (!membership) {
       throw new NotFoundException('Membership not found');
     }
+    this.assertUserAccess(membership.userId, user);
 
     return serializePrisma(membership);
   }
 
-  async getActiveMembership(userId: string) {
+  async getActiveMembership(userId: string, user: { id: string; role: UserRole }) {
+    this.assertUserAccess(userId, user);
     const now = new Date();
 
     await this.prisma.membership.updateMany({
@@ -283,7 +302,8 @@ export class MembershipService {
   // ACTIVATION
   // ============================================================
 
-  async activateMembership(id: string) {
+  async activateMembership(id: string, user: { id: string; role: UserRole }) {
+    const authorized = await this.getMembershipForUser(id, user);
     const membership = await this.prisma.membership.findUnique({
       where: { id },
       include: { plan: true },
@@ -357,8 +377,8 @@ export class MembershipService {
   // CANCEL
   // ============================================================
 
-  async cancelMembership(id: string) {
-    const membership = await this.getMembership(id);
+  async cancelMembership(id: string, user: { id: string; role: UserRole }) {
+    const membership = await this.getMembership(id, user);
 
     if (membership.status === MembershipStatus.CANCELLED) {
       throw new BadRequestException('Membership is already cancelled');
@@ -429,8 +449,8 @@ export class MembershipService {
   // RENEWAL
   // ============================================================
 
-  async renewMembership(id: string) {
-    const membership = await this.getMembership(id);
+  async renewMembership(id: string, user: { id: string; role: UserRole }) {
+    const membership = await this.getMembership(id, user);
 
     if (
       membership.status !== MembershipStatus.EXPIRED &&
@@ -466,8 +486,8 @@ export class MembershipService {
   // AUTO RENEW
   // ============================================================
 
-  async updateAutoRenew(id: string, autoRenew: boolean) {
-    await this.getMembership(id);
+  async updateAutoRenew(id: string, autoRenew: boolean, user: { id: string; role: UserRole }) {
+    await this.getMembership(id, user);
 
     return this.prisma.membership.update({
       where: { id },
