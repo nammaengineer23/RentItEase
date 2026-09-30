@@ -226,6 +226,7 @@ export function PropertiesPage() {
             })}</tbody>
           </table></div>
         )}
+      <Pagination page={page} pageSize={pageSize} total={filteredProperties.length} onChange={setPage} />
       </div>
 
       {selectedProperty && <PropertyDetailsPanel property={selectedProperty} onClose={() => setSelectedProperty(null)} />}
