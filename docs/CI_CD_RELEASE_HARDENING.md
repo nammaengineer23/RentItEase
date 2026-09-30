@@ -104,6 +104,34 @@ CI workflows use read-only `contents` permissions unless a release publisher nee
 
 Production web deployment remains serialized and cannot be run concurrently with another production web deployment.
 
+
+## JWT secret rotation
+
+JWT access and refresh signing use the current secret and current key ID. During a rotation window, the application can verify tokens signed with the immediately previous secret and key ID.
+
+Configure these environment variables:
+
+- `JWT_ACCESS_SECRET` — current access-token signing secret, minimum 32 characters.
+- `JWT_ACCESS_KEY_ID` — current access-token key ID; use a new value for every rotation.
+- `JWT_ACCESS_SECRET_PREVIOUS` — immediately previous access-token secret during the migration window.
+- `JWT_ACCESS_KEY_PREVIOUS_ID` — key ID associated with `JWT_ACCESS_SECRET_PREVIOUS`.
+- `JWT_REFRESH_SECRET` — current refresh-token signing secret, minimum 32 characters.
+- `JWT_REFRESH_KEY_ID` — current refresh-token key ID; use a new value for every rotation.
+- `JWT_REFRESH_SECRET_PREVIOUS` — immediately previous refresh-token secret during the migration window.
+- `JWT_REFRESH_KEY_PREVIOUS_ID` — key ID associated with `JWT_REFRESH_SECRET_PREVIOUS`.
+
+### Rotation procedure
+
+1. Generate new random access and refresh secrets of at least 32 characters.
+2. Choose new key IDs (for example, move access/refresh from `v1` to `v2`).
+3. Deploy with the new values as current secrets and key IDs, while retaining the old values as the corresponding `*_PREVIOUS` values.
+4. Verify new logins issue tokens carrying the new key IDs.
+5. Verify existing sessions issued under the previous key IDs can still authenticate and refresh during the migration window.
+6. After the maximum accepted lifetime of the old tokens has elapsed (15 minutes for access tokens and 7 days for refresh tokens, unless configured otherwise), remove the previous secrets and previous key IDs.
+7. Deploy again and verify that tokens signed with the retired secrets are rejected.
+
+Never log, commit, or paste secret values into source control or CI output. A rotation should always change the secret material and the key ID; changing only the key ID does not rotate the cryptographic key.
+
 ## Secret handling
 
 Secrets must come from GitHub Secrets, GitHub Environment Secrets, or the deployment platform. CI must never print secret values.
