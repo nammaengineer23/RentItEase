@@ -70,7 +70,7 @@ Booking 1 ─── 1 Payment
 
 The backend reconciles all three values against Razorpay before recording success.
 
-Razorpay's security checklist recommends obtaining order IDs from a trusted source such as the database, validating signatures, and fetching captured payment amounts from the backend/trusted source. urlRazorpay security checklisthttps://razorpay.com/security/checklist
+Razorpay's security checklist recommends obtaining order IDs from a trusted source such as the database, validating signatures, and fetching captured payment amounts from the backend/trusted source. Razorpay security checklist: https://razorpay.com/security/checklist
 
 ### Invoice
 
