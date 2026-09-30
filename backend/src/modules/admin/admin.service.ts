@@ -711,6 +711,22 @@ async getAnalytics() {
       socialCampaign: { field: 'status', values: ['DRAFT', 'QUEUED', 'GENERATING', 'READY', 'SCHEDULED', 'PUBLISHING', 'PUBLISHED', 'FAILED', 'CANCELLED'] },
     };
 
+    if (model === 'propertyAvailable') {
+      if (typeof value !== 'boolean') {
+        throw new BadRequestException('Condition value must be boolean.');
+      }
+      return value
+        ? this.propertiesService.publish(id, { id: 'admin', role: UserRole.ADMIN })
+        : this.propertiesService.setUnavailable(id, { id: 'admin', role: UserRole.ADMIN });
+    }
+
+    if (model === 'propertyVerified') {
+      if (value !== true) {
+        throw new BadRequestException('Property verification can only be granted through the admin approval workflow.');
+      }
+      return this.propertiesService.approve(id);
+    }
+
     const definition = definitions[model];
     if (!definition) throw new BadRequestException('Unsupported admin status target.');
 
