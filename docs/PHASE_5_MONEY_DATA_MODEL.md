@@ -135,6 +135,8 @@ This provides an explicit database consistency check instead of assuming that ga
 
 ## Phase 5 completion gate
 
+CI is the release gate for this phase; cancelled intermediate runs do not count as verification.
+
 Phase 5 is complete only after:
 
 - Prisma validation succeeds;
