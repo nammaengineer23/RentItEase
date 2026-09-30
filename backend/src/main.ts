@@ -61,6 +61,8 @@ async function bootstrap() {
   app.getHttpAdapter().getInstance().set('trust proxy', getTrustProxy());
 
   const isProduction = process.env.NODE_ENV === 'production';
+  const swaggerEnabled = process.env.SWAGGER_ENABLED === 'true';
+  const swaggerToken = process.env.SWAGGER_DOCS_TOKEN;
 
   app.use(
     json({
@@ -133,21 +135,52 @@ async function bootstrap() {
     new ClassSerializerInterceptor(app.get(Reflector)),
   );
 
-  const config = new DocumentBuilder()
-    .setTitle('RentItEase API')
-    .setDescription('Production-ready Rental Property Management System')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+  if (!isProduction || swaggerEnabled) {
+    if (isProduction && !swaggerToken) {
+      throw new Error('SWAGGER_DOCS_TOKEN is required when SWAGGER_ENABLED=true in production');
+    }
 
-  const document = SwaggerModule.createDocument(app, config);
+    const config = new DocumentBuilder()
+      .setTitle('RentItEase API')
+      .setDescription(
+        'RentItEase REST API. Authentication uses JWT bearer tokens. Admin endpoints require the ADMIN role. Payment amounts are server-authoritative; clients must create and verify payments through the documented flow. Paginated endpoints expose page/limit controls where applicable. Provider webhooks are documented only when implemented.',
+      )
+      .setVersion('1.0')
+      .addBearerAuth(
+        { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+        'access-token',
+      )
+      .build();
 
-  SwaggerModule.setup('api', app, document);
+    const document = SwaggerModule.createDocument(app, config);
+
+    if (isProduction) {
+      app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+        const header = req.get('authorization') || '';
+        const supplied =
+          req.get('x-swagger-token') ||
+          (header.startsWith('Bearer ') ? header.slice(7) : '');
+        if (!swaggerToken || supplied !== swaggerToken) {
+          res.status(401).json({ message: 'Swagger documentation is protected' });
+          return;
+        }
+        next();
+      });
+    }
+
+    SwaggerModule.setup('api', app, document, {
+      jsonDocumentUrl: 'api-json',
+      swaggerOptions: {
+        persistAuthorization: false,
+        filter: true,
+      },
+    });
+  }
 
   await app.listen(process.env.PORT || 3000, '0.0.0.0');
   console.log('🚀 RentItEase Backend Running');
   console.log('🌐 API: http://localhost:3000/api/v1');
-  console.log('📘 Swagger: http://localhost:3000/api');
+  if (!isProduction || swaggerEnabled) console.log('📘 Swagger: /api (protected in production)');
 }
 
 bootstrap();
