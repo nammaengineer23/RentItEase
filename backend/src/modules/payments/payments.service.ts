@@ -1,6 +1,5 @@
 import {
     BadRequestException,
-    ConflictException,
     ForbiddenException,
     Injectable,
     NotFoundException,
@@ -8,9 +7,7 @@ import {
   } from '@nestjs/common';
   
   import Razorpay from 'razorpay';
-import { randomUUID } from 'crypto';
-  
-  import {
+import {
     BookingStatus,
     NotificationType,
     PaymentStatus,
@@ -27,8 +24,7 @@ import { randomUUID } from 'crypto';
   
   import { CreatePaymentOrderDto } from './dto/create-payment-order.dto';
   import { VerifyPaymentDto } from './dto/verify-payment.dto';
-import { assertBookingTransition } from '../booking/booking-state-machine';
-  
+
   @Injectable()
   export class PaymentsService {
     private readonly razorpay: Razorpay;
