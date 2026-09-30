@@ -13,6 +13,9 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { FileScanService } from '../../storage/file-scan.service';
+import { StorageService } from '../../storage/storage.service';
+import { validateChatFileUpload } from '../../common/validators/upload-file.validator';
 
 
 @Injectable()
@@ -21,6 +24,8 @@ export class ChatService {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
     private readonly pushNotificationsService: PushNotificationsService,
+    private readonly storageService: StorageService,
+    private readonly fileScanService: FileScanService,
   ) {}
 
     // ==========================================
@@ -325,6 +330,66 @@ export class ChatService {
 }
 
     return message;
+  }
+
+  async uploadAttachment(
+    conversationId: string,
+    senderId: string,
+    file: Express.Multer.File,
+  ) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+    });
+
+    if (!conversation) throw new NotFoundException('Conversation not found.');
+
+    if (senderId !== conversation.ownerId && senderId !== conversation.tenantId) {
+      throw new ForbiddenException('You are not part of this conversation.');
+    }
+
+    await validateChatFileUpload(file);
+    await this.fileScanService.scan(file);
+
+    const uploaded = await this.storageService.uploadFile(file, 'chat-attachments');
+
+    try {
+      return await this.prisma.message.create({
+        data: {
+          conversationId,
+          senderId,
+          text: file.originalname,
+          messageType: MessageType.FILE,
+          attachmentPublicId: uploaded.publicId,
+          attachmentUrl: uploaded.imageUrl,
+          attachmentMime: file.mimetype,
+        },
+      });
+    } catch (error) {
+      await this.storageService.deleteImage(uploaded.publicId).catch(() => undefined);
+      throw error;
+    }
+  }
+
+  async getAttachmentUrl(messageId: string, userId: string) {
+    const message = await this.prisma.message.findUnique({
+      where: { id: messageId },
+      include: { conversation: true },
+    });
+
+    if (!message) throw new NotFoundException('Message not found.');
+
+    if (userId !== message.conversation.ownerId && userId !== message.conversation.tenantId) {
+      throw new ForbiddenException('You are not allowed to access this attachment.');
+    }
+
+    if (!message.attachmentPublicId) {
+      throw new NotFoundException('Attachment not found.');
+    }
+
+    return {
+      url: await this.storageService.getPrivateUrl(message.attachmentPublicId, 900),
+      expiresInSeconds: 900,
+    };
   }
 
   // ==========================================
