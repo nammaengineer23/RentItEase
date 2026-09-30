@@ -24,6 +24,8 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>RentItEase uses your location to show nearby rental properties and directions. Location is used only when you request location-based features.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>RentItEase uses the camera to record property video tours.</string>
 	<key>NSMicrophoneUsageDescription</key>
