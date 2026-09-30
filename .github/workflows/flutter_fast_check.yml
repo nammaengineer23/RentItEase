@@ -3,6 +3,8 @@ name: Flutter Fast Check
 on:
   workflow_dispatch:
   push:
+    branches-ignore:
+      - main
     paths:
       - "mobile_app/**"
       - ".github/workflows/flutter_fast_check.yml"
@@ -47,7 +49,14 @@ jobs:
       - name: Analyze Flutter project
         run: flutter analyze
       - name: Run focused Flutter unit/widget tests
-        run: flutter test --exclude-tags integration test
+        shell: bash
+        run: |
+          mapfile -t TEST_FILES < <(find test -type f -name '*_test.dart' -not -path 'test/integration/*' | sort)
+          if [ "${#TEST_FILES[@]}" -gt 0 ]; then
+            flutter test --no-pub "${TEST_FILES[@]}"
+          else
+            echo "No focused/unit Flutter tests found; skipping test step."
+          fi
       - name: Compile debug APK
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
