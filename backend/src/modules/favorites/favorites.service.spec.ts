@@ -54,17 +54,15 @@ describe('FavoritesService', () => {
     const result = await service.getMyFavorites({ id: 'tenant-1' }, 2, 20);
 
     expect(prisma.$transaction).toHaveBeenCalled();
-    const [findMany, count] = prisma.$transaction.mock.calls[0][0];
-    expect(findMany).toMatchObject({ where: { userId: 'tenant-1' }, skip: 20, take: 20, orderBy: { createdAt: 'desc' } });
-    expect(count).toEqual({ where: { userId: 'tenant-1' } });
+    expect(prisma.favorite.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { userId: 'tenant-1' }, skip: 20, take: 20, orderBy: { createdAt: 'desc' } }));
+    expect(prisma.favorite.count).toHaveBeenCalledWith({ where: { userId: 'tenant-1' } });
     expect(result).toMatchObject({ page: 2, limit: 20, total: 45, totalPages: 3, favorites });
   });
 
   it('caps page size at 100', async () => {
     prisma.$transaction.mockResolvedValue([[], 0]);
     const result = await service.getMyFavorites({ id: 'tenant-1' }, 1, 500);
-    const [findMany] = prisma.$transaction.mock.calls[0][0];
-    expect(findMany.take).toBe(100);
+    expect(prisma.favorite.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
     expect(result.limit).toBe(100);
   });
 
@@ -78,7 +76,6 @@ describe('FavoritesService', () => {
   it('does not include owner contact fields in favorite-list queries', async () => {
     prisma.$transaction.mockResolvedValue([[], 0]);
     await service.getMyFavorites({ id: 'tenant-1' });
-    const [findMany] = prisma.$transaction.mock.calls[0][0];
-    expect(findMany.include.property.include.owner.select).toEqual({ id: true });
+    expect(prisma.favorite.findMany).toHaveBeenCalledWith(expect.objectContaining({ include: expect.objectContaining({ property: expect.objectContaining({ include: expect.objectContaining({ owner: { select: { id: true } } }) }) }) }));
   });
 });
