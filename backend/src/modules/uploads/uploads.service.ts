@@ -4,7 +4,6 @@ import {
 } from '@nestjs/common';
 
 import {
-  validateChatFileUpload,
   validateImageUpload,
 } from '../../common/validators/upload-file.validator';
 import { FileScanService } from '../../storage/file-scan.service';
@@ -37,26 +36,4 @@ export class UploadsService {
     };
   }
 
-  async uploadFile(file: Express.Multer.File) {
-    if (!file) {
-      throw new BadRequestException('No file uploaded');
-    }
-
-    await validateChatFileUpload(file);
-    await this.fileScanService.scan(file);
-
-    const result = await this.storageService.uploadFile(
-      file,
-      'chat-attachments',
-    );
-
-    return {
-      success: true,
-      fileUrl: result.imageUrl,
-      filename: result.publicId,
-      originalName: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-    };
-  }
 }
