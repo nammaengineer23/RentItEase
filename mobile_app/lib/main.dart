@@ -35,8 +35,8 @@ Future<void> _activateAppCheck() async {
               ? const AndroidDebugProvider()
               : const AndroidPlayIntegrityProvider(),
           providerApple: kDebugMode
-              ? AppleProvider.debug
-              : AppleProvider.appAttest,
+              ? const AppleDebugProvider()
+              : const AppleAppAttestWithDeviceCheckFallbackProvider(),
         )
         .timeout(const Duration(seconds: 10));
   } catch (error, stackTrace) {
