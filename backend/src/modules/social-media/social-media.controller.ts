@@ -20,12 +20,32 @@ import { GenerateVideoDto } from './dto/generate-video.dto';
 import { PublishPostDto } from './dto/publish-post.dto';
 import { SocialSettingsDto } from './dto/social-settings.dto';
 import { SocialMediaService } from './social-media.service';
+import { SocialAccountService } from './accounts/social-account.service';
+import { SocialAccountConnectionDto, SocialAccountDisconnectDto } from './dto/social-account.dto';
 
 @Controller('admin/social-media')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class SocialMediaController {
-  constructor(private readonly service: SocialMediaService) {}
+  constructor(private readonly service: SocialMediaService, private readonly accounts: SocialAccountService) {}
+
+  @Get('accounts')
+  getAccounts() {
+    return this.accounts.getConnectionState();
+  }
+
+  @Post('accounts/connect')
+  connectAccount(@Body() dto: SocialAccountConnectionDto) {
+    return this.accounts.connect({
+      ...dto,
+      expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
+    });
+  }
+
+  @Post('accounts/disconnect')
+  disconnectAccount(@Body() dto: SocialAccountDisconnectDto) {
+    return this.accounts.disconnect(dto.platform, dto.accountId);
+  }
 
   @Get('settings')
   getSettings() {
