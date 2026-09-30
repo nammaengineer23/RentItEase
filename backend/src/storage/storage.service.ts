@@ -62,7 +62,7 @@ export class StorageService {
   get driverName(): string { return this.driver; }
 
   deleteImage(publicId: string): Promise<boolean> {
-    if (publicId.startsWith('r2:')) {
+    if (publicId.startsWith('r2:') || publicId.startsWith('r2p:')) {
       return this.r2StorageService.deleteImage(publicId);
     }
 
