@@ -742,7 +742,7 @@ export class PropertiesService {
       select: {
         id: true,
         ownerId: true,
-        lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
+        lifecycleStatus: true,
         isVerified: true,
         owner: {
           select: {
@@ -755,7 +755,7 @@ export class PropertiesService {
       },
     });
 
-    if (!property || (!property.isVerified && property.ownerId !== user.id)) {
+    if (!property || (property.lifecycleStatus !== PropertyLifecycleStatus.PUBLISHED && property.ownerId !== user.id)) {
       throw new NotFoundException('Property not found.');
     }
 
