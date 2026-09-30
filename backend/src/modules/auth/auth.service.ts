@@ -488,6 +488,11 @@ export class AuthService {
     phoneIdToken?: string,
   ) {
     const decoded = await this.firebaseService.verifyToken(idToken);
+    const firebaseUid = decoded.uid;
+
+    if (!firebaseUid) {
+      throw new UnauthorizedException('Invalid Firebase identity.');
+    }
 
     const phone = decoded.phone_number
       ? this.normalizePhone(decoded.phone_number)
@@ -500,37 +505,55 @@ export class AuthService {
       );
     }
 
-    let user = phone
-      ? await this.prisma.user.findUnique({ where: { phone } })
-      : null;
+    // Firebase UID is the durable identity binding. Phone/email are only
+    // used to locate an existing unbound RentItEase account during migration.
+    let user = await this.prisma.user.findUnique({
+      where: { firebaseUid },
+    });
 
-    if (!user && email) {
+    if (!user && phone) {
+      user = await this.prisma.user.findUnique({ where: { phone } });
+    }
+
+    if (!user && email && decoded.email_verified === true) {
       user = await this.prisma.user.findUnique({ where: { email } });
     }
 
     if (!user) {
       if (!createAccount) {
         throw new UnauthorizedException(
-          'No RentItEase account exists for this Google account.',
+          'No RentItEase account exists for this Firebase account.',
         );
       }
 
       if (!email || decoded.email_verified !== true) {
         throw new UnauthorizedException(
-          'A verified Google email is required to create an account.',
+          'A verified Firebase email is required to create an account.',
         );
       }
 
-
       user = await this.prisma.user.create({
         data: {
+          firebaseUid,
           fullName: decoded.name ?? 'RentItEase User',
-          phone: null,
+          phone,
           email,
           passwordHash: '',
           photoUrl: decoded.picture,
         },
       });
+    } else {
+      // Never silently rebind an already-linked account to another Firebase UID.
+      if (user.firebaseUid && user.firebaseUid !== firebaseUid) {
+        throw new UnauthorizedException('Firebase identity mismatch.');
+      }
+
+      if (!user.firebaseUid) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: { firebaseUid },
+        });
+      }
     }
 
     if (!user.isActive) {
