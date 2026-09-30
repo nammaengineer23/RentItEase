@@ -1,3 +1,6 @@
+ALTER TABLE "Membership" ADD COLUMN "pendingKey" TEXT;
+CREATE UNIQUE INDEX "Membership_pendingKey_key" ON "Membership"("pendingKey");
+
 ALTER TABLE "Payment"
   ADD COLUMN "refundedAt" TIMESTAMP(3),
   ADD COLUMN "refundAmount" DECIMAL(10,2),
