@@ -44,6 +44,21 @@ export class ReviewsService {
       },
     });
 
+    if (!existing) {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const recentReviews = await this.prisma.review.count({
+        where: {
+          userId,
+          createdAt: { gte: since },
+        },
+      });
+      if (recentReviews >= 10) {
+        throw new BadRequestException(
+          'Daily review creation limit reached. Please try again later.',
+        );
+      }
+    }
+
     if (existing) {
       const review = await this.prisma.review.update({
         where: {
