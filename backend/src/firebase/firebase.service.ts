@@ -71,6 +71,15 @@ export class FirebaseService {
     };
   }
 
+  async getSignedDownloadUrl(publicId: string, expiresInSeconds = 900): Promise<string> {
+    const bucket = this.getStorage().bucket();
+    const [url] = await bucket.file(publicId).getSignedUrl({
+      action: 'read',
+      expires: Date.now() + Math.min(Math.max(Math.floor(expiresInSeconds), 60), 3600) * 1000,
+    });
+    return url;
+  }
+
   async deleteImage(publicId: string) {
     const bucket = this.getStorage().bucket();
 
