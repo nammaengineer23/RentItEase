@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 
@@ -7,6 +7,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminModerationService } from './admin-moderation.service';
 import { AdminService } from './admin.service';
+import { StorageReconciliationService } from '../../storage/storage-reconciliation.service';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -17,6 +18,7 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly moderation: AdminModerationService,
+    private readonly storageReconciliation: StorageReconciliationService,
   ) {}
 
   @Get('dashboard')
@@ -88,4 +90,13 @@ export class AdminController {
   @Get('analytics')
   @ApiOperation({ summary: 'Get platform analytics' })
   getAnalytics() { return this.adminService.getAnalytics(); }
+
+  @Post('storage/orphans/reconcile')
+  @ApiOperation({ summary: 'Scan storage for orphaned objects and optionally delete them' })
+  reconcileStorageOrphans(@Body() body: { execute?: boolean; graceHours?: number }) {
+    return this.storageReconciliation.reconcile({
+      dryRun: body?.execute !== true,
+      graceHours: body?.graceHours,
+    });
+  }
 }
