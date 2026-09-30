@@ -95,20 +95,20 @@ export class R2StorageService {
 
   async listObjects(): Promise<Array<{ publicId: string; createdAt: Date }>> {
     const objects: Array<{ publicId: string; createdAt: Date }> = [];
-    let continuationToken: string | undefined;
-
-    do {
-      const page = await this.listObjectsPage(continuationToken);
-      for (const object of page.objects) {
-        if (!object.key || !object.lastModified) continue;
-        objects.push({
-          publicId: `r2:${object.key}`,
-          createdAt: new Date(object.lastModified),
-        });
-      }
-      continuationToken = page.nextToken;
-    } while (continuationToken);
-
+    for (const prefix of ['properties/', 'property-videos/', 'chat-attachments/']) {
+      let continuationToken: string | undefined;
+      do {
+        const page = await this.listObjectsPage(prefix, continuationToken);
+        for (const object of page.objects) {
+          if (!object.key || !object.lastModified) continue;
+          objects.push({
+            publicId: `r2:${object.key}`,
+            createdAt: new Date(object.lastModified),
+          });
+        }
+        continuationToken = page.nextToken;
+      } while (continuationToken);
+    }
     return objects;
   }
 
@@ -123,7 +123,7 @@ export class R2StorageService {
     return true;
   }
 
-  private async listObjectsPage(continuationToken?: string): Promise<{
+  private async listObjectsPage(prefix: string, continuationToken?: string): Promise<{
     objects: Array<{ key: string; lastModified: string }>;
     nextToken?: string;
   }> {
@@ -133,7 +133,7 @@ export class R2StorageService {
     const bucketName = this.requiredConfig('R2_BUCKET_NAME');
     const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
     const url = new URL(`${endpoint}/${this.encodePath(bucketName)}`);
-    const params = new URLSearchParams({ 'list-type': '2', 'max-keys': '1000' });
+    const params = new URLSearchParams({ 'list-type': '2', 'max-keys': '1000', prefix });
     if (continuationToken) params.set('continuation-token', continuationToken);
     url.search = params.toString();
 
