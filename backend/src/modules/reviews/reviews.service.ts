@@ -170,8 +170,16 @@ export class ReviewsService {
 
     const ratings = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     for (const group of grouped) {
-      const count = group._count?.rating ?? 0;
-      ratings[group.rating as keyof typeof ratings] = count;
+      const count =
+        typeof group._count === 'object' &&
+        group._count !== null &&
+        'rating' in group._count
+          ? group._count.rating ?? 0
+          : 0;
+      const rating = group.rating as keyof typeof ratings;
+      if (rating in ratings) {
+        ratings[rating] = count;
+      }
     }
 
     return {
