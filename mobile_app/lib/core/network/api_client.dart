@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../../common/app_exception.dart';
 import '../../config/environment.dart';
 import '../services/storage_service.dart';
+import 'request_policy.dart';
 
 class ApiClient {
   ApiClient({Dio? dio, StorageService? storage})
@@ -81,7 +82,7 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
   ) async {
     final request = error.requestOptions;
     final method = request.method.toUpperCase();
-    final safeToRetry = method == 'GET' || method == 'HEAD' || method == 'OPTIONS';
+    final safeToRetry = RequestPolicy.canRetryAfterRefresh(method);
     if (error.response?.statusCode != 401 ||
         !safeToRetry ||
         _isAuthPath(request) ||
