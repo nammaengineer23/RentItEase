@@ -133,6 +133,60 @@ describe('ReviewsService hardening', () => {
     });
   });
 
+  it('rejects repeated comments and enforces the daily review limit', async () => {
+    prisma.property.findUnique.mockResolvedValue({ id: 'p1', ownerId: 'owner' });
+    prisma.review.findUnique.mockResolvedValue(null);
+    prisma.propertyVisit.findFirst.mockResolvedValue({ id: 'v1' });
+    prisma.booking.findFirst.mockResolvedValue(null);
+    prisma.lease.findFirst.mockResolvedValue(null);
+    prisma.review.count.mockResolvedValue(1);
+    prisma.review.findMany.mockResolvedValue([
+      { comment: 'Same review' },
+    ]);
+
+    await expect(
+      service.create('p1', 'u1', { rating: 5, comment: ' Same   review ' }),
+    ).rejects.toThrow('Repeated review content');
+
+    prisma.review.count.mockResolvedValue(10);
+    prisma.review.findMany.mockResolvedValue([]);
+
+    await expect(
+      service.create('p1', 'u1', { rating: 5, comment: 'Another review' }),
+    ).rejects.toThrow('Review submission limit');
+  });
+
+  it('allows only the review author to delete a review', async () => {
+    prisma.review.findUnique.mockResolvedValue({
+      id: 'r1',
+      userId: 'owner-user',
+    });
+
+    await expect(
+      service.remove('r1', 'other-user'),
+    ).rejects.toThrow(ForbiddenException);
+
+    expect(prisma.review.delete).not.toHaveBeenCalled();
+  });
+
+  it('requires an administrator for both moderation status transitions', async () => {
+    prisma.review.updateMany.mockResolvedValue({ count: 1 });
+
+    await service.moderate('r1', ReviewStatus.APPROVED, UserRole.ADMIN);
+    expect(prisma.review.updateMany).toHaveBeenCalledWith({
+      where: { id: 'r1', status: ReviewStatus.PENDING },
+      data: { status: ReviewStatus.APPROVED },
+    });
+
+    prisma.review.updateMany.mockClear();
+
+    await service.moderate('r1', ReviewStatus.REJECTED, UserRole.ADMIN);
+    expect(prisma.review.updateMany).toHaveBeenCalledWith({
+      where: { id: 'r1', status: ReviewStatus.PENDING },
+      data: { status: ReviewStatus.REJECTED },
+    });
+  });
+
   it('allows only administrators to moderate', async () => {
     await expect(
       service.moderate('r1', ReviewStatus.APPROVED, UserRole.USER),
