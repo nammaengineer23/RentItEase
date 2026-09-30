@@ -219,6 +219,8 @@ model PropertyImage {
   createdAt    DateTime             @default(now())
   section      PropertyImageSection @default(OTHER)
   property     Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId, displayOrder])
 }
 
 model SocialMarketingConsent {
