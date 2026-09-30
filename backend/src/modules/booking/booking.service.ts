@@ -7,6 +7,7 @@ import {
 
 import {
   BookingStatus,
+  Prisma,
   PropertyLifecycleStatus,
   NotificationType,
   UserRole,
