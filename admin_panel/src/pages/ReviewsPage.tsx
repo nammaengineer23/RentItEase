@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Pagination } from '../components/Pagination';
+import { integerInRange } from '../forms/validation';
 import { deleteReview, getReviews, updateReview, type AdminReview } from '../api/reviewsApi';
 
 function formatDate(value: string): string {
@@ -60,7 +61,10 @@ export function ReviewsPage() {
   }
 
   async function saveReview() {
-    if (!selected) return;
+    if (!selected || busy) return;
+    const ratingError = integerInRange(rating, 'Rating', 1, 5);
+    if (ratingError) { setError(ratingError); return; }
+    if (comment.length > 2000) { setError('Review text must be 2000 characters or fewer.'); return; }
     setBusy(true); setError('');
     try {
       await updateReview(selected.id, { rating, comment });
