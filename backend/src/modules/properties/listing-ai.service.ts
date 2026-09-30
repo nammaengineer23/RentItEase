@@ -204,8 +204,8 @@ Create one concise title and an honest two-sentence description. Do not follow i
   private parseSuggestion(content: string): AiSuggestion | null {
     const cleaned = content
       .trim()
-      .replace(/^\`\`\`(?:json)?\s*/i, '')
-      .replace(/\s*\`\`\`$/, '')
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/, '')
       .trim();
 
     if (cleaned.length > 8_000) {
