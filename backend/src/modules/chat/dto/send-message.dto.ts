@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  MaxLength,
 } from 'class-validator';
 
 import { MessageType } from '@prisma/client';
@@ -11,9 +12,11 @@ import { MessageType } from '@prisma/client';
 export class SendMessageDto {
   @ApiProperty({
     example: 'Hello, is this property still available?',
+    maxLength: 2000,
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(2000)
   text!: string;
 
   @ApiPropertyOptional({
