@@ -26,6 +26,7 @@ import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifiedRegisterDto } from './dto/verified-register.dto';
 import { PhoneOtpLoginDto } from './dto/phone-otp-login.dto';
+import { FirebaseAppCheckGuard } from '../../firebase/firebase-app-check.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -60,12 +61,14 @@ export class AuthController {
 
   @Throttle({ default: { limit: 8, ttl: 15 * 60 * 1000, blockDuration: 15 * 60 * 1000 } })
   @Post('login/phone-otp')
+  @UseGuards(FirebaseAppCheckGuard)
   @ApiOperation({ summary: 'Login with Firebase phone OTP proof' })
   loginWithPhoneOtp(@Body() dto: PhoneOtpLoginDto) {
     return this.authService.loginWithPhoneOtp(dto.idToken);
   }
 
   @Post('register/verified')
+  @UseGuards(FirebaseAppCheckGuard)
   @ApiOperation({ summary: 'Create an account after email/phone verification' })
   registerVerified(@Body() dto: VerifiedRegisterDto) {
     return this.authService.registerVerified(dto);
@@ -86,6 +89,7 @@ export class AuthController {
   }
 
   @Post('firebase-login')
+  @UseGuards(FirebaseAppCheckGuard)
   @ApiOperation({
     summary: 'Login using Firebase Phone Authentication',
   })
