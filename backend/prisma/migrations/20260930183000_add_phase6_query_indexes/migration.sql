@@ -1,0 +1,17 @@
+CREATE INDEX "User_role_createdAt_idx" ON "User"("role", "createdAt");
+CREATE INDEX "Property_ownerId_idx" ON "Property"("ownerId");
+CREATE INDEX "Property_city_state_idx" ON "Property"("city", "state");
+CREATE INDEX "Booking_propertyId_status_idx" ON "Booking"("propertyId", "status");
+CREATE INDEX "Booking_tenantId_status_idx" ON "Booking"("tenantId", "status");
+CREATE INDEX "Invoice_userId_status_invoiceDate_idx" ON "Invoice"("userId", "status", "invoiceDate");
+CREATE INDEX "Membership_userId_status_idx" ON "Membership"("userId", "status");
+CREATE INDEX "Lease_tenantId_status_idx" ON "Lease"("tenantId", "status");
+CREATE INDEX "Payment_status_createdAt_idx" ON "Payment"("status", "createdAt");
+CREATE INDEX "Notification_userId_isRead_createdAt_idx" ON "Notification"("userId", "isRead", "createdAt");
+CREATE INDEX "Conversation_propertyId_idx" ON "Conversation"("propertyId");
+CREATE INDEX "Conversation_ownerId_updatedAt_idx" ON "Conversation"("ownerId", "updatedAt");
+CREATE INDEX "Conversation_tenantId_updatedAt_idx" ON "Conversation"("tenantId", "updatedAt");
+CREATE INDEX "Message_conversationId_createdAt_idx" ON "Message"("conversationId", "createdAt");
+CREATE INDEX "PropertyVisit_propertyId_visitDate_idx" ON "PropertyVisit"("propertyId", "visitDate");
+CREATE INDEX "PropertyVisit_tenantId_visitDate_idx" ON "PropertyVisit"("tenantId", "visitDate");
+CREATE INDEX "PremiumListing_userId_status_idx" ON "PremiumListing"("userId", "status");
