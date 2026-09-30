@@ -2,6 +2,8 @@ name: iOS Build
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main, fix/web-admin-panel-hash-route]
   pull_request:
     branches: [main]
 
