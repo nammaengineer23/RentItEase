@@ -246,23 +246,26 @@ model SocialMarketingConsent {
 }
 
 model SocialMediaPost {
-  id          String                  @id @default(cuid())
-  propertyId  String
-  consentId   String?
-  platform    SocialPlatform
-  status      SocialPostStatus        @default(PENDING)
-  caption     String?
-  videoUrl    String?
-  externalId  String?
-  error       String?
-  scheduledAt DateTime?
-  nextRetryAt DateTime?
-  attemptCount Int                 @default(0)
-  maxAttempts  Int                 @default(3)
-  lastAttemptAt DateTime?
-  publishedAt DateTime?
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
+  id                   String                  @id @default(cuid())
+  propertyId           String
+  consentId            String?
+  platform             SocialPlatform
+  status               SocialPostStatus        @default(PENDING)
+  caption              String?
+  videoUrl             String?
+  externalId           String?
+  idempotencyKey       String                  @unique
+  processingToken      String?
+  processingLeaseUntil DateTime?
+  error                String?
+  scheduledAt          DateTime?
+  nextRetryAt          DateTime?
+  attemptCount         Int                     @default(0)
+  maxAttempts          Int                     @default(3)
+  lastAttemptAt        DateTime?
+  publishedAt          DateTime?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
   consent     SocialMarketingConsent? @relation(fields: [consentId], references: [id])
   property    Property                @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   analyticsSnapshots SocialAnalyticsSnapshot[]
@@ -272,6 +275,7 @@ model SocialMediaPost {
   @@index([status])
   @@index([status, scheduledAt])
   @@index([status, nextRetryAt])
+  @@index([processingLeaseUntil])
 }
 
 model SocialMediaAuditEvent {
