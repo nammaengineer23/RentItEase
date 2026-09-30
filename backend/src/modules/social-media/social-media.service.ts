@@ -516,7 +516,7 @@ export class SocialMediaService {
         attemptCount < post.maxAttempts
           ? new Date(Date.now() + 2 ** attemptCount * 60_000)
           : null;
-      const result = await this.prisma.socialMediaPost.update({
+      await this.prisma.socialMediaPost.update({
         where: { id: postId },
         data: {
           status: SocialPostStatus.FAILED,
