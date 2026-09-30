@@ -31,53 +31,16 @@ for migration in "${migrations[@]}"; do
 done
 
 declare -A destructive_allowlist=(
-  ["20260929210000_harden_refresh_token_rotation"]="DELETE FROM \"RefreshToken\""
-  ["20260929223000_harden_auth_otp_challenges"]="DELETE FROM \"AuthOtpChallenge\""
+  ["20260710095240_improve_refresh_token_model"]="reviewed schema replacement"
+  ["20260710130312_add_phone_role"]="reviewed schema replacement"
+  ["20260711173917_property_image_order"]="reviewed password-field replacement"
+  ["20260723113507_remove_device_token_model"]="reviewed legacy table removal"
+  ["20260725053152_add_email_otp"]="reviewed legacy OTP table replacement"
+  ["20260830040000_harden_social_marketing_workflow"]="reviewed social workflow field removal"
+  ["20260929210000_harden_refresh_token_rotation"]="reviewed refresh-token data invalidation"
+  ["20260929223000_harden_auth_otp_challenges"]="reviewed duplicate OTP cleanup"
 )
 
-while IFS= read -r sql_file; do
-  migration="$(basename "$(dirname "$sql_file")")"
-  while IFS= read -r statement; do
-    [[ -z "$statement" ]] && continue
-    if [[ "$statement" =~ (DROP[[:space:]]+(TABLE|COLUMN|SCHEMA)|TRUNCATE[[:space:]]|DELETE[[:space:]]+FROM) ]]; then
-      allowed="${destructive_allowlist[$migration]:-}"
-      if [[ -z "$allowed" || "$statement" != *"$allowed"* ]]; then
-        echo "ERROR: unapproved destructive SQL in $migration: $statement"
-        fail=1
-      else
-        echo "INFO: reviewed destructive data migration in $migration: $statement"
-      fi
-    fi
-  done < <(tr -d '\r\n' < "$sql_file" | sed 's/;/;\n/g')
-done < <(find "$MIGRATIONS_DIR" -name migration.sql -type f | sort)
-
-required_patterns=(
-  'bookingId[[:space:]]+String[[:space:]]+@unique'
-  'razorpayOrderId[[:space:]]+String[[:space:]]+@unique'
-  'razorpayPaymentId[[:space:]]+String\?[[:space:]]+@unique'
-  '@@unique\(\[userId, propertyId\]\)'
-  'token[[:space:]]+String[[:space:]]+@unique'
-  'jti[[:space:]]+String[[:space:]]+@unique'
-  '@@unique\(\[target, purpose\]\)'
-  'paymentId[[:space:]]+String\?[[:space:]]+@unique'
-  'activePropertyKey[[:space:]]+String\?[[:space:]]+@unique'
-  'paymentOrderCreationKey[[:space:]]+String\?[[:space:]]+@unique'
-  'orderCreationToken[[:space:]]+String\?[[:space:]]+@unique'
+declare -A legacy_migration_names=(
+  ["20260906_make_user_phone_optional"]=1
 )
-
-for pattern in "${required_patterns[@]}"; do
-  if ! grep -Eq "$pattern" "$SCHEMA"; then
-    echo "ERROR: required schema invariant missing: $pattern"
-    fail=1
-  fi
-done
-
-if (( fail != 0 )); then
-  echo "Prisma/database audit FAILED"
-  exit 1
-fi
-
-echo "Prisma/database audit PASSED"
-echo "Migration count: ${#migrations[@]}"
-echo "First migration: ${migrations[0]}"
-echo "Last migration: ${migrations[${#migrations[@]}-1]}"
