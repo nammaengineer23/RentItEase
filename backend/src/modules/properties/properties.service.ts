@@ -767,7 +767,10 @@ export class PropertiesService {
       },
     });
 
-    if (!property || (property.lifecycleStatus !== PropertyLifecycleStatus.PUBLISHED && property.ownerId !== user.id)) {
+    const publiclyVisible = property?.lifecycleStatus === undefined
+      ? property?.isVerified === true
+      : property?.lifecycleStatus === PropertyLifecycleStatus.PUBLISHED;
+    if (!property || (!publiclyVisible && property.ownerId !== user.id)) {
       throw new NotFoundException('Property not found.');
     }
 
