@@ -838,14 +838,26 @@ export class AuthService {
   }
 
   private async verifyAccessTokenWithRotation<T>(token: string): Promise<T> {
+    if (!this.jwtSecretService) {
+      return this.jwtService.verifyAsync<T>(token, {
+        secret: this.getCurrentAccessSecret(),
+      });
+    }
+
     const header = this.readJwtHeader(token);
-    const secret = this.jwtSecretService?.selectAccessSecret(header.kid) ?? this.getCurrentAccessSecret();
+    const secret = this.jwtSecretService.selectAccessSecret(header.kid);
     return this.jwtService.verifyAsync<T>(token, { secret });
   }
 
   private async verifyRefreshTokenWithRotation<T>(token: string): Promise<T> {
+    if (!this.jwtSecretService) {
+      return this.jwtService.verifyAsync<T>(token, {
+        secret: this.getCurrentRefreshSecret(),
+      });
+    }
+
     const header = this.readJwtHeader(token);
-    const secret = this.jwtSecretService?.selectRefreshSecret(header.kid) ?? this.getCurrentRefreshSecret();
+    const secret = this.jwtSecretService.selectRefreshSecret(header.kid);
     return this.jwtService.verifyAsync<T>(token, { secret });
   }
 
