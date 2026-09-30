@@ -963,9 +963,11 @@ import {
             );
           }
 
+          const paymentAmountInPaise = toPaise(refund.payment.amount);
           const processed = gatewayPayment?.refund_status === 'full' ||
-            gatewayPayment?.refund_status === 'processed' ||
-            refundedAmount === expectedAmountInPaise;
+            (gatewayPayment?.refund_status === 'processed' &&
+              refundedAmount >= paymentAmountInPaise) ||
+            refundedAmount >= paymentAmountInPaise;
 
           if (!processed) {
             return {
