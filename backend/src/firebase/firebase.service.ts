@@ -86,6 +86,25 @@ export class FirebaseService {
     return { publicId: fileName };
   }
 
+  async listObjects(): Promise<Array<{ publicId: string; createdAt: Date }>> {
+    const [files] = await this.getStorage().bucket().getFiles({
+      prefix: 'properties/',
+    });
+    const [videos] = await this.getStorage().bucket().getFiles({
+      prefix: 'property-videos/',
+    });
+    const [attachments] = await this.getStorage().bucket().getFiles({
+      prefix: 'chat-attachments/',
+    });
+
+    return [...files, ...videos, ...attachments]
+      .filter((file) => file.metadata.name && file.metadata.timeCreated)
+      .map((file) => ({
+        publicId: file.name,
+        createdAt: new Date(file.metadata.timeCreated as string),
+      }));
+  }
+
   async getSignedDownloadUrl(publicId: string, expiresInSeconds = 900): Promise<string> {
     const bucket = this.getStorage().bucket();
     const [url] = await bucket.file(publicId).getSignedUrl({
