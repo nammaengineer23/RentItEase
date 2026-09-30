@@ -49,7 +49,7 @@ export class MailService {
 
   async sendAuthenticationOtp(email: string, otp: string) {
     await this.sendWithRetry(email, {
-      to: email,
+      from: this.configService.get<string>('MAIL_FROM'),
       subject: 'Your RentItEase verification code',
       html: `
         <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto">
