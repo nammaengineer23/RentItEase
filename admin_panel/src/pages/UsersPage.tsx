@@ -504,6 +504,7 @@ export function UsersPage() {
             </table>
           </div>
         )}
+      <Pagination page={page} pageSize={pageSize} total={filteredUsers.length} onChange={setPage} />
       </div>
 
       {selectedUser && (
