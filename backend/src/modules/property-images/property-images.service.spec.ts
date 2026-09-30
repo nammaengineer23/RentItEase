@@ -2,6 +2,8 @@ import { BadRequestException, ForbiddenException } from '@nestjs/common';
 
 import { PropertyImagesService } from './property-images.service';
 
+jest.mock('../../common/validators/upload-file.validator', () => ({ validateImageUpload: jest.fn(), validateVideoUpload: jest.fn() }));
+
 describe('PropertyImagesService video tours', () => {
   const property = {
     findUnique: jest.fn(),
@@ -12,12 +14,14 @@ describe('PropertyImagesService video tours', () => {
     uploadImage: jest.fn(),
     deleteImage: jest.fn(),
   } as any;
+  const fileScan = { scan: jest.fn() } as any;
 
   let service: PropertyImagesService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new PropertyImagesService(prisma, storage);
+    fileScan.scan.mockResolvedValue(undefined);
+    service = new PropertyImagesService(prisma, storage, fileScan);
   });
 
   function videoFile(durationSeconds: number): Express.Multer.File {
