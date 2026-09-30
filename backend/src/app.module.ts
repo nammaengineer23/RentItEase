@@ -52,7 +52,7 @@ import { StorageModule } from './storage/storage.module';
       validationSchema: Joi.object({
         DATABASE_URL: Joi.string().required(),
 
-        JWT_ACCESS_SECRET: Joi.string().min(16).required(),
+        JWT_ACCESS_SECRET: Joi.string().min(32).required(),
 
         JWT_REFRESH_SECRET: Joi.string().min(16).required(),
 
