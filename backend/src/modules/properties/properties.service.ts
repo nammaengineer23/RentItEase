@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -6,7 +7,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma.service';
-import { MembershipStatus, Prisma, UserRole } from '@prisma/client';
+import { MembershipStatus, Prisma, PropertyLifecycleStatus, UserRole } from '@prisma/client';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -152,7 +153,11 @@ export class PropertiesService {
       maxDailyRent,
     } = filterDto;
 
-    const where: Prisma.PropertyWhereInput = { isVerified: true };
+    const where: Prisma.PropertyWhereInput = {
+      lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
+      isVerified: true,
+      isAvailable: true,
+    };
 
     if (search) {
       where.OR = [
@@ -192,7 +197,7 @@ export class PropertiesService {
     if (bathrooms) where.bathrooms = bathrooms;
     if (parking !== undefined) where.parking = parking;
     if (petFriendly !== undefined) where.petFriendly = petFriendly;
-    if (isAvailable !== undefined) where.isAvailable = isAvailable;
+    if (isAvailable === false) where.isAvailable = false;
     if (dailyRentEnabled !== undefined) {
       where.dailyRentEnabled = dailyRentEnabled;
     }
