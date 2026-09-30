@@ -105,6 +105,16 @@ import { StorageModule } from './storage/storage.module';
         NODE_ENV: Joi.string()
           .valid('development', 'production', 'test')
           .default('development'),
+
+        // Production uploads must pass through the configured ClamAV-compatible
+        // scanner before they reach external storage.
+        CLAMAV_ENABLED: Joi.boolean()
+          .default(false)
+          .when('NODE_ENV', {
+            is: 'production',
+            then: Joi.valid(true),
+          }),
+        CLAMAV_PATH: Joi.string().default('clamscan'),
       }),
     }),
 
