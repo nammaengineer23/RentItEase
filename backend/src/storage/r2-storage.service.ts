@@ -18,12 +18,7 @@ export class R2StorageService {
     file: Express.Multer.File,
     folder = 'properties',
   ): Promise<StoredImage> {
-    const safeFolder = this.sanitizeFolder(folder);
-    const safeName = this.sanitizeFileName(file.originalname);
-    const now = new Date();
-    const year = now.getUTCFullYear();
-    const month = String(now.getUTCMonth() + 1).padStart(2, '0');
-    const key = `${safeFolder}/${year}/${month}/${randomUUID()}-${safeName}`;
+    const key = this.buildKey(file, folder);
 
     await this.signedRequest('PUT', key, file.buffer, file.mimetype);
 
@@ -33,9 +28,23 @@ export class R2StorageService {
     };
   }
 
+  async uploadPrivateFile(
+    file: Express.Multer.File,
+    folder = 'chat-attachments',
+  ): Promise<{ publicId: string }> {
+    const key = this.buildKey(file, folder);
+
+    await this.signedRequest('PUT', key, file.buffer, file.mimetype);
+
+    return {
+      publicId: `r2:${key}`,
+    };
+  }
+
   async getSignedUrl(publicId: string, expiresInSeconds = 900): Promise<string> {
     const key = publicId.startsWith('r2:') ? publicId.slice(3) : publicId;
     if (!key) throw new InternalServerErrorException('Invalid storage object.');
+
     const accountId = this.requiredConfig('R2_ACCOUNT_ID');
     const accessKeyId = this.requiredConfig('R2_ACCESS_KEY_ID');
     const secretAccessKey = this.requiredConfig('R2_SECRET_ACCESS_KEY');
@@ -44,7 +53,7 @@ export class R2StorageService {
     const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
     const url = new URL(`${endpoint}/${this.encodePath(bucketName)}/${this.encodePath(key)}`);
     const now = new Date();
-    const timestamp = now.toISOString().replace(/[:-]|\\.\\d{3}/g, '');
+    const timestamp = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
     const dateStamp = timestamp.slice(0, 8);
     const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
     const credential = `${accessKeyId}/${credentialScope}`;
@@ -59,13 +68,27 @@ export class R2StorageService {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
       .join('&');
-    const canonicalRequest = ['GET', url.pathname, canonicalQuery, `host:${url.host}\\n`, 'host', 'UNSIGNED-PAYLOAD'].join('\\n');
-    const stringToSign = ['AWS4-HMAC-SHA256', timestamp, credentialScope, this.sha256(canonicalRequest)].join('\\n');
+    const canonicalRequest = [
+      'GET',
+      url.pathname,
+      canonicalQuery,
+      `host:${url.host}\n`,
+      'host',
+      'UNSIGNED-PAYLOAD',
+    ].join('\n');
+    const stringToSign = [
+      'AWS4-HMAC-SHA256',
+      timestamp,
+      credentialScope,
+      this.sha256(canonicalRequest),
+    ].join('\n');
+
     const dateKey = this.hmac(`AWS4${secretAccessKey}`, dateStamp);
     const regionKey = this.hmac(dateKey, 'auto');
     const serviceKey = this.hmac(regionKey, 's3');
     const signingKey = this.hmac(serviceKey, 'aws4_request');
     const signature = this.hmac(signingKey, stringToSign).toString('hex');
+
     params.set('X-Amz-Signature', signature);
     return `${url.origin}${url.pathname}?${params.toString()}`;
   }
@@ -79,6 +102,16 @@ export class R2StorageService {
 
     await this.signedRequest('DELETE', key);
     return true;
+  }
+
+  private buildKey(file: Express.Multer.File, folder: string): string {
+    const safeFolder = this.sanitizeFolder(folder);
+    const safeName = this.sanitizeFileName(file.originalname);
+    const now = new Date();
+    const year = now.getUTCFullYear();
+    const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+
+    return `${safeFolder}/${year}/${month}/${randomUUID()}-${safeName}`;
   }
 
   private async signedRequest(
