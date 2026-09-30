@@ -84,13 +84,11 @@ export class AuthService {
 
   async registerVerified(dto: VerifiedRegisterDto) {
     const email = dto.email.trim().toLowerCase();
-    const proof = await this.jwtService.verifyAsync<{
+    const proof = await this.verifyAccessTokenWithRotation<{
       type: string;
       email: string;
       challengeId: string;
-    }>(dto.emailVerificationToken, {
-      secret: process.env.JWT_ACCESS_SECRET,
-    });
+    }>(dto.emailVerificationToken);
 
     if (
       proof.type !== this.signupEmailPurpose ||
@@ -610,14 +608,12 @@ export class AuthService {
   // Refresh Token
   // ==========================================
   async refreshToken(refreshToken: string) {
-    const payload = await this.jwtService.verifyAsync<{
+    const payload = await this.verifyRefreshTokenWithRotation<{
       sub: string;
       email: string;
       jti?: string;
       familyId?: string;
-    }>(refreshToken, {
-      secret: process.env.JWT_REFRESH_SECRET,
-    });
+    }>(refreshToken);
 
     if (!payload.sub || !payload.jti || !payload.familyId) {
       throw new UnauthorizedException(
