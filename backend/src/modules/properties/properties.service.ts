@@ -14,6 +14,7 @@ import { UpdatePropertyDto } from './dto/update-property.dto';
 import { FilterPropertiesDto } from './dto/filter-property.dto';
 import { UpdatePropertyAmenitiesDto } from './dto/update-property-amenities.dto';
 import { NearbyPropertiesDto } from './dto/nearby-properties.dto';
+import { assertPropertyTransition } from './property-lifecycle';
 
 @Injectable()
 export class PropertiesService {
@@ -261,10 +262,10 @@ export class PropertiesService {
 
         skip,
 
-        take: limit,
+        take: safeLimit,
 
         orderBy: {
-          [sortBy]: order,
+          [safeSortBy]: order,
         },
 
         include: {
@@ -934,7 +935,7 @@ export class PropertiesService {
       throw new ForbiddenException('You are not allowed to update this property.');
     }
 
-    if ([PropertyLifecycleStatus.BOOKED, PropertyLifecycleStatus.OCCUPIED, PropertyLifecycleStatus.ARCHIVED].includes(property.lifecycleStatus)) {
+    if ([PropertyLifecycleStatus.BOOKED, PropertyLifecycleStatus.OCCUPIED, PropertyLifecycleStatus.ARCHIVED] as PropertyLifecycleStatus[]).includes(property.lifecycleStatus) {
       throw new BadRequestException('This property cannot be edited in its current lifecycle state.');
     }
 
