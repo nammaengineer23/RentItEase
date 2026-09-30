@@ -1035,7 +1035,7 @@ export class PropertiesService {
       throw new ForbiddenException('You are not allowed to update this property.');
     }
 
-    if ([PropertyLifecycleStatus.BOOKED, PropertyLifecycleStatus.OCCUPIED, PropertyLifecycleStatus.ARCHIVED].includes(property.lifecycleStatus)) {
+    if ([PropertyLifecycleStatus.BOOKED, PropertyLifecycleStatus.OCCUPIED, PropertyLifecycleStatus.ARCHIVED].includes(property.lifecycleStatus as any)) {
       throw new BadRequestException('Amenities cannot be changed in the current lifecycle state.');
     }
 
@@ -1170,7 +1170,7 @@ export class PropertiesService {
     if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Only the owner or admin can hide this property.');
     }
-    if (![PropertyLifecycleStatus.PUBLISHED, PropertyLifecycleStatus.VERIFIED].includes(property.lifecycleStatus)) {
+    if (![PropertyLifecycleStatus.PUBLISHED, PropertyLifecycleStatus.VERIFIED].includes(property.lifecycleStatus as any)) {
       throw new BadRequestException('Property cannot be hidden in its current lifecycle state.');
     }
     const updated = await this.prisma.property.update({
