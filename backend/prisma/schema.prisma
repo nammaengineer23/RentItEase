@@ -382,6 +382,7 @@ model MembershipPlan {
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   memberships     Membership[]
+  billingAuditEvents BillingAuditEvent[]
   premiumListings PremiumListing[]
 
   @@index([code])
@@ -495,6 +496,9 @@ model Payment {
   razorpaySignature String?
   paidAt            DateTime?
   failedAt          DateTime?
+  refundedAt        DateTime?
+  refundAmount      Decimal?      @db.Decimal(10, 2)
+  refundId          String?       @unique
   failureReason     String?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
@@ -503,6 +507,24 @@ model Payment {
   invoices          Invoice[]
 
   @@index([status])
+  @@index([createdAt])
+}
+
+model BillingAuditEvent {
+  id          String   @id @default(cuid())
+  actorId     String?
+  membershipId String?
+  paymentId   String?
+  action      String
+  details     Json?
+  createdAt   DateTime @default(now())
+  actor       User?       @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  membership  Membership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  payment     Payment?    @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([membershipId, createdAt])
+  @@index([paymentId, createdAt])
+  @@index([actorId, createdAt])
   @@index([createdAt])
 }
 
