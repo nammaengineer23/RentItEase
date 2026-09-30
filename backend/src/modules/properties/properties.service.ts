@@ -1196,5 +1196,4 @@ export class PropertiesService {
   async remove(id: string, user: any) {
     return this.archive(id, user);
   }
-  }
 }
