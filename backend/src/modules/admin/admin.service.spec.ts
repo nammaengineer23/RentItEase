@@ -20,6 +20,7 @@ describe('AdminService', () => {
     booking: { count: jest.fn() },
     lease: { count: jest.fn() },
     membership: { count: jest.fn() },
+    $transaction: jest.fn(async (callback: any) => callback(prisma)),
     review: {
       findUnique: jest.fn(),
       delete: jest.fn(),
