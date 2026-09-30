@@ -404,6 +404,7 @@ model Membership {
   isTrial           Boolean          @default(false)
   amount            Decimal          @default(0) @db.Decimal(10, 2)
   razorpayOrderId   String?          @unique
+  pendingKey        String?          @unique
   razorpayPaymentId String?          @unique
   razorpaySignature String?
   paidAt            DateTime?
