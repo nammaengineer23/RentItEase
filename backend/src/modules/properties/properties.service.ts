@@ -742,6 +742,7 @@ export class PropertiesService {
       select: {
         id: true,
         ownerId: true,
+        lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
         isVerified: true,
         owner: {
           select: {
