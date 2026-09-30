@@ -102,6 +102,10 @@ import { StorageModule } from './storage/storage.module';
 
         PORT: Joi.number().default(3000),
 
+        CORS_ORIGINS: Joi.string().optional(),
+
+        TRUST_PROXY: Joi.alternatives().try(Joi.boolean(), Joi.number().integer().min(0)).optional(),
+
         NODE_ENV: Joi.string()
           .valid('development', 'production', 'test')
           .default('development'),
