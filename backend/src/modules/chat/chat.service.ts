@@ -108,13 +108,21 @@ export class ChatService {
     });
 
     if (!conversation) throw new NotFoundException('Conversation not found.');
+    if (conversation.ownerId === conversation.tenantId) throw new ForbiddenException('Invalid conversation participants.');
 
     if (senderId !== conversation.ownerId && senderId !== conversation.tenantId) {
       throw new ForbiddenException('You are not part of this conversation.');
     }
 
+    const normalizedText = text.trim();
+    if (!normalizedText || normalizedText.length > 2000) throw new BadRequestException('Message must be between 1 and 2000 characters.');
+    if (messageType !== MessageType.TEXT) throw new BadRequestException('Use the attachment endpoint for non-text messages.');
+
+    const recentCount = await this.prisma.message.count({ where: { conversationId, senderId, createdAt: { gte: new Date(Date.now() - 60_000) } } });
+    if (recentCount >= 20) throw new BadRequestException('Message rate limit exceeded. Please try again later.');
+
     const message = await this.prisma.message.create({
-      data: { conversationId, senderId, text, messageType },
+      data: { conversationId, senderId, text: normalizedText, messageType },
       include: { sender: { select: { id: true, fullName: true } } },
     });
 
@@ -213,7 +221,7 @@ export class ChatService {
     };
   }
 
-  async getMessages(conversationId: string, userId: string) {
+  async getMessages(conversationId: string, userId: string, page = 1, limit = 50) {
     const conversation = await this.prisma.conversation.findUnique({ where: { id: conversationId } });
 
     if (!conversation) throw new NotFoundException('Conversation not found.');
@@ -222,10 +230,14 @@ export class ChatService {
       throw new ForbiddenException('You are not allowed to view these messages.');
     }
 
+    const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.min(Math.floor(limit), 100) : 50;
     return this.prisma.message.findMany({
       where: { conversationId, deletedAt: null },
       include: { sender: { select: { id: true, fullName: true } } },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
+      skip: (safePage - 1) * safeLimit,
+      take: safeLimit,
     });
   }
 
@@ -250,10 +262,12 @@ export class ChatService {
     if (!message) throw new NotFoundException('Message not found.');
     if (message.senderId !== userId) throw new ForbiddenException('You can only edit your own messages.');
     if (message.deletedAt) throw new BadRequestException('Deleted messages cannot be edited.');
+    const normalizedText = newText.trim();
+    if (!normalizedText || normalizedText.length > 2000) throw new BadRequestException('Message must be between 1 and 2000 characters.');
 
     return this.prisma.message.update({
       where: { id: messageId },
-      data: { text: newText, editedAt: new Date() },
+      data: { text: normalizedText, editedAt: new Date() },
       include: { sender: { select: { id: true, fullName: true } } },
     });
   }
