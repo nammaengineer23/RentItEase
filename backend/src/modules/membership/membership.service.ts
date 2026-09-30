@@ -12,6 +12,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
+import { toPaise } from '../../common/utils/money.util';
 
 @Injectable()
 export class MembershipService {
@@ -23,22 +24,6 @@ export class MembershipService {
     if (keyId && keySecret) {
       this.razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
     }
-  }
-
-  private amountToPaise(amount: Prisma.Decimal | string | number): number {
-    const decimal = new Prisma.Decimal(amount);
-    if (!decimal.isFinite() || decimal.isNegative()) {
-      throw new BadRequestException('Invalid monetary amount.');
-    }
-    const paise = decimal.mul(100);
-    if (!paise.isInteger()) {
-      throw new BadRequestException('Monetary amount must have at most two decimal places.');
-    }
-    const value = paise.toNumber();
-    if (!Number.isSafeInteger(value)) {
-      throw new BadRequestException('Monetary amount exceeds the supported gateway range.');
-    }
-    return value;
   }
 
   private async ensurePremiumPlan() {
@@ -569,7 +554,7 @@ export class MembershipService {
           keyId: process.env.RAZORPAY_KEY_ID,
           razorpayOrderId: pending.razorpayOrderId,
           amount: new Prisma.Decimal(pending.amount).toNumber(),
-          amountInPaise: this.amountToPaise(pending.amount),
+          amountInPaise: toPaise(pending.amount),
           currency: 'INR',
           customer: user,
         },
@@ -620,7 +605,7 @@ export class MembershipService {
     }
 
     const amount = new Prisma.Decimal(plan.price);
-    const amountInPaise = this.amountToPaise(amount);
+    const amountInPaise = toPaise(amount);
     if (amount.lte(0)) {
       throw new BadRequestException('Premium membership plan has an invalid price.');
     }
@@ -719,7 +704,7 @@ export class MembershipService {
       throw new BadRequestException('Unable to verify the Razorpay payment right now.');
     }
 
-    const expectedAmountInPaise = this.amountToPaise(membership.amount);
+    const expectedAmountInPaise = toPaise(membership.amount);
     if (
       razorpayOrder?.id !== membership.razorpayOrderId ||
       razorpayOrder?.amount !== expectedAmountInPaise ||
