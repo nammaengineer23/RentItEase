@@ -1,0 +1,62 @@
+name: Flutter Fast Check
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "mobile_app/**"
+      - ".github/workflows/flutter_fast_check.yml"
+    branches-ignore:
+      - main
+  pull_request:
+    paths:
+      - "mobile_app/**"
+      - ".github/workflows/flutter_fast_check.yml"
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flutter-fast-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile_app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.8"
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Analyze Flutter project
+        run: flutter analyze
+      - name: Run focused Flutter unit/widget tests
+        run: flutter test --exclude-tags integration test
+      - name: Compile debug APK
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+        run: |
+          test -n "$MAPS_API_KEY"
+          test -n "$E2E_BASE_URL"
+          case "$E2E_BASE_URL" in
+            https://*) ;;
+            *) echo "E2E_BASE_URL must use HTTPS."; exit 1 ;;
+          esac
+          flutter build apk --debug --dart-define=API_BASE_URL=$E2E_BASE_URL/api/v1
