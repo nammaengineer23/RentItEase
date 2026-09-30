@@ -91,7 +91,6 @@ export class CreatePropertyDto {
   @ApiProperty({ example: 2 })
   @IsNumber()
   @IsPositive()
-  @IsNumber()
   bedrooms!: number;
 
   @ApiProperty({ example: 2 })
