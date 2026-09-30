@@ -117,7 +117,7 @@ jobs:
         run: npx prisma migrate status
 
       - name: Verify live database matches Prisma schema
-        run: npx prisma migrate diff --exit-code --from-url "$DATABASE_URL" --to-schema ./prisma/schema.prisma
+        run: npx prisma migrate diff --exit-code --from-url "$DATABASE_URL" --to-schema-datamodel ./prisma/schema.prisma
 
       - name: Exercise schema with production-like rows
         run: |
