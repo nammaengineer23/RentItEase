@@ -727,41 +727,49 @@ async completeVisit(id: string) {
 // Platform Analytics
 // ==========================
 async getAnalytics() {
-  const [
-    users,
-    properties,
-    reviews,
-    favorites,
-    visits,
-  ] = await Promise.all([
-    this.prisma.user.findMany(),
-    this.prisma.property.findMany(),
-    this.prisma.review.findMany(),
-    this.prisma.favorite.findMany(),
-    this.prisma.propertyVisit.findMany(),
-  ]);
+    const [
+      totalUsers,
+      owners,
+      tenants,
+      admins,
+      activeUsers,
+      totalProperties,
+      availableProperties,
+      reviews,
+      favorites,
+      visits,
+    ] = await this.prisma.$transaction([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { role: UserRole.OWNER } }),
+      this.prisma.user.count({ where: { role: UserRole.USER } }),
+      this.prisma.user.count({ where: { role: UserRole.ADMIN } }),
+      this.prisma.user.count({ where: { isActive: true } }),
+      this.prisma.property.count(),
+      this.prisma.property.count({ where: { isAvailable: true } }),
+      this.prisma.review.count(),
+      this.prisma.favorite.count(),
+      this.prisma.propertyVisit.count(),
+    ]);
 
-  return serializePrisma({
-    users: {
-      total: users.length,
-      owners: users.filter(u => u.role === 'OWNER').length,
-      tenants: users.filter(u => u.role === 'USER').length,
-      admins: users.filter(u => u.role === 'ADMIN').length,
-      active: users.filter(u => u.isActive).length,
-      inactive: users.filter(u => !u.isActive).length,
-    },
-
-    properties: {
-      total: properties.length,
-      available: properties.filter(p => p.isAvailable).length,
-      rented: properties.filter(p => !p.isAvailable).length,
-    },
-
-    engagement: {
-      reviews: reviews.length,
-      favorites: favorites.length,
-      visits: visits.length,
-    },
-  });
-}
+    return serializePrisma({
+      users: {
+        total: totalUsers,
+        owners,
+        tenants,
+        admins,
+        active: activeUsers,
+        inactive: totalUsers - activeUsers,
+      },
+      properties: {
+        total: totalProperties,
+        available: availableProperties,
+        rented: totalProperties - availableProperties,
+      },
+      engagement: {
+        reviews,
+        favorites,
+        visits,
+      },
+    });
+  }
 }
