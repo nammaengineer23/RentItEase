@@ -28,6 +28,7 @@ class ApiClient {
   late final Dio _dio;
 
   final StorageService _storage;
+  Future<void>? _refreshInFlight;
 
   Dio get dio => _dio;
 
@@ -76,7 +77,10 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final request = error.requestOptions;
+    final method = request.method.toUpperCase();
+    final safeToRetry = method == 'GET' || method == 'HEAD' || method == 'OPTIONS';
     if (error.response?.statusCode != 401 ||
+        !safeToRetry ||
         _isAuthPath(request) ||
         request.extra['retried'] == true) {
       handler.next(error);
@@ -92,25 +96,14 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
     }
 
     try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        ApiPaths.refresh,
-        data: {'refreshToken': refreshToken},
-        options: Options(extra: {'skipAuthRefresh': true}),
-      );
-      final responseData = response.data;
-      final wrappedData = responseData?['data'];
-      final data = wrappedData is Map<String, dynamic>
-          ? wrappedData
-          : responseData;
-      final accessToken = data?['accessToken'] as String?;
-      final nextRefreshToken = data?['refreshToken'] as String?;
-      if (accessToken == null || nextRefreshToken == null) {
-        throw const ApiException('The server returned invalid refresh tokens.');
+      _refreshInFlight ??= _refreshTokens(refreshToken).whenComplete(() {
+        _refreshInFlight = null;
+      });
+      await _refreshInFlight;
+      final accessToken = await _storage.getString(StorageService.accessTokenKey);
+      if (accessToken == null || accessToken.isEmpty) {
+        throw const ApiException('The session could not be refreshed.');
       }
-      await _storage.saveTokens(
-        accessToken: accessToken,
-        refreshToken: nextRefreshToken,
-      );
       request
         ..headers['Authorization'] = 'Bearer $accessToken'
         ..extra['retried'] = true;
@@ -120,6 +113,30 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
       await _storage.clearTokens();
       handler.next(error);
     }
+  }
+
+  Future<void> _refreshTokens(String refreshToken) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.refresh,
+      data: {'refreshToken': refreshToken},
+      options: Options(extra: {'skipAuthRefresh': true}),
+    );
+    final responseData = response.data;
+    final wrappedData = responseData?['data'];
+    final data = wrappedData is Map<String, dynamic>
+        ? wrappedData
+        : responseData;
+    final accessToken = data?['accessToken'] as String?;
+    final nextRefreshToken = data?['refreshToken'] as String?;
+    if (accessToken == null || nextRefreshToken == null ||
+        accessToken.isEmpty || nextRefreshToken.isEmpty) {
+      throw const ApiException('The server returned invalid refresh tokens.');
+    }
+    await _storage.saveTokens(
+      accessToken: accessToken,
+      refreshToken: nextRefreshToken,
+    );
+  }
   }
 }
 
