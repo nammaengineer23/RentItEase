@@ -180,10 +180,13 @@ class _ApiErrorInterceptor extends Interceptor {
         error.type == DioExceptionType.receiveTimeout) {
       return 'The server took too long to respond. Please try again.';
     }
-    if (data is Map) {
-      return _messageFromMap(Map<String, dynamic>.from(data));
-    }
-    return error.message ?? 'Network request failed.';
+    final status = error.response?.statusCode;
+    if (status == 401) return 'Your session has expired. Please sign in again.';
+    if (status == 403) return 'You do not have permission to perform this action.';
+    if (status == 408 || status == 429) return 'Please wait a moment and try again.';
+    if (status != null && status >= 500) return 'The server is temporarily unavailable. Please try again shortly.';
+    if (data is Map) return _messageFromMap(Map<String, dynamic>.from(data));
+    return 'The request could not be completed. Please try again.';
   }
 
   String _messageFrom(dynamic value) => value is List
@@ -192,7 +195,10 @@ class _ApiErrorInterceptor extends Interceptor {
 
   String _messageFromMap(Map<String, dynamic> data) {
     final direct = data['message'];
-    if (direct != null) return _messageFrom(direct);
+    if (direct != null) {
+      final message = _messageFrom(direct);
+      return message.length <= 500 ? message : 'The request could not be completed. Please try again.';
+    }
 
     final nestedError = data['error'];
     if (nestedError is Map) {
