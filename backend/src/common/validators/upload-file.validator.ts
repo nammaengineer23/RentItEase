@@ -1,5 +1,4 @@
 import { BadRequestException } from '@nestjs/common';
-import { fileTypeFromBuffer } from 'file-type';
 import sharp from 'sharp';
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -23,6 +22,11 @@ const CHAT_BINARY_TYPES = new Map([
   ['wav', 'audio/wav'],
   ['ogg', 'audio/ogg'],
 ]);
+
+async function fileTypeFromBuffer(buffer: Buffer) {
+  const { fileTypeFromBuffer } = await import('file-type');
+  return fileTypeFromBuffer(buffer);
+}
 
 function extensionOf(name: string): string {
   const match = name.toLowerCase().match(/\.([a-z0-9]+)$/);
