@@ -517,19 +517,31 @@ export class PropertiesService {
 
   async findNearby(query: NearbyPropertiesDto) {
     const { latitude, longitude, radius = 5 } = query;
+    const latDelta = radius / 111;
+    const longitudeScale = Math.max(
+      Math.cos((latitude * Math.PI) / 180),
+      0.1,
+    );
+    const lngDelta = radius / (111 * longitudeScale);
+
+    const minLatitude = Math.max(-90, latitude - latDelta);
+    const maxLatitude = Math.min(90, latitude + latDelta);
+    const minLongitude = Math.max(-180, longitude - lngDelta);
+    const maxLongitude = Math.min(180, longitude + lngDelta);
 
     const properties = await this.prisma.property.findMany({
       where: {
         isAvailable: true,
         isVerified: true,
         latitude: {
-          not: null,
+          gte: minLatitude,
+          lte: maxLatitude,
         },
         longitude: {
-          not: null,
+          gte: minLongitude,
+          lte: maxLongitude,
         },
       },
-
       include: {
         owner: {
           select: {
@@ -537,21 +549,22 @@ export class PropertiesService {
             fullName: true,
           },
         },
-
         images: {
           orderBy: {
             displayOrder: 'asc',
           },
           take: 1,
         },
-
         amenities: {
           include: {
             amenity: true,
           },
         },
-
-        reviews: true,
+        reviews: {
+          select: {
+            rating: true,
+          },
+        },
       },
     });
 
@@ -559,8 +572,12 @@ export class PropertiesService {
       .map((property) => {
         const lat = Number(property.latitude);
         const lng = Number(property.longitude);
-
-        const distance = this.calculateDistance(latitude, longitude, lat, lng);
+        const distance = this.calculateDistance(
+          latitude,
+          longitude,
+          lat,
+          lng,
+        );
 
         return {
           ...serializePrisma(property),
@@ -580,7 +597,8 @@ export class PropertiesService {
         };
       })
       .filter((property) => property.distance <= radius)
-      .sort((a, b) => a.distance - b.distance);
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 100);
 
     return {
       success: true,
