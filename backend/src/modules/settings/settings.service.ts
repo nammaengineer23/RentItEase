@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 
 import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 
 import { PrismaService } from '../../database/prisma.service';
 
@@ -131,16 +132,68 @@ export class SettingsService {
   // =========================================================
 
   async deleteAccount(userId: string) {
-    await this.ensureUserExists(userId);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true, email: true },
+    });
 
-    await this.prisma.user.delete({
-      where: {
-        id: userId,
-      },
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.role === 'ADMIN') {
+      throw new UnauthorizedException(
+        'Administrator accounts must be deactivated through the admin security workflow.',
+      );
+    }
+
+    const anonymizedEmail = `deleted+${user.id}@redacted.rentitease.invalid`;
+    const anonymizedPasswordHash = await bcrypt.hash(randomUUID(), 10);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.userDevice.deleteMany({ where: { userId } });
+      await tx.refreshToken.deleteMany({ where: { userId } });
+      await tx.otpCode.deleteMany({ where: { userId } });
+      await tx.passwordResetToken.deleteMany({ where: { userId } });
+      await tx.notification.deleteMany({ where: { userId } });
+      await tx.favorite.deleteMany({ where: { userId } });
+      await tx.appFeedback.deleteMany({ where: { userId } });
+      await tx.review.deleteMany({ where: { userId } });
+      await tx.userSettings.deleteMany({ where: { userId } });
+
+      await tx.message.updateMany({
+        where: { senderId: userId },
+        data: {
+          text: '[deleted]',
+          deletedAt: new Date(),
+        },
+      });
+
+      await tx.socialMarketingConsent.updateMany({
+        where: { ownerId: userId },
+        data: {
+          approved: false,
+          revokedAt: new Date(),
+        },
+      });
+
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          fullName: 'Deleted User',
+          email: anonymizedEmail,
+          phone: null,
+          passwordHash: anonymizedPasswordHash,
+          photoUrl: null,
+          isActive: false,
+          deletedAt: new Date(),
+          ownerRequestStatus: 'NONE',
+        },
+      });
     });
 
     return {
-      message: 'Account deleted successfully',
+      message: 'Account deleted successfully. Personal account data was anonymized and active sessions were revoked.',
     };
   }
 
