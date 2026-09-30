@@ -404,8 +404,8 @@ export class MembershipService {
   // EXPIRY
   // ============================================================
 
-  async expireMembership(id: string) {
-    const membership = await this.getMembership(id);
+  async expireMembership(id: string, user: { id: string; role: UserRole }) {
+    const membership = await this.getMembership(id, user);
 
     if (membership.status !== MembershipStatus.ACTIVE) {
       throw new BadRequestException('Only active memberships can be expired');
