@@ -292,10 +292,14 @@ export class PropertyImagesService {
       },
       select: {
         id: true,
+        lifecycleStatus: true,
       },
     });
 
     if (!property) {
+      throw new NotFoundException('Property not found.');
+    }
+    if (property.lifecycleStatus !== PropertyLifecycleStatus.PUBLISHED) {
       throw new NotFoundException('Property not found.');
     }
 
