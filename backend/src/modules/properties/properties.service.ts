@@ -963,7 +963,10 @@ export class PropertiesService {
       ...propertyData,
       ...(isOwner
         ? {
-            lifecycleStatus: PropertyLifecycleStatus.SUBMITTED,
+            lifecycleStatus:
+              property.lifecycleStatus === PropertyLifecycleStatus.DRAFT
+                ? PropertyLifecycleStatus.DRAFT
+                : PropertyLifecycleStatus.SUBMITTED,
             isVerified: false,
             isAvailable: false,
           }
@@ -1047,7 +1050,10 @@ export class PropertiesService {
         where: { id: propertyId },
         data: isOwner
           ? {
-              lifecycleStatus: PropertyLifecycleStatus.SUBMITTED,
+              lifecycleStatus:
+                property.lifecycleStatus === PropertyLifecycleStatus.DRAFT
+                  ? PropertyLifecycleStatus.DRAFT
+                  : PropertyLifecycleStatus.SUBMITTED,
               isVerified: false,
               isAvailable: false,
             }
