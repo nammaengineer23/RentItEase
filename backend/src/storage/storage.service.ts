@@ -24,6 +24,17 @@ export class StorageService {
     return this.firebaseService.uploadImage(file, folder);
   }
 
+  uploadFile(
+    file: Express.Multer.File,
+    folder = 'chat-attachments',
+  ): Promise<StoredImage> {
+    if (this.driver === 'r2') {
+      return this.r2StorageService.uploadImage(file, folder);
+    }
+
+    return this.firebaseService.uploadImage(file, folder);
+  }
+
   uploadVideo(
     file: Express.Multer.File,
     folder = 'property-videos',
