@@ -31,6 +31,6 @@ export class RegisterDto {
     example: 'Password@123',
     minLength: 6,
   })
-  @MinLength(6)
+  @MinLength(8)
   password!: string;
 }
