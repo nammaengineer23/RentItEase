@@ -65,6 +65,19 @@ model User {
   @@index([ownerRequestStatus])
 }
 
+
+model AuthRateLimit {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  windowStartedAt DateTime
+  failureCount  Int      @default(0)
+  blockedUntil  DateTime?
+  updatedAt     DateTime @updatedAt
+
+  @@index([blockedUntil])
+  @@index([updatedAt])
+}
+
 model AppDownload {
   id        String   @id @default(cuid())
   source    String?
