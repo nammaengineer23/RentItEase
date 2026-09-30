@@ -111,7 +111,10 @@ export async function apiRequest<T>(
   const text = await response.text();
   const body = parseBody(text);
 
-  if (response.status === 401 && retry401 && getRefreshToken()) {
+  const method = (options.method ?? 'GET').toUpperCase();
+  const retryableMethod = method === 'GET' || method === 'HEAD' || method === 'OPTIONS';
+
+  if (response.status === 401 && retry401 && retryableMethod && getRefreshToken()) {
     const refreshed = await refreshAccessToken();
     if (refreshed) return apiRequest<T>(path, options, false);
   }
