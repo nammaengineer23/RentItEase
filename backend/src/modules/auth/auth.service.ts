@@ -69,7 +69,8 @@ export class AuthService {
     const verificationToken = await this.jwtService.signAsync(
       { type: this.signupEmailPurpose, email, challengeId },
       {
-        secret: process.env.JWT_ACCESS_SECRET,
+        secret: this.getCurrentAccessSecret(),
+        header: { kid: this.getCurrentAccessKeyId() },
         expiresIn: '10m',
       },
     );
@@ -806,13 +807,15 @@ export class AuthService {
         email,
       },
       {
-        secret: process.env.JWT_ACCESS_SECRET,
+        secret: this.getCurrentAccessSecret(),
+        header: { kid: this.getCurrentAccessKeyId() },
         expiresIn: '15m',
       },
     );
 
     const refreshToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_REFRESH_SECRET,
+      secret: this.getCurrentRefreshSecret(),
+      header: { kid: this.getCurrentRefreshKeyId() },
       expiresIn: '7d',
     });
 
