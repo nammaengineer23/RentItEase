@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../common/app_exception.dart';
@@ -83,6 +84,17 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
         options.headers['Authorization'] = 'Bearer $token';
       }
     }
+
+    try {
+      final appCheckToken = await FirebaseAppCheck.instance.getToken();
+      if (appCheckToken != null && appCheckToken.isNotEmpty) {
+        options.headers['X-Firebase-AppCheck'] = appCheckToken;
+      }
+    } catch (_) {
+      // App Check is best-effort until backend enforcement is enabled. Do not
+      // block startup or authentication when a provider is unavailable.
+    }
+
     handler.next(options);
   }
 
