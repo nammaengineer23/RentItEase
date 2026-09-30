@@ -151,6 +151,8 @@ jobs:
           - test/jwt-secret.service.spec.ts
           - src/modules/favorites/favorites.service.spec.ts
           - src/modules/properties/properties.service.spec.ts
+          - src/modules/properties/property-lifecycle.spec.ts
+          - src/modules/properties/property-security.spec.ts
           - src/modules/property-images/property-images.service.spec.ts
           - src/modules/social-media/social-media.service.spec.ts
           - src/modules/users/users.controller.spec.ts
