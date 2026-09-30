@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
@@ -31,30 +32,35 @@ export class AuthController {
 
   @Post('register/email-otp/request')
   @ApiOperation({ summary: 'Send signup email verification OTP' })
+  @Throttle({ default: { limit: 3, ttl: 600_000 } })
   requestSignupEmailOtp(@Body() dto: RequestEmailOtpDto) {
     return this.authService.requestSignupEmailOtp(dto);
   }
 
   @Post('register/email-otp/verify')
   @ApiOperation({ summary: 'Verify signup email OTP' })
+  @Throttle({ default: { limit: 5, ttl: 600_000 } })
   verifySignupEmailOtp(@Body() dto: VerifyEmailOtpDto) {
     return this.authService.verifySignupEmailOtp(dto);
   }
 
   @Post('login/email-otp/request')
   @ApiOperation({ summary: 'Send email login OTP' })
+  @Throttle({ default: { limit: 3, ttl: 600_000 } })
   requestLoginEmailOtp(@Body() dto: RequestEmailOtpDto) {
     return this.authService.requestLoginEmailOtp(dto);
   }
 
   @Post('login/email-otp/verify')
   @ApiOperation({ summary: 'Login with email OTP' })
+  @Throttle({ default: { limit: 5, ttl: 600_000 } })
   loginWithEmailOtp(@Body() dto: VerifyEmailOtpDto) {
     return this.authService.loginWithEmailOtp(dto);
   }
 
   @Post('login/phone-otp')
   @ApiOperation({ summary: 'Login with Firebase phone OTP proof' })
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   loginWithPhoneOtp(@Body() dto: PhoneOtpLoginDto) {
     return this.authService.loginWithPhoneOtp(dto.idToken);
   }
@@ -63,12 +69,14 @@ export class AuthController {
   @ApiOperation({
     summary: 'Create an account with email and password',
   })
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
   @Post('login')
   @ApiOperation({ summary: 'Login user' })
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
@@ -77,6 +85,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Login using Firebase Phone Authentication',
   })
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   firebaseLogin(@Body() dto: FirebaseLoginDto) {
     return this.authService.firebaseLogin(
       dto.idToken,
@@ -100,6 +109,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Send password reset email',
   })
+  @Throttle({ default: { limit: 3, ttl: 900_000 } })
   forgotPassword(
     @Body()
     dto: ForgotPasswordDto,
@@ -115,6 +125,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Reset password',
   })
+  @Throttle({ default: { limit: 5, ttl: 900_000 } })
   resetPassword(
     @Body()
     dto: ResetPasswordDto,
