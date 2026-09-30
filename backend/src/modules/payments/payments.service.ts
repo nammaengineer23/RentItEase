@@ -319,6 +319,21 @@ import {
       }
 
       if (
+        payment.booking.status !== BookingStatus.PAYMENT_PENDING &&
+        payment.booking.status !== BookingStatus.APPROVED
+      ) {
+        throw new BadRequestException(
+          `Booking cannot be paid from ${payment.booking.status} status.`,
+        );
+      }
+
+      if (!payment.booking.property.isAvailable) {
+        throw new BadRequestException(
+          'This property is no longer available for payment.',
+        );
+      }
+
+      if (
         payment.status !== PaymentStatus.CREATED &&
         payment.status !== PaymentStatus.PENDING
       ) {
@@ -387,83 +402,12 @@ import {
         );
       }
 
-      const result = await this.prisma.$transaction(async (tx) => {
-        // Conditional update makes the success transition atomic: only the
-        // first concurrent verifier can claim the payment.
-        const claimed = await tx.payment.updateMany({
-          where: {
-            id: payment.id,
-            status: {
-              in: [PaymentStatus.CREATED, PaymentStatus.PENDING],
-            },
-          },
-          data: {
-            status: PaymentStatus.SUCCESS,
-            razorpayPaymentId: dto.razorpayPaymentId,
-            razorpaySignature: suppliedSignature,
-            paidAt: new Date(),
-            failedAt: null,
-            failureReason: null,
-          },
-        });
-
-        if (claimed.count === 0) {
-          const current = await tx.payment.findUnique({
-            where: { id: payment.id },
-          });
-
-          if (current?.status === PaymentStatus.SUCCESS) {
-            return { payment: current, alreadyProcessed: true };
-          }
-
-          throw new BadRequestException(
-            'Payment could not be completed because its state changed. Please check the payment status.',
-          );
-        }
-
-        await tx.booking.update({
-          where: { id: payment.bookingId },
-          data: { status: BookingStatus.PAID },
-        });
-
-        await tx.property.update({
-          where: { id: payment.booking.propertyId },
-          data: { isAvailable: false },
-        });
-
-        await tx.invoice.upsert({
-          where: { invoiceNumber: `RIE-${payment.bookingId}` },
-          update: {
-            status: 'PAID',
-            amount: payment.amount,
-            totalAmount: payment.amount,
-            paymentId: payment.id,
-          },
-          create: {
-            invoiceNumber: `RIE-${payment.bookingId}`,
-            userId: payment.booking.tenantId,
-            paymentId: payment.id,
-            amount: payment.amount,
-            taxAmount: 0,
-            totalAmount: payment.amount,
-            currency: payment.currency,
-            status: 'PAID',
-            description: `Payment invoice for ${payment.booking.property.title}`,
-          },
-        });
-
-        const current = await tx.payment.findUnique({
-          where: { id: payment.id },
-        });
-
-        if (!current) {
-          throw new NotFoundException(
-            'Payment record not found after verification.',
-          );
-        }
-
-        return { payment: current, alreadyProcessed: false };
-      });
+      const result = await this.runPaymentSuccessTransaction(
+        payment.id,
+        dto.razorpayPaymentId,
+        suppliedSignature,
+        payment,
+      );
 
       if (result.alreadyProcessed) {
         return {
@@ -520,6 +464,102 @@ import {
       };
     }
 
+
+    private async runPaymentSuccessTransaction(
+      paymentId: string,
+      razorpayPaymentId: string,
+      razorpaySignature: string,
+      payment: any,
+    ) {
+      const maxAttempts = 3;
+
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        try {
+          return await this.prisma.$transaction(async (tx) => {
+            const claimed = await tx.payment.updateMany({
+              where: {
+                id: paymentId,
+                status: { in: [PaymentStatus.CREATED, PaymentStatus.PENDING] },
+              },
+              data: {
+                status: PaymentStatus.SUCCESS,
+                razorpayPaymentId,
+                razorpaySignature,
+                paidAt: new Date(),
+                failedAt: null,
+                failureReason: null,
+              },
+            });
+
+            if (claimed.count === 0) {
+              const current = await tx.payment.findUnique({ where: { id: paymentId } });
+              if (current?.status === PaymentStatus.SUCCESS) {
+                return { payment: current, alreadyProcessed: true };
+              }
+              throw new BadRequestException(
+                'Payment could not be completed because its state changed. Please check the payment status.',
+              );
+            }
+
+            const bookingTransition = await tx.booking.updateMany({
+              where: {
+                id: payment.bookingId,
+                status: { in: [BookingStatus.PAYMENT_PENDING, BookingStatus.APPROVED] },
+              },
+              data: { status: BookingStatus.PAID },
+            });
+            if (bookingTransition.count !== 1) {
+              throw new BadRequestException(
+                'Booking state changed while completing the payment. Please reconcile the payment.',
+              );
+            }
+
+            const propertyTransition = await tx.property.updateMany({
+              where: { id: payment.booking.propertyId, isAvailable: true },
+              data: { isAvailable: false },
+            });
+            if (propertyTransition.count !== 1) {
+              throw new BadRequestException(
+                'Property availability changed while completing the payment. Please reconcile the payment.',
+              );
+            }
+
+            await tx.invoice.upsert({
+              where: { invoiceNumber: `RIE-${payment.bookingId}` },
+              update: {
+                status: 'PAID',
+                amount: payment.amount,
+                totalAmount: payment.amount,
+                paymentId,
+              },
+              create: {
+                invoiceNumber: `RIE-${payment.bookingId}`,
+                userId: payment.booking.tenantId,
+                paymentId,
+                amount: payment.amount,
+                taxAmount: 0,
+                totalAmount: payment.amount,
+                currency: payment.currency,
+                status: 'PAID',
+                description: `Payment invoice for ${payment.booking.property.title}`,
+              },
+            });
+
+            const current = await tx.payment.findUnique({ where: { id: paymentId } });
+            if (!current) throw new NotFoundException('Payment record not found after verification.');
+            return { payment: current, alreadyProcessed: false };
+          });
+        } catch (error: any) {
+          if (error?.code === 'P2034' && attempt < maxAttempts) {
+            await new Promise((resolve) => setTimeout(resolve, attempt * 100));
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      throw new ServiceUnavailableException('Unable to complete payment transaction. Please retry.');
+    }
 
     // =====================================
     // Razorpay Refunds
