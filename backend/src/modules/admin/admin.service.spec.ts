@@ -74,7 +74,7 @@ describe('AdminService', () => {
     prisma.user.update.mockResolvedValue({ id: 'user-1', role: UserRole.OWNER, isActive: true });
     const service = new AdminService(prisma, socialMediaService as any, audit as any);
     await service.updateUserRole('user-1', UserRole.OWNER, 'admin-1', context);
-    expect(audit.record).toHaveBeenCalledWith(context, 'USER_ROLE_CHANGE', 'USER', 'user-1', expect.any(Object), expect.any(Object));
+    expect(audit.recordTx).toHaveBeenCalledWith(expect.anything(), context, 'USER_ROLE_CHANGE', 'USER', 'user-1', expect.any(Object), expect.any(Object));
   });
 
   it('rejects a non-admin actor even when the target exists', async () => {
