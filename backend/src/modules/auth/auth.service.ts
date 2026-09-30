@@ -202,6 +202,20 @@ export class AuthService {
     ip?: string,
   ) {
     const now = new Date();
+
+    // Remove terminal challenges before creating/updating the single active
+    // challenge for this target and purpose.
+    await this.prisma.authOtpChallenge.deleteMany({
+      where: {
+        target,
+        purpose,
+        OR: [
+          { expiresAt: { lte: now } },
+          { consumedAt: { not: null } },
+        ],
+      },
+    });
+
     const existing = await this.prisma.authOtpChallenge.findUnique({
       where: { target_purpose: { target, purpose } },
     });
