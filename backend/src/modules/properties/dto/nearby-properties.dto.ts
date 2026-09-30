@@ -1,29 +1,23 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsNumber, IsOptional } from 'class-validator';
+import { IsLatitude, IsLongitude, IsNumber, IsOptional, Max, Min } from 'class-validator';
 
 export class NearbyPropertiesDto {
-  @ApiPropertyOptional({
-    example: 12.9116,
-  })
+  @ApiPropertyOptional({ example: 12.9116 })
   @Type(() => Number)
-  @IsNumber()
+  @IsLatitude()
   latitude!: number;
 
-  @ApiPropertyOptional({
-    example: 77.6474,
-  })
+  @ApiPropertyOptional({ example: 77.6474 })
   @Type(() => Number)
-  @IsNumber()
+  @IsLongitude()
   longitude!: number;
 
-  @ApiPropertyOptional({
-    example: 5,
-    default: 5,
-    description: 'Radius in KM',
-  })
+  @ApiPropertyOptional({ example: 5, default: 5, description: 'Radius in KM, maximum 50' })
   @Type(() => Number)
   @IsOptional()
   @IsNumber()
-  radius?: number = 5;
+  @Min(0.1)
+  @Max(50)
+  radius = 5;
 }
