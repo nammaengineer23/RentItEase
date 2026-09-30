@@ -33,6 +33,6 @@ jobs:
       - name: Type check
         run: npm run lint
       - name: Security client tests
-        run: npx --yes vitest@3.2.4 run src/api/http.test.ts
+        run: npx --yes vitest@3.2.4 run tests/http.test.ts
       - name: Production build
         run: npm run build
