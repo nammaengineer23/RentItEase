@@ -404,6 +404,9 @@ model MembershipPlan {
   price           Decimal            @db.Decimal(10, 2)
   durationDays    Int
   isActive        Boolean            @default(true)
+  trialDays       Int                @default(0)
+  features        Json               @default("[]")
+  displayOrder    Int                @default(0)
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   memberships     Membership[]
