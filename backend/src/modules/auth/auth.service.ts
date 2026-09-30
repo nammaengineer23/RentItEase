@@ -25,6 +25,7 @@ import { RequestEmailOtpDto } from './dto/request-email-otp.dto';
 import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
 import { VerifiedRegisterDto } from './dto/verified-register.dto';
 import { AuthRateLimitService } from '../../common/auth/auth-rate-limit.service';
+import { JwtSecretService } from '../../common/auth/jwt-secret.service';
 
 @Injectable()
 export class AuthService {
@@ -37,6 +38,7 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly otpService: OtpService,
     @Optional() private readonly authRateLimitService: AuthRateLimitService,
+    @Optional() private readonly jwtSecretService: JwtSecretService,
   ) {}
 
   private readonly signupEmailPurpose = 'SIGNUP_EMAIL';
