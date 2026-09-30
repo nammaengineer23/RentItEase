@@ -7,12 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'firebase_options.dart';
 
 const _appCheckWebSiteKey = String.fromEnvironment(
   'APP_CHECK_WEB_SITE_KEY',
   defaultValue: '6LeUVawtAAAAAON8Mbvx2xNyYkpGv_LULjgRMF_A',
 );
-import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
