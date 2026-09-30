@@ -224,7 +224,7 @@ export class ReviewsService {
       throw new ForbiddenException('Only administrators can moderate reviews.');
     }
 
-    if (![ReviewStatus.APPROVED, ReviewStatus.REJECTED].includes(status)) {
+    if (status !== ReviewStatus.APPROVED && status !== ReviewStatus.REJECTED) {
       throw new BadRequestException('Invalid moderation status.');
     }
 
