@@ -14,6 +14,7 @@ import { promisify } from 'util';
 import { PropertyImageSection, UserRole } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
+import { FileScanService } from '../../storage/file-scan.service';
 import { StorageService } from '../../storage/storage.service';
 import { ReorderImagesDto } from './dto/reorder-images.dto';
 import { validateImageUpload, validateVideoUpload } from '../../common/validators/upload-file.validator';
@@ -25,6 +26,7 @@ export class PropertyImagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
+    private readonly fileScanService: FileScanService,
   ) {}
 
   // =====================================
@@ -177,6 +179,7 @@ export class PropertyImagesService {
     }
 
     await validateVideoUpload(file);
+    await this.fileScanService.scan(file);
 
     const uploaded = await this.storageService.uploadVideo(
       file,
