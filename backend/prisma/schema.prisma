@@ -41,6 +41,7 @@ model User {
   invoices                Invoice[]
   leases                  Lease[]                  @relation("TenantLeases")
   memberships             Membership[]
+  billingAuditEvents BillingAuditEvent[]
   sentMessages            Message[]                @relation("MessageSender")
   notifications           Notification[]
   otpCodes                OtpCode[]
@@ -382,7 +383,6 @@ model MembershipPlan {
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   memberships     Membership[]
-  billingAuditEvents BillingAuditEvent[]
   premiumListings PremiumListing[]
 
   @@index([code])
