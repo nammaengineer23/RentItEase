@@ -7,6 +7,7 @@ import {
 import { FirebaseService } from '../firebase/firebase.service';
 
 @Injectable()
+// Custom backend App Check follows Firebase's recommended X-Firebase-AppCheck header flow.
 export class FirebaseAppCheckGuard implements CanActivate {
   constructor(private readonly firebaseService: FirebaseService) {}
 
