@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { MembershipStatus, Prisma, UserRole } from '@prisma/client';
 import { createHmac } from 'crypto';
@@ -11,7 +12,6 @@ import { PrismaService } from '../../database/prisma.service';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
-import { ForbiddenException } from '@nestjs/common';
 
 @Injectable()
 export class MembershipService {
@@ -303,7 +303,7 @@ export class MembershipService {
   // ============================================================
 
   async activateMembership(id: string, user: { id: string; role: UserRole }) {
-    const authorized = await this.getMembershipForUser(id, user);
+    await this.getMembershipForUser(id, user);
     const membership = await this.prisma.membership.findUnique({
       where: { id },
       include: { plan: true },
