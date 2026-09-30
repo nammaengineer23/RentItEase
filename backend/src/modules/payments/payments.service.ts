@@ -1141,11 +1141,23 @@ import {
           },
         });
 
-        if (processed && new Prisma.Decimal(refund.amount).gte(new Prisma.Decimal(refund.payment.amount))) {
-          await tx.payment.updateMany({
-            where: { id: refund.paymentId, status: PaymentStatus.SUCCESS },
-            data: { status: PaymentStatus.REFUNDED },
+        if (processed) {
+          const processedRefunds = await tx.paymentRefund.aggregate({
+            where: {
+              paymentId: refund.paymentId,
+              status: 'PROCESSED',
+            },
+            _sum: { amount: true },
           });
+          const totalRefunded = new Prisma.Decimal(
+            processedRefunds._sum.amount ?? 0,
+          );
+          if (totalRefunded.gte(new Prisma.Decimal(refund.payment.amount))) {
+            await tx.payment.updateMany({
+              where: { id: refund.paymentId, status: PaymentStatus.SUCCESS },
+              data: { status: PaymentStatus.REFUNDED },
+            });
+          }
         }
       });
     }
@@ -1238,11 +1250,13 @@ import {
 
       if (!payment) throw new NotFoundException('Payment not found.');
 
-      const fullRefund = payment.refunds.find(
-        (refund: any) =>
-          refund.status === 'PROCESSED' &&
-          new Prisma.Decimal(refund.amount).eq(new Prisma.Decimal(payment.amount)),
-      );
+      const totalProcessedRefund = payment.refunds
+        .filter((refund: any) => refund.status === 'PROCESSED')
+        .reduce(
+          (total: Prisma.Decimal, refund: any) =>
+            total.add(new Prisma.Decimal(refund.amount)),
+          new Prisma.Decimal(0),
+        );
       const latestActiveRefund = payment.refunds.find(
         (refund: any) => refund.status === 'PENDING' || refund.status === 'UNKNOWN',
       );
@@ -1274,7 +1288,7 @@ import {
             : true,
         fullRefundMatchesPayment:
           payment.status === PaymentStatus.REFUNDED
-            ? Boolean(fullRefund)
+            ? totalProcessedRefund.gte(new Prisma.Decimal(payment.amount))
             : true,
         noUnreconciledRefund:
           payment.status === PaymentStatus.REFUNDED
@@ -1291,7 +1305,10 @@ import {
           status: payment.status,
           bookingId: payment.bookingId,
           invoiceId: invoice?.id ?? null,
-          refundId: fullRefund?.id ?? null,
+          refundId:
+            payment.refunds.find((refund: any) => refund.status === 'PROCESSED')?.id ??
+            null,
+          totalProcessedRefund,
           activeRefundId: latestActiveRefund?.id ?? null,
           consistent,
           checks,
