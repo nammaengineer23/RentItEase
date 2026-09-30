@@ -70,7 +70,7 @@ export class AuthService {
       { type: this.signupEmailPurpose, email, challengeId },
       {
         secret: this.getCurrentAccessSecret(),
-        header: { kid: this.getCurrentAccessKeyId() },
+        header: { alg: 'HS256', kid: this.getCurrentAccessKeyId() },
         expiresIn: '10m',
       },
     );
@@ -811,7 +811,7 @@ export class AuthService {
 
     const refreshToken = await this.jwtService.signAsync(payload, {
       secret: this.getCurrentRefreshSecret(),
-      header: { kid: this.getCurrentRefreshKeyId() },
+      header: { alg: 'HS256', kid: this.getCurrentRefreshKeyId() },
       expiresIn: '7d',
     });
 
@@ -837,7 +837,7 @@ export class AuthService {
     return this.jwtSecretService?.getCurrentRefreshKeyId() ?? 'v1';
   }
 
-  private async verifyAccessTokenWithRotation<T>(token: string): Promise<T> {
+  private async verifyAccessTokenWithRotation<T extends object>(token: string): Promise<T> {
     if (!this.jwtSecretService) {
       return this.jwtService.verifyAsync<T>(token, {
         secret: this.getCurrentAccessSecret(),
@@ -849,7 +849,7 @@ export class AuthService {
     return this.jwtService.verifyAsync<T>(token, { secret });
   }
 
-  private async verifyRefreshTokenWithRotation<T>(token: string): Promise<T> {
+  private async verifyRefreshTokenWithRotation<T extends object>(token: string): Promise<T> {
     if (!this.jwtSecretService) {
       return this.jwtService.verifyAsync<T>(token, {
         secret: this.getCurrentRefreshSecret(),
