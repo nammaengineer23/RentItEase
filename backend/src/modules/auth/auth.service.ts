@@ -189,8 +189,8 @@ export class AuthService {
       where: { phone: normalized },
     });
 
-    if (!user) {
-      throw new UnauthorizedException('No account exists for this phone.');
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Invalid or inactive account.');
     }
 
     return this.createSession(user);
@@ -367,9 +367,7 @@ export class AuthService {
 
     const email = dto.email.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({
-      where: {
-        email: dto.email,
-      },
+      where: { email },
     });
 
     if (existing) {
@@ -421,15 +419,17 @@ export class AuthService {
   // Login
   // ==========================================
   async login(dto: LoginDto) {
+    const login = dto.login.trim();
+    const normalizedEmail = login.toLowerCase();
+    const normalizedPhone = /^\+?\d[\d\s().-]{8,}$/.test(login)
+      ? this.normalizePhone(login)
+      : null;
+
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
-          {
-            email: dto.login,
-          },
-          {
-            phone: dto.login,
-          },
+          { email: normalizedEmail },
+          ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
         ],
       },
     });
@@ -761,9 +761,7 @@ export class AuthService {
 
   async forgotPassword(dto: ForgotPasswordDto) {
     const user = await this.prisma.user.findUnique({
-      where: {
-        email: dto.email,
-      },
+      where: { email: dto.email.trim().toLowerCase() },
     });
 
     // Always return the same response
