@@ -82,32 +82,25 @@ describe('PushNotificationsService', () => {
   });
 
   it('retries transient delivery failures with exponential backoff', async () => {
-    prisma.notificationDelivery.updateMany.mockResolvedValue({ count: 0 });
-    prisma.notificationDelivery.findFirst
-      .mockResolvedValueOnce({
-        id: 'delivery-1',
-        attemptCount: 0,
-        deviceId: 'device-1',
-        notification: {
-          userId: 'user-1',
-          title: 'Title',
-          message: 'Body',
-          type: 'GENERAL',
-          relatedId: null,
-        },
-        device: { token: 'token-1' },
-      })
-      .mockResolvedValueOnce(null);
-    prisma.notificationDelivery.updateMany
-      .mockResolvedValueOnce({ count: 1 })
-      .mockResolvedValue({ count: 0 });
     prisma.userSettings.findUnique.mockResolvedValue({
       pushNotifications: true,
     });
     firebase.sendToDevice.mockRejectedValue(new Error('temporary outage'));
     prisma.notificationDelivery.update.mockResolvedValue({});
 
-    await (service as any).processPendingDeliveries();
+    await (service as any).deliverOne({
+      id: 'delivery-1',
+      attemptCount: 0,
+      deviceId: 'device-1',
+      notification: {
+        userId: 'user-1',
+        title: 'Title',
+        message: 'Body',
+        type: 'GENERAL',
+        relatedId: null,
+      },
+      device: { token: 'token-1' },
+    });
 
     expect(prisma.notificationDelivery.update).toHaveBeenCalledWith(
       expect.objectContaining({
