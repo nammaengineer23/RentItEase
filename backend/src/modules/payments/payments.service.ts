@@ -128,7 +128,7 @@ import {
       if (booking.status !== BookingStatus.APPROVED && booking.status !== BookingStatus.PAYMENT_PENDING) {
         throw new BadRequestException('Payment cannot be created for booking in ' + booking.status + ' status.');
       }
-      if (booking.property.lifecycleStatus !== PropertyLifecycleStatus.BOOKED) {
+      if (booking.property.lifecycleStatus !== undefined && booking.property.lifecycleStatus !== PropertyLifecycleStatus.BOOKED) {
         throw new BadRequestException('This property is no longer reserved for payment.');
       }
       if (booking.payment?.status === PaymentStatus.SUCCESS) {
@@ -332,7 +332,7 @@ import {
         );
       }
 
-      if (payment.booking.property.lifecycleStatus !== PropertyLifecycleStatus.BOOKED) {
+      if (payment.booking.property.lifecycleStatus !== undefined && payment.booking.property.lifecycleStatus !== PropertyLifecycleStatus.BOOKED) {
         throw new BadRequestException(
           'This property is no longer reserved for payment.',
         );
