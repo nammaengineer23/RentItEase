@@ -22,6 +22,7 @@ import { SocialSettingsDto } from './dto/social-settings.dto';
 import { SocialMediaService } from './social-media.service';
 import { SocialAccountService } from './accounts/social-account.service';
 import { SocialAccountConnectionDto, SocialAccountDisconnectDto } from './dto/social-account.dto';
+import { SchedulePostDto } from './dto/schedule-post.dto';
 
 @Controller('admin/social-media')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -113,7 +114,7 @@ export class SocialMediaController {
   @Post('properties/:propertyId/schedule')
   schedule(
     @Param('propertyId') propertyId: string,
-    @Body() dto: PublishPostDto & { scheduledAt: string },
+    @Body() dto: SchedulePostDto,
     @Req() req: any,
   ) {
     return this.service.schedule({
