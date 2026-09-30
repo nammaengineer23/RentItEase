@@ -15,6 +15,7 @@ import {
   } from '@nestjs/swagger';
   
   import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+  import { Throttle } from '@nestjs/throttler';
   
   import { PaymentsService } from './payments.service';
   import { CreatePaymentOrderDto } from './dto/create-payment-order.dto';
@@ -32,6 +33,7 @@ import {
     // =====================================
   
     @Post('order')
+    @Throttle({ default: { limit: 5, ttl: 60_000 } })
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
     @ApiOperation({
@@ -52,6 +54,7 @@ import {
     // =====================================
   
     @Post('verify')
+    @Throttle({ default: { limit: 10, ttl: 60_000 } })
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
     @ApiOperation({
