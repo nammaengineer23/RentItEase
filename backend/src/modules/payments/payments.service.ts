@@ -8,7 +8,7 @@ import {
   } from '@nestjs/common';
   
   import Razorpay from 'razorpay';
-import crypto from 'crypto';
+import { randomUUID } from 'crypto';
   
   import {
     BookingStatus,
@@ -27,6 +27,7 @@ import crypto from 'crypto';
   
   import { CreatePaymentOrderDto } from './dto/create-payment-order.dto';
   import { VerifyPaymentDto } from './dto/verify-payment.dto';
+import { assertBookingTransition } from '../booking/booking-state-machine';
   
   @Injectable()
   export class PaymentsService {
