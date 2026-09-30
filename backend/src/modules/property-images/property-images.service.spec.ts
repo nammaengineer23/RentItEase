@@ -15,6 +15,7 @@ describe('PropertyImagesService video tours', () => {
   const prisma = { property } as any;
   const storage = {
     uploadImage: jest.fn(),
+    uploadVideo: jest.fn(),
     deleteImage: jest.fn(),
   } as any;
 
@@ -85,7 +86,7 @@ describe('PropertyImagesService video tours', () => {
       videoUrl: 'https://media.example/old.mp4',
       videoPublicId: 'r2:old.mp4',
     });
-    storage.uploadImage.mockResolvedValue({
+    storage.uploadVideo.mockResolvedValue({
       imageUrl: 'https://media.example/new.mp4',
       publicId: 'r2:new.mp4',
     });
@@ -101,7 +102,7 @@ describe('PropertyImagesService video tours', () => {
       { id: 'owner-1', role: 'OWNER' },
     );
 
-    expect(storage.uploadImage).toHaveBeenCalledWith(
+    expect(storage.uploadVideo).toHaveBeenCalledWith(
       expect.any(Object),
       'property-videos',
     );
