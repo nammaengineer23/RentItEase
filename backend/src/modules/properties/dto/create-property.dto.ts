@@ -10,7 +10,6 @@ import {
   IsPositive,
   IsPostalCode,
   IsString,
-  Max,
   MaxLength,
   Min,
   MinLength,
