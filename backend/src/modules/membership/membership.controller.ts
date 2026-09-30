@@ -48,7 +48,7 @@ export class MembershipController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   getMyMemberships(@Request() req: any) {
-    return this.membershipService.getUserMemberships(req.user.id);
+    return this.membershipService.getUserMemberships(req.user.id, req.user);
   }
 
   @Post('me/premium/request')
