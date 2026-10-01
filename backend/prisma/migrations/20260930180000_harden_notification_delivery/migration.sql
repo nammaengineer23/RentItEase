@@ -37,4 +37,4 @@ ALTER TABLE "NotificationDelivery"
   FOREIGN KEY ("notificationId") REFERENCES "Notification"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "NotificationDelivery"
   ADD CONSTRAINT "NotificationDelivery_deviceId_fkey"
-  FOREIGN KEY ("deviceId") REFERENCES "UserDevice"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  FOREIGN KEY ("deviceId") REFERENCES "DeviceToken"("id") ON DELETE CASCADE ON UPDATE CASCADE;
