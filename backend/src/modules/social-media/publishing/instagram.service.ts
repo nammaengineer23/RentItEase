@@ -1,5 +1,6 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { SocialAccountService } from '../accounts/social-account.service';
+import { SocialProviderAmbiguousError } from './social-provider.errors';
 
 @Injectable()
 export class InstagramService {
@@ -17,7 +18,7 @@ export class InstagramService {
         if (response.status !== 429 && response.status < 500) throw new Error('Instagram provider rejected the request.');
         if (attempt === 3) throw new Error('Instagram provider unavailable.');
       } catch (error) {
-        if (attempt === 3) throw error instanceof Error ? error : new Error('Instagram provider request failed.');
+        if (attempt === 3) throw new SocialProviderAmbiguousError('Instagram request may have reached the provider without a definitive response.');
       } finally { clearTimeout(timer); }
       await new Promise((resolve) => setTimeout(resolve, attempt * 500));
     }
