@@ -217,7 +217,7 @@ Status legend:
 - [x] Terms consistency
 - [x] Delete-account workflow
 - [x] Personal-data deletion
-- [ ] Uploaded-file deletion
+- [x] Uploaded-file deletion
 - [x] Device-token deletion
 - [x] Session deletion
 - [ ] Payment/invoice retention requirements
@@ -310,6 +310,12 @@ Status legend:
 - `881f5515`: added Flutter booking/payment/visit/notification provider regression coverage.
 - `07b5b0f6`: added Admin session lifecycle tests.
 - `27a2eff8`: reconciled this tracker with the latest evidence.
+- Latest: corrected Phase 31 Flutter test imports to the actual `mobile_app` package and made refresh-token reuse regression deterministic.
+- Latest: added server-authoritative payment-amount regression coverage.
+- Latest: account deletion now collects and removes owner property/video/image storage objects after successful DB anonymization; regression coverage added.
+- Latest: split Flutter Fast Check from Android release builds; Android artifacts now run only by manual dispatch or on `main`.
+- Latest: patched the Prisma transitive `deepmerge-ts` advisory with `^8.0.2`, moved Swagger to `^11.4.7`, and made the backend high-severity dependency audit blocking.
+- Latest: dependency-security review decisions documented in `docs/DEPENDENCY_SECURITY_REVIEW.md`.
 - Phase 30: added backend security regression suite, refresh/OTP abuse tests, duplicate payment reuse coverage, invalid-signature state protection, and review eligibility coverage; release E2E now includes completed-rental review flow.
 - Phase 31: added Flutter booking/payment/visit/notification provider regression coverage; existing auth/network/media/maps/payment/chat tests remain active. Property browsing/creation are covered by existing app code and release flows; routing remains runtime verification.
 - Phase 32: added admin session lifecycle tests and retained API security/build gate; feature pages are covered by build/type checks, while full browser interaction remains runtime verification.
