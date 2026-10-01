@@ -609,13 +609,25 @@ describe('Phase 30 critical backend security regression suite', () => {
         user: { update: jest.fn().mockResolvedValue({ id: 'user-1', isActive: false }) },
       })),
     };
-    const service = new SettingsService(prisma);
+    const storage = { deleteImage: jest.fn().mockResolvedValue(true) };
+    prisma.property = {
+      findMany: jest.fn().mockResolvedValue([
+        {
+          videoPublicId: 'r2:property-video',
+          images: [{ publicId: 'r2:property-image' }, { publicId: null }],
+        },
+      ]),
+    };
+    const service = new SettingsService(prisma, storage as any);
 
     await expect(service.deleteAccount('user-1')).resolves.toEqual({
       message: expect.stringContaining('anonymized'),
     });
 
     expect(prisma.$transaction).toHaveBeenCalled();
+    expect(storage.deleteImage).toHaveBeenCalledTimes(2);
+    expect(storage.deleteImage).toHaveBeenCalledWith('r2:property-video');
+    expect(storage.deleteImage).toHaveBeenCalledWith('r2:property-image');
   });
 
   it('Account deletion refuses administrator self-deletion', async () => {
@@ -628,7 +640,7 @@ describe('Phase 30 critical backend security regression suite', () => {
         }),
       },
     };
-    const service = new SettingsService(prisma);
+    const service = new SettingsService(prisma, { deleteImage: jest.fn() } as any);
 
     await expect(service.deleteAccount('admin-1')).rejects.toBeInstanceOf(
       UnauthorizedException,
