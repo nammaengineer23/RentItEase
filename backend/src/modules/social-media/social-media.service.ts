@@ -13,6 +13,7 @@ import { PublishingService } from './publishing/publishing.service';
 import { SocialMediaStorageService } from './social-media.storage.service';
 import { RemotionVideoService } from './video/remotion-video.service';
 import { VideoTemplateService, PropertyVideoData } from './video/video-template.service';
+import { SocialProviderAmbiguousError } from './publishing/social-provider.errors';
 
 @Injectable()
 export class SocialMediaService {
@@ -465,8 +466,9 @@ export class SocialMediaService {
     } catch (error) {
       const raw = error instanceof Error ? error.message : 'Social provider failure.';
       const message = raw.replace(/https?:\/\/\S+/g, '[redacted-url]').slice(0, 500);
-      const retryAt = post.attemptCount < post.maxAttempts ? new Date(Date.now() + Math.min(60 * 60_000, 2 ** post.attemptCount * 60_000)) : null;
-      await this.prisma.socialMediaPost.updateMany({ where: { id: postId, processingToken }, data: { status: SocialPostStatus.FAILED, error: message, nextRetryAt: retryAt, processingToken: null, processingLeaseUntil: null } });
+      const ambiguous = error instanceof SocialProviderAmbiguousError;
+      const retryAt = !ambiguous && post.attemptCount < post.maxAttempts ? new Date(Date.now() + Math.min(60 * 60_000, 2 ** post.attemptCount * 60_000)) : null;
+      await this.prisma.socialMediaPost.updateMany({ where: { id: postId, processingToken }, data: { status: SocialPostStatus.FAILED, error: ambiguous ? 'RECONCILIATION_REQUIRED: ' + message : message, nextRetryAt: retryAt, processingToken: null, processingLeaseUntil: null } });
       await this.audit(post.propertyId, actorId, 'POST_FAILED', postId, { attemptCount: post.attemptCount, retryAt: retryAt?.toISOString(), message });
       throw new BadRequestException(post.platform + ' publish failed.');
     }
