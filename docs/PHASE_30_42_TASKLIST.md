@@ -301,6 +301,15 @@ Status legend:
 - [ ] Backup restore
 
 ## Action log
+- `45c641efa1`: invalid Razorpay signatures no longer mutate the authoritative payment record.
+- `6d7c65a54`: added refresh-token reuse, OTP brute-force, and single-use challenge regression tests.
+- `f0dfd2f5`: added duplicate payment-order reuse regression coverage.
+- `fe3145cf1`: review creation now requires a completed visit or completed rental.
+- `274ed195`: added review eligibility regression coverage.
+- `04927d8f`: release E2E now verifies completed-rental review creation/statistics.
+- `881f5515`: added Flutter booking/payment/visit/notification provider regression coverage.
+- `07b5b0f6`: added Admin session lifecycle tests.
+- `27a2eff8`: reconciled this tracker with the latest evidence.
 - Phase 30: added backend security regression suite, refresh/OTP abuse tests, duplicate payment reuse coverage, invalid-signature state protection, and review eligibility coverage; release E2E now includes completed-rental review flow.
 - Phase 31: added Flutter booking/payment/visit/notification provider regression coverage; existing auth/network/media/maps/payment/chat tests remain active. Property browsing/creation are covered by existing app code and release flows; routing remains runtime verification.
 - Phase 32: added admin session lifecycle tests and retained API security/build gate; feature pages are covered by build/type checks, while full browser interaction remains runtime verification.
