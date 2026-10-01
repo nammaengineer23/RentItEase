@@ -23,4 +23,7 @@ jobs:
           git fetch origin recovery/pr86-original recovery/pr87-original
           git merge --no-edit -X ours origin/recovery/pr86-original -m "recovery: merge original PR86 into clean baseline"
           git merge --no-edit -X ours origin/recovery/pr87-original -m "recovery: merge original PR87 into recovered baseline"
+          git checkout HEAD^ -- .github/workflows/flutter_ci.yml || true
+          git add .github/workflows/flutter_ci.yml
+          git commit -m "recovery: retain baseline Flutter workflow" || true
           git push origin HEAD:recovery/rc1-merge
