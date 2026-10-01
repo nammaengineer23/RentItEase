@@ -120,6 +120,50 @@ describe('Phase 30 critical backend security regression suite', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
+  it('Payment verification rejects a bad signature without mutating payment state', async () => {
+    process.env.RAZORPAY_KEY_ID = 'rzp_test_key';
+    process.env.RAZORPAY_KEY_SECRET = 'test_secret';
+
+    const paymentUpdate = jest.fn();
+    const prisma: any = {
+      payment: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'payment-1',
+          bookingId: 'booking-1',
+          razorpayOrderId: 'order-real',
+          status: PaymentStatus.PENDING,
+          amount: 60000,
+          currency: 'INR',
+          booking: {
+            tenantId: 'tenant-1',
+            propertyId: 'property-1',
+            property: {
+              ownerId: 'owner-1',
+              title: 'Test property',
+            },
+          },
+        }),
+        update: paymentUpdate,
+      },
+    };
+
+    const service = new PaymentsService(prisma, {} as any, {} as any);
+
+    await expect(
+      service.verifyPayment(
+        {
+          bookingId: 'booking-1',
+          razorpayOrderId: 'order-real',
+          razorpayPaymentId: 'pay-attacker',
+          razorpaySignature: 'bad',
+        } as any,
+        { id: 'tenant-1', role: UserRole.USER },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(paymentUpdate).not.toHaveBeenCalled();
+  });
+
   it('Payment verification rejects a mismatched Razorpay order ID', async () => {
     process.env.RAZORPAY_KEY_ID = 'rzp_test_key';
     process.env.RAZORPAY_KEY_SECRET = 'test_secret';
