@@ -48,7 +48,7 @@ export class MembershipController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   getMyMemberships(@Request() req: any) {
-    return this.membershipService.getUserMemberships(req.user.id);
+    return this.membershipService.getUserMemberships(req.user.id, req.user);
   }
 
   @Post('me/premium/request')
@@ -112,15 +112,15 @@ export class MembershipController {
   @Get('users/:userId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  getUserMemberships(@Param('userId') userId: string) {
-    return this.membershipService.getUserMemberships(userId);
+  getUserMemberships(@Param('userId') userId: string, @Request() req: any) {
+    return this.membershipService.getUserMemberships(userId, req.user);
   }
 
   @Get('users/:userId/active')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  getActiveMembership(@Param('userId') userId: string) {
-    return this.membershipService.getActiveMembership(userId);
+  getActiveMembership(@Param('userId') userId: string, @Request() req: any) {
+    return this.membershipService.getActiveMembership(userId, req.user);
   }
 
 
@@ -154,36 +154,36 @@ export class MembershipController {
   }
 
   @Get(':id')
-  getMembership(@Param('id') id: string) {
-    return this.membershipService.getMembership(id);
+  getMembership(@Param('id') id: string, @Request() req: any) {
+    return this.membershipService.getMembership(id, req.user);
   }
 
   @Patch(':id/activate')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  activateMembership(@Param('id') id: string) {
-    return this.membershipService.activateMembership(id);
+  activateMembership(@Param('id') id: string, @Request() req: any) {
+    return this.membershipService.activateMembership(id, req.user);
   }
 
   @Patch(':id/cancel')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  cancelMembership(@Param('id') id: string) {
-    return this.membershipService.cancelMembership(id);
+  cancelMembership(@Param('id') id: string, @Request() req: any) {
+    return this.membershipService.cancelMembership(id, req.user);
   }
 
   @Patch(':id/expire')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  expireMembership(@Param('id') id: string) {
-    return this.membershipService.expireMembership(id);
+  expireMembership(@Param('id') id: string, @Request() req: any) {
+    return this.membershipService.expireMembership(id, req.user);
   }
 
   @Patch(':id/renew')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  renewMembership(@Param('id') id: string) {
-    return this.membershipService.renewMembership(id);
+  renewMembership(@Param('id') id: string, @Request() req: any) {
+    return this.membershipService.renewMembership(id, req.user);
   }
 
   @Patch(':id/auto-renew')
