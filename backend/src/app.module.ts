@@ -52,17 +52,9 @@ import { StorageModule } from './storage/storage.module';
       validationSchema: Joi.object({
         DATABASE_URL: Joi.string().required(),
 
-        JWT_ACCESS_SECRET: Joi.string().min(32).required(),
-        JWT_ACCESS_SECRET_PREVIOUS: Joi.string().min(32).optional(),
-        JWT_ACCESS_KEY_ID: Joi.string().trim().default('v1'),
-        JWT_ACCESS_KEY_PREVIOUS_ID: Joi.string().trim().optional(),
+        JWT_ACCESS_SECRET: Joi.string().min(16).required(),
 
-        JWT_REFRESH_SECRET: Joi.string().min(32).required(),
-        JWT_REFRESH_SECRET_PREVIOUS: Joi.string().min(32).optional(),
-        JWT_REFRESH_KEY_ID: Joi.string().trim().default('v1'),
-        JWT_REFRESH_KEY_PREVIOUS_ID: Joi.string().trim().optional(),
-
-        RAZORPAY_WEBHOOK_SECRET: Joi.string().min(16).optional(),
+        JWT_REFRESH_SECRET: Joi.string().min(16).required(),
 
         FIREBASE_PROJECT_ID: Joi.string().required(),
 
@@ -85,6 +77,12 @@ import { StorageModule } from './storage/storage.module';
         }),
 
         R2_SECRET_ACCESS_KEY: Joi.string().when('STORAGE_DRIVER', {
+          is: 'r2',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+
+        R2_PRIVATE_BUCKET_NAME: Joi.string().when('STORAGE_DRIVER', {
           is: 'r2',
           then: Joi.required(),
           otherwise: Joi.optional(),
@@ -113,6 +111,16 @@ import { StorageModule } from './storage/storage.module';
         NODE_ENV: Joi.string()
           .valid('development', 'production', 'test')
           .default('development'),
+
+        // Production uploads must pass through the configured ClamAV-compatible
+        // scanner before they reach external storage.
+        CLAMAV_ENABLED: Joi.boolean()
+          .default(false)
+          .when('NODE_ENV', {
+            is: 'production',
+            then: Joi.valid(true),
+          }),
+        CLAMAV_PATH: Joi.string().default('clamscan'),
       }),
     }),
 

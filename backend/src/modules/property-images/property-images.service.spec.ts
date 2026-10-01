@@ -1,11 +1,8 @@
-jest.mock('../../common/validators/upload-content.validator', () => ({
-  validateImageContent: jest.fn().mockResolvedValue(undefined),
-  validateVideoContent: jest.fn().mockResolvedValue(undefined),
-}));
-
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 
 import { PropertyImagesService } from './property-images.service';
+
+jest.mock('../../common/validators/upload-file.validator', () => ({ validateImageUpload: jest.fn(), validateVideoUpload: jest.fn() }));
 
 describe('PropertyImagesService video tours', () => {
   const property = {
@@ -15,25 +12,24 @@ describe('PropertyImagesService video tours', () => {
   const prisma = { property } as any;
   const storage = {
     uploadImage: jest.fn(),
-    uploadVideo: jest.fn(),
     deleteImage: jest.fn(),
   } as any;
+  const fileScan = { scan: jest.fn() } as any;
 
   let service: PropertyImagesService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new PropertyImagesService(prisma, storage);
-    jest.spyOn(service as any, 'readVideoDurationSeconds').mockResolvedValue(45);
+    fileScan.scan.mockResolvedValue(undefined);
+    service = new PropertyImagesService(prisma, storage, fileScan);
   });
 
   function videoFile(durationSeconds: number): Express.Multer.File {
-    const buffer = Buffer.alloc(256);
+    const buffer = Buffer.alloc(64);
     buffer.write('mvhd', 4, 'ascii');
     buffer.writeUInt8(0, 8);
     buffer.writeUInt32BE(1000, 20);
     buffer.writeUInt32BE(durationSeconds * 1000, 24);
-    buffer.writeUInt32BE(1, 28);
 
     return {
       buffer,
@@ -66,8 +62,6 @@ describe('PropertyImagesService video tours', () => {
       ownerId: 'owner-1',
     });
 
-    (service as any).readVideoDurationSeconds.mockResolvedValueOnce(61);
-
     await expect(
       service.uploadVideo(
         'property-1',
@@ -86,7 +80,7 @@ describe('PropertyImagesService video tours', () => {
       videoUrl: 'https://media.example/old.mp4',
       videoPublicId: 'r2:old.mp4',
     });
-    storage.uploadVideo.mockResolvedValue({
+    storage.uploadImage.mockResolvedValue({
       imageUrl: 'https://media.example/new.mp4',
       publicId: 'r2:new.mp4',
     });
@@ -102,7 +96,7 @@ describe('PropertyImagesService video tours', () => {
       { id: 'owner-1', role: 'OWNER' },
     );
 
-    expect(storage.uploadVideo).toHaveBeenCalledWith(
+    expect(storage.uploadImage).toHaveBeenCalledWith(
       expect.any(Object),
       'property-videos',
     );
