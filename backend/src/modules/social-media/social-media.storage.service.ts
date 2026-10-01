@@ -99,7 +99,7 @@ export class SocialMediaStorageService {
         await file.save(buffer, { contentType, metadata: { cacheControl: 'public,max-age=3600' } });
         await file.makePublic();
         return 'https://storage.googleapis.com/' + bucket.name + '/' + encodeURIComponent(destination).replace(/%2F/g, '/');
-      } catch (error) {
+      } catch {
         if (attempt === 3) throw new Error('Video storage operation failed.');
         await new Promise((resolve) => setTimeout(resolve, attempt * 500));
       }
