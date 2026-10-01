@@ -26,7 +26,7 @@ describe('PropertyImagesService video tours', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new PropertyImagesService(prisma, storage);
+    service = new PropertyImagesService(prisma, storage, fileScan);
     jest.spyOn(service as any, 'readVideoDurationSeconds').mockResolvedValue(45);
   });
 
