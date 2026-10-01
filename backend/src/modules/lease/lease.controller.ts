@@ -15,6 +15,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 import { LeaseService } from './lease.service';
 import { CreateLeaseDto } from './dto/create-lease.dto';
+import { RenewLeaseDto } from './dto/renew-lease.dto';
 
 @ApiTags('Leases')
 @Controller('leases')
@@ -75,6 +76,24 @@ export class LeaseController {
   })
   findOne(@Param('id') id: string, @Request() req: any) {
     return this.leaseService.findOne(id, req.user);
+  }
+
+  // =====================================
+  // Renew Lease
+  // =====================================
+
+  @Patch(':id/renew')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Renew an active lease by extending its end date',
+  })
+  renew(
+    @Param('id') id: string,
+    @Body() dto: RenewLeaseDto,
+    @Request() req: any,
+  ) {
+    return this.leaseService.renew(id, dto, req.user);
   }
 
   // =====================================

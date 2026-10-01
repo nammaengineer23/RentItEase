@@ -14,9 +14,7 @@ import { UpdatePremiumListingDto } from './dto/update-premium-listing.dto';
 import { PremiumListingsService } from './premium-listings.service';
 import { PromotePropertyDto } from './dto/promote-property.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole } from '@prisma/client';
-import { ForbiddenException } from '@nestjs/common';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 
@@ -45,16 +43,16 @@ export class PremiumListingsController {
   }
 
   @Post('users/:userId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   create(
     @Param('userId') userId: string,
     @Body() dto: CreatePremiumListingDto,
-    @CurrentUser() user: { id: string; role: UserRole },
   ) {
-    if (user.role !== UserRole.ADMIN && user.id !== userId) {
-      throw new ForbiddenException('You can only create premium listings for your own account.');
-    }
-    return this.premiumListingsService.create(userId, dto);
+    return this.premiumListingsService.create(
+      userId,
+      dto,
+    );
   }
 
   @Get('active')
@@ -90,44 +88,47 @@ export class PremiumListingsController {
   }
 
   @Get('users/:userId')
-  @UseGuards(JwtAuthGuard)
-  getByUser(@Param('userId') userId: string, @CurrentUser() user: { id: string; role: UserRole }) {
-    return this.premiumListingsService.findByUser(userId, user);
+  getByUser(@Param('userId') userId: string) {
+    return this.premiumListingsService.findByUser(userId);
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
-  findOne(@Param('id') id: string, @CurrentUser() user: { id: string; role: UserRole }) {
-    return this.premiumListingsService.findOne(id, user);
+  findOne(@Param('id') id: string) {
+    return this.premiumListingsService.findOne(id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   update(
     @Param('id') id: string,
     @Body() dto: UpdatePremiumListingDto,
-    @CurrentUser() user: { id: string; role: UserRole },
   ) {
-    return this.premiumListingsService.update(id, dto, user);
+    return this.premiumListingsService.update(
+      id,
+      dto,
+    );
   }
 
   @Patch(':id/activate')
-  @UseGuards(JwtAuthGuard)
-  activate(@Param('id') id: string, @CurrentUser() user: { id: string; role: UserRole }) {
-    return this.premiumListingsService.activate(id, user);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  activate(@Param('id') id: string) {
+    return this.premiumListingsService.activate(id);
   }
 
   @Patch(':id/cancel')
-  @UseGuards(JwtAuthGuard)
-  cancel(@Param('id') id: string, @CurrentUser() user: { id: string; role: UserRole }) {
-    return this.premiumListingsService.cancel(id, user);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  cancel(@Param('id') id: string) {
+    return this.premiumListingsService.cancel(id);
   }
 
   @Patch(':id/expire')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  expire(@Param('id') id: string, @CurrentUser() user: { id: string; role: UserRole }) {
-    return this.premiumListingsService.expire(id, user);
+  expire(@Param('id') id: string) {
+    return this.premiumListingsService.expire(id);
   }
 
   @Post('expire-due')

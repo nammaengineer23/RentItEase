@@ -1,11 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateLeaseDto {
   @ApiProperty({
     description: 'Booking ID from which the lease is created',
   })
   @IsString()
+  @IsNotEmpty()
   bookingId!: string;
 
   @ApiProperty({

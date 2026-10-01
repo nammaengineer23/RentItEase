@@ -41,6 +41,7 @@ model User {
   invoices                Invoice[]
   leases                  Lease[]                  @relation("TenantLeases")
   memberships             Membership[]
+  billingAuditEvents BillingAuditEvent[]
   sentMessages            Message[]                @relation("MessageSender")
   notifications           Notification[]
   otpCodes                OtpCode[]
@@ -112,6 +113,7 @@ model UserDevice {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
 
   @@index([userId])
 }
@@ -278,18 +280,21 @@ model Favorite {
 }
 
 model Review {
-  id         String   @id @default(cuid())
+  id         String       @id @default(cuid())
   rating     Int
   comment    String?
   userId     String
   propertyId String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status     ReviewStatus @default(APPROVED)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  property   Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, propertyId])
-  @@index([propertyId])
+  @@index([propertyId, status, createdAt])
+  @@index([propertyId, status, rating])
+  @@index([userId, createdAt])
 }
 
 model PropertyVisit {
@@ -308,6 +313,7 @@ model PropertyVisit {
   @@index([propertyId])
   @@index([tenantId])
   @@index([visitDate])
+  @@index([propertyId, visitDate, status])
 }
 
 model Booking {
@@ -356,6 +362,7 @@ model Invoice {
   updatedAt     DateTime      @updatedAt
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   payment       Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  lease         Lease?
   membership    Membership?   @relation(fields: [membershipId], references: [id], onDelete: SetNull)
 
   @@index([userId])
@@ -397,6 +404,7 @@ model Membership {
   isTrial           Boolean          @default(false)
   amount            Decimal          @default(0) @db.Decimal(10, 2)
   razorpayOrderId   String?          @unique
+  pendingKey        String?          @unique
   razorpayPaymentId String?          @unique
   razorpaySignature String?
   paidAt            DateTime?
@@ -406,6 +414,7 @@ model Membership {
   user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   premiumListings   PremiumListing[]
   invoices          Invoice[]
+  billingAuditEvents BillingAuditEvent[]
 
   @@index([userId])
   @@index([planId])
@@ -449,6 +458,8 @@ model Lease {
   bookingId       String      @unique
   propertyId      String
   tenantId        String
+  paymentId       String?     @unique
+  invoiceId       String?     @unique
   status          LeaseStatus @default(ACTIVE)
   monthlyRent     Decimal     @db.Decimal(10, 2)
   securityDeposit Decimal     @db.Decimal(10, 2)
@@ -457,12 +468,17 @@ model Lease {
   signedAt        DateTime?
   terminatedAt    DateTime?
   completedAt     DateTime?
+  expiredAt       DateTime?
+  renewedAt       DateTime?
+  renewalCount    Int         @default(0)
   notes           String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   booking         Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   property        Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   tenant          User        @relation("TenantLeases", fields: [tenantId], references: [id], onDelete: Cascade)
+  payment         Payment?    @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  invoice         Invoice?    @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
   @@index([propertyId])
   @@index([tenantId])
@@ -482,13 +498,36 @@ model Payment {
   razorpaySignature String?
   paidAt            DateTime?
   failedAt          DateTime?
+  refundedAt        DateTime?
+  refundAmount      Decimal?      @db.Decimal(10, 2)
+  refundId          String?       @unique
   failureReason     String?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   booking           Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  lease             Lease?
   invoices          Invoice[]
+  billingAuditEvents BillingAuditEvent[]
 
   @@index([status])
+  @@index([createdAt])
+}
+
+model BillingAuditEvent {
+  id          String   @id @default(cuid())
+  actorId     String?
+  membershipId String?
+  paymentId   String?
+  action      String
+  details     Json?
+  createdAt   DateTime @default(now())
+  actor       User?       @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  membership  Membership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  payment     Payment?    @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([membershipId, createdAt])
+  @@index([paymentId, createdAt])
+  @@index([actorId, createdAt])
   @@index([createdAt])
 }
 
@@ -501,10 +540,33 @@ model Notification {
   createdAt DateTime         @default(now())
   type      NotificationType @default(GENERAL)
   relatedId String?
+  dedupeKey String           @unique
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
 
-  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([userId, isRead, createdAt])
   @@index([relatedId])
+}
+
+model NotificationDelivery {
+  id             String                    @id @default(cuid())
+  notificationId String
+  deviceId       String
+  status         NotificationDeliveryStatus @default(PENDING)
+  processingAt   DateTime?
+  attemptCount   Int                       @default(0)
+  nextRetryAt    DateTime                  @default(now())
+  lastError      String?
+  sentAt         DateTime?
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+  notification   Notification              @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  device         UserDevice                @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, deviceId])
+  @@index([status, nextRetryAt])
+  @@index([deviceId, status])
 }
 
 model Conversation {
@@ -539,7 +601,9 @@ model Message {
   conversation       Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 
-  @@index([conversationId])
+  @@index([conversationId, createdAt])
+  @@index([conversationId, senderId, createdAt])
+  @@index([conversationId, readAt, senderId])
 }
 
 model RefreshToken {
@@ -713,6 +777,12 @@ enum PropertyStatus {
   RENTED
 }
 
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum VisitStatus {
   PENDING
   APPROVED
@@ -726,6 +796,13 @@ enum MessageType {
   IMAGE
   DOCUMENT
   VOICE
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
 }
 
 enum NotificationType {
@@ -762,6 +839,7 @@ enum LeaseStatus {
   COMPLETED
   TERMINATED
   CANCELLED
+  EXPIRED
 }
 
 enum MembershipPlanCode {
