@@ -59,7 +59,7 @@ model User {
   refreshTokens           RefreshToken[]
   reviews                 Review[]
   socialMarketingConsents SocialMarketingConsent[]
-  devices                 UserDevice[]
+  devices                 DeviceToken[]
   settings                UserSettings?
   appFeedback             AppFeedback[]
 
@@ -631,6 +631,18 @@ model Notification {
   @@index([relatedId])
 }
 
+model DeviceToken {
+  id         String   @id @default(cuid())
+  userId     String
+  token      String   @unique
+  platform   String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
+
+  @@index([userId])
+}
+
 model NotificationDelivery {
   id             String                    @id @default(cuid())
   notificationId String
@@ -644,7 +656,7 @@ model NotificationDelivery {
   createdAt      DateTime                  @default(now())
   updatedAt      DateTime                  @updatedAt
   notification   Notification              @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-  device         UserDevice                @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  device         DeviceToken               @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
   @@unique([notificationId, deviceId])
   @@index([status, nextRetryAt])
