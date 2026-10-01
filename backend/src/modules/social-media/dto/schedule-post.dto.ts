@@ -7,7 +7,7 @@ export class SchedulePostDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(2200)
+  @MaxLength(63206)
   caption?: string;
 
   @IsOptional()
