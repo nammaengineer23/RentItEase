@@ -1,6 +1,5 @@
 import {
   IsInt,
-  IsNumber,
   IsOptional,
   IsString,
   Min,
@@ -18,10 +17,6 @@ export class CreatePremiumListingDto {
   @IsInt()
   @Min(1)
   durationDays?: number;
-
-  @IsNumber()
-  @Min(0)
-  amount!: number;
 
   @IsOptional()
   @IsString()

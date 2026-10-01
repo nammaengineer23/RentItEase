@@ -180,9 +180,9 @@ class AuthenticationProvider extends ChangeNotifier {
       stage = 'Firebase account verification';
       final firebaseIdToken = await firebaseCredential.user?.getIdToken(true);
       if (firebaseIdToken == null || firebaseIdToken.isEmpty) throw Exception('Firebase did not return an ID token.');
-      _pendingGoogleIdToken = firebaseIdToken; stage = 'RentItEase account sign-in';
+      stage = 'RentItEase account sign-in';
       final response = await _repository.firebaseLogin(firebaseIdToken, createAccount: true);
-      _authResponse = response; await _saveSession(response); _pendingGoogleIdToken = null; return true;
+      _authResponse = response; await _saveSession(response); return true;
     } catch (error, stackTrace) {
       debugPrint('Google sign-in failed during $stage: ${error.runtimeType}: $error');
       debugPrintStack(stackTrace: stackTrace, label: 'Google sign-in failure');

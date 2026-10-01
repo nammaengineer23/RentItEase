@@ -21,3 +21,9 @@ coverage/
 
 # Logs
 *.log
+
+# Secrets and database backups
+*.dump
+*.sql
+*.pem
+*.key

@@ -16,6 +16,7 @@ Future<void> main() async {
 
   runApp(const ProviderScope(child: RentItEaseApp()));
 
+  // Production Apple builds use App Attest so iOS can satisfy the backend App Check gate.
   // App Check strengthens backend requests but must never hold the first
   // Flutter frame. Play Integrity may take time after a cold start or process
   // restoration, which previously left a blank launch surface until Android
@@ -33,6 +34,9 @@ Future<void> _activateAppCheck() async {
           providerAndroid: kDebugMode
               ? const AndroidDebugProvider()
               : const AndroidPlayIntegrityProvider(),
+          providerApple: kDebugMode
+              ? const AppleDebugProvider()
+              : const AppleAppAttestWithDeviceCheckFallbackProvider(),
         )
         .timeout(const Duration(seconds: 10));
   } catch (error, stackTrace) {

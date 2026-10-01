@@ -1,0 +1,55 @@
+name: Admin CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'admin_panel/**'
+      - '.github/workflows/admin_ci.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'admin_panel/**'
+      - '.github/workflows/admin_ci.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: admin-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  admin:
+    name: Admin TypeScript / Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: admin_panel
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin_panel/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
+
+      - name: Verify build output
+        run: test -f dist/index.html

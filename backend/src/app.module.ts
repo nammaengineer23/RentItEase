@@ -52,9 +52,17 @@ import { StorageModule } from './storage/storage.module';
       validationSchema: Joi.object({
         DATABASE_URL: Joi.string().required(),
 
-        JWT_ACCESS_SECRET: Joi.string().min(16).required(),
+        JWT_ACCESS_SECRET: Joi.string().min(32).required(),
+        JWT_ACCESS_SECRET_PREVIOUS: Joi.string().min(32).optional(),
+        JWT_ACCESS_KEY_ID: Joi.string().trim().default('v1'),
+        JWT_ACCESS_KEY_PREVIOUS_ID: Joi.string().trim().optional(),
 
-        JWT_REFRESH_SECRET: Joi.string().min(16).required(),
+        JWT_REFRESH_SECRET: Joi.string().min(32).required(),
+        JWT_REFRESH_SECRET_PREVIOUS: Joi.string().min(32).optional(),
+        JWT_REFRESH_KEY_ID: Joi.string().trim().default('v1'),
+        JWT_REFRESH_KEY_PREVIOUS_ID: Joi.string().trim().optional(),
+
+        RAZORPAY_WEBHOOK_SECRET: Joi.string().min(16).optional(),
 
         FIREBASE_PROJECT_ID: Joi.string().required(),
 

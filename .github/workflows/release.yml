@@ -21,7 +21,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   release:
@@ -65,6 +64,13 @@ jobs:
         with:
           flutter-version: "3.44.8"
           channel: stable
+
+      - name: Configure Firebase Android configuration
+        env:
+          FIREBASE_ANDROID_GOOGLE_SERVICES_JSON: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON }}
+        run: |
+          test -n "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON"
+          printf '%s' "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON" > android/app/google-services.json
 
       - name: Configure Android release signing
         env:
@@ -137,14 +143,6 @@ jobs:
           "$APKSIGNER" verify --print-certs \
             build/app/outputs/flutter-apk/RentItEase-release.apk
 
-      - name: Upload website APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: rentitease-website-apk
-          path: mobile_app/build/app/outputs/flutter-apk/RentItEase-release.apk
-          if-no-files-found: error
-          retention-days: 7
-
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -159,12 +157,3 @@ jobs:
             Google Sign-In is enabled and the APK signing certificate was
             verified against the Firebase Android configuration during build.
 
-
-      - name: Trigger website deployment with latest APK
-        env:
-          GH_TOKEN: ${{ github.token }}
-        working-directory: .
-        run: |
-          gh workflow run deploy_web.yml \
-            --ref main \
-            -f apk_artifact_run_id="${{ github.run_id }}"

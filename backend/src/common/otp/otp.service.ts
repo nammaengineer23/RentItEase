@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class OtpService {
@@ -7,9 +8,7 @@ export class OtpService {
    * Generate a random 6-digit OTP
    */
   generateOtp(): string {
-    return Math.floor(
-      100000 + Math.random() * 900000,
-    ).toString();
+    return crypto.randomInt(100000, 1000000).toString();
   }
 
   /**
@@ -32,11 +31,11 @@ export class OtpService {
   }
 
   /**
-   * OTP expires after 10 minutes
+   * OTP expires after 5 minutes
    */
   getExpiryDate(): Date {
     return new Date(
-      Date.now() + 10 * 60 * 1000,
+      Date.now() + 5 * 60 * 1000,
     );
   }
 }

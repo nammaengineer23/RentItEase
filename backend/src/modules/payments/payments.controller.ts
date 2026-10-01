@@ -51,6 +51,43 @@ import {
     // Verify Payment
     // =====================================
   
+    @Post('refund/:paymentId')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Initiate a full refund for a successful payment' })
+    refundPayment(
+      @Param('paymentId') paymentId: string,
+      @Body() body: { reason?: string },
+      @Request() req: any,
+    ) {
+      return this.paymentsService.refundPayment(
+        paymentId,
+        body?.reason,
+        req.user,
+      );
+    }
+
+    @Post('refund/:refundId/reconcile')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Reconcile an uncertain Razorpay refund' })
+    reconcileRefund(
+      @Param('refundId') refundId: string,
+      @Request() req: any,
+    ) {
+      return this.paymentsService.reconcileRefund(refundId, req.user);
+    }
+
+    @Post('webhook')
+    @ApiOperation({ summary: 'Receive Razorpay webhook events' })
+    handleWebhook(@Request() req: any) {
+      return this.paymentsService.handleWebhook(
+        req.rawBody,
+        req.headers['x-razorpay-signature'],
+        req.headers['x-razorpay-event-id'],
+      );
+    }
+
     @Post('verify')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
@@ -71,6 +108,17 @@ import {
     // Get Payment
     // =====================================
   
+    @Get(':id/reconciliation')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Check payment, booking, invoice and refund consistency' })
+    reconcilePaymentState(
+      @Param('id') paymentId: string,
+      @Request() req: any,
+    ) {
+      return this.paymentsService.reconcilePaymentState(paymentId, req.user);
+    }
+
     @Get(':id')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()

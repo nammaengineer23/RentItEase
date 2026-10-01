@@ -16,7 +16,7 @@ Prisma.Decimal.prototype.toJSON = function toJSON() {
 };
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   app.use(helmet());
 
   app.enableCors({
@@ -30,7 +30,7 @@ async function bootstrap() {
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Firebase-AppCheck'],
   });
   app.setGlobalPrefix('api/v1', {
     exclude: ['privacy-policy', 'terms', 'terms-of-service', 'delete-account'],

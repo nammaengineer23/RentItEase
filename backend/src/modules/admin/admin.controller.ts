@@ -21,6 +21,16 @@ export class AdminController {
 
   @Get('dashboard')
   getDashboard() { return this.adminService.getDashboard(); }
+  @Patch('status/:model/:id')
+  @ApiOperation({ summary: 'Admin override of an allowed model status or condition' })
+  overrideStatus(
+    @Param('model') model: string,
+    @Param('id') id: string,
+    @Body() body: { field: string; value: string | boolean },
+  ) {
+    return this.adminService.overrideStatus(model, id, body.field, body.value);
+  }
+
 
   @Get('users')
   getUsers() { return this.adminService.getUsers(); }

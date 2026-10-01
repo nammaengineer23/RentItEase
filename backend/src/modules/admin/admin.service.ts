@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -7,12 +8,14 @@ import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
 import { SocialMediaService } from '../social-media/social-media.service';
+import { PropertiesService } from '../properties/properties.service';
 
 @Injectable()
 export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly socialMediaService: SocialMediaService,
+    private readonly propertiesService: PropertiesService,
   ) {}
 
   // ==========================
@@ -465,106 +468,29 @@ async getProperty(id: string) {
   // Hide Property
   // ==========================
   async hideProperty(id: string) {
-    const property = await this.prisma.property.findUnique({
-      where: { id },
-    });
+    return this.propertiesService.setUnavailable(id, { id: 'admin', role: UserRole.ADMIN });
 
-    if (!property) {
-      throw new NotFoundException(
-        'Property not found.',
-      );
-    }
-
-    return serializePrisma(
-      await this.prisma.property.update({
-        where: { id },
-        data: {
-          isAvailable: false,
-        },
-      }),
-    );
   }
 
   // ==========================
   // Unhide Property
   // ==========================
   async unhideProperty(id: string) {
-    const property = await this.prisma.property.findUnique({
-      where: { id },
-    });
+    return this.propertiesService.publish(id, { id: 'admin', role: UserRole.ADMIN });
 
-    if (!property) {
-      throw new NotFoundException(
-        'Property not found.',
-      );
-    }
-
-    return serializePrisma(
-      await this.prisma.property.update({
-        where: { id },
-        data: {
-          isAvailable: true,
-        },
-      }),
-    );
   }
 
   async approveProperty(id: string) {
-    const property = await this.prisma.property.findUnique({ where: { id } });
-    if (!property) throw new NotFoundException('Property not found.');
+    return this.propertiesService.approve(id);
 
-    const approved = await this.prisma.$transaction(async (prisma) => {
-      const updated = await prisma.property.update({
-        where: { id },
-        data: { isVerified: true, isAvailable: true },
-      });
-      await prisma.user.update({
-        where: { id: property.ownerId },
-        data: {
-          role: 'OWNER',
-          ownerRequestStatus: 'APPROVED',
-          ownerReviewedAt: new Date(),
-        },
-      });
-      return updated;
-    });
-
-    // Prepare marketing content only after the approval transaction commits.
-    // Generation must never block or roll back property approval; the admin can
-    // regenerate from Social Media if preparation fails.
-    void this.socialMediaService.onPropertyApproved(id).catch((error) => {
-      console.error('Automatic reel preparation failed after property approval', {
-        propertyId: id,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    });
-
-    return serializePrisma(approved);
   }
 
   // ==========================
   // Delete Property
   // ==========================
   async deleteProperty(id: string) {
-    const property = await this.prisma.property.findUnique({
-      where: { id },
-    });
+    return this.propertiesService.archive(id, { id: 'admin', role: UserRole.ADMIN });
 
-    if (!property) {
-      throw new NotFoundException(
-        'Property not found.',
-      );
-    }
-
-    await this.prisma.property.delete({
-      where: { id },
-    });
-
-    return {
-      success: true,
-      message:
-        'Property deleted successfully.',
-    };
   }
 
   // ==========================
@@ -755,4 +681,120 @@ async getAnalytics() {
     },
   });
 }
+
+  // ==========================
+  // Universal admin status / condition override
+  // ==========================
+
+  async overrideStatus(
+    model: string,
+    id: string,
+    field: string,
+    value: unknown,
+  ) {
+    const definitions: Record<string, { field: string; values?: readonly string[]; boolean?: boolean }> = {
+      user: { field: 'role', values: ['USER', 'OWNER', 'ADMIN'] },
+      userOwnerRequestStatus: { field: 'ownerRequestStatus', values: ['NONE', 'PENDING', 'APPROVED', 'REJECTED'] },
+      userActive: { field: 'isActive', boolean: true },
+      propertyAvailable: { field: 'isAvailable', boolean: true },
+      propertyVerified: { field: 'isVerified', boolean: true },
+      booking: { field: 'status', values: ['PENDING', 'APPROVED', 'PAYMENT_PENDING', 'PAID', 'REJECTED', 'CANCELLED', 'COMPLETED'] },
+      visit: { field: 'status', values: ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'COMPLETED'] },
+      payment: { field: 'status', values: ['CREATED', 'PENDING', 'SUCCESS', 'FAILED', 'REFUNDED'] },
+      invoice: { field: 'status', values: ['GENERATED', 'PAID', 'CANCELLED'] },
+      lease: { field: 'status', values: ['ACTIVE', 'COMPLETED', 'TERMINATED', 'CANCELLED'] },
+      membership: { field: 'status', values: ['PENDING', 'ACTIVE', 'EXPIRED', 'CANCELLED'] },
+      premiumListing: { field: 'status', values: ['PENDING', 'ACTIVE', 'EXPIRED', 'CANCELLED'] },
+      paymentRefund: { field: 'status', values: ['PENDING', 'PROCESSED', 'FAILED', 'UNKNOWN'] },
+      paymentWebhookEvent: { field: 'status', values: ['RECEIVED', 'PROCESSED', 'IGNORED', 'FAILED'] },
+      socialMediaPost: { field: 'status', values: ['PENDING', 'GENERATING', 'READY', 'PUBLISHING', 'PUBLISHED', 'FAILED', 'CANCELLED'] },
+      socialCampaign: { field: 'status', values: ['DRAFT', 'QUEUED', 'GENERATING', 'READY', 'SCHEDULED', 'PUBLISHING', 'PUBLISHED', 'FAILED', 'CANCELLED'] },
+    };
+
+    if (model === 'propertyAvailable') {
+      if (typeof value !== 'boolean') {
+        throw new BadRequestException('Condition value must be boolean.');
+      }
+      return value
+        ? this.propertiesService.publish(id, { id: 'admin', role: UserRole.ADMIN })
+        : this.propertiesService.setUnavailable(id, { id: 'admin', role: UserRole.ADMIN });
+    }
+
+    if (model === 'propertyVerified') {
+      if (value !== true) {
+        throw new BadRequestException('Property verification can only be granted through the admin approval workflow.');
+      }
+      return this.propertiesService.approve(id);
+    }
+
+    const definition = definitions[model];
+    if (!definition) throw new BadRequestException('Unsupported admin status target.');
+
+    if (definition.field !== field) {
+      throw new BadRequestException(`Field ${field} is not mutable through the admin status override.`);
+    }
+
+    let normalized: string | boolean;
+    if (definition.boolean) {
+      if (typeof value !== 'boolean') {
+        throw new BadRequestException('Condition value must be boolean.');
+      }
+      normalized = value;
+    } else {
+      if (typeof value !== 'string' || !definition.values?.includes(value)) {
+        throw new BadRequestException(
+          `Invalid ${field} value. Allowed values: ${definition.values?.join(', ')}`,
+        );
+      }
+      normalized = value;
+    }
+
+    const clients: Record<string, any> = {
+      user: this.prisma.user,
+      booking: this.prisma.booking,
+      visit: this.prisma.propertyVisit,
+      payment: this.prisma.payment,
+      invoice: this.prisma.invoice,
+      lease: this.prisma.lease,
+      membership: this.prisma.membership,
+      premiumListing: this.prisma.premiumListing,
+      paymentRefund: this.prisma.paymentRefund,
+      paymentWebhookEvent: this.prisma.paymentWebhookEvent,
+      socialMediaPost: this.prisma.socialMediaPost,
+      socialCampaign: this.prisma.socialCampaign,
+      property: this.prisma.property,
+    };
+
+    const clientKey =
+      model === 'userOwnerRequestStatus' || model === 'userActive'
+        ? 'user'
+        : model.startsWith('property')
+          ? 'property'
+          : model;
+
+    const client = clients[clientKey];
+    if (!client) throw new BadRequestException('Unsupported admin status target.');
+
+    const existing = await client.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException(`${model} record not found.`);
+
+    const data: Record<string, unknown> = { [field]: normalized };
+
+    if (model === 'user') {
+      if (normalized === UserRole.OWNER) {
+        data.ownerRequestStatus = 'APPROVED';
+        data.ownerReviewedAt = new Date();
+      } else if (normalized === UserRole.USER) {
+        data.ownerRequestStatus = 'NONE';
+        data.ownerReviewedAt = null;
+      }
+    }
+
+    const updated = await client.update({ where: { id }, data });
+    return serializePrisma({
+      success: true,
+      message: `Admin updated ${model}.`,
+      data: updated,
+    });
+  }
 }

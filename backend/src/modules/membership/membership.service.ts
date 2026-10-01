@@ -2,15 +2,17 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
-import { MembershipStatus, Prisma } from '@prisma/client';
-import { createHmac } from 'crypto';
+import { MembershipStatus, Prisma, UserRole } from '@prisma/client';
+import { createHmac, timingSafeEqual } from 'crypto';
 import Razorpay from 'razorpay';
 
 import { PrismaService } from '../../database/prisma.service';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
+import { toPaise } from '../../common/utils/money.util';
 
 @Injectable()
 export class MembershipService {
@@ -181,21 +183,56 @@ export class MembershipService {
       throw new BadRequestException('User already has an active membership');
     }
 
-    return this.prisma.membership.create({
-      data: {
-        userId,
-        planId,
-        status: MembershipStatus.PENDING,
-        autoRenew,
-        notes,
-      },
-      include: {
-        plan: true,
-      },
-    });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const current = await tx.membership.findFirst({
+          where: {
+            userId,
+            status: MembershipStatus.ACTIVE,
+          },
+        });
+        if (current) {
+          throw new BadRequestException(
+            'User already has an active membership',
+          );
+        }
+
+        return tx.membership.create({
+          data: {
+            userId,
+            planId,
+            status: MembershipStatus.PENDING,
+            autoRenew,
+            notes,
+          },
+          include: {
+            plan: true,
+          },
+        });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw error;
+    }
   }
 
-  async getUserMemberships(userId: string) {
+  private assertUserAccess(targetUserId: string, user: { id: string; role: UserRole }) {
+    if (user.role !== UserRole.ADMIN && user.id !== targetUserId) {
+      throw new ForbiddenException('You can only access your own membership data.');
+    }
+  }
+
+  private async getMembershipForUser(id: string, user: { id: string; role: UserRole }) {
+    const membership = await this.prisma.membership.findUnique({ where: { id } });
+    if (!membership) throw new NotFoundException('Membership not found');
+    if (user.role !== UserRole.ADMIN && membership.userId !== user.id) {
+      throw new ForbiddenException('You do not have access to this membership.');
+    }
+    return membership;
+  }
+
+  async getUserMemberships(userId: string, user: { id: string; role: UserRole }) {
+    this.assertUserAccess(userId, user);
     const memberships = await this.prisma.membership.findMany({
       where: { userId },
       include: {
@@ -208,7 +245,7 @@ export class MembershipService {
     return serializePrisma(memberships);
   }
 
-  async getMembership(id: string) {
+  async getMembership(id: string, user: { id: string; role: UserRole }) {
     const membership = await this.prisma.membership.findUnique({
       where: { id },
       include: {
@@ -227,11 +264,13 @@ export class MembershipService {
     if (!membership) {
       throw new NotFoundException('Membership not found');
     }
+    this.assertUserAccess(membership.userId, user);
 
     return serializePrisma(membership);
   }
 
-  async getActiveMembership(userId: string) {
+  async getActiveMembership(userId: string, user: { id: string; role: UserRole }) {
+    this.assertUserAccess(userId, user);
     const now = new Date();
 
     await this.prisma.membership.updateMany({
@@ -264,7 +303,8 @@ export class MembershipService {
   // ACTIVATION
   // ============================================================
 
-  async activateMembership(id: string) {
+  async activateMembership(id: string, user: { id: string; role: UserRole }) {
+    await this.getMembershipForUser(id, user);
     const membership = await this.prisma.membership.findUnique({
       where: { id },
       include: { plan: true },
@@ -288,47 +328,58 @@ export class MembershipService {
       );
     }
 
-    const existingActive = await this.prisma.membership.findFirst({
-      where: {
-        userId: membership.userId,
-        status: MembershipStatus.ACTIVE,
-        NOT: { id },
-      },
-    });
-
-    if (existingActive) {
-      throw new BadRequestException(
-        'User already has another active membership',
-      );
-    }
-
     const startDate = new Date();
     const endDate = new Date(startDate);
 
     endDate.setDate(endDate.getDate() + membership.plan.durationDays);
 
-    return this.prisma.membership.update({
-      where: { id },
-      data: {
-        status: MembershipStatus.ACTIVE,
-        startDate,
-        endDate,
-        activatedAt: startDate,
-        expiredAt: null,
-        cancelledAt: null,
-      },
-      include: {
-        plan: true,
-      },
-    });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const existingActive = await tx.membership.findFirst({
+          where: {
+            userId: membership.userId,
+            status: MembershipStatus.ACTIVE,
+            NOT: { id },
+          },
+        });
+
+        if (existingActive) {
+          throw new BadRequestException(
+            'User already has another active membership',
+          );
+        }
+
+        return tx.membership.update({
+          where: { id },
+          data: {
+            status: MembershipStatus.ACTIVE,
+            startDate,
+            endDate,
+            activatedAt: startDate,
+            expiredAt: null,
+            cancelledAt: null,
+          },
+          include: {
+            plan: true,
+          },
+        });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error: any) {
+      if (error?.code === 'P2034') {
+        throw new BadRequestException(
+          'Another membership activation is in progress. Please retry.',
+        );
+      }
+      throw error;
+    }
   }
 
   // ============================================================
   // CANCEL
   // ============================================================
 
-  async cancelMembership(id: string) {
-    const membership = await this.getMembership(id);
+  async cancelMembership(id: string, user: { id: string; role: UserRole }) {
+    const membership = await this.getMembership(id, user);
 
     if (membership.status === MembershipStatus.CANCELLED) {
       throw new BadRequestException('Membership is already cancelled');
@@ -354,8 +405,8 @@ export class MembershipService {
   // EXPIRY
   // ============================================================
 
-  async expireMembership(id: string) {
-    const membership = await this.getMembership(id);
+  async expireMembership(id: string, user: { id: string; role: UserRole }) {
+    const membership = await this.getMembership(id, user);
 
     if (membership.status !== MembershipStatus.ACTIVE) {
       throw new BadRequestException('Only active memberships can be expired');
@@ -399,8 +450,8 @@ export class MembershipService {
   // RENEWAL
   // ============================================================
 
-  async renewMembership(id: string) {
-    const membership = await this.getMembership(id);
+  async renewMembership(id: string, user: { id: string; role: UserRole }) {
+    const membership = await this.getMembership(id, user);
 
     if (
       membership.status !== MembershipStatus.EXPIRED &&
@@ -436,8 +487,8 @@ export class MembershipService {
   // AUTO RENEW
   // ============================================================
 
-  async updateAutoRenew(id: string, autoRenew: boolean) {
-    await this.getMembership(id);
+  async updateAutoRenew(id: string, autoRenew: boolean, user: { id: string; role: UserRole }) {
+    await this.getMembership(id, user);
 
     return this.prisma.membership.update({
       where: { id },
@@ -502,8 +553,8 @@ export class MembershipService {
         checkout: {
           keyId: process.env.RAZORPAY_KEY_ID,
           razorpayOrderId: pending.razorpayOrderId,
-          amount: Number(pending.amount),
-          amountInPaise: Math.round(Number(pending.amount) * 100),
+          amount: new Prisma.Decimal(pending.amount).toNumber(),
+          amountInPaise: toPaise(pending.amount),
           currency: 'INR',
           customer: user,
         },
@@ -553,9 +604,13 @@ export class MembershipService {
       throw new BadRequestException('Premium payment is not configured');
     }
 
-    const amount = 99;
+    const amount = new Prisma.Decimal(plan.price);
+    const amountInPaise = toPaise(amount);
+    if (amount.lte(0)) {
+      throw new BadRequestException('Premium membership plan has an invalid price.');
+    }
     const order = await this.razorpay.orders.create({
-      amount: amount * 100,
+      amount: amountInPaise,
       currency: 'INR',
       receipt: `premium_${userId}_${Date.now()}`.slice(0, 40),
       notes: { userId, planId: plan.id, purpose: 'PREMIUM_MEMBERSHIP' },
@@ -565,7 +620,7 @@ export class MembershipService {
         userId,
         planId: plan.id,
         status: MembershipStatus.PENDING,
-        amount: new Prisma.Decimal(amount),
+        amount,
         razorpayOrderId: order.id,
         notes: 'Premium membership purchase',
       },
@@ -578,8 +633,9 @@ export class MembershipService {
       checkout: {
         keyId: process.env.RAZORPAY_KEY_ID,
         razorpayOrderId: order.id,
-        amount,
-        amountInPaise: amount * 100,
+        amount: amount.toNumber(),
+        amountInPaise,
+
         currency: 'INR',
         customer: user,
       },
@@ -628,8 +684,38 @@ export class MembershipService {
     const signature = createHmac('sha256', secret)
       .update(`${body.razorpayOrderId}|${body.razorpayPaymentId}`)
       .digest('hex');
-    if (signature !== body.razorpaySignature) {
+    const expected = Buffer.from(signature, 'utf8');
+    const supplied = Buffer.from(body.razorpaySignature, 'utf8');
+    if (
+      expected.length !== supplied.length ||
+      !timingSafeEqual(expected, supplied)
+    ) {
       throw new BadRequestException('Payment signature verification failed');
+    }
+
+    let razorpayOrder: any;
+    let razorpayPayment: any;
+    try {
+      [razorpayOrder, razorpayPayment] = await Promise.all([
+        this.razorpay?.orders.fetch(body.razorpayOrderId),
+        this.razorpay?.payments.fetch(body.razorpayPaymentId),
+      ]);
+    } catch {
+      throw new BadRequestException('Unable to verify the Razorpay payment right now.');
+    }
+
+    const expectedAmountInPaise = toPaise(membership.amount);
+    if (
+      razorpayOrder?.id !== membership.razorpayOrderId ||
+      razorpayOrder?.amount !== expectedAmountInPaise ||
+      razorpayOrder?.currency !== 'INR' ||
+      razorpayPayment?.id !== body.razorpayPaymentId ||
+      razorpayPayment?.order_id !== membership.razorpayOrderId ||
+      razorpayPayment?.amount !== expectedAmountInPaise ||
+      razorpayPayment?.currency !== 'INR' ||
+      razorpayPayment?.status !== 'captured'
+    ) {
+      throw new BadRequestException('Razorpay membership payment failed reconciliation.');
     }
 
     const startDate = new Date();

@@ -262,34 +262,86 @@ describe('Release E2E • Payment', () => {
       return;
     }
 
-    // Create a new Razorpay order.
-    const res = await request(apiUrl())
-      .post('/payments/order')
+    // Two simultaneous requests must converge on one local Payment row
+    // and one Razorpay order.
+    const [resA, resB] = await Promise.all([
+      request(apiUrl())
+        .post('/payments/order')
+        .set(auth(tenantToken))
+        .send({ bookingId }),
+      request(apiUrl())
+        .post('/payments/order')
+        .set(auth(tenantToken))
+        .send({ bookingId }),
+    ]);
+
+    statusOk(resA);
+    statusOk(resB);
+
+    const dataA = extractData(resA.body);
+    const dataB = extractData(resB.body);
+
+    const paymentIdA = dataA?.paymentId ?? dataA?.payment?.id ?? '';
+    const paymentIdB = dataB?.paymentId ?? dataB?.payment?.id ?? '';
+
+    expect(paymentIdA).toBeTruthy();
+    expect(paymentIdB).toBe(paymentIdA);
+
+    const paymentRes = await request(apiUrl())
+      .get('/payments/' + paymentIdA)
       .set(auth(tenantToken))
-      .send({
-        bookingId,
-      });
+      .expect(200);
 
-    statusOk(res);
+    const persistedPayment = extractData(paymentRes.body);
 
-    const data = extractData(res.body);
-
-    paymentId = data?.paymentId ?? data?.payment?.id ?? '';
-
-    razorpayOrderId =
-      data?.razorpayOrderId ?? data?.payment?.razorpayOrderId ?? '';
-
-    paymentStatus = data?.status ?? data?.payment?.status ?? '';
+    paymentId = persistedPayment?.id ?? '';
+    razorpayOrderId = persistedPayment?.razorpayOrderId ?? '';
+    paymentStatus = persistedPayment?.status ?? '';
 
     expect(paymentId).toBeTruthy();
-    expect(razorpayOrderId).toBeTruthy();
+    expect(razorpayOrderId).toMatch(/^order_/);
+    expect(paymentStatus).toBe('CREATED');
   });
 
   // ============================================================
-  // 4. VERIFY RAZORPAY SIGNATURE → PAID
+  // 4. INVALID SIGNATURE MUST NOT FAIL THE PAYMENT
   // ============================================================
 
-  it('4. verify Razorpay signature → PAID', async () => {
+  it('4. reject invalid signature without mutating payment state', async () => {
+    if (bookingStatus === 'PAID') return;
+
+    const before = await request(apiUrl())
+      .get(`/payments/${paymentId}`)
+      .set(auth(tenantToken))
+      .expect(200);
+
+    expect(extractData(before.body)?.status).not.toBe('FAILED');
+
+    const response = await request(apiUrl())
+      .post('/payments/verify')
+      .set(auth(tenantToken))
+      .send({
+        bookingId,
+        razorpayOrderId,
+        razorpayPaymentId: 'pay_invalid_e2e',
+        razorpaySignature: '0'.repeat(64),
+      });
+
+    expect(response.status).toBe(400);
+
+    const after = await request(apiUrl())
+      .get(`/payments/${paymentId}`)
+      .set(auth(tenantToken))
+      .expect(200);
+
+    expect(extractData(after.body)?.status).toBe(extractData(before.body)?.status);
+  });
+
+  // ============================================================
+  // 5. VERIFY REAL RAZORPAY PAYMENT → PAID
+  // ============================================================
+
+  it('5. verify Razorpay payment → PAID', async () => {
     expect(tenantToken).toBeTruthy();
     expect(bookingId).toBeTruthy();
     expect(paymentId).toBeTruthy();
@@ -321,8 +373,13 @@ describe('Release E2E • Payment', () => {
       throw new Error('E2E_RAZORPAY_KEY_SECRET is required.');
     }
 
-    const razorpayPaymentId =
-      process.env.E2E_RAZORPAY_PAYMENT_ID || `pay_e2e_${Date.now()}`;
+    const razorpayPaymentId = process.env.E2E_RAZORPAY_PAYMENT_ID;
+
+    if (!razorpayPaymentId) {
+      throw new Error(
+        'E2E_RAZORPAY_PAYMENT_ID must reference a real payment captured against the E2E Razorpay order.',
+      );
+    }
 
     const signature = createHmac('sha256', secret)
       .update(`${razorpayOrderId}|${razorpayPaymentId}`)
@@ -361,4 +418,96 @@ describe('Release E2E • Payment', () => {
     expect(bookingData?.payment?.id).toBe(paymentId);
     expect(bookingData?.payment?.status).toBe('SUCCESS');
   });
+
+  // ============================================================
+  // 6. RAZORPAY WEBHOOK SIGNATURE + EVENT IDEMPOTENCY
+  // ============================================================
+
+  it('6. accept a signed captured webhook once and deduplicate retries', async () => {
+    expect(paymentStatus).toBe('SUCCESS');
+    expect(razorpayOrderId).toMatch(/^order_/);
+
+    const webhookSecret = process.env.E2E_RAZORPAY_WEBHOOK_SECRET;
+    const razorpayPaymentId = process.env.E2E_RAZORPAY_PAYMENT_ID;
+
+    if (!webhookSecret) {
+      throw new Error('E2E_RAZORPAY_WEBHOOK_SECRET is required.');
+    }
+    if (!razorpayPaymentId) {
+      throw new Error('E2E_RAZORPAY_PAYMENT_ID is required.');
+    }
+
+    const payload = {
+      entity: 'event',
+      event: 'payment.captured',
+      payload: {
+        payment: {
+          entity: {
+            id: razorpayPaymentId,
+            order_id: razorpayOrderId,
+            status: 'captured',
+          },
+        },
+      },
+    };
+    const rawBody = JSON.stringify(payload);
+    const signature = createHmac('sha256', webhookSecret)
+      .update(rawBody)
+      .digest('hex');
+    const eventId = `e2e-payment-captured-${paymentId}`;
+
+    const invalid = await request(apiUrl())
+      .post('/payments/webhook')
+      .set('x-razorpay-signature', '0'.repeat(64))
+      .set('x-razorpay-event-id', `${eventId}-invalid`)
+      .set('Content-Type', 'application/json')
+      .send(rawBody);
+
+    expect(invalid.status).toBe(403);
+
+    const first = await request(apiUrl())
+      .post('/payments/webhook')
+      .set('x-razorpay-signature', signature)
+      .set('x-razorpay-event-id', eventId)
+      .set('Content-Type', 'application/json')
+      .send(rawBody);
+
+    statusOk(first);
+
+    const second = await request(apiUrl())
+      .post('/payments/webhook')
+      .set('x-razorpay-signature', signature)
+      .set('x-razorpay-event-id', eventId)
+      .set('Content-Type', 'application/json')
+      .send(rawBody);
+
+    statusOk(second);
+    expect(second.body?.message).toContain('already processed');
+  });
+
+  // ============================================================
+  // 7. PAYMENT / BOOKING / INVOICE CONSISTENCY
+  // ============================================================
+
+  it('7. reconcile payment, booking and invoice state', async () => {
+    expect(adminToken).toBeTruthy();
+    expect(paymentId).toBeTruthy();
+
+    const reconciliation = await request(apiUrl())
+      .get(`/payments/${paymentId}/reconciliation`)
+      .set(auth(adminToken))
+      .expect(200);
+
+    const data = extractData(reconciliation.body);
+
+    expect(data?.paymentId).toBe(paymentId);
+    expect(data?.bookingId).toBe(bookingId);
+    expect(data?.invoiceId).toBeTruthy();
+    expect(data?.consistent).toBe(true);
+    expect(data?.checks?.paymentHasBooking).toBe(true);
+    expect(data?.checks?.paymentHasInvoice).toBe(true);
+    expect(data?.checks?.invoiceAmountMatches).toBe(true);
+  });
+
+
 });

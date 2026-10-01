@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 
 import '../../common/app_exception.dart';
 import '../../config/environment.dart';
@@ -61,6 +62,16 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    try {
+      final appCheckToken = await FirebaseAppCheck.instance.getToken();
+      if (appCheckToken != null && appCheckToken.isNotEmpty) {
+        options.headers['X-Firebase-AppCheck'] = appCheckToken;
+      }
+    } catch (_) {
+      // Backend-protected Firebase endpoints will reject missing App Check.
+      // Do not silently fabricate or reuse an expired token.
+    }
+
     if (!_isAuthPath(options)) {
       final token = await _storage.getString(StorageService.accessTokenKey);
       if (token != null && token.isNotEmpty) {

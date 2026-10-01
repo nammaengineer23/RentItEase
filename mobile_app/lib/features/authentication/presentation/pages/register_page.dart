@@ -52,43 +52,95 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   Future<void> _register() async {
     FocusScope.of(context).unfocus();
-
     if (!_formKey.currentState!.validate()) return;
 
     final provider = ref.read(authenticationProvider);
     final email = _emailController.text.trim().toLowerCase();
-    final phone = _phoneController.text.trim();
+    final rawPhone = _phoneController.text.trim();
 
-    // Email and phone verification are intentionally deferred for the
-    // current release. Registration must not depend on an email provider or
-    // Firebase OTP response before an account can be created.
-    final success = await provider.register(
-      fullName: _nameController.text.trim(),
-      email: email,
-      phone: phone.isEmpty ? null : phone,
-      password: _passwordController.text,
-    );
+    try {
+      // Always verify email ownership before account creation.
+      final requested = await provider.requestSignupEmailOtp(email);
+      if (!requested || !mounted) {
+        _showError(
+          userFriendlyError(
+            provider.errorMessage ??
+                'Unable to send the email verification code.',
+          ),
+        );
+        return;
+      }
 
-    if (!mounted) return;
+      final emailOtp = await showOtpCodeDialog(
+        context,
+        title: 'Verify email address',
+        destination: email,
+      );
+      if (!mounted || emailOtp == null || emailOtp.length != 6) return;
 
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.tr('accountCreated')),
-          backgroundColor: Colors.green,
+      final emailProof = await provider.verifySignupEmailOtp(email, emailOtp);
+      if (!mounted || emailProof == null || emailProof.isEmpty) {
+        _showError(
+          userFriendlyError(
+            provider.errorMessage ??
+                'Invalid or expired email verification code.',
+          ),
+        );
+        return;
+      }
+
+      String? phoneProof;
+      String? normalizedPhone;
+      if (rawPhone.isNotEmpty) {
+        final digits = rawPhone.replaceAll(RegExp(r'\D'), '');
+        if (!RegExp(r'^[6-9]\d{9}$').hasMatch(digits)) {
+          _showError('Enter a valid 10-digit Indian mobile number.');
+          return;
+        }
+
+        normalizedPhone = '+91$digits';
+        phoneProof = await FirebasePhoneOtpService().verifyPhone(
+          phoneNumber: normalizedPhone,
+          requestCode: () => showOtpCodeDialog(
+            context,
+            title: 'Verify mobile number',
+            destination: normalizedPhone!,
+          ),
+        );
+      }
+
+      final success = await provider.registerVerified(
+        fullName: _nameController.text.trim(),
+        email: email,
+        phone: normalizedPhone,
+        password: _passwordController.text,
+        emailVerificationToken: emailProof,
+        phoneIdToken: phoneProof,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created successfully.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        context.go('/home');
+        return;
+      }
+
+      _showError(
+        userFriendlyError(
+          provider.errorMessage ?? context.tr('registrationFailed'),
         ),
       );
-      context.go('/home');
-      return;
+    } catch (error) {
+      if (!mounted) return;
+      _showError(userFriendlyError(error));
     }
-
-    _showError(
-      userFriendlyError(
-        provider.errorMessage ?? context.tr('registrationFailed'),
-      ),
-    );
   }
-
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.red),
@@ -107,36 +159,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       return;
     }
 
-    final needsPhoneVerification =
-        provider.errorMessage?.contains('Complete phone verification') ?? false;
-    if (needsPhoneVerification) {
-      final phone = _phoneController.text.trim();
-      if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
-        _showError(context.tr('googlePhoneInstruction'));
-        return;
-      }
-
-      try {
-        final phoneProof = await FirebasePhoneOtpService().verifyPhone(
-          phoneNumber: '+91$phone',
-          requestCode: () => showOtpCodeDialog(
-            context,
-            title: context.tr('verifyPhoneNumber'),
-            destination: '+91 $phone',
-          ),
-        );
-        final created = await provider.completeGoogleRegistration(phoneProof);
-        if (!mounted) return;
-        if (created) {
-          context.go('/home');
-          return;
-        }
-      } catch (error) {
-        if (!mounted) return;
-        _showError(userFriendlyError(error));
-        return;
-      }
-    }
 
     _showError(provider.errorMessage ?? context.tr('googleSignupFailed'));
   }

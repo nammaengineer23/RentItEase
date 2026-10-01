@@ -19,6 +19,7 @@ import {
   IsOptional,
   IsString,
   Min,
+  Max,
 } from 'class-validator';
 
 
@@ -279,6 +280,7 @@ export class FilterPropertiesDto {
   @Type(()=>Number)
   @IsInt()
   @Min(1)
+  @Max(50)
   limit:number=10;
 
 

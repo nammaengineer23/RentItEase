@@ -50,43 +50,18 @@ export class ChatService {
       );
     }
 
-    const existingConversation =
-      await this.prisma.conversation.findFirst({
-        where: {
+    // The compound unique constraint guarantees one conversation per
+    // property/owner/tenant tuple even when two requests arrive concurrently.
+    return this.prisma.conversation.upsert({
+      where: {
+        propertyId_ownerId_tenantId: {
           propertyId,
           ownerId: property.ownerId,
           tenantId,
         },
-        include: {
-          property: {
-            select: {
-              id: true,
-              title: true,
-              city: true,
-              locality: true,
-            },
-          },
-          owner: {
-            select: {
-              id: true,
-              fullName: true,
-            },
-          },
-          tenant: {
-            select: {
-              id: true,
-              fullName: true,
-            },
-          },
-        },
-      });
-
-    if (existingConversation) {
-      return existingConversation;
-    }
-
-    return this.prisma.conversation.create({
-      data: {
+      },
+      update: {},
+      create: {
         propertyId,
         ownerId: property.ownerId,
         tenantId,
@@ -116,7 +91,7 @@ export class ChatService {
     });
   }
 
-    // ==========================================
+  // ==========================================
   // List My Conversations
   // ==========================================
 
