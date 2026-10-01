@@ -7,7 +7,20 @@ BEGIN
     ALTER TABLE "DeviceToken" RENAME TO "UserDevice";
   END IF;
 END
-$$;
+$;
+
+-- Normalize a legacy DeviceToken table after it is renamed to UserDevice.
+-- The current Prisma model requires a nullable platform and updatedAt.
+DO $
+BEGIN
+  IF to_regclass('"UserDevice"') IS NOT NULL THEN
+    ALTER TABLE "UserDevice"
+      ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+    ALTER TABLE "UserDevice"
+      ALTER COLUMN "platform" DROP NOT NULL;
+  END IF;
+END
+$;
 
 ALTER TABLE "Notification" ADD COLUMN "dedupeKey" TEXT;
 UPDATE "Notification"
