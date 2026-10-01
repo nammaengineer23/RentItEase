@@ -26,7 +26,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "cleanup:e2e": "ts-node scripts/cleanup-e2e-data.ts"
+    "cleanup:e2e": "ts-node scripts/cleanup-e2e-data.ts",
+    "social:live-verify": "ts-node scripts/social-provider-live-verification.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",
