@@ -395,6 +395,9 @@ describe('Phase 30 critical backend security regression suite', () => {
   it('Review creation rejects a duplicate review', async () => {
     const prisma: any = {
       property: { findUnique: jest.fn().mockResolvedValue({ id: 'property-1', ownerId: 'owner-1' }) },
+      propertyVisit: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'visit-completed' }),
+      },
       review: {
         findFirst: jest.fn().mockResolvedValue({ id: 'review-1' }),
         update: jest.fn().mockResolvedValue({ id: 'review-1' }),
@@ -412,6 +415,29 @@ describe('Phase 30 critical backend security regression suite', () => {
     expect(prisma.review.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'review-1' } }),
     );
+  });
+
+  it('Review creation rejects users without a completed visit or rental', async () => {
+    const prisma: any = {
+      property: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'property-1',
+          ownerId: 'owner-1',
+        }),
+      },
+      propertyVisit: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+    };
+    const service = new ReviewsService(prisma);
+
+    await expect(
+      service.create(
+        'property-1',
+        'tenant-1',
+        { rating: 5, comment: 'Good' } as any,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('Chat blocks message access for a non-participant', async () => {
