@@ -1,17 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:rentitease/features/booking/domain/entities/booking_entity.dart';
-import 'package:rentitease/features/booking/domain/repositories/booking_repository.dart';
-import 'package:rentitease/features/booking/providers/booking_provider.dart';
-import 'package:rentitease/features/payment/domain/entities/payment_entity.dart';
-import 'package:rentitease/features/payment/domain/repositories/payment_repository.dart';
-import 'package:rentitease/features/payment/providers/payment_provider.dart';
-import 'package:rentitease/features/property_visits/domain/entities/property_visit.dart';
-import 'package:rentitease/features/property_visits/domain/repositories/property_visit_repository.dart';
-import 'package:rentitease/features/property_visits/providers/property_visit_provider.dart';
-import 'package:rentitease/features/notifications/models/notification_model.dart';
-import 'package:rentitease/features/notifications/providers/notifications_provider.dart';
+import 'package:mobile_app/features/booking/domain/entities/booking_entity.dart';
+import 'package:mobile_app/features/booking/domain/repositories/booking_repository.dart';
+import 'package:mobile_app/features/booking/providers/booking_provider.dart';
+import 'package:mobile_app/features/payment/domain/entities/payment_entity.dart';
+import 'package:mobile_app/features/payment/domain/repositories/payment_repository.dart';
+import 'package:mobile_app/features/payment/providers/payment_provider.dart';
+import 'package:mobile_app/features/property_visits/domain/entities/property_visit.dart';
+import 'package:mobile_app/features/property_visits/domain/repositories/property_visit_repository.dart';
+import 'package:mobile_app/features/property_visits/providers/property_visit_provider.dart';
+import 'package:mobile_app/features/notifications/models/notification_model.dart';
+import 'package:mobile_app/features/notifications/providers/notifications_provider.dart';
 
 class FakeBookingRepository implements BookingRepository {
   final List<BookingEntity> bookings = [];
