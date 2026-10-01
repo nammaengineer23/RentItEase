@@ -1,0 +1,1 @@
+-- Chat pagination and unread-count indexes.\nCREATE INDEX "Message_conversationId_createdAt_idx" ON "Message"("conversationId", "createdAt");\nCREATE INDEX "Message_conversationId_senderId_createdAt_idx" ON "Message"("conversationId", "senderId", "createdAt");\nCREATE INDEX "Message_conversationId_readAt_senderId_idx" ON "Message"("conversationId", "readAt", "senderId");\n

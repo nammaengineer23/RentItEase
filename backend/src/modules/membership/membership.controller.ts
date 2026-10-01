@@ -9,6 +9,9 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
 
 import { UserRole } from '@prisma/client';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
@@ -119,6 +122,36 @@ export class MembershipController {
   @UseGuards(JwtAuthGuard)
   getActiveMembership(@Param('userId') userId: string, @Request() req: any) {
     return this.membershipService.getActiveMembership(userId, req.user);
+  }
+
+
+  @Post(':id/refund')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  refundMembership(
+    @Param('id') id: string,
+    @Request() req: any,
+    @Body() body: { reason?: string },
+  ) {
+    return this.membershipService.refundMembership(
+      id,
+      req.user.id,
+      body?.reason,
+    );
+  }
+
+  @Post('billing/reconcile')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  reconcileBilling(@Request() req: any) {
+    return this.membershipService.reconcileBilling(req.user.id);
+  }
+
+  @Get('billing/audit')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getBillingAudit(@Query('limit') limit?: string) {
+    return this.membershipService.getBillingAudit(Number(limit) || 100);
   }
 
   @Get(':id')

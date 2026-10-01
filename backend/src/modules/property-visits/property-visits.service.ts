@@ -32,6 +32,10 @@ export class PropertyVisitsService {
   // ============================================================
 
   async create(dto: CreatePropertyVisitDto, user: any) {
+    if (user.role !== UserRole.USER) {
+      throw new ForbiddenException('Only tenants can create property visits.');
+    }
+
     const property = await this.prisma.property.findUnique({
       where: {
         id: dto.propertyId,
@@ -65,30 +69,38 @@ export class PropertyVisitsService {
       throw new BadRequestException('Visit date must be in the future.');
     }
 
-    // Prevent duplicate active bookings for the same property/time.
-    const existingVisit = await this.prisma.propertyVisit.findFirst({
-      where: {
-        propertyId: dto.propertyId,
-        visitDate,
-        status: {
-          in: [VisitStatus.PENDING, VisitStatus.APPROVED],
-        },
-      },
-    });
+    // Check-and-create must be atomic. The database also enforces the
+    // same active-slot invariant, so concurrent requests cannot both win.
+    let visit;
+    try {
+      visit = await this.prisma.$transaction(
+        async (tx) => {
+          const existingVisit = await tx.propertyVisit.findFirst({
+            where: {
+              propertyId: dto.propertyId,
+              visitDate,
+              status: {
+                in: [VisitStatus.PENDING, VisitStatus.APPROVED],
+              },
+            },
+            select: { id: true },
+          });
 
-    if (existingVisit) {
-      throw new BadRequestException('This time slot is already booked.');
-    }
+          if (existingVisit) {
+            throw new BadRequestException(
+              'This time slot is already booked.',
+            );
+          }
 
-    const visit = await this.prisma.propertyVisit.create({
-      data: {
-        propertyId: dto.propertyId,
-        tenantId: user.id,
-        visitDate,
-        notes: dto.notes,
-      },
+          return tx.propertyVisit.create({
+            data: {
+              propertyId: dto.propertyId,
+              tenantId: user.id,
+              visitDate,
+              notes: dto.notes,
+            },
 
-      include: {
+            include: {
         property: {
           include: {
             owner: {
@@ -120,7 +132,16 @@ export class PropertyVisitsService {
           },
         },
       },
-    });
+          });
+        },
+        { isolationLevel: 'Serializable' },
+      );
+    } catch (error: any) {
+      if (error?.code === 'P2002' || error?.code === 'P2034') {
+        throw new BadRequestException('This time slot is already booked.');
+      }
+      throw error;
+    }
 
     // ============================================================
     // Email Notification
@@ -374,14 +395,22 @@ export class PropertyVisitsService {
       );
     }
 
-    const updatedVisit = await this.prisma.propertyVisit.update({
+    const transition = await this.prisma.propertyVisit.updateMany({
       where: {
         id,
+        status: VisitStatus.PENDING,
       },
-
       data: {
         status: VisitStatus.APPROVED,
       },
+    });
+
+    if (transition.count !== 1) {
+      throw new BadRequestException('Only pending visits can be approved.');
+    }
+
+    const updatedVisit = await this.prisma.propertyVisit.findUniqueOrThrow({
+      where: { id },
 
       include: {
         property: {
@@ -482,14 +511,22 @@ export class PropertyVisitsService {
       );
     }
 
-    const updatedVisit = await this.prisma.propertyVisit.update({
+    const transition = await this.prisma.propertyVisit.updateMany({
       where: {
         id,
+        status: VisitStatus.PENDING,
       },
-
       data: {
         status: VisitStatus.REJECTED,
       },
+    });
+
+    if (transition.count !== 1) {
+      throw new BadRequestException('Only pending visits can be rejected.');
+    }
+
+    const updatedVisit = await this.prisma.propertyVisit.findUniqueOrThrow({
+      where: { id },
 
       include: {
         property: {
@@ -582,14 +619,22 @@ export class PropertyVisitsService {
       );
     }
 
-    const updatedVisit = await this.prisma.propertyVisit.update({
+    const transition = await this.prisma.propertyVisit.updateMany({
       where: {
         id,
+        status: VisitStatus.APPROVED,
       },
-
       data: {
         status: VisitStatus.COMPLETED,
       },
+    });
+
+    if (transition.count !== 1) {
+      throw new BadRequestException('Only approved visits can be completed.');
+    }
+
+    const updatedVisit = await this.prisma.propertyVisit.findUniqueOrThrow({
+      where: { id },
 
       include: {
         property: {
@@ -688,8 +733,8 @@ export class PropertyVisitsService {
     const visit = await this.getAuthorizedVisit(id, user);
 
     if (
-      visit.status === VisitStatus.COMPLETED ||
-      visit.status === VisitStatus.CANCELLED
+      visit.status !== VisitStatus.PENDING &&
+      visit.status !== VisitStatus.APPROVED
     ) {
       throw new BadRequestException(
         `A ${visit.status.toLowerCase()} visit cannot be cancelled.`,
@@ -698,14 +743,24 @@ export class PropertyVisitsService {
 
     const isTenant = visit.tenantId === user.id;
 
-    const updatedVisit = await this.prisma.propertyVisit.update({
+    const transition = await this.prisma.propertyVisit.updateMany({
       where: {
         id,
+        status: {
+          in: [VisitStatus.PENDING, VisitStatus.APPROVED],
+        },
       },
-
       data: {
         status: VisitStatus.CANCELLED,
       },
+    });
+
+    if (transition.count !== 1) {
+      throw new BadRequestException('This visit can no longer be cancelled.');
+    }
+
+    const updatedVisit = await this.prisma.propertyVisit.findUniqueOrThrow({
+      where: { id },
 
       include: {
         property: {
@@ -813,22 +868,47 @@ export class PropertyVisitsService {
     // Property ownership is already checked by
     // getAuthorizedVisit().
 
-    const updatedVisit = await this.prisma.propertyVisit.update({
-      where: {
-        id,
-      },
+    const nextVisitDate = dto.visitDate
+      ? new Date(dto.visitDate)
+      : visit.visitDate;
 
-      data: {
-        ...(dto.visitDate && {
-          visitDate: new Date(dto.visitDate),
-        }),
+    if (Number.isNaN(nextVisitDate.getTime())) {
+      throw new BadRequestException('Invalid visit date.');
+    }
 
-        ...(dto.notes !== undefined && {
-          notes: dto.notes,
-        }),
-      },
+    if (nextVisitDate.getTime() <= Date.now()) {
+      throw new BadRequestException('Visit date must be in the future.');
+    }
 
-      include: {
+    let updatedVisit;
+    try {
+      updatedVisit = await this.prisma.$transaction(
+        async (tx) => {
+          const conflictingVisit = await tx.propertyVisit.findFirst({
+            where: {
+              propertyId: visit.property.id,
+              visitDate: nextVisitDate,
+              status: {
+                in: [VisitStatus.PENDING, VisitStatus.APPROVED],
+              },
+              NOT: { id },
+            },
+            select: { id: true },
+          });
+
+          if (conflictingVisit) {
+            throw new BadRequestException(
+              'This time slot is already booked.',
+            );
+          }
+
+          return tx.propertyVisit.update({
+            where: { id },
+            data: {
+              ...(dto.visitDate && { visitDate: nextVisitDate }),
+              ...(dto.notes !== undefined && { notes: dto.notes }),
+            },
+            include: {
         property: true,
 
         tenant: {
@@ -840,7 +920,16 @@ export class PropertyVisitsService {
           },
         },
       },
-    });
+          });
+        },
+        { isolationLevel: 'Serializable' },
+      );
+    } catch (error: any) {
+      if (error?.code === 'P2002' || error?.code === 'P2034') {
+        throw new BadRequestException('This time slot is already booked.');
+      }
+      throw error;
+    }
 
     return {
       success: true,

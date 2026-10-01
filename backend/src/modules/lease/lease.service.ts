@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -10,17 +11,18 @@ import {
   LeaseStatus,
   PropertyLifecycleStatus,
   NotificationType,
+  PaymentStatus,
+  Prisma,
   UserRole,
   Prisma,
 } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
-
 import { NotificationsService } from '../notifications/notifications.service';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
-
 import { CreateLeaseDto } from './dto/create-lease.dto';
+import { RenewLeaseDto } from './dto/renew-lease.dto';
 
 @Injectable()
 export class LeaseService {
@@ -29,10 +31,6 @@ export class LeaseService {
     private readonly notificationsService: NotificationsService,
     private readonly pushNotificationsService: PushNotificationsService,
   ) {}
-
-  // =====================================
-  // Create Lease From Paid Booking
-  // =====================================
 
   async create(dto: CreateLeaseDto, user: any) {
     const startDate = new Date(dto.startDate);
@@ -47,9 +45,7 @@ export class LeaseService {
         throw new BadRequestException('Invalid lease end date.');
       }
       if (endDate <= startDate) {
-        throw new BadRequestException(
-          'Lease end date must be after the start date.',
-        );
+        throw new BadRequestException('Lease end date must be after the start date.');
       }
     }
 
@@ -252,144 +248,34 @@ export class LeaseService {
   // =====================================
 
   async getTenantLeases(user: any) {
+    await this.expireOverdueLeases();
     const leases = await this.prisma.lease.findMany({
-      where: {
-        tenantId: user.id,
-      },
-      include: {
-        booking: true,
-        property: {
-          include: {
-            owner: {
-              select: {
-                id: true,
-                fullName: true,
-                email: true,
-                phone: true,
-              },
-            },
-            images: {
-              where: {
-                isPrimary: true,
-              },
-              orderBy: {
-                displayOrder: 'asc',
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      where: { tenantId: user.id },
+      include: this.leaseInclude(),
+      orderBy: { createdAt: 'desc' },
     });
-
-    return {
-      success: true,
-      total: leases.length,
-      leases: serializePrisma(leases),
-    };
+    return { success: true, total: leases.length, leases: serializePrisma(leases) };
   }
-
-  // =====================================
-  // Owner Leases
-  // =====================================
 
   async getOwnerLeases(user: any) {
+    await this.expireOverdueLeases();
     const leases = await this.prisma.lease.findMany({
-      where: {
-        property: {
-          ownerId: user.id,
-        },
-      },
-      include: {
-        booking: true,
-        property: {
-          include: {
-            owner: {
-              select: {
-                id: true,
-                fullName: true,
-                email: true,
-                phone: true,
-              },
-            },
-            images: {
-              where: {
-                isPrimary: true,
-              },
-              orderBy: {
-                displayOrder: 'asc',
-              },
-            },
-          },
-        },
-        tenant: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            phone: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      where: { property: { ownerId: user.id } },
+      include: this.leaseInclude(),
+      orderBy: { createdAt: 'desc' },
     });
-
-    return {
-      success: true,
-      total: leases.length,
-      leases: serializePrisma(leases),
-    };
+    return { success: true, total: leases.length, leases: serializePrisma(leases) };
   }
 
-  // =====================================
-  // Get Lease
-  // =====================================
-
   async findOne(id: string, user?: any) {
+    await this.expireOverdueLeases();
+
     const lease = await this.prisma.lease.findUnique({
-      where: {
-        id,
-      },
-      include: {
-        booking: true,
-        property: {
-          include: {
-            owner: {
-              select: {
-                id: true,
-                fullName: true,
-                email: true,
-                phone: true,
-              },
-            },
-            images: {
-              where: {
-                isPrimary: true,
-              },
-              orderBy: {
-                displayOrder: 'asc',
-              },
-            },
-          },
-        },
-        tenant: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            phone: true,
-          },
-        },
-      },
+      where: { id },
+      include: this.leaseInclude(),
     });
 
-    if (!lease) {
-      throw new NotFoundException('Lease not found.');
-    }
+    if (!lease) throw new NotFoundException('Lease not found.');
 
     if (
       user &&
@@ -400,17 +286,66 @@ export class LeaseService {
       throw new ForbiddenException('You do not have access to this lease.');
     }
 
+    return { success: true, data: serializePrisma(lease) };
+  }
+
+  async renew(id: string, dto: RenewLeaseDto, user: any) {
+    await this.expireOverdueLeases();
+    const lease = await this.getLeaseForUpdate(id);
+
+    this.ensureParticipant(lease, user);
+
+    if (lease.status !== LeaseStatus.ACTIVE) {
+      throw new BadRequestException(`Lease cannot be renewed from ${lease.status} status.`);
+    }
+
+    if (!lease.endDate) {
+      throw new BadRequestException('A lease without an end date cannot be renewed.');
+    }
+
+    const newEndDate = new Date(dto.endDate);
+    if (Number.isNaN(newEndDate.getTime()) || newEndDate <= lease.endDate) {
+      throw new BadRequestException('Renewal end date must be after the current lease end date.');
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.lease.updateMany({
+        where: { id, status: LeaseStatus.ACTIVE },
+        data: {
+          endDate: newEndDate,
+          renewedAt: new Date(),
+          renewalCount: { increment: 1 },
+        },
+      });
+
+      if (updated.count !== 1) {
+        throw new ConflictException('Lease changed before renewal could be completed.');
+      }
+
+      return tx.lease.findUniqueOrThrow({
+        where: { id },
+        include: this.leaseInclude(),
+      });
+    });
+
+    await this.notifyLease(
+      result.id,
+      result.tenantId,
+      result.property.ownerId,
+      'Lease Renewed',
+      `The lease for "${result.property.title}" has been renewed.`,
+      'LEASE_RENEWED',
+    );
+
     return {
       success: true,
-      data: serializePrisma(lease),
+      message: 'Lease renewed successfully.',
+      data: serializePrisma(result),
     };
   }
 
-  // =====================================
-  // Complete Lease
-  // =====================================
-
   async complete(id: string, user: any) {
+    await this.expireOverdueLeases();
     const lease = await this.getLeaseForUpdate(id);
     this.ensureOwnerOrAdmin(lease, user);
     if (lease.status !== LeaseStatus.ACTIVE) {
@@ -438,6 +373,7 @@ export class LeaseService {
   // =====================================
 
   async terminate(id: string, user: any) {
+    await this.expireOverdueLeases();
     const lease = await this.getLeaseForUpdate(id);
     const isTenant = lease.tenantId === user.id;
     const isOwner = lease.property.ownerId === user.id;
@@ -465,6 +401,7 @@ export class LeaseService {
   // =====================================
 
   async cancel(id: string, user: any) {
+    await this.expireOverdueLeases();
     const lease = await this.getLeaseForUpdate(id);
     this.ensureOwnerOrAdmin(lease, user);
     if (lease.status !== LeaseStatus.ACTIVE) throw new BadRequestException(`Lease cannot be cancelled from ${lease.status} status.`);
@@ -490,28 +427,94 @@ export class LeaseService {
 
   private async getLeaseForUpdate(id: string) {
     const lease = await this.prisma.lease.findUnique({
-      where: {
-        id,
-      },
+      where: { id },
       include: {
         property: true,
         tenant: true,
         booking: true,
+        payment: true,
+        invoice: true,
       },
     });
 
-    if (!lease) {
-      throw new NotFoundException('Lease not found.');
-    }
-
+    if (!lease) throw new NotFoundException('Lease not found.');
     return lease;
   }
 
   private ensureOwnerOrAdmin(lease: any, user: any) {
     if (user.role !== UserRole.ADMIN && lease.property.ownerId !== user.id) {
-      throw new ForbiddenException(
-        'Only the property owner or admin can perform this action.',
-      );
+      throw new ForbiddenException('Only the property owner or admin can perform this action.');
     }
+  }
+
+  private ensureParticipant(lease: any, user: any) {
+    const allowed =
+      user.role === UserRole.ADMIN ||
+      lease.tenantId === user.id ||
+      lease.property.ownerId === user.id;
+
+    if (!allowed) {
+      throw new ForbiddenException('You do not have permission to modify this lease.');
+    }
+  }
+
+  private leaseInclude() {
+    return {
+      booking: true,
+      payment: true,
+      invoice: true,
+      property: {
+        include: {
+          owner: {
+            select: { id: true, fullName: true, email: true, phone: true },
+          },
+          images: {
+            where: { isPrimary: true },
+            orderBy: { displayOrder: 'asc' as const },
+          },
+        },
+      },
+      tenant: {
+        select: { id: true, fullName: true, email: true, phone: true },
+      },
+    } as const;
+  }
+
+  private async notifyLease(
+    leaseId: string,
+    tenantId: string,
+    ownerId: string,
+    title: string,
+    message: string,
+    eventType: string,
+  ) {
+    await Promise.all([
+      this.notificationsService.createNotification(
+        tenantId,
+        title,
+        message,
+        NotificationType.GENERAL,
+        leaseId,
+      ),
+      this.notificationsService.createNotification(
+        ownerId,
+        title,
+        message,
+        NotificationType.GENERAL,
+        leaseId,
+      ),
+      this.pushNotificationsService.sendToUser(
+        tenantId,
+        title,
+        message,
+        { type: eventType, leaseId },
+      ),
+      this.pushNotificationsService.sendToUser(
+        ownerId,
+        title,
+        message,
+        { type: eventType, leaseId },
+      ),
+    ]);
   }
 }

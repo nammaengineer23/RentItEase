@@ -5,6 +5,7 @@ import {
   Delete,
   Param,
   UseGuards,
+  Query,
   Request as Req,
 } from '@nestjs/common';
 import {
@@ -33,9 +34,15 @@ export class NotificationsController {
   @ApiOperation({
     summary: 'Get my notifications',
   })
-  getMyNotifications(@Req() req: Request) {
+  getMyNotifications(
+    @Req() req: Request,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
     return this.notificationsService.getMyNotifications(
       req.user,
+      Number(page) || 1,
+      Number(limit) || 20,
     );
   }
 
