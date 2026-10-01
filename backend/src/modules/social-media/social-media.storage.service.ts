@@ -124,6 +124,24 @@ export class SocialMediaStorageService {
     }
   }
 
+  private storageObjectPathFromUrl(raw: string | null | undefined, bucketName: string): string | null {
+    if (!raw) return null;
+    try {
+      const url = new URL(raw);
+      const host = url.hostname.toLowerCase();
+      if (host === 'storage.googleapis.com') {
+        const prefix = '/' + bucketName + '/';
+        if (url.pathname.startsWith(prefix)) return decodeURIComponent(url.pathname.slice(prefix.length));
+      }
+      if (host === 'firebasestorage.googleapis.com' && url.pathname.startsWith('/v0/b/' + bucketName + '/o/')) {
+        return decodeURIComponent(url.pathname.slice(('/v0/b/' + bucketName + '/o/').length));
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
   /** Delete unreferenced social-video objects older than the configured retention window. */
   async cleanupUnreferencedVideos(retentionDays = 30) {
     const days = Math.max(1, Math.min(3650, retentionDays));
@@ -135,9 +153,9 @@ export class SocialMediaStorageService {
       this.prisma.socialMediaPost.findMany({ select: { videoUrl: true } }),
     ]);
     const referenced = new Set(
-      [...consents.map((row) => row.preparedVideoUrl), ...posts.map((row) => row.videoUrl)].filter(
-        (url): url is string => Boolean(url),
-      ),
+      [...consents.map((row) => row.preparedVideoUrl), ...posts.map((row) => row.videoUrl)]
+        .map((url) => this.storageObjectPathFromUrl(url, bucket.name))
+        .filter((path): path is string => Boolean(path)),
     );
     const [files] = await bucket.getFiles({ prefix: 'social-videos/' });
     let deleted = 0;
@@ -145,8 +163,7 @@ export class SocialMediaStorageService {
       const metadata = await file.getMetadata().then(([value]) => value);
       const createdAt = metadata.timeCreated ? Date.parse(metadata.timeCreated) : NaN;
       if (!Number.isFinite(createdAt) || createdAt >= cutoff) continue;
-      const publicUrl = 'https://storage.googleapis.com/' + bucket.name + '/' + encodeURIComponent(file.name).replace(/%2F/g, '/');
-      if (referenced.has(publicUrl)) continue;
+      if (referenced.has(file.name)) continue;
       await file.delete({ ignoreNotFound: true });
       deleted += 1;
     }
