@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { existsSync } from 'node:fs';
 import { readFile, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -12,6 +13,8 @@ const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 
 @Injectable()
 export class SocialMediaStorageService {
+  constructor(private readonly prisma: PrismaService) {}
+
   private ensureFirebase() {
     if (!getApps().length) {
       const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
@@ -119,6 +122,35 @@ export class SocialMediaStorageService {
     } catch {
       // Cleanup is best-effort and must never block a successful replacement.
     }
+  }
+
+  /** Delete unreferenced social-video objects older than the configured retention window. */
+  async cleanupUnreferencedVideos(retentionDays = 30) {
+    const days = Math.max(1, Math.min(3650, retentionDays));
+    this.ensureFirebase();
+    const bucket = getStorage().bucket();
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const [consents, posts] = await Promise.all([
+      this.prisma.socialMarketingConsent.findMany({ select: { preparedVideoUrl: true } }),
+      this.prisma.socialMediaPost.findMany({ select: { videoUrl: true } }),
+    ]);
+    const referenced = new Set(
+      [...consents.map((row) => row.preparedVideoUrl), ...posts.map((row) => row.videoUrl)].filter(
+        (url): url is string => Boolean(url),
+      ),
+    );
+    const [files] = await bucket.getFiles({ prefix: 'social-videos/' });
+    let deleted = 0;
+    for (const file of files) {
+      const metadata = await file.getMetadata().then(([value]) => value);
+      const createdAt = metadata.timeCreated ? Date.parse(metadata.timeCreated) : NaN;
+      if (!Number.isFinite(createdAt) || createdAt >= cutoff) continue;
+      const publicUrl = 'https://storage.googleapis.com/' + bucket.name + '/' + encodeURIComponent(file.name).replace(/%2F/g, '/');
+      if (referenced.has(publicUrl)) continue;
+      await file.delete({ ignoreNotFound: true });
+      deleted += 1;
+    }
+    return { scanned: files.length, deleted, retentionDays: days };
   }
 
   async uploadVideo(filePath: string, propertyId: string): Promise<string> {
