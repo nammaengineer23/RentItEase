@@ -192,6 +192,7 @@ export class MembershipController {
   updateAutoRenew(
     @Param('id') id: string,
     @Body() body: { autoRenew: boolean },
+    @Request() req: any,
   ) {
     return this.membershipService.updateAutoRenew(
       id,
