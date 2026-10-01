@@ -12,10 +12,14 @@ import { PrismaService } from '../../database/prisma.service';
 
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { StorageService } from '../../storage/storage.service';
 
 @Injectable()
 export class SettingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
+  ) {}
 
   // =========================================================
   // GET SETTINGS
@@ -151,6 +155,21 @@ export class SettingsService {
     const anonymizedEmail = `deleted+${user.id}@redacted.rentitease.invalid`;
     const anonymizedPasswordHash = await bcrypt.hash(randomUUID(), 10);
 
+    // Collect storage objects before owner properties are removed by the
+    // database cascade. Object deletion happens after the transaction so a
+    // database rollback never leaves the account without its files.
+    const ownedProperties = await this.prisma.property.findMany({
+      where: { ownerId: userId },
+      select: {
+        videoPublicId: true,
+        images: { select: { publicId: true } },
+      },
+    });
+    const storageObjectIds = ownedProperties.flatMap((property) => [
+      property.videoPublicId,
+      ...property.images.map((image) => image.publicId),
+    ]).filter((value): value is string => Boolean(value));
+
     await this.prisma.$transaction(async (tx) => {
       await tx.userDevice.deleteMany({ where: { userId } });
       await tx.refreshToken.deleteMany({ where: { userId } });
@@ -192,6 +211,10 @@ export class SettingsService {
         },
       });
     });
+
+    await Promise.allSettled(
+      storageObjectIds.map((publicId) => this.storageService.deleteImage(publicId)),
+    );
 
     return {
       message: 'Account deleted successfully. Personal account data was anonymized and active sessions were revoked.',
