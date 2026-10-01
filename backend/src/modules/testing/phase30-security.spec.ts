@@ -63,6 +63,112 @@ describe('Phase 30 critical backend security regression suite', () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
+  it('Refresh token reuse is rejected after rotation', async () => {
+    const refreshToken = 'refresh-token';
+    const jwt = {
+      verifyAsync: jest.fn().mockResolvedValue({
+        sub: 'user-1',
+        email: 'user@example.com',
+      }),
+      signAsync: jest.fn().mockResolvedValueOnce('access-2').mockResolvedValueOnce('refresh-2'),
+    };
+    const prisma: any = {
+      refreshToken: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'refresh-1',
+            token: await bcrypt.hash(refreshToken, 4),
+            expiresAt: new Date(Date.now() + 60_000),
+          },
+        ]),
+        delete: jest.fn().mockResolvedValue({}),
+        create: jest.fn().mockResolvedValue({}),
+      },
+    };
+    const service = new AuthService(
+      prisma,
+      jwt as any,
+      {} as any,
+      {} as any,
+      {} as any,
+    );
+
+    await expect(service.refreshToken(refreshToken)).resolves.toMatchObject({
+      success: true,
+    });
+    await expect(service.refreshToken(refreshToken)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+
+    expect(prisma.refreshToken.delete).toHaveBeenCalledWith({
+      where: { id: 'refresh-1' },
+    });
+  });
+
+  it('OTP brute-force protection rejects a challenge after five failures', async () => {
+    const prisma: any = {
+      authOtpChallenge: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'otp-1',
+          otpHash: 'hash',
+          expiresAt: new Date(Date.now() + 60_000),
+          attempts: 5,
+        }),
+      },
+    };
+    const service = new AuthService(
+      prisma,
+      {} as any,
+      {} as any,
+      {} as any,
+      { verifyOtp: jest.fn() } as any,
+    );
+
+    await expect(
+      (service as any).consumeEmailOtpChallenge(
+        'user@example.com',
+        'LOGIN_EMAIL',
+        '123456',
+      ),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(prisma.authOtpChallenge.update).toBeUndefined();
+  });
+
+  it('OTP challenge is single-use after successful verification', async () => {
+    const challenge = {
+      id: 'otp-1',
+      otpHash: 'hash',
+      expiresAt: new Date(Date.now() + 60_000),
+      attempts: 0,
+    };
+    const prisma: any = {
+      authOtpChallenge: {
+        findFirst: jest.fn().mockResolvedValueOnce(challenge).mockResolvedValueOnce(null),
+        delete: jest.fn().mockResolvedValue({}),
+      },
+    };
+    const service = new AuthService(
+      prisma,
+      {} as any,
+      {} as any,
+      {} as any,
+      { verifyOtp: jest.fn().mockResolvedValue(true) } as any,
+    );
+
+    await expect(
+      (service as any).consumeEmailOtpChallenge(
+        'user@example.com',
+        'LOGIN_EMAIL',
+        '123456',
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(prisma.authOtpChallenge.delete).toHaveBeenCalledWith({
+      where: { id: 'otp-1' },
+    });
+  });
+
   it('JWT refresh rejects an invalid token', async () => {
     const jwt = { verifyAsync: jest.fn().mockRejectedValue(new Error('expired')) };
     const service = new AuthService(
