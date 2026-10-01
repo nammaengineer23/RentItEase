@@ -72,6 +72,23 @@ describe('MembershipService', () => {
     );
   });
 
+  it('rejects auto-renew changes for another user', async () => {
+    prisma.membership.findUnique.mockResolvedValue({
+      id: 'm1',
+      userId: 'owner-1',
+      status: 'ACTIVE',
+    });
+
+    await expect(
+      service.updateAutoRenew('m1', true, {
+        id: 'other-user',
+        role: 'USER' as any,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(prisma.membership.update).not.toHaveBeenCalled();
+  });
+
   it('blocks a second active membership', async () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'u1' });
     prisma.membershipPlan.findUnique.mockResolvedValue({
