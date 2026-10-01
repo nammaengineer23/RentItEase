@@ -4,27 +4,27 @@ import {
 } from '@nestjs/common';
 
 import {
-  validateChatFileContent,
-  validateImageContent,
-} from '../../common/validators/upload-content.validator';
+  validateImageUpload,
+} from '../../common/validators/upload-file.validator';
+import { FileScanService } from '../../storage/file-scan.service';
 import { StorageService } from '../../storage/storage.service';
 
 @Injectable()
 export class UploadsService {
-  constructor(private readonly storageService: StorageService) {}
+  constructor(
+    private readonly storageService: StorageService,
+    private readonly fileScanService: FileScanService,
+  ) {}
 
   async uploadImage(file: Express.Multer.File) {
     if (!file) {
-      throw new BadRequestException('No file uploaded.');
+      throw new BadRequestException('No file uploaded');
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      throw new BadRequestException('Image must not exceed 5 MB.');
-    }
+    await validateImageUpload(file);
+    await this.fileScanService.scan(file);
 
-    await validateImageContent(file);
-
-    const uploadResult = await this.storageService.uploadImage(file, 'uploads');
+    const uploadResult = await this.storageService.uploadImage(file, 'uploads/images');
 
     return {
       success: true,
@@ -36,26 +36,4 @@ export class UploadsService {
     };
   }
 
-  async uploadFile(file: Express.Multer.File) {
-    if (!file) {
-      throw new BadRequestException('No file uploaded.');
-    }
-
-    if (file.size > 15 * 1024 * 1024) {
-      throw new BadRequestException('File must not exceed 15 MB.');
-    }
-
-    await validateChatFileContent(file);
-
-    const result = await this.storageService.uploadImage(file, 'chat');
-
-    return {
-      success: true,
-      fileUrl: result.imageUrl,
-      filename: result.publicId,
-      originalName: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-    };
-  }
 }

@@ -11,15 +11,13 @@ import { tmpdir } from 'os';
 import { extname, join } from 'path';
 import { promisify } from 'util';
 
-import { PropertyImageSection, PropertyLifecycleStatus, UserRole } from '@prisma/client';
+import { PropertyImageSection, UserRole } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
+import { FileScanService } from '../../storage/file-scan.service';
 import { StorageService } from '../../storage/storage.service';
 import { ReorderImagesDto } from './dto/reorder-images.dto';
-import {
-  validateImageContent,
-  validateVideoContent,
-} from '../../common/validators/upload-content.validator';
+import { validateImageUpload, validateVideoUpload } from '../../common/validators/upload-file.validator';
 
 const execFileAsync = promisify(execFile);
 
@@ -28,6 +26,7 @@ export class PropertyImagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
+    private readonly fileScanService: FileScanService,
   ) {}
 
   // =====================================
@@ -63,13 +62,6 @@ export class PropertyImagesService {
       throw new BadRequestException(
         'Maximum 2 images can be uploaded at a time.',
       );
-    }
-
-    for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) {
-        throw new BadRequestException('Each image must not exceed 5 MB.');
-      }
-      await validateImageContent(file);
     }
 
     // ==========================================
@@ -118,36 +110,40 @@ export class PropertyImagesService {
       });
     }
 
+    const uploadedObjects: string[] = [];
     const images = [];
 
-    // ==========================================
-    // Upload files
-    // ==========================================
+    try {
+      for (let index = 0; index < files.length; index++) {
+        await validateImageUpload(files[index]);
+        await this.fileScanService.scan(files[index]);
 
-    for (let index = 0; index < files.length; index++) {
-      const file = files[index];
+        const uploadResult = await this.storageService.uploadImage(
+          files[index],
+          'properties',
+        );
+        uploadedObjects.push(uploadResult.publicId);
 
-      const uploadResult = await this.storageService.uploadImage(
-        file,
-        'properties',
+        const image = await this.prisma.propertyImage.create({
+          data: {
+            propertyId,
+            imageUrl: uploadResult.imageUrl,
+            publicId: uploadResult.publicId,
+            displayOrder: currentCount + index,
+            section,
+            isPrimary: isPrimary && index === 0,
+          },
+        });
+
+        images.push(image);
+      }
+    } catch (error) {
+      await Promise.all(
+        uploadedObjects.map((publicId) =>
+          this.storageService.deleteImage(publicId).catch(() => undefined),
+        ),
       );
-
-      const image = await this.prisma.propertyImage.create({
-        data: {
-          propertyId,
-          imageUrl: uploadResult.imageUrl,
-          publicId: uploadResult.publicId,
-          displayOrder: currentCount + index,
-          section,
-          isPrimary: isPrimary && index === 0,
-        },
-      });
-
-      images.push(image);
-    }
-
-    if (user.role !== UserRole.ADMIN) {
-      await this.markOwnerMediaChanged(propertyId, user.id);
+      throw error;
     }
 
     return {
@@ -185,20 +181,8 @@ export class PropertyImagesService {
       throw new BadRequestException('No video uploaded.');
     }
 
-    await validateVideoContent(file);
-
-    if (file.size > 100 * 1024 * 1024) {
-      throw new BadRequestException(
-        'The property video must not exceed 100 MB.',
-      );
-    }
-
-    const durationSeconds = await this.readVideoDurationSeconds(file);
-    if (durationSeconds > 60) {
-      throw new BadRequestException('The property video must not exceed 60 seconds.');
-    }
-
-    this.assertMediaMutationAllowed(property, user);
+    await validateVideoUpload(file);
+    await this.fileScanService.scan(file);
 
     const uploaded = await this.storageService.uploadVideo(
       file,
@@ -231,10 +215,6 @@ export class PropertyImagesService {
       });
     }
 
-    if (user.role !== UserRole.ADMIN) {
-      await this.markOwnerMediaChanged(propertyId, user.id);
-    }
-
     return {
       success: true,
       message: property.videoUrl
@@ -258,7 +238,6 @@ export class PropertyImagesService {
         'You are not allowed to delete this property video.',
       );
     }
-    this.assertMediaMutationAllowed(property, user);
 
     await this.prisma.property.update({
       where: { id: propertyId },
@@ -270,9 +249,6 @@ export class PropertyImagesService {
 
     if (property.videoPublicId) {
       await this.storageService.deleteImage(property.videoPublicId);
-    }
-    if (user.role !== UserRole.ADMIN) {
-      await this.markOwnerMediaChanged(propertyId, user.id);
     }
 
     return {
@@ -292,14 +268,10 @@ export class PropertyImagesService {
       },
       select: {
         id: true,
-        lifecycleStatus: true,
       },
     });
 
     if (!property) {
-      throw new NotFoundException('Property not found.');
-    }
-    if (property.lifecycleStatus !== PropertyLifecycleStatus.PUBLISHED) {
       throw new NotFoundException('Property not found.');
     }
 
@@ -341,7 +313,6 @@ export class PropertyImagesService {
     if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Access denied.');
     }
-    this.assertMediaMutationAllowed(property, user);
 
     // IMPORTANT:
     // Verify the image belongs to this property.
@@ -376,10 +347,6 @@ export class PropertyImagesService {
       }),
     ]);
 
-    if (user.role !== UserRole.ADMIN) {
-      await this.markOwnerMediaChanged(propertyId, user.id);
-    }
-
     return {
       success: true,
       message: 'Primary image updated successfully.',
@@ -404,7 +371,6 @@ export class PropertyImagesService {
     if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Access denied.');
     }
-    this.assertMediaMutationAllowed(property, user);
 
     for (const image of dto.images) {
       const existing = await this.prisma.propertyImage.findFirst({
@@ -434,10 +400,6 @@ export class PropertyImagesService {
       ),
     );
 
-    if (user.role !== UserRole.ADMIN) {
-      await this.markOwnerMediaChanged(propertyId, user.id);
-    }
-
     return {
       success: true,
       message: 'Images reordered successfully.',
@@ -462,7 +424,6 @@ export class PropertyImagesService {
     if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Access denied.');
     }
-    this.assertMediaMutationAllowed(property, user);
 
     const image = await this.prisma.propertyImage.findFirst({
       where: {
@@ -511,41 +472,11 @@ export class PropertyImagesService {
       }
     }
 
-    if (user.role !== UserRole.ADMIN) {
-      await this.markOwnerMediaChanged(propertyId, user.id);
-    }
-
     return {
       success: true,
       message: 'Image deleted successfully.',
     };
   }
-  private assertMediaMutationAllowed(property: any, user: any) {
-    if ([PropertyLifecycleStatus.BOOKED, PropertyLifecycleStatus.OCCUPIED, PropertyLifecycleStatus.ARCHIVED].includes(property.lifecycleStatus)) {
-      throw new BadRequestException('Property media cannot be changed in the current lifecycle state.');
-    }
-    if (user.role === UserRole.ADMIN) return;
-  }
-
-  private async markOwnerMediaChanged(propertyId: string, userId: string) {
-    const property = await this.prisma.property.findUnique({
-      where: { id: propertyId },
-      select: { ownerId: true, lifecycleStatus: true },
-    });
-    if (!property || property.ownerId !== userId) return;
-
-    if (property.lifecycleStatus === PropertyLifecycleStatus.DRAFT) return;
-
-    await this.prisma.property.update({
-      where: { id: propertyId },
-      data: {
-        lifecycleStatus: PropertyLifecycleStatus.SUBMITTED,
-        isVerified: false,
-        isAvailable: false,
-      },
-    });
-  }
-
   private async readVideoDurationSeconds(
     file: Express.Multer.File,
   ): Promise<number> {
