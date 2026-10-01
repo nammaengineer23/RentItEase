@@ -38,38 +38,60 @@ export class ReviewsService {
           select: { id: true, ownerId: true },
         });
 
-    const review = await this.prisma.review.upsert({
-      where: {
-        userId_propertyId: {
-          userId,
-          propertyId,
-        },
-      },
-      update: {
-        rating: dto.rating,
-        comment: dto.comment,
-      },
-      create: {
-        propertyId,
-        userId,
-        rating: dto.rating,
-        comment: dto.comment,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-          },
-        },
-      },
-    });
+        if (!property) {
+          throw new NotFoundException('Property not found');
+        }
 
-    return {
-      success: true,
-      message: 'Review saved successfully.',
-      review,
-    };
+        if (property.ownerId === userId) {
+          throw new BadRequestException('You cannot review your own property.');
+        }
+
+        const existing = await tx.review.findUnique({
+          where: { userId_propertyId: { userId, propertyId } },
+          select: { id: true },
+        });
+
+        if (existing) {
+          throw new BadRequestException('You have already reviewed this property.');
+        }
+
+        const eligibility = await this.getEligibility(tx, propertyId, userId);
+        if (!eligibility) {
+          throw new BadRequestException(
+            'A review requires a completed property visit or completed rental.',
+          );
+        }
+
+        await this.ensureNotSpam(tx, userId, comment);
+
+        return tx.review.create({
+          data: {
+            propertyId,
+            userId,
+            rating,
+            comment,
+            status: ReviewStatus.PENDING,
+          },
+          include: {
+            user: { select: { id: true, fullName: true } },
+          },
+        });
+      }, { isolationLevel: 'Serializable' });
+
+      return {
+        success: true,
+        message: 'Review submitted for moderation.',
+        review,
+      };
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        throw new BadRequestException('You have already reviewed this property.');
+      }
+      if (error?.code === 'P2034') {
+        throw new BadRequestException('Review submission conflicted with another request. Please retry.');
+      }
+      throw error;
+    }
   }
 
   async findByProperty(propertyId: string, page = 1, limit = 20) {
