@@ -304,6 +304,56 @@ describe('Phase 30 critical backend security regression suite', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
+  it('Duplicate payment order requests reuse the existing payment record', async () => {
+    process.env.RAZORPAY_KEY_ID = 'rzp_test_key';
+    process.env.RAZORPAY_KEY_SECRET = 'test_secret';
+
+    const prisma: any = {
+      booking: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          tenantId: 'tenant-1',
+          status: BookingStatus.PAYMENT_PENDING,
+          monthlyRent: 20000,
+          securityDeposit: 40000,
+          payment: {
+            id: 'payment-1',
+            bookingId: 'booking-1',
+            razorpayOrderId: 'order-existing',
+            amount: 60000,
+            currency: 'INR',
+            status: PaymentStatus.PENDING,
+          },
+          property: {
+            id: 'property-1',
+            owner: { id: 'owner-1', fullName: 'Owner' },
+          },
+          tenant: {
+            id: 'tenant-1',
+            fullName: 'Tenant',
+            email: 'tenant@example.com',
+            phone: '9999999999',
+          },
+        }),
+        update: jest.fn(),
+      },
+      payment: {
+        create: jest.fn(),
+      },
+    };
+
+    const service = new PaymentsService(prisma, {} as any, {} as any);
+
+    const result = await service.createOrder(
+      { bookingId: 'booking-1' } as any,
+      { id: 'tenant-1', role: UserRole.USER },
+    );
+
+    expect(result.data.razorpayOrderId).toBe('order-existing');
+    expect(result.message).toContain('Existing payment');
+    expect(prisma.payment.create).not.toHaveBeenCalled();
+  });
+
   it('Invoice access blocks an unrelated user', async () => {
     const prisma: any = {
       invoice: {
