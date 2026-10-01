@@ -9,6 +9,7 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { MembershipStatus, Prisma, PropertyLifecycleStatus, UserRole } from '@prisma/client';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
+import { StorageService } from '../../storage/storage.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { FilterPropertiesDto } from './dto/filter-property.dto';
