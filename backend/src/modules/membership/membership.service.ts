@@ -202,6 +202,7 @@ export class MembershipService {
             userId,
             planId,
             status: MembershipStatus.PENDING,
+            amount: new Prisma.Decimal(plan.price),
             autoRenew,
             notes,
           },
