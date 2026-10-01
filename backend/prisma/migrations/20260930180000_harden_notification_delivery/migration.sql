@@ -1,17 +1,17 @@
 -- Add notification deduplication and durable push delivery queue
 -- Reconcile legacy deployments that still have DeviceToken instead of UserDevice.
-DO $$
+DO $reconcile$
 BEGIN
   IF to_regclass('"UserDevice"') IS NULL
      AND to_regclass('"DeviceToken"') IS NOT NULL THEN
     ALTER TABLE "DeviceToken" RENAME TO "UserDevice";
   END IF;
 END
-$;
+$reconcile$;
 
 -- Normalize a legacy DeviceToken table after it is renamed to UserDevice.
 -- The current Prisma model requires a nullable platform and updatedAt.
-DO $
+DO $normalize$
 BEGIN
   IF to_regclass('"UserDevice"') IS NOT NULL THEN
     ALTER TABLE "UserDevice"
@@ -20,7 +20,7 @@ BEGIN
       ALTER COLUMN "platform" DROP NOT NULL;
   END IF;
 END
-$;
+$normalize$;
 
 ALTER TABLE "Notification" ADD COLUMN "dedupeKey" TEXT;
 UPDATE "Notification"
