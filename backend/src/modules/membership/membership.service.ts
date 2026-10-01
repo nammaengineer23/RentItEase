@@ -201,8 +201,8 @@ export class MembershipService {
           data: {
             userId,
             planId,
+            amount: plan.price,
             status: MembershipStatus.PENDING,
-            amount: new Prisma.Decimal(plan.price),
             autoRenew,
             notes,
           },
@@ -323,7 +323,7 @@ export class MembershipService {
       throw new BadRequestException('Cancelled membership cannot be activated');
     }
 
-    if (membership.razorpayOrderId && !membership.paidAt) {
+    if (!membership.isTrial && (!membership.paidAt || !membership.razorpayPaymentId)) {
       throw new BadRequestException(
         'Premium membership payment has not been verified',
       );
@@ -454,36 +454,60 @@ export class MembershipService {
   async renewMembership(id: string, user: { id: string; role: UserRole }) {
     const membership = await this.getMembership(id, user);
 
-    if (
-      membership.status !== MembershipStatus.EXPIRED &&
-      membership.status !== MembershipStatus.ACTIVE
-    ) {
+    if (membership.status !== MembershipStatus.EXPIRED) {
       throw new BadRequestException(
-        'Only active or expired memberships can be renewed',
+        'Only expired memberships can be renewed through a new paid checkout',
       );
     }
 
-    const startDate = new Date();
-    const endDate = new Date(startDate);
+    if (!this.razorpay || !process.env.RAZORPAY_KEY_ID) {
+      throw new BadRequestException('Premium payment is not configured');
+    }
 
-    endDate.setDate(endDate.getDate() + membership.plan.durationDays);
-
-    return this.prisma.membership.update({
-      where: { id },
-      data: {
-        status: MembershipStatus.ACTIVE,
-        startDate,
-        endDate,
-        activatedAt: membership.activatedAt ?? startDate,
-        expiredAt: null,
-        cancelledAt: null,
+    const existingPending = await this.prisma.membership.findFirst({
+      where: {
+        userId: membership.userId,
+        planId: membership.planId,
+        status: MembershipStatus.PENDING,
+        pendingKey: 'PREMIUM:' + membership.userId,
       },
-      include: {
-        plan: true,
+      include: { plan: true },
+    });
+
+    if (existingPending) {
+      return existingPending;
+    }
+
+    const amount = Number(membership.plan.price);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Premium plan has an invalid billing amount');
+    }
+
+    const order = await this.razorpay.orders.create({
+      amount: Math.round(amount * 100),
+      currency: 'INR',
+      receipt: ('renew_' + membership.userId + '_' + Date.now()).slice(0, 40),
+      notes: {
+        userId: membership.userId,
+        planId: membership.planId,
+        purpose: 'PREMIUM_MEMBERSHIP_RENEWAL',
       },
     });
-  }
 
+    return this.prisma.membership.create({
+      data: {
+        userId: membership.userId,
+        planId: membership.planId,
+        status: MembershipStatus.PENDING,
+        amount: new Prisma.Decimal(amount),
+        razorpayOrderId: order.id,
+        pendingKey: 'PREMIUM:' + membership.userId,
+        autoRenew: membership.autoRenew,
+        notes: 'Premium membership renewal',
+      },
+      include: { plan: true },
+    });
+  }
   // ============================================================
   // AUTO RENEW
   // ============================================================
@@ -623,6 +647,7 @@ export class MembershipService {
         status: MembershipStatus.PENDING,
         amount,
         razorpayOrderId: order.id,
+        pendingKey: `PREMIUM:${userId}`,
         notes: 'Premium membership purchase',
       },
       include: { plan: true },
@@ -641,6 +666,130 @@ export class MembershipService {
         customer: user,
       },
     };
+  }
+
+
+  async refundMembership(membershipId: string, actorId: string, reason?: string) {
+    if (!this.razorpay) {
+      throw new BadRequestException('Refund processing is not configured');
+    }
+
+    const membership = await this.prisma.membership.findUnique({
+      where: { id: membershipId },
+      include: { plan: true },
+    });
+    if (!membership) throw new NotFoundException('Membership not found');
+    if (!membership.razorpayPaymentId || !membership.paidAt) {
+      throw new BadRequestException('Membership has no verified payment to refund');
+    }
+    if (membership.status === MembershipStatus.CANCELLED) {
+      throw new BadRequestException('Membership is already cancelled');
+    }
+
+    const payment = await this.razorpay.payments.refund(
+      membership.razorpayPaymentId,
+      { amount: Math.round(Number(membership.amount) * 100) },
+    );
+
+    const now = new Date();
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.membership.update({
+        where: { id: membership.id },
+        data: {
+          status: MembershipStatus.CANCELLED,
+          cancelledAt: now,
+        },
+        include: { plan: true },
+      });
+
+      await tx.invoice.updateMany({
+        where: { membershipId: membership.id, status: 'PAID' },
+        data: { status: 'CANCELLED' },
+      });
+
+      await tx.billingAuditEvent.create({
+        data: {
+          actorId,
+          membershipId: membership.id,
+          action: 'MEMBERSHIP_REFUNDED',
+          details: {
+            reason: reason?.slice(0, 500) ?? null,
+            refundId: payment.id,
+            amount: Number(membership.amount),
+          },
+        },
+      });
+
+      return updated;
+    });
+  }
+
+  async reconcileBilling(actorId: string) {
+    const now = new Date();
+    const [pending, paidWithoutInvoice, activeWithoutPayment] =
+      await Promise.all([
+        this.prisma.membership.findMany({
+          where: {
+            status: MembershipStatus.PENDING,
+            razorpayOrderId: { not: null },
+            createdAt: { lt: new Date(now.getTime() - 30 * 60_000) },
+          },
+          select: { id: true, userId: true, razorpayOrderId: true, amount: true },
+          take: 500,
+        }),
+        this.prisma.membership.findMany({
+          where: {
+            paidAt: { not: null },
+            invoices: { none: { status: 'PAID' } },
+          },
+          select: { id: true, userId: true, razorpayPaymentId: true },
+          take: 500,
+        }),
+        this.prisma.membership.findMany({
+          where: {
+            status: MembershipStatus.ACTIVE,
+            isTrial: false,
+            paidAt: null,
+          },
+          select: { id: true, userId: true },
+          take: 500,
+        }),
+      ]);
+
+    const details = {
+      checkedAt: now.toISOString(),
+      pendingPaymentCount: pending.length,
+      paidMissingInvoiceCount: paidWithoutInvoice.length,
+      activeUnpaidCount: activeWithoutPayment.length,
+      pendingPaymentIds: pending.map((m) => m.id),
+      paidMissingInvoiceIds: paidWithoutInvoice.map((m) => m.id),
+      activeUnpaidIds: activeWithoutPayment.map((m) => m.id),
+    };
+
+    await this.prisma.billingAuditEvent.create({
+      data: {
+        actorId,
+        action: 'BILLING_RECONCILIATION',
+        details,
+      },
+    });
+
+    return details;
+  }
+
+  async getBillingAudit(limit = 100) {
+    const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 500);
+    return serializePrisma(
+      await this.prisma.billingAuditEvent.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: safeLimit,
+        include: {
+          actor: { select: { id: true, fullName: true, email: true } },
+          membership: { select: { id: true, userId: true, status: true } },
+          payment: { select: { id: true, status: true, amount: true } },
+        },
+      }),
+    );
   }
 
   async verifyPremiumPayment(
