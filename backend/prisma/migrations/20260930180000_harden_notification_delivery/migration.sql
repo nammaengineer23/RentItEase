@@ -1,13 +1,14 @@
 -- Add notification deduplication and durable push delivery queue
 -- Reconcile legacy deployments that still have DeviceToken instead of UserDevice.
-DO $
+DO $$
 BEGIN
   IF to_regclass('"UserDevice"') IS NULL
      AND to_regclass('"DeviceToken"') IS NOT NULL THEN
     ALTER TABLE "DeviceToken" RENAME TO "UserDevice";
   END IF;
 END
-$;
+$$;
+
 ALTER TABLE "Notification" ADD COLUMN "dedupeKey" TEXT;
 UPDATE "Notification"
 SET "dedupeKey" = md5("id")
