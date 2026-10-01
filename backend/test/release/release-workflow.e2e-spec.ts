@@ -196,7 +196,43 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
   });
 
   // ============================================================
-  // 04 Invoice → history → PAID
+  // 04 Review → completed rental eligibility
+  // ============================================================
+
+  it('04 Review → completed rental eligibility', async () => {
+    expect(bookingId).toBeTruthy();
+    expect(propertyId).toBeTruthy();
+    expect(ownerToken).toBeTruthy();
+    expect(tenantToken).toBeTruthy();
+
+    const complete = await request(apiUrl())
+      .patch(`/bookings/${bookingId}/complete`)
+      .set(auth(ownerToken));
+
+    statusOk(complete);
+    expect(extractData(complete.body)?.status).toBe('COMPLETED');
+
+    const review = await request(apiUrl())
+      .post(`/reviews/${propertyId}`)
+      .set(auth(tenantToken))
+      .send({
+        rating: 5,
+        comment: 'Release E2E completed-rental review.',
+      });
+
+    statusOk(review);
+    expect(extractData(review.body)?.review?.propertyId).toBe(propertyId);
+    expect(extractData(review.body)?.review?.userId).toBe(tenantId);
+
+    const stats = await request(apiUrl())
+      .get(`/reviews/${propertyId}/stats`)
+      .expect(200);
+
+    expect(extractData(stats.body)?.totalReviews).toBeGreaterThanOrEqual(1);
+  });
+
+  // ============================================================
+  // 05 Invoice → history → PAID
   // ============================================================
 
   it('04 Invoice → history → PAID', async () => {
@@ -248,7 +284,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
   });
 
   // ============================================================
-  // 05 Membership → activation → expiry → renewal
+  // 06 Membership → activation → expiry → renewal
   // ============================================================
 
   it('05 Membership → activation → expiry → renewal', async () => {
