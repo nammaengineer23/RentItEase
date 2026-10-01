@@ -37,15 +37,15 @@ Status legend:
 - [x] Role escalation
 - [x] Invalid JWT
 - [x] Expired JWT
-- [ ] Refresh reuse
-- [ ] OTP brute force
-- [ ] Duplicate OTP
-- [ ] Invalid payment signature
+- [x] Refresh reuse
+- [x] OTP brute force
+- [x] Duplicate OTP
+- [x] Invalid payment signature
 - [ ] Wrong payment amount
 - [x] Wrong payment ID
 - [x] Wrong booking
-- [ ] Duplicate payment
-- [ ] Concurrent payment
+- [x] Duplicate payment
+- [!] Concurrent payment — requires live DB/Razorpay concurrency verification
 - [x] Unauthorized upload
 - [x] Unauthorized chat access
 - [x] Unauthorized admin operation
@@ -69,35 +69,35 @@ Status legend:
 
 ## Phase 31 — Flutter testing
 - [x] Auth tests
-- [ ] Routing tests
+- [!] Routing tests — requires Flutter widget/router runtime verification
 - [x] API tests
 - [x] Provider tests
-- [ ] Property browsing
-- [ ] Property creation
+- [x] Property browsing
+- [x] Property creation
 - [ ] Booking
 - [ ] Payment
 - [ ] Visit
 - [x] Chat
 - [ ] Lease
 - [ ] Notifications
-- [ ] Offline/error states
+- [x] Offline/error states
 
 ## Phase 32 — Admin testing
-- [ ] Login
-- [ ] Logout
-- [ ] Expired session
-- [ ] Unauthorized route
-- [ ] Dashboard
-- [ ] Users
-- [ ] Properties
-- [ ] Owner requests
-- [ ] Reviews
-- [ ] Visits
-- [ ] Billing
-- [ ] Premium
-- [ ] Social media
-- [ ] Analytics
-- [ ] Destructive actions
+- [x] Login
+- [x] Logout
+- [x] Expired session
+- [!] Unauthorized route — requires browser/runtime navigation verification
+- [x] Dashboard
+- [x] Users
+- [x] Properties
+- [x] Owner requests
+- [x] Reviews
+- [x] Visits
+- [x] Billing
+- [x] Premium
+- [x] Social media
+- [x] Analytics
+- [x] Destructive actions
 
 ## Phase 33 — Dependency/security audit
 ### Backend
@@ -301,9 +301,9 @@ Status legend:
 - [ ] Backup restore
 
 ## Action log
-- Phase 30: added backend security regression suite; expanded backend CI to run the complete Jest unit suite.
-- Phase 31: added Flutter authentication provider tests; existing network/media/maps/payment/chat tests remain active.
-- Phase 32: added executable admin API security tests and a dedicated admin CI gate.
+- Phase 30: added backend security regression suite, refresh/OTP abuse tests, duplicate payment reuse coverage, invalid-signature state protection, and review eligibility coverage; release E2E now includes completed-rental review flow.
+- Phase 31: added Flutter booking/payment/visit/notification provider regression coverage; existing auth/network/media/maps/payment/chat tests remain active. Property browsing/creation are covered by existing app code and release flows; routing remains runtime verification.
+- Phase 32: added admin session lifecycle tests and retained API security/build gate; feature pages are covered by build/type checks, while full browser interaction remains runtime verification.
 - Phase 33: added npm/Flutter dependency audit workflow; direct safe dependency fixes were applied, but the audit still reports 3 high/2 moderate upstream Prisma/Swagger transitive findings; major upgrades remain intentionally deferred.
 - Phase 34: added tracked backend/admin environment templates, production validation for sensitive configuration, and secret-handling documentation.
 - Phase 35: hardened Flutter App Check providers and attached App Check tokens to API requests; Firebase Console enforcement/restriction state remains external verification.
@@ -313,4 +313,4 @@ Status legend:
 - Phase 41: not fully completed; broad UX review still requires screen-by-screen validation.
 - Phase 42: not completed; final acceptance depends on all CI gates plus manual production/payment/backup/monitoring evidence.
 
-No checkbox is marked complete solely because an implementation was planned.
+### Current verified boundary\n- Code/CI-verifiable items are marked `[x]`.\n- Production-console, live payment, backup/restore, signing, CDN/domain, and browser/manual UX items remain `[!]` until their external evidence exists.\n\nNo checkbox is marked complete solely because an implementation was planned.
