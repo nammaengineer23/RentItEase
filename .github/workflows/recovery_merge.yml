@@ -1,0 +1,26 @@
+name: Recovery Merge Builder
+
+on:
+  push:
+    branches:
+      - recovery/rc1-merge
+
+permissions:
+  contents: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: recovery/rc1-merge
+          fetch-depth: 0
+      - name: Merge original PR86 and PR87
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin recovery/pr86-original recovery/pr87-original
+          git merge --no-edit -X ours origin/recovery/pr86-original -m "recovery: merge original PR86 into clean baseline"
+          git merge --no-edit -X ours origin/recovery/pr87-original -m "recovery: merge original PR87 into recovered baseline"
+          git push origin HEAD:recovery/rc1-merge
