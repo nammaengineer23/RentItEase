@@ -196,6 +196,7 @@ export class MembershipController {
     return this.membershipService.updateAutoRenew(
       id,
       body.autoRenew,
+      req.user,
     );
   }
 
