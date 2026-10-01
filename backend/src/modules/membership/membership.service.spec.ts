@@ -1,6 +1,6 @@
 jest.mock('razorpay', () => jest.fn());
 
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { MembershipService } from './membership.service';
 
 describe('MembershipService', () => {
@@ -84,7 +84,7 @@ describe('MembershipService', () => {
         id: 'other-user',
         role: 'USER' as any,
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toBeInstanceOf(ForbiddenException);
 
     expect(prisma.membership.update).not.toHaveBeenCalled();
   });
