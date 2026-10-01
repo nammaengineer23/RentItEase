@@ -74,13 +74,13 @@ describe('Phase 30 critical backend security regression suite', () => {
     };
     const prisma: any = {
       refreshToken: {
-        findMany: jest.fn().mockResolvedValue([
+        findMany: jest.fn().mockResolvedValueOnce([
           {
             id: 'refresh-1',
             token: await bcrypt.hash(refreshToken, 4),
             expiresAt: new Date(Date.now() + 60_000),
           },
-        ]),
+        ]).mockResolvedValueOnce([]),
         delete: jest.fn().mockResolvedValue({}),
         create: jest.fn().mockResolvedValue({}),
       },
