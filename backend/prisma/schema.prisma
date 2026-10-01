@@ -551,6 +551,7 @@ model Payment {
   lease             Lease?
   invoices          Invoice[]
   refunds           PaymentRefund[]
+  billingAuditEvents BillingAuditEvent[]
 
   @@index([status])
   @@index([status, createdAt])
