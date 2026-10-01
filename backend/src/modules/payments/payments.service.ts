@@ -328,22 +328,14 @@ import {
         .digest('hex');
   
       if (generatedSignature !== dto.razorpaySignature) {
-        await this.prisma.payment.update({
-          where: {
-            id: payment.id,
-          },
-          data: {
-            status: PaymentStatus.FAILED,
-            failedAt: new Date(),
-            failureReason: 'Invalid Razorpay signature.',
-          },
-        });
-  
+        // A bad callback must never mutate the authoritative payment state.
+        // The legitimate payment may still be pending and can be verified
+        // later with a valid signature/webhook.
         throw new BadRequestException(
           'Payment signature verification failed.',
         );
       }
-  
+
       // -------------------------------------
       // Mark payment successful
       // -------------------------------------
