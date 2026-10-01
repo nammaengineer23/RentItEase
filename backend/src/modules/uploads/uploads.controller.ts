@@ -8,41 +8,21 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UploadsService } from './uploads.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Uploads')
 @Controller('uploads')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UploadsController {
-  constructor(private readonly uploadsService: UploadsService) {}
+  constructor(
+    private readonly uploadsService: UploadsService,
+  ) {}
 
   @Post('image')
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: memoryStorage(),
-      limits: { fileSize: 5 * 1024 * 1024 },
-      fileFilter: (_request, file, callback) => {
-        const allowed = ['.jpg', '.jpeg', '.png', '.webp'];
-        const extension = extname(file.originalname).toLowerCase();
-        callback(
-          allowed.includes(extension)
-            ? null
-            : new Error('Only JPG, JPEG, PNG and WEBP files are allowed.'),
-          allowed.includes(extension),
-        );
-      },
-    }),
-  )
-  uploadImage(@UploadedFile() file: Express.Multer.File) {
-    return this.uploadsService.uploadImage(file);
-  }
-
-  @Post('file')
-  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
@@ -57,11 +37,16 @@ export class UploadsController {
           'image/webp',
         ];
         const extension = extname(file.originalname).toLowerCase();
+
+        const valid =
+          allowedExtensions.includes(extension) &&
+          allowedMimeTypes.includes(file.mimetype);
+
         callback(
-          allowed.includes(extension)
+          valid
             ? null
-            : new Error('Unsupported chat file type.'),
-          allowed.includes(extension),
+            : new Error('Only JPEG, PNG and WEBP images are allowed.'),
+          valid,
         );
       },
     }),
