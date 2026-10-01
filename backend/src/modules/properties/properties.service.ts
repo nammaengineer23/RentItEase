@@ -18,7 +18,10 @@ import { assertPropertyTransition } from './property-lifecycle';
 
 @Injectable()
 export class PropertiesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
+  ) {}
 
   async suggestListingText(input: {
     propertyType?: string;

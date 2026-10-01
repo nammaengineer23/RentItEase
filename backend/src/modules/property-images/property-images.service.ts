@@ -14,6 +14,7 @@ import { promisify } from 'util';
 import { PropertyImageSection, PropertyLifecycleStatus, UserRole } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
+import { FileScanService } from '../../storage/file-scan.service';
 import { StorageService } from '../../storage/storage.service';
 import { ReorderImagesDto } from './dto/reorder-images.dto';
 import {
@@ -28,6 +29,7 @@ export class PropertyImagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
+    private readonly fileScanService: FileScanService,
   ) {}
 
   // =====================================
@@ -118,32 +120,40 @@ export class PropertyImagesService {
       });
     }
 
+    const uploadedObjects: string[] = [];
     const images = [];
 
-    // ==========================================
-    // Upload files
-    // ==========================================
+    try {
+      for (let index = 0; index < files.length; index++) {
+        await validateImageUpload(files[index]);
+        await this.fileScanService.scan(files[index]);
 
-    for (let index = 0; index < files.length; index++) {
-      const file = files[index];
+        const uploadResult = await this.storageService.uploadImage(
+          files[index],
+          'properties',
+        );
+        uploadedObjects.push(uploadResult.publicId);
 
-      const uploadResult = await this.storageService.uploadImage(
-        file,
-        'properties',
+        const image = await this.prisma.propertyImage.create({
+          data: {
+            propertyId,
+            imageUrl: uploadResult.imageUrl,
+            publicId: uploadResult.publicId,
+            displayOrder: currentCount + index,
+            section,
+            isPrimary: isPrimary && index === 0,
+          },
+        });
+
+        images.push(image);
+      }
+    } catch (error) {
+      await Promise.all(
+        uploadedObjects.map((publicId) =>
+          this.storageService.deleteImage(publicId).catch(() => undefined),
+        ),
       );
-
-      const image = await this.prisma.propertyImage.create({
-        data: {
-          propertyId,
-          imageUrl: uploadResult.imageUrl,
-          publicId: uploadResult.publicId,
-          displayOrder: currentCount + index,
-          section,
-          isPrimary: isPrimary && index === 0,
-        },
-      });
-
-      images.push(image);
+      throw error;
     }
 
     if (user.role !== UserRole.ADMIN) {

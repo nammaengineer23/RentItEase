@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
+import { randomUUID } from 'crypto';
 
 import { getStorage, getDownloadURL } from 'firebase-admin/storage';
 
@@ -21,7 +22,6 @@ export class FirebaseService {
             .get<string>('FIREBASE_PRIVATE_KEY')
             ?.replace(/\\n/g, '\n'),
         }),
-
         storageBucket: this.configService.get<string>(
           'FIREBASE_STORAGE_BUCKET',
         ),
@@ -31,19 +31,29 @@ export class FirebaseService {
     }
   }
 
-  // =====================================
-  // Firebase Storage
-  // =====================================
-
   getStorage() {
     return getStorage(getApp());
   }
 
+  private buildStorageFileName(file: Express.Multer.File, folder: string): string {
+    const safeFolder = folder
+      .split('/')
+      .map((part) => part.replace(/[^a-zA-Z0-9_-]/g, ''))
+      .filter(Boolean)
+      .join('/') || 'uploads';
+    const safeName = file.originalname
+      .normalize('NFKD')
+      .replace(/[^a-zA-Z0-9._-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^[.-]+/, '')
+      .slice(-120) || 'upload';
+
+    return `${safeFolder}/${randomUUID()}-${safeName}`;
+  }
+
   async uploadImage(file: Express.Multer.File, folder = 'properties') {
     const bucket = this.getStorage().bucket();
-
-    const fileName = `${folder}/${Date.now()}-${file.originalname}`;
-
+    const fileName = this.buildStorageFileName(file, folder);
     const firebaseFile = bucket.file(fileName);
 
     await firebaseFile.save(file.buffer, {
@@ -60,6 +70,51 @@ export class FirebaseService {
     };
   }
 
+  async uploadPrivateFile(
+    file: Express.Multer.File,
+    folder = 'chat-attachments',
+  ): Promise<{ publicId: string }> {
+    const bucket = this.getStorage().bucket();
+    const fileName = this.buildStorageFileName(file, folder);
+    const firebaseFile = bucket.file(fileName);
+
+    await firebaseFile.save(file.buffer, {
+      metadata: {
+        contentType: file.mimetype,
+      },
+    });
+
+    return { publicId: fileName };
+  }
+
+  async listObjects(): Promise<Array<{ publicId: string; createdAt: Date }>> {
+    const [files] = await this.getStorage().bucket().getFiles({
+      prefix: 'properties/',
+    });
+    const [videos] = await this.getStorage().bucket().getFiles({
+      prefix: 'property-videos/',
+    });
+    const [attachments] = await this.getStorage().bucket().getFiles({
+      prefix: 'chat-attachments/',
+    });
+
+    return [...files, ...videos, ...attachments]
+      .filter((file) => file.metadata.name && file.metadata.timeCreated)
+      .map((file) => ({
+        publicId: file.name,
+        createdAt: new Date(file.metadata.timeCreated as string),
+      }));
+  }
+
+  async getSignedDownloadUrl(publicId: string, expiresInSeconds = 900): Promise<string> {
+    const bucket = this.getStorage().bucket();
+    const [url] = await bucket.file(publicId).getSignedUrl({
+      action: 'read',
+      expires: Date.now() + Math.min(Math.max(Math.floor(expiresInSeconds), 60), 3600) * 1000,
+    });
+    return url;
+  }
+
   async deleteImage(publicId: string) {
     const bucket = this.getStorage().bucket();
 
@@ -72,10 +127,6 @@ export class FirebaseService {
     return true;
   }
 
-  // =====================================
-  // Firebase Auth
-  // =====================================
-
   getAuth() {
     return getAuth();
   }
@@ -87,10 +138,6 @@ export class FirebaseService {
   async verifyAppCheckToken(appCheckToken: string) {
     return getAppCheck().verifyToken(appCheckToken);
   }
-
-  // =====================================
-  // Firebase Messaging
-  // =====================================
 
   getMessaging() {
     return getMessaging();
@@ -113,34 +160,34 @@ export class FirebaseService {
   }
 
   async sendToDevices(
-  tokens: string[],
-  title: string,
-  body: string,
-  data?: Record<string, string>,
-) {
-  if (!tokens.length) {
-    console.log('⚠️ No FCM tokens found.');
-    return;
-  }
+    tokens: string[],
+    title: string,
+    body: string,
+    data?: Record<string, string>,
+  ) {
+    if (!tokens.length) {
+      console.log('⚠️ No FCM tokens found.');
+      return;
+    }
 
-  try {
-    const response =
-      await this.getMessaging().sendEachForMulticast({
-        tokens,
-        notification: {
-          title,
-          body,
-        },
-        data,
-      });
+    try {
+      const response =
+        await this.getMessaging().sendEachForMulticast({
+          tokens,
+          notification: {
+            title,
+            body,
+          },
+          data,
+        });
 
-    return response;
-  } catch (error) {
-    console.error(
-      '❌ Firebase send failed:',
-      error,
-    );
-    throw error;
+      return response;
+    } catch (error) {
+      console.error(
+        '❌ Firebase send failed:',
+        error,
+      );
+      throw error;
+    }
   }
-}
 }

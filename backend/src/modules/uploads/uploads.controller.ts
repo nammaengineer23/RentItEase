@@ -12,7 +12,10 @@ import { extname } from 'path';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UploadsService } from './uploads.service';
 
+@ApiTags('Uploads')
 @Controller('uploads')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
@@ -43,11 +46,15 @@ export class UploadsController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      limits: { fileSize: 15 * 1024 * 1024 },
-      fileFilter: (_request, file, callback) => {
-        const allowed = [
-          '.pdf', '.doc', '.docx', '.txt',
-          '.m4a', '.aac', '.mp3', '.wav', '.ogg',
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+      fileFilter: (_req, file, callback) => {
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+        const allowedMimeTypes = [
+          'image/jpeg',
+          'image/png',
+          'image/webp',
         ];
         const extension = extname(file.originalname).toLowerCase();
         callback(
@@ -59,7 +66,10 @@ export class UploadsController {
       },
     }),
   )
-  uploadFile(@UploadedFile() file: Express.Multer.File) {
-    return this.uploadsService.uploadFile(file);
+  async uploadImage(
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.uploadsService.uploadImage(file);
   }
+
 }

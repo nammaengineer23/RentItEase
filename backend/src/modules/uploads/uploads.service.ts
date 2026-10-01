@@ -51,11 +51,12 @@ export class UploadsService {
 
     return {
       success: true,
-      fileUrl: result.imageUrl,
-      filename: result.publicId,
+      imageUrl: uploadResult.imageUrl,
+      filename: uploadResult.publicId,
       originalName: file.originalname,
       mimetype: file.mimetype,
       size: file.size,
     };
   }
+
 }

@@ -618,8 +618,11 @@ model Message {
   messageType    MessageType  @default(TEXT)
   deletedAt      DateTime?
   editedAt       DateTime?
-  readAt         DateTime?
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  readAt             DateTime?
+  attachmentPublicId  String?
+  attachmentUrl      String?
+  attachmentMime     String?
+  conversation       Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
