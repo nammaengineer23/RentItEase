@@ -11,5 +11,6 @@ import { AuthModule } from '../auth/auth.module';
   imports: [DatabaseModule, AuthModule],
   controllers: [PropertiesController],
   providers: [PropertiesService, ListingAiService],
+  exports: [PropertiesService],
 })
 export class PropertiesModule {}
