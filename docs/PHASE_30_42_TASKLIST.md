@@ -300,6 +300,33 @@ Status legend:
 - [ ] Rollback
 - [ ] Backup restore
 
+
+## Social Media hardening on PR #82
+- [x] Owner marketing consent and revocation enforcement
+- [x] Property approval prepares content without automatic publishing
+- [x] Remotion generation timeout/retry path
+- [x] 100 MB video size and remote-source SSRF controls
+- [x] Admin review/edit/publish/schedule workflow
+- [x] Platform-specific title/caption/hashtag validation
+- [x] DB-backed processing lease/token for worker concurrency
+- [x] Unique idempotency key for duplicate job prevention
+- [x] Retry/backoff and terminal failure/cancellation states
+- [x] Durable social audit events without provider credentials
+- [x] Encrypted social-account credentials
+- [x] YouTube temporary-file cleanup in the publication finally path
+- [x] Orphan video retention cleanup
+- [x] Orphan cleanup compares storage object keys across supported Firebase/GCS URL forms
+- [x] Regression coverage for consent, unsafe content, platform limits, settings, scheduling and audit-secret handling
+- [!] Real Instagram/Facebook/YouTube provider E2E and OAuth refresh require production/test-account evidence
+- [!] Ambiguous external-provider responses require provider-specific reconciliation/idempotency evidence
+- [!] Multi-worker live concurrency verification requires deployed worker/DB evidence
+- [!] Analytics synchronization with external platform metrics requires production/provider evidence
+
+### Social Media configuration
+- [x] SOCIAL_VIDEO_RETENTION_DAYS is bounded to 1–3650 days and defaults to 30
+- [x] Cleanup failures are logged without crashing the scheduler
+- [!] Production social-account token lifecycle still requires connected-account/OAuth refresh verification
+
 ## Action log
 - `45c641efa1`: invalid Razorpay signatures no longer mutate the authoritative payment record.
 - `6d7c65a54`: added refresh-token reuse, OTP brute-force, and single-use challenge regression tests.
@@ -310,7 +337,7 @@ Status legend:
 - `881f5515`: added Flutter booking/payment/visit/notification provider regression coverage.
 - `07b5b0f6`: added Admin session lifecycle tests.
 - `27a2eff8`: reconciled this tracker with the latest evidence.
-- Latest: corrected Phase 31 Flutter test imports to the actual `mobile_app` package and made refresh-token reuse regression deterministic.
+- Latest: social-media orphan cleanup now compares storage object paths instead of exact public URL strings, covering GCS and Firebase download URL forms.\n- Latest: corrected Phase 31 Flutter test imports to the actual `mobile_app` package and made refresh-token reuse regression deterministic.
 - Latest: added server-authoritative payment-amount regression coverage.
 - Latest: account deletion now collects and removes owner property/video/image storage objects after successful DB anonymization; regression coverage added.
 - Latest: split Flutter Fast Check from Android release builds; Android artifacts now run only by manual dispatch or on `main`.
