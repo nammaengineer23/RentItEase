@@ -304,6 +304,67 @@ describe('Phase 30 critical backend security regression suite', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
+  it('Payment order ignores a client-supplied amount and uses booking totals', async () => {
+    process.env.RAZORPAY_KEY_ID = 'rzp_test_key';
+    process.env.RAZORPAY_KEY_SECRET = 'test_secret';
+
+    const create = jest.fn().mockResolvedValue({
+      id: 'order-server-authoritative',
+    });
+    const prisma: any = {
+      booking: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'booking-amount',
+          tenantId: 'tenant-1',
+          status: BookingStatus.APPROVED,
+          monthlyRent: 20000,
+          securityDeposit: 40000,
+          payment: null,
+          property: {
+            id: 'property-1',
+            owner: { id: 'owner-1', fullName: 'Owner' },
+          },
+          tenant: {
+            id: 'tenant-1',
+            fullName: 'Tenant',
+            email: 'tenant@example.com',
+            phone: '9999999999',
+          },
+        }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      payment: {
+        create: jest.fn().mockResolvedValue({
+          id: 'payment-amount',
+          bookingId: 'booking-amount',
+          amount: 60000,
+          currency: 'INR',
+          status: PaymentStatus.CREATED,
+          razorpayOrderId: 'order-server-authoritative',
+        }),
+      },
+    };
+
+    const service = new PaymentsService(prisma, {} as any, {} as any);
+    jest
+      .spyOn(service as any, 'createRazorpayOrderWithRetry')
+      .mockImplementation(create);
+
+    const result = await service.createOrder(
+      { bookingId: 'booking-amount', amount: 1 } as any,
+      { id: 'tenant-1', role: UserRole.USER },
+    );
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amount: 6000000,
+        currency: 'INR',
+      }),
+    );
+    expect(result.data.amount).toBe(60000);
+    expect(result.data.amountInPaise).toBe(6000000);
+  });
+
   it('Duplicate payment order requests reuse the existing payment record', async () => {
     process.env.RAZORPAY_KEY_ID = 'rzp_test_key';
     process.env.RAZORPAY_KEY_SECRET = 'test_secret';
