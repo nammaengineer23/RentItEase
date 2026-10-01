@@ -4,6 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { BookingStatus, VisitStatus } from '@prisma/client';
+
 import { PrismaService } from '../../database/prisma.service';
 
 import { CreateReviewDto } from './dto/create-review.dto';
@@ -34,6 +36,28 @@ export class ReviewsService {
     if (property.ownerId === userId) {
       throw new BadRequestException(
         'You cannot review your own property.',
+      );
+    }
+
+    const completedExperience = await this.prisma.propertyVisit.findFirst({
+      where: {
+        propertyId,
+        tenantId: userId,
+        OR: [
+          { status: VisitStatus.COMPLETED },
+          {
+            booking: {
+              status: BookingStatus.COMPLETED,
+            },
+          },
+        ],
+      },
+      select: { id: true },
+    });
+
+    if (!completedExperience) {
+      throw new BadRequestException(
+        'You can review a property only after a completed visit or rental.',
       );
     }
 
