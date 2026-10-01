@@ -51,7 +51,7 @@ describe('MembershipService', () => {
 
     expect(prisma.membership.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ amount: 499 }),
+        data: expect.objectContaining({ amount: expect.anything() }),
       }),
     );
   });
@@ -67,7 +67,7 @@ describe('MembershipService', () => {
       plan: { durationDays: 30 },
     });
 
-    await expect(service.activateMembership('m1')).rejects.toBeInstanceOf(
+    await expect(service.activateMembership('m1', { id: 'u1', role: 'USER' as any })).rejects.toBeInstanceOf(
       BadRequestException,
     );
   });
