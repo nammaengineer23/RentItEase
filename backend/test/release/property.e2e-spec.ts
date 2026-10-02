@@ -492,6 +492,11 @@ describe('Property E2E', () => {
     expect(property.city).toBe(payload.city);
     expect(property.ownerId ?? property.owner?.id).toBeTruthy();
 
+    const submit = await request(apiUrl)
+      .post(`/properties/${propertyId}/submit`)
+      .set('Authorization', `Bearer ${ownerToken}`);
+    assertSuccess(submit, 'Property submission');
+
     const approval = await request(apiUrl)
       .patch(`/admin/properties/${propertyId}/approve`)
       .set('Authorization', `Bearer ${adminToken}`);
@@ -901,7 +906,7 @@ describe('Property E2E', () => {
     const message = extractMessage(response.body);
 
     expect(message).toBeDefined();
-    expect(message).toContain('Property deleted successfully');
+    expect(message).toContain('Property archived successfully');
   });
 
   // ============================================================
