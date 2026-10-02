@@ -56,6 +56,8 @@ describe('SocialMediaService social publishing security', () => {
   });
 
   it('blocks publishing when consent has been revoked', async () => {
+    prisma.property.findFirst.mockResolvedValue({ id: 'property-1' });
+
     prisma.socialMarketingConsent.findUnique
       .mockResolvedValueOnce({
         id: 'consent-1',
