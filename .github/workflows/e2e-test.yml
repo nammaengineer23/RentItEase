@@ -1,9 +1,12 @@
 name: RentItEase - Release E2E / RC1
 
 on:
-  # RC1 is intentionally manual. Run it only after Railway has deployed
-  # the exact main commit and production health is confirmed. This avoids
-  # a Railway "Wait for CI" deadlock caused by RC1 itself waiting on deploy.
+  # RC1 is intentionally manual. Run it after Railway production is healthy.
+  # The deployment gate verifies that production contains the same backend
+  # code as this commit, while allowing CI-only workflow commits that do not
+  # require a new Railway backend deployment. This avoids a Railway
+  # "Wait for CI" deadlock caused by RC1 itself waiting on deploy.
+
   workflow_dispatch:
 
 # RC1 exercises the live production API with shared tenant/owner/admin
@@ -74,31 +77,22 @@ jobs:
         working-directory: backend
 
     env:
-      # Remote Railway backend
       E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
       E2E_API_PREFIX: /api/v1
-
-      # Tenant
       E2E_TENANT_EMAIL: ${{ secrets.E2E_TENANT_EMAIL }}
       E2E_TENANT_PASSWORD: ${{ secrets.E2E_TENANT_PASSWORD }}
-
-      # Owner
       E2E_OWNER_EMAIL: ${{ secrets.E2E_OWNER_EMAIL }}
       E2E_OWNER_PASSWORD: ${{ secrets.E2E_OWNER_PASSWORD }}
-
-      # Admin
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
-
-      # Optional integrations
       E2E_RAZORPAY_KEY_SECRET: ${{ secrets.E2E_RAZORPAY_KEY_SECRET }}
-
-      # Strict release configuration validation
       E2E_STRICT: "true"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -129,7 +123,6 @@ jobs:
           EXPECTED_DEPLOYMENT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-
           health_url="https://api.rentitease.com/api/v1/health"
 
           for attempt in $(seq 1 40); do
@@ -154,26 +147,29 @@ jobs:
               exit 0
             fi
 
+            if [ -n "$deployed_sha" ] && git cat-file -e "$deployed_sha^{commit}" 2>/dev/null; then
+              if git diff --quiet "$deployed_sha" "$EXPECTED_DEPLOYMENT_SHA" -- backend; then
+                echo "Production commit $deployed_sha has the same backend code as $EXPECTED_DEPLOYMENT_SHA."
+                echo "The current commit only contains non-backend changes after the deployed commit."
+                exit 0
+              fi
+            fi
+
             sleep 15
           done
 
-          echo "Production did not serve commit $EXPECTED_DEPLOYMENT_SHA within the deployment wait window."
+          echo "Production did not serve backend code matching commit $EXPECTED_DEPLOYMENT_SHA within the deployment wait window."
           exit 1
 
       - name: Release E2E suite except property visits
         run: |
-          npx jest \
-            --config test/jest-release-e2e.json \
-            --runInBand \
-            --verbose \
-            --testPathIgnorePatterns=property-visits.e2e-spec.ts
+          npx jest             --config test/jest-release-e2e.json             --runInBand             --verbose             --testPathIgnorePatterns=property-visits.e2e-spec.ts
 
       - name: Create isolated property-visit fixture
         shell: bash
         run: |
           node <<'NODE'
           const fs = require('fs');
-
           const baseUrl = process.env.E2E_BASE_URL;
           const apiPrefix = process.env.E2E_API_PREFIX || '/api/v1';
           const apiUrl = `${baseUrl}${apiPrefix}`;
@@ -181,11 +177,8 @@ jobs:
           function unwrap(body) {
             let current = body;
             for (let i = 0; i < 5; i += 1) {
-              if (current && typeof current === 'object' && !Array.isArray(current) && current.data !== undefined) {
-                current = current.data;
-              } else {
-                break;
-              }
+              if (current && typeof current === 'object' && !Array.isArray(current) && current.data !== undefined) current = current.data;
+              else break;
             }
             return current;
           }
@@ -205,14 +198,10 @@ jobs:
             });
 
             const loginBody = await loginResponse.json();
-            if (!loginResponse.ok) {
-              throw new Error(`Owner login failed (${loginResponse.status}): ${JSON.stringify(loginBody)}`);
-            }
+            if (!loginResponse.ok) throw new Error(`Owner login failed (${loginResponse.status}): ${JSON.stringify(loginBody)}`);
 
             const token = tokenFrom(loginBody);
-            if (!token) {
-              throw new Error('Unable to extract owner access token for property-visit fixture.');
-            }
+            if (!token) throw new Error('Unable to extract owner access token for property-visit fixture.');
 
             const createResponse = await fetch(`${apiUrl}/properties`, {
               method: 'POST',
@@ -245,17 +234,13 @@ jobs:
             });
 
             const createBody = await createResponse.json();
-            if (!createResponse.ok) {
-              throw new Error(`Property fixture creation failed (${createResponse.status}): ${JSON.stringify(createBody)}`);
-            }
+            if (!createResponse.ok) throw new Error(`Property fixture creation failed (${createResponse.status}): ${JSON.stringify(createBody)}`);
 
             const property = unwrap(createBody);
             const propertyId = property?.property?.id || property?.id;
-            if (!propertyId) {
-              throw new Error(`Unable to extract property fixture ID: ${JSON.stringify(createBody)}`);
-            }
+            if (!propertyId) throw new Error(`Unable to extract property fixture ID: ${JSON.stringify(createBody)}`);
 
-            fs.appendFileSync(process.env.GITHUB_ENV, `E2E_VISIT_PROPERTY_ID=${propertyId}\n`);
+            fs.appendFileSync(process.env.GITHUB_ENV, `E2E_VISIT_PROPERTY_ID=${propertyId}\\n`);
             console.log('Fresh property-visit fixture created successfully.');
           }
 
@@ -267,105 +252,69 @@ jobs:
 
       - name: Property Visits E2E with isolated fixture
         run: |
-          E2E_PROPERTY_ID="$E2E_VISIT_PROPERTY_ID" \
-            npx jest \
-              --config test/jest-release-e2e.json \
-              --runInBand \
-              --verbose \
-              test/release/property-visits.e2e-spec.ts
+          E2E_PROPERTY_ID="$E2E_VISIT_PROPERTY_ID"             npx jest               --config test/jest-release-e2e.json               --runInBand               --verbose               test/release/property-visits.e2e-spec.ts
 
-
-  # ============================================================
-  # SECURITY AUDIT
-  # ============================================================
 
   security-audit:
     name: Security / Configuration Audit
     needs: backend-build
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Run security audit
         run: |
           chmod +x scripts/security-audit.sh
           ./scripts/security-audit.sh
 
 
-  # ============================================================
-  # FLUTTER ANALYZE + TEST
-  # ============================================================
-
   flutter:
     name: Flutter Analyze + Integration
     needs: remote-e2e
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: mobile_app
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.44.8"
           channel: stable
           cache: true
-
       - name: Flutter pub get
         run: flutter pub get
-
       - name: Flutter analyze
         run: flutter analyze
-
       - name: Flutter tests
         run: flutter test
-
       - name: Tenant / Owner integration tests
         run: flutter test test/integration/p0_chat_flow_test.dart
 
-
-  # ============================================================
-  # FLUTTER WEB RELEASE BUILD
-  # ============================================================
 
   flutter-web:
     name: Flutter Web Release
     needs: remote-e2e
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: mobile_app
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.44.8"
           channel: stable
           cache: true
-
       - name: Flutter pub get
         run: flutter pub get
-
       - name: Build Web
         run: |
-          flutter build web \
-            --release \
-            --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1 \
-            --dart-define=ENABLE_GOOGLE_SIGN_IN=true \
-            --dart-define=ENABLE_PHONE_OTP=false
-
+          flutter build web             --release             --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1             --dart-define=ENABLE_GOOGLE_SIGN_IN=true             --dart-define=ENABLE_PHONE_OTP=false
       - name: Upload Web artifact
         uses: actions/upload-artifact@v4
         with:
@@ -373,36 +322,27 @@ jobs:
           path: mobile_app/build/web
 
 
-  # ============================================================
-  # ANDROID RELEASE CANDIDATE
-  # ============================================================
-
   android-release:
     name: Android Release Candidate Build
     needs: [remote-e2e, security-audit]
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: mobile_app
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.44.8"
           channel: stable
           cache: true
-
       - name: Configure Android release signing
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -414,27 +354,18 @@ jobs:
           test -n "$ANDROID_KEY_ALIAS"
           test -n "$ANDROID_KEY_PASSWORD"
           test -n "$ANDROID_STORE_PASSWORD"
-
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" \
-            | base64 --decode \
-            > android/app/upload-keystore.jks
-
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
           {
             echo "storeFile=upload-keystore.jks"
             echo "keyAlias=$ANDROID_KEY_ALIAS"
             echo "keyPassword=$ANDROID_KEY_PASSWORD"
             echo "storePassword=$ANDROID_STORE_PASSWORD"
           } > android/key.properties
-
       - name: Flutter pub get
         run: flutter pub get
-
       - name: Build Android APK
         run: |
-          flutter build apk \
-            --release \
-            --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1
-
+          flutter build apk             --release             --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -442,25 +373,10 @@ jobs:
           path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
 
 
-  # ============================================================
-  # RELEASE CANDIDATE 1 GATE
-  # ============================================================
-
   rc1:
     name: Release Candidate 1 Gate
-
-    needs:
-      [
-        backend-build,
-        remote-e2e,
-        security-audit,
-        flutter,
-        flutter-web,
-        android-release
-      ]
-
+    needs: [backend-build, remote-e2e, security-audit, flutter, flutter-web, android-release]
     runs-on: ubuntu-latest
-
     steps:
       - name: RC1 passed
         run: |
