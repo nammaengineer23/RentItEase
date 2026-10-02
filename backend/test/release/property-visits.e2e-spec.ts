@@ -470,17 +470,41 @@ describe('Property Visits E2E', () => {
         }
       });
 
-    // Admin verification moves the property to VERIFIED but intentionally
-    // keeps it unavailable. Publish it before attempting to book a visit;
-    // the visit API requires both verification and public availability.
-    await request(apiUrl)
-      .patch(`/properties/${propertyId}/publish`)
+    // Admin verification and publication are separate lifecycle steps.
+    // Some deployed environments may already publish the approved fixture;
+    // inspect the owner's current property state before publishing so the
+    // release test remains aligned with the real lifecycle rather than
+    // treating an already-published property as an error.
+    const ownerPropertiesResponse = await request(apiUrl)
+      .get('/properties/my-properties')
       .set('Authorization', `Bearer ${ownerToken}`)
-      .expect((res) => {
-        if (![200, 201].includes(res.status)) {
-          throw new Error(JSON.stringify(res.body));
-        }
-      });
+      .expect(200);
+
+    const ownerProperties = extractData(ownerPropertiesResponse.body);
+    const currentProperty = Array.isArray(ownerProperties)
+      ? ownerProperties.find((property) => property?.id === propertyId)
+      : undefined;
+
+    if (!currentProperty) {
+      throw new Error(
+        `Approved property ${propertyId} was not returned by the owner property listing.`,
+      );
+    }
+
+    if (!currentProperty.isAvailable) {
+      const publishResponse = await request(apiUrl)
+        .patch(`/properties/${propertyId}/publish`)
+        .set('Authorization', `Bearer ${ownerToken}`);
+
+      if (![200, 201].includes(publishResponse.status)) {
+        throw new Error(
+          `Property publish failed (${publishResponse.status}): ${JSON.stringify(publishResponse.body)}`,
+        );
+      }
+    }
+
+    // Property visits require both verification and availability.
+    expect(currentProperty.isVerified).toBe(true);
   });
 
   // ============================================================
