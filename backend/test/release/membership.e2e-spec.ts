@@ -331,14 +331,10 @@ describe('Release E2E • Membership', () => {
       .patch(`/membership/${membershipId}/renew`)
       .set(auth(adminToken));
 
-    expect([200, 201]).toContain(res.status);
-
-    const membership = extractData(res.body);
-
-    expect(membership).toBeTruthy();
-    expect(membership.id).toBe(membershipId);
-    expect(membership.status).toBe('ACTIVE');
-    expect(membership.endDate).toBeTruthy();
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(res.body)).toContain(
+      'Only expired memberships can be renewed through a new paid checkout',
+    );
   });
 
   // ============================================================
