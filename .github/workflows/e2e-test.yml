@@ -140,7 +140,8 @@ jobs:
               process.stdin.on("end", () => {
                 try {
                   const body = JSON.parse(input);
-                  process.stdout.write(body.status || "");
+                  const status = body?.status || body?.data?.status || "";
+                  process.stdout.write(status);
                 } catch {
                   process.stdout.write("");
                 }
