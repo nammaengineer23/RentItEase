@@ -292,7 +292,26 @@ describe('Release E2E • Payment', () => {
       .set(auth(tenantToken))
       .expect(200);
 
-    const persistedPayment = extractData(paymentRes.body);
+    let persistedPayment = extractData(paymentRes.body);
+
+    // Concurrent order creation intentionally exposes a short-lived PENDING
+    // reservation to one caller. Poll the persisted payment until the
+    // Razorpay order is linked instead of treating that race-safe state as
+    // a release failure.
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (
+        persistedPayment?.status === 'CREATED' &&
+        /^order_/.test(persistedPayment?.razorpayOrderId ?? '')
+      ) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const refreshed = await request(apiUrl())
+        .get('/payments/' + paymentIdA)
+        .set(auth(tenantToken))
+        .expect(200);
+      persistedPayment = extractData(refreshed.body);
+    }
 
     paymentId = persistedPayment?.id ?? '';
     razorpayOrderId = persistedPayment?.razorpayOrderId ?? '';
