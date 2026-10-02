@@ -154,6 +154,7 @@ export class MembershipController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   getMembership(@Param('id') id: string, @Request() req: any) {
     return this.membershipService.getMembership(id, req.user);
   }
