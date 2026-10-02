@@ -110,8 +110,11 @@ export function e2eMarker() {
   return `[E2E:${process.env.E2E_RUN_ID ?? process.env.GITHUB_RUN_ID ?? Date.now()}]`;
 }
 
-/** Creates a pending listing and publishes it through the same admin approval
- * path used in production, so E2E tests never depend on retained test data. */
+/**
+ * Creates an isolated listing and drives it through the complete production
+ * lifecycle required for public visibility: DRAFT -> SUBMITTED -> VERIFIED
+ * -> PUBLISHED.
+ */
 export async function createApprovedE2EProperty(
   ownerToken: string,
   adminToken: string,
@@ -131,18 +134,41 @@ export async function createApprovedE2EProperty(
       securityDeposit: 50000,
     });
   statusOk(create);
+
   const property = extractData(create.body)?.property ?? extractData(create.body);
   const id = property?.id as string | undefined;
   if (!id) throw new Error(`Property fixture was not created: ${JSON.stringify(create.body)}`);
   if (property.isVerified !== false || property.isAvailable !== false) {
     throw new Error(`New property must remain pending before approval: ${JSON.stringify(property)}`);
   }
-  const approve = await request(apiUrl()).patch(`/admin/properties/${id}/approve`).set(auth(adminToken));
-  statusOk(approve);
-  const approved = extractData(approve.body);
-  if (approved?.isVerified !== true || approved?.isAvailable !== true) {
-    throw new Error(`Approved property was not made public: ${JSON.stringify(approved)}`);
+
+  const submit = await request(apiUrl())
+    .post(`/properties/${id}/submit`)
+    .set(auth(ownerToken));
+  statusOk(submit);
+  const submitted = extractData(submit.body)?.property ?? extractData(submit.body);
+  if (submitted?.lifecycleStatus !== 'SUBMITTED') {
+    throw new Error(`Property fixture was not submitted for review: ${JSON.stringify(submit.body)}`);
   }
+
+  const approve = await request(apiUrl())
+    .patch(`/admin/properties/${id}/approve`)
+    .set(auth(adminToken));
+  statusOk(approve);
+  const approved = extractData(approve.body)?.property ?? extractData(approve.body);
+  if (approved?.isVerified !== true || approved?.isAvailable !== false || approved?.lifecycleStatus !== 'VERIFIED') {
+    throw new Error(`Property fixture was not verified correctly: ${JSON.stringify(approve.body)}`);
+  }
+
+  const publish = await request(apiUrl())
+    .post(`/properties/${id}/publish`)
+    .set(auth(ownerToken));
+  statusOk(publish);
+  const published = extractData(publish.body)?.property ?? extractData(publish.body);
+  if (published?.lifecycleStatus !== 'PUBLISHED' || published?.isVerified !== true || published?.isAvailable !== true) {
+    throw new Error(`Verified property was not published correctly: ${JSON.stringify(publish.body)}`);
+  }
+
   return id;
 }
 
@@ -155,6 +181,7 @@ export function unwrapArray(body: any): any[] {
   if (Array.isArray(d?.items)) return d.items;
   return [];
 }
+
 /**
  * Ensure the user has no ACTIVE membership before a release E2E test
  * creates a fresh membership.
