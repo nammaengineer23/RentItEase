@@ -248,7 +248,7 @@ describe('Release E2E • Membership', () => {
 
     const res = await request(apiUrl())
       .get(`/membership/${membershipId}`)
-      .set(auth(tenantToken))
+      .set(auth(adminToken))
       .expect(200);
 
     const membership = extractData(res.body);
@@ -381,7 +381,7 @@ describe('Release E2E • Membership', () => {
 
     const res = await request(apiUrl())
       .get(`/membership/${membershipId}`)
-      .set(auth(tenantToken))
+      .set(auth(adminToken))
       .expect(200);
 
     const membership = extractData(res.body);
