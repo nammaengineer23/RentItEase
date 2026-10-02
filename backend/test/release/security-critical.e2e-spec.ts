@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { describe, expect, it } from '@jest/globals';
 
-import { apiUrl, auth, extractData, login } from './helpers';
+import { apiUrl, auth, createApprovedE2EProperty, extractData, login } from './helpers';
 
 describe('Release E2E • Critical security boundaries', () => {
   let tenantToken = '';
@@ -180,7 +180,6 @@ describe('Release E2E • Critical security boundaries', () => {
   });
 
   it('9. lets admins override property conditions without using owner APIs', async () => {
-    const { createApprovedE2EProperty } = await import('./helpers');
     const propertyId = await createApprovedE2EProperty(
       ownerToken,
       adminToken,
