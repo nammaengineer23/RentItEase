@@ -8,27 +8,20 @@ datasource db {
 }
 
 model AuthOtpChallenge {
-  id              String   @id @default(cuid())
-  target          String
-  purpose         String
-  otpHash         String
-  attempts        Int      @default(0)
-  expiresAt       DateTime
-  createdAt       DateTime @default(now())
-  consumedAt      DateTime?
-  proofUsedAt     DateTime?
-  lastSentAt      DateTime?
-  windowStartedAt DateTime?
-  requestCount    Int      @default(0)
+  id        String   @id @default(cuid())
+  target    String
+  purpose   String
+  otpHash   String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
-  @@unique([target, purpose])
+  @@index([target, purpose])
   @@index([expiresAt])
-  @@index([lastSentAt])
 }
 
 model User {
   id                      String                   @id @default(uuid())
-  firebaseUid             String?                  @unique
   fullName                String
   email                   String                   @unique
   phone                   String?                  @unique
@@ -38,6 +31,7 @@ model User {
   ownerReviewedAt         DateTime?
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
+  deletedAt               DateTime?
   passwordHash            String
   isActive                Boolean                  @default(true)
   photoUrl                String?
@@ -48,7 +42,6 @@ model User {
   invoices                Invoice[]
   leases                  Lease[]                  @relation("TenantLeases")
   memberships             Membership[]
-  billingAuditEvents BillingAuditEvent[]
   sentMessages            Message[]                @relation("MessageSender")
   notifications           Notification[]
   otpCodes                OtpCode[]
@@ -62,22 +55,29 @@ model User {
   devices                 UserDevice[]
   settings                UserSettings?
   appFeedback             AppFeedback[]
+  adminAuditLogs           AdminAuditLog[] @relation("AdminAuditLogs")
 
   @@index([ownerRequestStatus])
-  @@index([role, createdAt])
 }
 
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String?
+  action     String
+  resource   String
+  resourceId String?
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  device     String?
+  reason     String?
+  createdAt  DateTime @default(now())
+  admin      User?    @relation("AdminAuditLogs", fields: [adminId], references: [id], onDelete: SetNull)
 
-model AuthRateLimit {
-  id            String   @id @default(cuid())
-  key           String   @unique
-  windowStartedAt DateTime
-  failureCount  Int      @default(0)
-  blockedUntil  DateTime?
-  updatedAt     DateTime @updatedAt
-
-  @@index([blockedUntil])
-  @@index([updatedAt])
+  @@index([adminId, createdAt])
+  @@index([resource, resourceId, createdAt])
+  @@index([action, createdAt])
+  @@index([createdAt])
 }
 
 model AppDownload {
@@ -134,7 +134,6 @@ model UserDevice {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deliveries NotificationDelivery[]
 
   @@index([userId])
 }
@@ -190,11 +189,10 @@ model Property {
   socialMediaPosts       SocialMediaPost[]
 
   @@index([dailyRentEnabled])
-  @@index([ownerId])
-  @@index([city, state])
-  @@index([lifecycleStatus, createdAt])
-  @@index([lifecycleStatus, city, createdAt])
-  @@index([latitude, longitude])
+  @@index([isVerified, isAvailable, createdAt])
+  @@index([isVerified, isAvailable, city, createdAt])
+  @@index([ownerId, createdAt])
+  @@index([latitude, longitude, isVerified, isAvailable])
 }
 
 model Amenity {
@@ -223,6 +221,8 @@ model PropertyImage {
   createdAt    DateTime             @default(now())
   section      PropertyImageSection @default(OTHER)
   property     Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId, displayOrder])
 }
 
 model SocialMarketingConsent {
@@ -248,23 +248,26 @@ model SocialMarketingConsent {
 }
 
 model SocialMediaPost {
-  id          String                  @id @default(cuid())
-  propertyId  String
-  consentId   String?
-  platform    SocialPlatform
-  status      SocialPostStatus        @default(PENDING)
-  caption     String?
-  videoUrl    String?
-  externalId  String?
-  error       String?
-  scheduledAt DateTime?
-  nextRetryAt DateTime?
-  attemptCount Int                 @default(0)
-  maxAttempts  Int                 @default(3)
-  lastAttemptAt DateTime?
-  publishedAt DateTime?
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
+  id                   String                  @id @default(cuid())
+  propertyId           String
+  consentId            String?
+  platform             SocialPlatform
+  status               SocialPostStatus        @default(PENDING)
+  caption              String?
+  videoUrl             String?
+  externalId           String?
+  idempotencyKey       String                  @unique
+  processingToken      String?
+  processingLeaseUntil DateTime?
+  error                String?
+  scheduledAt          DateTime?
+  nextRetryAt          DateTime?
+  attemptCount         Int                     @default(0)
+  maxAttempts          Int                     @default(3)
+  lastAttemptAt        DateTime?
+  publishedAt          DateTime?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
   consent     SocialMarketingConsent? @relation(fields: [consentId], references: [id])
   property    Property                @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   analyticsSnapshots SocialAnalyticsSnapshot[]
@@ -274,6 +277,7 @@ model SocialMediaPost {
   @@index([status])
   @@index([status, scheduledAt])
   @@index([status, nextRetryAt])
+  @@index([processingLeaseUntil])
 }
 
 model SocialMediaAuditEvent {
@@ -304,24 +308,23 @@ model Favorite {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, propertyId])
+  @@index([userId, createdAt])
 }
 
 model Review {
-  id         String       @id @default(cuid())
+  id         String   @id @default(cuid())
   rating     Int
   comment    String?
   userId     String
   propertyId String
-  status     ReviewStatus @default(APPROVED)
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-  property   Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, propertyId])
-  @@index([propertyId, status, createdAt])
-  @@index([propertyId, status, rating])
-  @@index([userId, createdAt])
+  @@index([propertyId])
+  @@index([propertyId, createdAt])
 }
 
 model PropertyVisit {
@@ -338,10 +341,9 @@ model PropertyVisit {
   tenant     User        @relation("TenantVisits", fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
-  @@index([propertyId, visitDate])
   @@index([tenantId])
-  @@index([tenantId, visitDate])
   @@index([visitDate])
+  @@index([tenantId, createdAt])
   @@index([propertyId, visitDate, status])
 }
 
@@ -370,18 +372,18 @@ model Booking {
   payment         Payment?
 
   @@index([propertyId])
-  @@index([propertyId, status])
   @@index([tenantId])
-  @@index([tenantId, status])
   @@index([status])
   @@index([bookingDate])
+  @@index([tenantId, createdAt])
+  @@index([propertyId, status])
 }
 
 model Invoice {
   id            String        @id @default(cuid())
   invoiceNumber String        @unique
   userId        String
-  paymentId     String?        @unique
+  paymentId     String?
   membershipId  String?
   amount        Decimal       @db.Decimal(10, 2)
   taxAmount     Decimal       @default(0) @db.Decimal(10, 2)
@@ -396,11 +398,9 @@ model Invoice {
   updatedAt     DateTime      @updatedAt
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   payment       Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-  lease         Lease?
   membership    Membership?   @relation(fields: [membershipId], references: [id], onDelete: SetNull)
 
   @@index([userId])
-  @@index([userId, status, invoiceDate])
   @@index([paymentId])
   @@index([membershipId])
   @@index([status])
@@ -415,9 +415,6 @@ model MembershipPlan {
   price           Decimal            @db.Decimal(10, 2)
   durationDays    Int
   isActive        Boolean            @default(true)
-  trialDays       Int                @default(0)
-  features        Json               @default("[]")
-  displayOrder    Int                @default(0)
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   memberships     Membership[]
@@ -425,7 +422,6 @@ model MembershipPlan {
 
   @@index([code])
   @@index([isActive])
-  @@index([displayOrder])
 }
 
 model Membership {
@@ -443,7 +439,6 @@ model Membership {
   isTrial           Boolean          @default(false)
   amount            Decimal          @default(0) @db.Decimal(10, 2)
   razorpayOrderId   String?          @unique
-  pendingKey        String?          @unique
   razorpayPaymentId String?          @unique
   razorpaySignature String?
   paidAt            DateTime?
@@ -453,10 +448,8 @@ model Membership {
   user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   premiumListings   PremiumListing[]
   invoices          Invoice[]
-  billingAuditEvents BillingAuditEvent[]
 
   @@index([userId])
-  @@index([userId, status])
   @@index([planId])
   @@index([status])
   @@index([startDate])
@@ -487,7 +480,6 @@ model PremiumListing {
 
   @@index([propertyId])
   @@index([userId])
-  @@index([userId, status])
   @@index([membershipId])
   @@index([status])
   @@index([startDate])
@@ -499,8 +491,6 @@ model Lease {
   bookingId       String      @unique
   propertyId      String
   tenantId        String
-  paymentId       String?     @unique
-  invoiceId       String?     @unique
   status          LeaseStatus @default(ACTIVE)
   monthlyRent     Decimal     @db.Decimal(10, 2)
   securityDeposit Decimal     @db.Decimal(10, 2)
@@ -509,21 +499,15 @@ model Lease {
   signedAt        DateTime?
   terminatedAt    DateTime?
   completedAt     DateTime?
-  expiredAt       DateTime?
-  renewedAt       DateTime?
-  renewalCount    Int         @default(0)
   notes           String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   booking         Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   property        Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   tenant          User        @relation("TenantLeases", fields: [tenantId], references: [id], onDelete: Cascade)
-  payment         Payment?    @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-  invoice         Invoice?    @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
   @@index([propertyId])
   @@index([tenantId])
-  @@index([tenantId, status])
   @@index([status])
   @@index([startDate])
   @@index([endDate])
@@ -536,81 +520,19 @@ model Payment {
   currency          String        @default("INR")
   status            PaymentStatus @default(CREATED)
   razorpayOrderId   String        @unique
-  orderCreationToken String?      @unique
   razorpayPaymentId String?       @unique
   razorpaySignature String?
   paidAt            DateTime?
   failedAt          DateTime?
-  refundedAt        DateTime?
-  refundAmount      Decimal?      @db.Decimal(10, 2)
-  refundId          String?       @unique
   failureReason     String?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   booking           Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  lease             Lease?
   invoices          Invoice[]
-  refunds           PaymentRefund[]
-  billingAuditEvents BillingAuditEvent[]
 
   @@index([status])
+  @@index([createdAt])
   @@index([status, createdAt])
-  @@index([createdAt])
-}
-
-model PaymentRefund {
-  id                String             @id @default(cuid())
-  paymentId         String
-  amount            Decimal            @db.Decimal(10, 2)
-  currency          String             @default("INR")
-  status            PaymentRefundStatus @default(PENDING)
-  razorpayRefundId  String?            @unique
-  activeKey         String?            @unique
-  reason            String?
-  failureReason     String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  processedAt       DateTime?
-  payment           Payment            @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-
-  @@index([paymentId, status])
-  @@index([createdAt])
-}
-
-model PaymentWebhookEvent {
-  id                String                  @id @default(cuid())
-  eventId           String                  @unique
-  eventType         String
-  razorpayOrderId   String?
-  razorpayPaymentId String?
-  status            PaymentWebhookEventStatus @default(RECEIVED)
-  payload           Json
-  errorMessage      String?
-  processedAt       DateTime?
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
-
-  @@index([eventType, createdAt])
-  @@index([razorpayOrderId])
-  @@index([razorpayPaymentId])
-}
-
-model BillingAuditEvent {
-  id           String      @id @default(cuid())
-  actorId      String?
-  membershipId String?
-  paymentId    String?
-  action       String
-  details      Json?
-  createdAt    DateTime    @default(now())
-  actor        User?       @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  membership   Membership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
-  payment      Payment?    @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-
-  @@index([membershipId, createdAt])
-  @@index([paymentId, createdAt])
-  @@index([actorId, createdAt])
-  @@index([createdAt])
 }
 
 model Notification {
@@ -622,33 +544,12 @@ model Notification {
   createdAt DateTime         @default(now())
   type      NotificationType @default(GENERAL)
   relatedId String?
-  dedupeKey String           @unique
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deliveries NotificationDelivery[]
 
   @@index([userId])
-  @@index([userId, isRead, createdAt])
   @@index([relatedId])
-}
-
-model NotificationDelivery {
-  id             String                    @id @default(cuid())
-  notificationId String
-  deviceId       String
-  status         NotificationDeliveryStatus @default(PENDING)
-  processingAt   DateTime?
-  attemptCount   Int                       @default(0)
-  nextRetryAt    DateTime                  @default(now())
-  lastError      String?
-  sentAt         DateTime?
-  createdAt      DateTime                  @default(now())
-  updatedAt      DateTime                  @updatedAt
-  notification   Notification              @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-  device         UserDevice                @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-
-  @@unique([notificationId, deviceId])
-  @@index([status, nextRetryAt])
-  @@index([deviceId, status])
+  @@index([userId, isRead, createdAt])
+  @@index([userId, createdAt])
 }
 
 model Conversation {
@@ -664,7 +565,6 @@ model Conversation {
   messages   Message[]
 
   @@unique([propertyId, ownerId, tenantId])
-  @@index([propertyId])
   @@index([ownerId, updatedAt])
   @@index([tenantId, updatedAt])
 }
@@ -679,32 +579,22 @@ model Message {
   messageType    MessageType  @default(TEXT)
   deletedAt      DateTime?
   editedAt       DateTime?
-  readAt             DateTime?
-  attachmentPublicId  String?
-  attachmentUrl      String?
-  attachmentMime     String?
-  conversation       Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  readAt         DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
   @@index([conversationId, createdAt])
+  @@index([conversationId, readAt, senderId])
 }
 
 model RefreshToken {
   id        String   @id @default(uuid())
-  jti       String   @unique
-  familyId  String
   expiresAt DateTime
   userId    String
   createdAt DateTime @default(now())
-  usedAt    DateTime?
-  revokedAt DateTime?
   token     String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, familyId])
-  @@index([familyId])
-  @@index([expiresAt])
 }
 
 model PasswordResetToken {
@@ -827,20 +717,6 @@ enum PremiumListingStatus {
   CANCELLED
 }
 
-enum PaymentRefundStatus {
-  PENDING
-  PROCESSED
-  FAILED
-  UNKNOWN
-}
-
-enum PaymentWebhookEventStatus {
-  RECEIVED
-  PROCESSED
-  IGNORED
-  FAILED
-}
-
 enum PaymentStatus {
   CREATED
   PENDING
@@ -894,12 +770,6 @@ enum PropertyStatus {
   RENTED
 }
 
-enum ReviewStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
 enum VisitStatus {
   PENDING
   APPROVED
@@ -913,13 +783,6 @@ enum MessageType {
   IMAGE
   DOCUMENT
   VOICE
-}
-
-enum NotificationDeliveryStatus {
-  PENDING
-  PROCESSING
-  SENT
-  FAILED
 }
 
 enum NotificationType {
@@ -956,7 +819,6 @@ enum LeaseStatus {
   COMPLETED
   TERMINATED
   CANCELLED
-  EXPIRED
 }
 
 enum MembershipPlanCode {
