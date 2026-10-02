@@ -514,6 +514,7 @@ export class PropertiesService {
     const properties = await this.prisma.property.findMany({
       where: {
         ownerId: user.id,
+        lifecycleStatus: { not: PropertyLifecycleStatus.ARCHIVED },
       },
 
       orderBy: {
