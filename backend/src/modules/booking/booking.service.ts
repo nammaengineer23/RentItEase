@@ -401,11 +401,6 @@ export class BookingService {
 
     assertBookingTransition(booking.status, BookingStatus.APPROVED);
 
-    if (!booking.property.isAvailable) {
-      throw new BadRequestException(
-        'This property is no longer available for booking.',
-      );
-    }
 
     const result = await this.prisma.booking.updateMany({
       where: { id, status: BookingStatus.PENDING },
