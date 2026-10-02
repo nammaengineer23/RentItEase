@@ -193,7 +193,7 @@ describe('Release E2E • Premium Listing', () => {
 
     const activeMembershipResponse = await request(apiUrl())
       .get(`/membership/users/${ownerId}/active`)
-      .set(auth(ownerToken))
+      .set(auth(adminToken))
       .expect(200);
 
     console.log(
