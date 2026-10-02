@@ -2,3 +2,4 @@ RC1 release-validation trigger.
 Property visit lifecycle fix validated by Backend CI.
 Re-run after publishing the isolated visit property before booking.
 RC1 validation refresh 2026-10-02T13:56:39.040Z.
+RC1 rerun after verified published property helper validation.
