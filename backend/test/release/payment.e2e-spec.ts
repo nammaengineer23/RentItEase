@@ -334,6 +334,7 @@ describe('Release E2E • Payment', () => {
     const reusedData = extractData(reusedResponse.body);
     expect(reusedData?.paymentId ?? reusedData?.payment?.id).toBe(paymentId);
     expect(reusedData?.razorpayOrderId).toBe(razorpayOrderId);
+  });
 
   // ============================================================
   // 4. INVALID SIGNATURE MUST NOT FAIL THE PAYMENT
