@@ -132,6 +132,8 @@ jobs:
 
           health_url="https://api.rentitease.com/api/v1/health"
 
+          consecutive_ok=0
+
           for attempt in $(seq 1 40); do
             response="$(curl --fail --silent --show-error --retry 3 --retry-delay 3 --retry-all-errors "$health_url" || true)"
             health_status="$(printf '%s' "$response" | node -e '
@@ -151,8 +153,13 @@ jobs:
             echo "Production health check $attempt/40: status=${health_status:-unknown}"
 
             if [ "$health_status" = "ok" ]; then
-              echo "Production health is OK."
-              exit 0
+              consecutive_ok=$((consecutive_ok + 1))
+              if [ "$consecutive_ok" -ge 2 ]; then
+                echo "Production health is OK for two consecutive checks."
+                exit 0
+              fi
+            else
+              consecutive_ok=0
             fi
 
             sleep 15
