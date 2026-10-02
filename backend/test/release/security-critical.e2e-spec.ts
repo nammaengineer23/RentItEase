@@ -47,13 +47,6 @@ describe('Release E2E • Critical security boundaries', () => {
       .post('/uploads/image')
       .expect(401);
 
-    // The current release API exposes image uploads, but no /uploads/file
-    // or /property-images route. Keep this boundary test aligned with the
-    // routes that are actually deployed.
-    await request(apiUrl())
-      .post('/uploads/image')
-      .expect(401);
-
     await request(apiUrl())
       .post('/payments/order')
       .send({ bookingId: 'not-a-real-booking' })
