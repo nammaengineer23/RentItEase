@@ -125,9 +125,40 @@ jobs:
           test -n "$E2E_ADMIN_PASSWORD" && echo "E2E_ADMIN_PASSWORD: configured" || (echo "E2E_ADMIN_PASSWORD: MISSING" && exit 1)
 
       - name: Wait for production deployment to stabilize
+        env:
+          EXPECTED_DEPLOYMENT_SHA: ${{ github.sha }}
         run: |
-          sleep 60
-          curl --fail --silent --show-error --retry 24 --retry-delay 5 --retry-all-errors "https://api.rentitease.com/api/v1/health"
+          set -euo pipefail
+
+          health_url="https://api.rentitease.com/api/v1/health"
+
+          for attempt in $(seq 1 40); do
+            response="$(curl --fail --silent --show-error --retry 3 --retry-delay 3 --retry-all-errors "$health_url" || true)"
+            deployed_sha="$(printf '%s' "$response" | node -e '
+              let input = "";
+              process.stdin.on("data", chunk => input += chunk);
+              process.stdin.on("end", () => {
+                try {
+                  const body = JSON.parse(input);
+                  process.stdout.write(body.deploymentSha || "");
+                } catch {
+                  process.stdout.write("");
+                }
+              });
+            ')"
+
+            echo "Deployment check $attempt/40: deployed=${deployed_sha:-unknown} expected=$EXPECTED_DEPLOYMENT_SHA"
+
+            if [ "$deployed_sha" = "$EXPECTED_DEPLOYMENT_SHA" ]; then
+              echo "Production is serving the exact GitHub commit under test."
+              exit 0
+            fi
+
+            sleep 15
+          done
+
+          echo "Production did not serve commit $EXPECTED_DEPLOYMENT_SHA within the deployment wait window."
+          exit 1
 
       - name: Release E2E suite except property visits
         run: |
