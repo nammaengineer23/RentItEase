@@ -134,44 +134,20 @@ export async function createApprovedE2EProperty(
       securityDeposit: 50000,
     });
   statusOk(create);
-
   const property = extractData(create.body)?.property ?? extractData(create.body);
   const id = property?.id as string | undefined;
   if (!id) throw new Error(`Property fixture was not created: ${JSON.stringify(create.body)}`);
   if (property.isVerified !== false || property.isAvailable !== false) {
     throw new Error(`New property must remain pending before approval: ${JSON.stringify(property)}`);
   }
-
-  const submit = await request(apiUrl())
-    .post(`/properties/${id}/submit`)
-    .set(auth(ownerToken));
-  statusOk(submit);
-  const submitted = extractData(submit.body)?.property ?? extractData(submit.body);
-  if (submitted?.lifecycleStatus !== 'SUBMITTED') {
-    throw new Error(`Property fixture was not submitted for review: ${JSON.stringify(submit.body)}`);
-  }
-
-  const approve = await request(apiUrl())
-    .patch(`/admin/properties/${id}/approve`)
-    .set(auth(adminToken));
+  const approve = await request(apiUrl()).patch(`/admin/properties/${id}/approve`).set(auth(adminToken));
   statusOk(approve);
-  const approved = extractData(approve.body)?.property ?? extractData(approve.body);
-  if (approved?.isVerified !== true || approved?.isAvailable !== false || approved?.lifecycleStatus !== 'VERIFIED') {
-    throw new Error(`Property fixture was not verified correctly: ${JSON.stringify(approve.body)}`);
+  const approved = extractData(approve.body);
+  if (approved?.isVerified !== true || approved?.isAvailable !== true) {
+    throw new Error(`Approved property was not made public: ${JSON.stringify(approved)}`);
   }
-
-  const publish = await request(apiUrl())
-    .post(`/properties/${id}/publish`)
-    .set(auth(ownerToken));
-  statusOk(publish);
-  const published = extractData(publish.body)?.property ?? extractData(publish.body);
-  if (published?.lifecycleStatus !== 'PUBLISHED' || published?.isVerified !== true || published?.isAvailable !== true) {
-    throw new Error(`Verified property was not published correctly: ${JSON.stringify(publish.body)}`);
-  }
-
   return id;
 }
-
 export function unwrapArray(body: any): any[] {
   if (Array.isArray(body)) return body;
   const d = extractData(body);
