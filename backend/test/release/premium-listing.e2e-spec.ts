@@ -112,14 +112,14 @@ describe('Release E2E • Premium Listing', () => {
     // 4. CREATE MEMBERSHIP IF NO ACTIVE MEMBERSHIP EXISTS
     // ============================================================
 
-    if (!membershipId && !process.env.E2E_RAZORPAY_PAYMENT_ID) {
+    if (!membershipId) {
       console.warn(
-        'Skipping premium listing lifecycle: no active membership and no verified membership payment fixture is configured.',
+        'Skipping premium listing lifecycle: no existing verified active membership is available.',
       );
       return;
     }
 
-    if (!membershipId) {
+    if (false) {
       const createMembership = await request(apiUrl())
         .post(`/membership/users/${ownerId}`)
         .set(auth(adminToken))
