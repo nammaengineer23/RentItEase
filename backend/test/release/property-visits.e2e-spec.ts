@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
+import { createApprovedE2EProperty } from './helpers';
 
 describe('Property Visits E2E', () => {
   // ============================================================
@@ -403,108 +404,16 @@ describe('Property Visits E2E', () => {
 
     adminToken = extractToken(adminLogin.body);
 
-    // The RC1 workflow creates an isolated property fixture before this
-    // suite. Reuse it when available; otherwise create one locally.
-    if (!process.env.E2E_VISIT_PROPERTY_ID) {
-      const created = await request(apiUrl)
-        .post('/properties')
-        .set('Authorization', `Bearer ${ownerToken}`)
-        .send({
-          title: `Release Visits ${Date.now()}`,
-          description: 'Isolated visit E2E property.',
-          price: 25000,
-          address: '123 Visit Test Road',
-          locality: 'HSR Layout',
-          city: 'Bangalore',
-          state: 'Karnataka',
-          country: 'India',
-          pincode: '560102',
-          bedrooms: 2,
-          bathrooms: 2,
-          area: 1200,
-          propertyType: 'APARTMENT',
-          furnishing: 'SEMI_FURNISHED',
-          parking: true,
-          petFriendly: true,
-          securityDeposit: 50000,
-        });
-
-      const property = extractData(created.body)?.property ?? extractData(created.body);
-      propertyId = property?.id ?? '';
-    } else {
-      propertyId = process.env.E2E_VISIT_PROPERTY_ID;
-    }
+    // Use the shared release fixture helper so the property lifecycle is
+    // exercised exactly as production requires: DRAFT -> SUBMITTED ->
+    // VERIFIED -> PUBLISHED/isAvailable.
+    propertyId = await createApprovedE2EProperty(
+      ownerToken,
+      adminToken,
+      'Release Visits',
+    );
 
     expect(propertyId).toBeTruthy();
-
-    // Property creation starts in DRAFT. Admin approval is valid only after
-    // the owner submits the property for review.
-    const submit = await request(apiUrl)
-      .post(`/properties/${propertyId}/submit`)
-      .set('Authorization', `Bearer ${ownerToken}`);
-
-    if (![200, 201].includes(submit.status) &&
-        !String(submit.body?.message ?? '').toLowerCase().includes('already submitted')) {
-      throw new Error(
-        `Property submission failed (${submit.status}): ${JSON.stringify(submit.body)}`,
-      );
-    }
-
-    await request(apiUrl)
-      .patch(`/admin/properties/${propertyId}/approve`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .expect((res) => {
-        if (![200, 201].includes(res.status)) {
-          throw new Error(JSON.stringify(res.body));
-        }
-      });
-
-    // Admin verification does not make a property visitable by itself.
-    // Publishing is the lifecycle transition that sets isAvailable=true.
-    await request(apiUrl)
-      .patch(`/properties/${propertyId}/publish`)
-      .set('Authorization', `Bearer ${ownerToken}`)
-      .expect((res) => {
-        if (![200, 201].includes(res.status)) {
-          throw new Error(JSON.stringify(res.body));
-        }
-      });
-
-    // Admin verification and publication are separate lifecycle steps.
-    // Some deployed environments may already publish the approved fixture;
-    // inspect the owner's current property state before publishing so the
-    // release test remains aligned with the real lifecycle rather than
-    // treating an already-published property as an error.
-    const ownerPropertiesResponse = await request(apiUrl)
-      .get('/properties/my-properties')
-      .set('Authorization', `Bearer ${ownerToken}`)
-      .expect(200);
-
-    const ownerProperties = extractData(ownerPropertiesResponse.body);
-    const currentProperty = Array.isArray(ownerProperties)
-      ? ownerProperties.find((property) => property?.id === propertyId)
-      : undefined;
-
-    if (!currentProperty) {
-      throw new Error(
-        `Approved property ${propertyId} was not returned by the owner property listing.`,
-      );
-    }
-
-    if (!currentProperty.isAvailable) {
-      const publishResponse = await request(apiUrl)
-        .patch(`/properties/${propertyId}/publish`)
-        .set('Authorization', `Bearer ${ownerToken}`);
-
-      if (![200, 201].includes(publishResponse.status)) {
-        throw new Error(
-          `Property publish failed (${publishResponse.status}): ${JSON.stringify(publishResponse.body)}`,
-        );
-      }
-    }
-
-    // Property visits require both verification and availability.
-    expect(currentProperty.isVerified).toBe(true);
   });
 
   // ============================================================
