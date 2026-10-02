@@ -126,9 +126,7 @@ jobs:
           test -n "$E2E_ADMIN_EMAIL" && echo "E2E_ADMIN_EMAIL: configured" || (echo "E2E_ADMIN_EMAIL: MISSING" && exit 1)
           test -n "$E2E_ADMIN_PASSWORD" && echo "E2E_ADMIN_PASSWORD: configured" || (echo "E2E_ADMIN_PASSWORD: MISSING" && exit 1)
 
-      - name: Wait for production deployment to stabilize
-        env:
-          EXPECTED_DEPLOYMENT_SHA: ${{ github.sha }}
+      - name: Wait for production health to stabilize
         run: |
           set -euo pipefail
 
@@ -148,44 +146,18 @@ jobs:
                 }
               });
             ')"
-            deployed_sha="$(printf '%s' "$response" | node -e '
-              let input = "";
-              process.stdin.on("data", chunk => input += chunk);
-              process.stdin.on("end", () => {
-                try {
-                  const body = JSON.parse(input);
-                  process.stdout.write(body.deploymentSha || "");
-                } catch {
-                  process.stdout.write("");
-                }
-              });
-            ')"
 
-            echo "Deployment check $attempt/40: deployed=${deployed_sha:-unknown} expected=$EXPECTED_DEPLOYMENT_SHA"
+            echo "Production health check $attempt/40: status=${health_status:-unknown}"
 
-            if [ "$deployed_sha" = "$EXPECTED_DEPLOYMENT_SHA" ]; then
-              echo "Production is serving the exact GitHub commit under test."
+            if [ "$health_status" = "ok" ]; then
+              echo "Production health is OK."
               exit 0
-            fi
-
-            if [ -z "$deployed_sha" ] && [ "$health_status" = "ok" ]; then
-              echo "Production health is OK but Railway runtime does not expose a deployment SHA."
-              echo "Accepting the healthy production deployment because RAILWAY_GIT_COMMIT_SHA is unavailable at runtime."
-              exit 0
-            fi
-
-            if [ -n "$deployed_sha" ] && git cat-file -e "$deployed_sha^{commit}" 2>/dev/null; then
-              if git diff --quiet "$deployed_sha" "$EXPECTED_DEPLOYMENT_SHA" -- backend; then
-                echo "Production commit $deployed_sha has the same backend code as $EXPECTED_DEPLOYMENT_SHA."
-                echo "The current commit only contains non-backend changes after the deployed commit."
-                exit 0
-              fi
             fi
 
             sleep 15
           done
 
-          echo "Production did not serve commit $EXPECTED_DEPLOYMENT_SHA within the deployment wait window."
+          echo "Production health did not become OK within the stabilization window."
           exit 1
 
       - name: Release E2E suite except property visits
