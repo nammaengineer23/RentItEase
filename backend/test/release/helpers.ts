@@ -151,9 +151,18 @@ export async function createApprovedE2EProperty(
 
   const approve = await request(apiUrl()).patch(`/admin/properties/${id}/approve`).set(auth(adminToken));
   statusOk(approve);
-  const approved = extractData(approve.body);
-  if (approved?.isVerified !== true || approved?.isAvailable !== true) {
-    throw new Error(`Approved property was not made public: ${JSON.stringify(approved)}`);
+  const approved = extractData(approve.body)?.property ?? extractData(approve.body);
+  if (approved?.isVerified !== true || approved?.isAvailable !== false || approved?.lifecycleStatus !== 'VERIFIED') {
+    throw new Error(`Property fixture was not verified correctly: ${JSON.stringify(approve.body)}`);
+  }
+
+  const publish = await request(apiUrl())
+    .patch(`/properties/${id}/publish`)
+    .set(auth(ownerToken));
+  statusOk(publish);
+  const published = extractData(publish.body)?.property ?? extractData(publish.body);
+  if (published?.lifecycleStatus !== 'PUBLISHED' || published?.isVerified !== true || published?.isAvailable !== true) {
+    throw new Error(`Verified property was not published correctly: ${JSON.stringify(publish.body)}`);
   }
   return id;
 }
