@@ -6,6 +6,37 @@ import { redactUrl } from '../../logging/sensitive-data.util';
 
 type RequestWithId = Request & { requestId?: string };
 
+type PrismaKnownRequestErrorLike = {
+  code: string;
+  meta?: Record<string, unknown>;
+};
+
+function getSafePrismaDetails(error: unknown): Record<string, unknown> | undefined {
+  if (typeof error !== 'object' || error === null || !('code' in error)) {
+    return undefined;
+  }
+
+  const candidate = error as Partial<PrismaKnownRequestErrorLike>;
+  if (typeof candidate.code !== 'string' || !/^P\d{4}$/.test(candidate.code)) {
+    return undefined;
+  }
+
+  const safeMetaKeys = ['target', 'modelName', 'field_name', 'constraint'];
+  const meta =
+    candidate.meta && typeof candidate.meta === 'object'
+      ? Object.fromEntries(
+          safeMetaKeys
+            .filter((key) => key in candidate.meta!)
+            .map((key) => [key, candidate.meta![key]]),
+        )
+      : undefined;
+
+  return {
+    prismaCode: candidate.code,
+    ...(meta && Object.keys(meta).length > 0 ? { prismaMeta: meta } : {}),
+  };
+}
+
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger(LoggingInterceptor.name);
@@ -26,6 +57,7 @@ export class LoggingInterceptor implements NestInterceptor {
         status,
         durationMs: Date.now() - startedAt,
         ...(error instanceof Error ? { error: error.name } : {}),
+        ...(getSafePrismaDetails(error) ?? {}),
       };
       this.logger[level](JSON.stringify(entry));
     };
