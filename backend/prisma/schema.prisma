@@ -589,12 +589,20 @@ model Message {
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
-  expiresAt DateTime
-  userId    String
-  createdAt DateTime @default(now())
-  token     String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  expiresAt  DateTime
+  userId     String
+  createdAt  DateTime @default(now())
+  hashedToken String
+  browser    String?
+  deviceId   String?
+  deviceName String?
+  ipAddress  String?
+  lastUsedAt DateTime?
+  platform   String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model PasswordResetToken {
