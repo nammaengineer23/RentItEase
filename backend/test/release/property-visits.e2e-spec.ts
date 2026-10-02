@@ -458,6 +458,18 @@ describe('Property Visits E2E', () => {
           throw new Error(JSON.stringify(res.body));
         }
       });
+
+    // Admin verification moves the property to VERIFIED but intentionally
+    // keeps it unavailable. Publish it before attempting to book a visit;
+    // the visit API requires both verification and public availability.
+    await request(apiUrl)
+      .patch(`/properties/${propertyId}/publish`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect((res) => {
+        if (![200, 201].includes(res.status)) {
+          throw new Error(JSON.stringify(res.body));
+        }
+      });
   });
 
   // ============================================================
