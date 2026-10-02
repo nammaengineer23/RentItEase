@@ -234,13 +234,13 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
 
     expect(invoiceId).toBeTruthy();
 
-    await request(apiUrl()).get(`/invoices/${invoiceId}`).set(auth(tenantToken)).expect(200);
+    await request(apiUrl()).get(`/invoices/${invoiceId}`).set(auth(adminToken)).expect(200);
 
-    await request(apiUrl()).get(`/invoices/user/${tenantId}`).set(auth(tenantToken)).expect(200);
+    await request(apiUrl()).get(`/invoices/user/${tenantId}`).set(auth(adminToken)).expect(200);
 
     const paid = await request(apiUrl())
       .patch(`/invoices/${invoiceId}/paid`)
-      .set(auth(tenantToken));
+      .set(auth(adminToken));
 
     statusOk(paid);
 
@@ -323,7 +323,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
 
     const membership = await request(apiUrl())
       .post(`/membership/users/${ownerId}`)
-      .set(auth(ownerToken))
+      .set(auth(adminToken))
       .send({
         planId,
         autoRenew: false,
@@ -348,7 +348,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
 
     const activate = await request(apiUrl())
       .patch(`/membership/${membershipId}/activate`)
-      .set(auth(ownerToken));
+      .set(auth(adminToken));
 
     statusOk(activate);
 
@@ -366,7 +366,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
 
     const expire = await request(apiUrl())
       .patch(`/membership/${membershipId}/expire`)
-      .set(auth(ownerToken));
+      .set(auth(adminToken));
 
     statusOk(expire);
 
@@ -382,7 +382,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
 
     const renew = await request(apiUrl())
       .patch(`/membership/${membershipId}/renew`)
-      .set(auth(ownerToken));
+      .set(auth(adminToken));
 
     statusOk(renew);
 
@@ -411,7 +411,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
 
     const create = await request(apiUrl())
       .post(`/premium-listings/users/${ownerId}`)
-      .set(auth(ownerToken))
+      .set(auth(adminToken))
       .send({
         propertyId,
         membershipId,
@@ -464,7 +464,7 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
 
     const cleanupMembership = await request(apiUrl())
       .patch(`/membership/${membershipId}/expire`)
-      .set(auth(ownerToken));
+      .set(auth(adminToken));
 
     statusOk(cleanupMembership);
 
