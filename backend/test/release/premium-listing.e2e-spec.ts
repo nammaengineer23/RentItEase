@@ -119,33 +119,7 @@ describe('Release E2E • Premium Listing', () => {
       return;
     }
 
-    if (false) {
-      const createMembership = await request(apiUrl())
-        .post(`/membership/users/${ownerId}`)
-        .set(auth(adminToken))
-        .send({
-          planId,
-        });
-
-      console.log(
-        'PREMIUM LISTING MEMBERSHIP CREATE STATUS:',
-        createMembership.status,
-      );
-
-      console.log(
-        'PREMIUM LISTING MEMBERSHIP CREATE RESPONSE:',
-        JSON.stringify(createMembership.body, null, 2),
-      );
-
-      expect([200, 201]).toContain(createMembership.status);
-
-      const createdMembership = extractData(createMembership.body);
-
-      expect(createdMembership).toBeTruthy();
-
-      membershipId = createdMembership?.id;
-
-      expect(membershipId).toBeTruthy();
+    expect(membershipId).toBeTruthy();
       expect(createdMembership.userId).toBe(ownerId);
       expect(createdMembership.planId).toBe(planId);
 
