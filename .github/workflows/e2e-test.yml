@@ -6,6 +6,7 @@ on:
   # Railway can wait for every push check suite before deploying, while RC1
   # itself waits for that deployment before starting remote E2E.
   workflow_dispatch:
+  deployment_status:
 
 # RC1 exercises the live production API with shared tenant/owner/admin
 # accounts and builds a signed Android artifact. Run it manually after the
@@ -29,6 +30,11 @@ jobs:
 
   backend-build:
     name: Backend Build
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'deployment_status' &&
+           github.event.deployment_status.state == 'success' &&
+           github.event.deployment_status.environment == 'production') }}
     runs-on: ubuntu-latest
 
     defaults:
