@@ -24,21 +24,13 @@ export class StorageService {
     return this.firebaseService.uploadImage(file, folder);
   }
 
-  async uploadPrivateFile(
-    file: Express.Multer.File,
-    folder = 'chat-attachments',
-  ): Promise<{ publicId: string }> {
-    if (this.driver === 'r2') {
-      return this.r2StorageService.uploadPrivateFile(file, folder);
-    }
-
-    return this.firebaseService.uploadPrivateFile(file, folder);
-  }
-
   uploadVideo(
     file: Express.Multer.File,
     folder = 'property-videos',
   ): Promise<StoredImage> {
+    // Both storage drivers preserve the supplied MIME type and raw bytes.
+    // Keep a separate video entry point so video uploads do not depend on
+    // image-specific behavior as the storage layer evolves.
     if (this.driver === 'r2') {
       return this.r2StorageService.uploadImage(file, folder);
     }
@@ -46,23 +38,8 @@ export class StorageService {
     return this.firebaseService.uploadImage(file, folder);
   }
 
-  async getPrivateUrl(publicId: string, expiresInSeconds = 900): Promise<string> {
-    if (publicId.startsWith('r2:') || publicId.startsWith('r2p:')) {
-      return this.r2StorageService.getSignedUrl(publicId, expiresInSeconds);
-    }
-
-    return this.firebaseService.getSignedDownloadUrl(publicId, expiresInSeconds);
-  }
-
-  async listObjects() {
-    if (this.driver === 'r2') return this.r2StorageService.listObjects();
-    return this.firebaseService.listObjects();
-  }
-
-  get driverName(): string { return this.driver; }
-
   deleteImage(publicId: string): Promise<boolean> {
-    if (publicId.startsWith('r2:') || publicId.startsWith('r2p:')) {
+    if (publicId.startsWith('r2:')) {
       return this.r2StorageService.deleteImage(publicId);
     }
 

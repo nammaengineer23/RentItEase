@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../common/app_exception.dart';
 import '../../config/environment.dart';
 import '../services/storage_service.dart';
+import 'request_policy.dart';
 
 class ApiClient {
   ApiClient({Dio? dio, StorageService? storage})
@@ -20,11 +22,19 @@ class ApiClient {
             headers: const {'Accept': Headers.jsonContentType},
           ),
         );
-    _dio.interceptors.add(_AuthenticationInterceptor(_dio, _storage));
+    _dio.interceptors.add(
+      _AuthenticationInterceptor(
+        _dio,
+        _storage,
+        onSessionExpired: () => onSessionExpired?.call(),
+      ),
+    );
     _dio.interceptors.add(_ApiErrorInterceptor());
   }
 
   static final ApiClient shared = ApiClient();
+
+  VoidCallback? onSessionExpired;
 
   late final Dio _dio;
 
@@ -42,10 +52,16 @@ class ApiClient {
 }
 
 class _AuthenticationInterceptor extends QueuedInterceptor {
-  _AuthenticationInterceptor(this._dio, this._storage);
+  _AuthenticationInterceptor(
+    this._dio,
+    this._storage, {
+    required this.onSessionExpired,
+  });
 
   final Dio _dio;
   final StorageService _storage;
+  final VoidCallback? onSessionExpired;
+  Future<void>? _refreshInFlight;
 
   bool _isAuthPath(RequestOptions options) =>
       options.path == ApiPaths.login ||
@@ -62,22 +78,23 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    try {
-      final appCheckToken = await FirebaseAppCheck.instance.getToken();
-      if (appCheckToken != null && appCheckToken.isNotEmpty) {
-        options.headers['X-Firebase-AppCheck'] = appCheckToken;
-      }
-    } catch (_) {
-      // Backend-protected Firebase endpoints will reject missing App Check.
-      // Do not silently fabricate or reuse an expired token.
-    }
-
     if (!_isAuthPath(options)) {
       final token = await _storage.getString(StorageService.accessTokenKey);
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
       }
     }
+
+    try {
+      final appCheckToken = await FirebaseAppCheck.instance.getToken();
+      if (appCheckToken != null && appCheckToken.isNotEmpty) {
+        options.headers['X-Firebase-AppCheck'] = appCheckToken;
+      }
+    } catch (_) {
+      // App Check is best-effort until backend enforcement is enabled. Do not
+      // block startup or authentication when a provider is unavailable.
+    }
+
     handler.next(options);
   }
 
@@ -87,7 +104,10 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final request = error.requestOptions;
+    final method = request.method.toUpperCase();
+    final safeToRetry = RequestPolicy.canRetryAfterRefresh(method);
     if (error.response?.statusCode != 401 ||
+        !safeToRetry ||
         _isAuthPath(request) ||
         request.extra['retried'] == true) {
       handler.next(error);
@@ -103,25 +123,14 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
     }
 
     try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        ApiPaths.refresh,
-        data: {'refreshToken': refreshToken},
-        options: Options(extra: {'skipAuthRefresh': true}),
-      );
-      final responseData = response.data;
-      final wrappedData = responseData?['data'];
-      final data = wrappedData is Map<String, dynamic>
-          ? wrappedData
-          : responseData;
-      final accessToken = data?['accessToken'] as String?;
-      final nextRefreshToken = data?['refreshToken'] as String?;
-      if (accessToken == null || nextRefreshToken == null) {
-        throw const ApiException('The server returned invalid refresh tokens.');
+      _refreshInFlight ??= _refreshTokens(refreshToken).whenComplete(() {
+        _refreshInFlight = null;
+      });
+      await _refreshInFlight;
+      final accessToken = await _storage.getString(StorageService.accessTokenKey);
+      if (accessToken == null || accessToken.isEmpty) {
+        throw const ApiException('The session could not be refreshed.');
       }
-      await _storage.saveTokens(
-        accessToken: accessToken,
-        refreshToken: nextRefreshToken,
-      );
       request
         ..headers['Authorization'] = 'Bearer $accessToken'
         ..extra['retried'] = true;
@@ -129,8 +138,32 @@ class _AuthenticationInterceptor extends QueuedInterceptor {
       handler.resolve(retry);
     } catch (_) {
       await _storage.clearTokens();
+      onSessionExpired?.call();
       handler.next(error);
     }
+  }
+
+  Future<void> _refreshTokens(String refreshToken) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.refresh,
+      data: {'refreshToken': refreshToken},
+      options: Options(extra: {'skipAuthRefresh': true}),
+    );
+    final responseData = response.data;
+    final wrappedData = responseData?['data'];
+    final data = wrappedData is Map<String, dynamic>
+        ? wrappedData
+        : responseData;
+    final accessToken = data?['accessToken'] as String?;
+    final nextRefreshToken = data?['refreshToken'] as String?;
+    if (accessToken == null || nextRefreshToken == null ||
+        accessToken.isEmpty || nextRefreshToken.isEmpty) {
+      throw const ApiException('The server returned invalid refresh tokens.');
+    }
+    await _storage.saveTokens(
+      accessToken: accessToken,
+      refreshToken: nextRefreshToken,
+    );
   }
 }
 
@@ -138,9 +171,7 @@ class _ApiErrorInterceptor extends Interceptor {
   @override
   void onError(DioException error, ErrorInterceptorHandler handler) {
     final data = error.response?.data;
-    final message = data is Map
-        ? _messageFromMap(Map<String, dynamic>.from(data))
-        : error.message ?? 'Network request failed.';
+    final message = _mapError(error, data);
     handler.reject(
       DioException(
         requestOptions: error.requestOptions,
@@ -151,13 +182,35 @@ class _ApiErrorInterceptor extends Interceptor {
     );
   }
 
+  String _mapError(DioException error, dynamic data) {
+    if (error.type == DioExceptionType.cancel) return 'Request cancelled.';
+    if (error.type == DioExceptionType.connectionError ||
+        error.type == DioExceptionType.connectionTimeout) {
+      return 'You appear to be offline. Check your internet connection and try again.';
+    }
+    if (error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return 'The server took too long to respond. Please try again.';
+    }
+    final status = error.response?.statusCode;
+    if (status == 401) return 'Your session has expired. Please sign in again.';
+    if (status == 403) return 'You do not have permission to perform this action.';
+    if (status == 408 || status == 429) return 'Please wait a moment and try again.';
+    if (status != null && status >= 500) return 'The server is temporarily unavailable. Please try again shortly.';
+    if (data is Map) return _messageFromMap(Map<String, dynamic>.from(data));
+    return 'The request could not be completed. Please try again.';
+  }
+
   String _messageFrom(dynamic value) => value is List
       ? value.join('\n')
       : value?.toString() ?? 'Network request failed.';
 
   String _messageFromMap(Map<String, dynamic> data) {
     final direct = data['message'];
-    if (direct != null) return _messageFrom(direct);
+    if (direct != null) {
+      final message = _messageFrom(direct);
+      return message.length <= 500 ? message : 'The request could not be completed. Please try again.';
+    }
 
     final nestedError = data['error'];
     if (nestedError is Map) {

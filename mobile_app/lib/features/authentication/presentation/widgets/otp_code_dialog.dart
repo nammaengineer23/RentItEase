@@ -27,7 +27,6 @@ Future<String?> showOtpCodeDialog(
             controller: controller,
             autofocus: true,
             keyboardType: TextInputType.number,
-            autofillHints: const [AutofillHints.oneTimeCode],
             maxLength: 6,
             decoration: InputDecoration(
               labelText: dialogContext.tr('verificationCode'),

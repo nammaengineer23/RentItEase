@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Pagination } from '../components/Pagination';
 import { useSearchParams } from 'react-router-dom';
 import {
   approveVisit,
@@ -35,6 +36,8 @@ export function VisitsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [busyVisitId, setBusyVisitId] = useState<string | null>(null);
   const [selectedVisit, setSelectedVisit] = useState<AdminVisit | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
 
   async function loadVisits() {
     setLoading(true);
@@ -71,6 +74,9 @@ export function VisitsPage() {
     });
   }, [visits, search, statusFilter]);
 
+  useEffect(() => { setPage(1); }, [search, statusFilter]);
+  const paginatedVisits = filteredVisits.slice((page - 1) * pageSize, page * pageSize);
+
   async function handleAction(visit: AdminVisit, action: VisitAction) {
     const confirmed = window.confirm(`${action.charAt(0).toUpperCase()}${action.slice(1)} the visit requested by ${visit.tenant.fullName}?`);
     if (!confirmed) return;
@@ -104,13 +110,14 @@ export function VisitsPage() {
       <div className="table-summary">Showing {filteredVisits.length} of {visits.length} visits</div>
       {filteredVisits.length === 0 ? <div className="empty-state"><h3>No visits found</h3><p>Try changing the search or status filter.</p></div> :
         <div className="table-container"><table className="data-table"><thead><tr><th>Tenant</th><th>Property</th><th>Visit date</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody>
-          {filteredVisits.map((visit) => <tr key={visit.id}>
+          {paginatedVisits.map((visit) => <tr key={visit.id}>
             <td><div className="user-cell"><strong>{visit.tenant.fullName}</strong><span>{visit.tenant.email}</span></div></td>
             <td><div className="user-cell"><strong>{visit.property.title}</strong><span>{visit.property.city}{visit.property.locality ? `, ${visit.property.locality}` : ''}</span></div></td>
             <td>{formatDateTime(visit.visitDate)}</td><td><span className={`status-badge ${statusClass(visit.status)}`}>{visit.status}</span></td><td>{formatDateTime(visit.createdAt)}</td>
             <td><button className="table-button" onClick={() => setSelectedVisit(visit)}>View / Manage</button></td>
           </tr>)}
         </tbody></table></div>}
+      <Pagination page={page} pageSize={pageSize} total={filteredVisits.length} onChange={setPage} />
     </div>
 
     {selectedVisit && <div className="modal-backdrop" onClick={() => setSelectedVisit(null)}>

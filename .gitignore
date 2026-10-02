@@ -9,6 +9,7 @@ Thumbs.db
 # Environment files
 .env
 .env.*
+!.env.example
 
 # Dependencies
 node_modules/
@@ -21,9 +22,3 @@ coverage/
 
 # Logs
 *.log
-
-# Secrets and database backups
-*.dump
-*.sql
-*.pem
-*.key

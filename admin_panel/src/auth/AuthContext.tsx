@@ -8,10 +8,8 @@ import {
   type ReactNode,
 } from "react";
 
-import { getMe, login, type AdminUser } from "../api/authApi";
-
-const ACCESS_TOKEN_KEY = "rentease_admin_access_token";
-const REFRESH_TOKEN_KEY = "rentease_admin_refresh_token";
+import { getMe, login, logout as logoutApi, type AdminUser } from "../api/authApi";
+import { clearSessionTokens, getAccessToken, setSessionTokens } from "./session";
 
 interface AuthContextValue {
   user: AdminUser | null;
@@ -28,13 +26,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const signOut = useCallback(() => {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    if (getAccessToken()) void logoutApi().catch(() => undefined);
+    clearSessionTokens();
     setUser(null);
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+    const token = getAccessToken();
 
     if (!token) {
       setIsLoading(false);
@@ -63,6 +61,17 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       });
   }, [signOut]);
 
+  useEffect(() => {
+    const handleExpired = () => signOut();
+    const handleForbidden = () => signOut();
+    window.addEventListener("rentease:auth-expired", handleExpired);
+    window.addEventListener("rentease:forbidden", handleForbidden);
+    return () => {
+      window.removeEventListener("rentease:auth-expired", handleExpired);
+      window.removeEventListener("rentease:forbidden", handleForbidden);
+    };
+  }, [signOut]);
+
   const signIn = useCallback(
     async (loginValue: string, password: string) => {
       const response = await login(loginValue, password);
@@ -74,11 +83,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Login succeeded but no access token was returned.");
       }
 
-      localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-
-      if (refreshToken) {
-        localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-      }
+      setSessionTokens(accessToken, refreshToken);
 
       // Get the authoritative user profile from /auth/me.
       const currentUser = await getMe();

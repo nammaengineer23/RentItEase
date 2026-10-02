@@ -1,73 +1,22 @@
 import {
-  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
-  ServiceUnavailableException,
 } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma.service';
-import { MembershipStatus, Prisma, PropertyLifecycleStatus, UserRole } from '@prisma/client';
+import { MembershipStatus, Prisma, UserRole } from '@prisma/client';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
-import { StorageService } from '../../storage/storage.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { FilterPropertiesDto } from './dto/filter-property.dto';
 import { UpdatePropertyAmenitiesDto } from './dto/update-property-amenities.dto';
 import { NearbyPropertiesDto } from './dto/nearby-properties.dto';
-import { assertPropertyTransition } from './property-lifecycle';
 
 @Injectable()
 export class PropertiesService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly storageService: StorageService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async suggestListingText(input: {
-    propertyType?: string;
-    city?: string;
-    locality?: string;
-    bedrooms?: number;
-    furnishing?: string;
-    rent?: number;
-    amenities?: string[];
-  }) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey)
-      throw new ServiceUnavailableException(
-        'AI suggestions are not configured.',
-      );
-    const prompt = `Create a concise rental property title and an honest 2-sentence description. Return JSON only with title and description. Details: ${JSON.stringify(input)}`;
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        temperature: 0.5,
-        max_tokens: 180,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-    if (!response.ok)
-      throw new ServiceUnavailableException(
-        'Unable to generate AI suggestion.',
-      );
-    const body = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const content = body.choices?.[0]?.message?.content;
-    if (!content)
-      throw new ServiceUnavailableException('AI returned no suggestion.');
-    try {
-      return JSON.parse(content.replace(/^```json\s*|\s*```$/g, ''));
-    } catch {
-      throw new ServiceUnavailableException('AI returned invalid suggestion.');
-    }
-  }
 
   // ===========================
   // Create Property
@@ -75,52 +24,46 @@ export class PropertiesService {
 
   async create(createPropertyDto: CreatePropertyDto, user: any) {
     const { amenityIds, ...propertyData } = createPropertyDto;
-    const forbiddenClientFields = ['ownerId', 'isAvailable', 'isVerified', 'lifecycleStatus', 'createdAt', 'updatedAt'];
-    if (forbiddenClientFields.some((field) => Object.prototype.hasOwnProperty.call(createPropertyDto as object, field))) {
-      throw new BadRequestException('Property lifecycle and ownership fields are server controlled.');
-    }
-
-    if ((propertyData.latitude === undefined) !== (propertyData.longitude === undefined)) {
-      throw new BadRequestException('Latitude and longitude must be supplied together.');
-    }
-    if (propertyData.dailyRentEnabled && propertyData.dailyRent === undefined) {
-      throw new BadRequestException('Daily rent is required when daily rent is enabled.');
-    }
-    if (!propertyData.dailyRentEnabled && propertyData.dailyRent !== undefined) {
-      throw new BadRequestException('Daily rent cannot be supplied when daily rent is disabled.');
-    }
-
-    if (amenityIds?.length) {
-      const amenities = await this.prisma.amenity.findMany({
-        where: { id: { in: amenityIds } },
-        select: { id: true },
-      });
-      if (amenities.length !== amenityIds.length) {
-        throw new BadRequestException('One or more amenity IDs are invalid.');
-      }
-    }
 
     const property = await this.prisma.property.create({
       data: {
         ...propertyData,
+
         ownerId: user.id,
         isAvailable: false,
         isVerified: false,
-        lifecycleStatus: PropertyLifecycleStatus.DRAFT,
+
         amenities: amenityIds?.length
           ? {
               create: amenityIds.map((amenityId) => ({
-                amenity: { connect: { id: amenityId } },
+                amenity: {
+                  connect: {
+                    id: amenityId,
+                  },
+                },
               })),
             }
           : undefined,
       },
+
       include: {
         owner: {
-          select: { id: true, fullName: true, email: true, phone: true },
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
         },
-        amenities: { include: { amenity: true } },
+
+        amenities: {
+          include: {
+            amenity: true,
+          },
+        },
+
         reviews: true,
+
         images: true,
       },
     });
@@ -131,7 +74,6 @@ export class PropertiesService {
       property: serializePrisma(property),
     };
   }
-
 
   private buildPropertyWhere(
     filterDto: FilterPropertiesDto,
@@ -158,11 +100,7 @@ export class PropertiesService {
       maxDailyRent,
     } = filterDto;
 
-    const where: Prisma.PropertyWhereInput = {
-      lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
-      isVerified: true,
-      isAvailable: true,
-    };
+    const where: Prisma.PropertyWhereInput = { isVerified: true };
 
     if (search) {
       where.OR = [
@@ -202,7 +140,7 @@ export class PropertiesService {
     if (bathrooms) where.bathrooms = bathrooms;
     if (parking !== undefined) where.parking = parking;
     if (petFriendly !== undefined) where.petFriendly = petFriendly;
-    if (isAvailable === false) where.isAvailable = false;
+    if (isAvailable !== undefined) where.isAvailable = isAvailable;
     if (dailyRentEnabled !== undefined) {
       where.dailyRentEnabled = dailyRentEnabled;
     }
@@ -252,17 +190,13 @@ export class PropertiesService {
       order = 'desc',
     } = filterDto;
 
-    const safeLimit = Math.min(limit, 50);
-    const allowedSorts = new Set(['createdAt', 'price', 'area', 'viewCount']);
-    const safeSortBy = allowedSorts.has(sortBy) ? sortBy : 'createdAt';
-
     const where = this.buildPropertyWhere(filterDto);
 
     // -----------------------
     // Pagination
     // -----------------------
 
-    const skip = (page - 1) * safeLimit;
+    const skip = (page - 1) * limit;
 
     const [properties, total] = await this.prisma.$transaction([
       this.prisma.property.findMany({
@@ -270,10 +204,10 @@ export class PropertiesService {
 
         skip,
 
-        take: safeLimit,
+        take: limit,
 
         orderBy: {
-          [safeSortBy]: order,
+          [sortBy]: order,
         },
 
         include: {
@@ -332,7 +266,7 @@ export class PropertiesService {
           : 0;
 
       return {
-        ...this.toPublicProperty(property),
+        ...serializePrisma(property),
         averageRating,
         totalReviews: property.reviews.length,
       };
@@ -346,8 +280,8 @@ export class PropertiesService {
       pagination: {
         total,
         page,
-        limit: safeLimit,
-        totalPages: Math.ceil(total / safeLimit),
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
     };
   }
@@ -362,7 +296,6 @@ export class PropertiesService {
         // Featured Properties
         this.prisma.property.findMany({
           where: {
-            lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
             isAvailable: true,
             isVerified: true,
           },
@@ -389,7 +322,6 @@ export class PropertiesService {
         // Latest Properties
         this.prisma.property.findMany({
           where: {
-            lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
             isAvailable: true,
             isVerified: true,
           },
@@ -410,7 +342,6 @@ export class PropertiesService {
         // Most Favorited
         this.prisma.property.findMany({
           where: {
-            lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
             isAvailable: true,
             isVerified: true,
           },
@@ -435,7 +366,6 @@ export class PropertiesService {
         // Top Rated
         this.prisma.property.findMany({
           where: {
-            lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
             isAvailable: true,
             isVerified: true,
           },
@@ -452,7 +382,6 @@ export class PropertiesService {
         this.prisma.property.groupBy({
           by: ['city', 'locality'],
           where: {
-            lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
             isAvailable: true,
             isVerified: true,
           },
@@ -481,7 +410,7 @@ export class PropertiesService {
             : 0;
 
         return {
-          ...this.toPublicProperty(property),
+          ...serializePrisma(property),
           averageRating,
           totalReviews: property.reviews.length,
         };
@@ -491,12 +420,12 @@ export class PropertiesService {
     return {
       success: true,
 
-      featured: featured.map((p) => this.toPublicProperty(p)),
+      featured: featured.map((p) => serializePrisma(p)),
 
-      latest: latest.map((p) => this.toPublicProperty(p)),
+      latest: latest.map((p) => serializePrisma(p)),
 
       mostFavorited: mostFavorited.map((p) => ({
-        ...this.toPublicProperty(p),
+        ...serializePrisma(p),
         favorites: p._count.favorites,
       })),
 
@@ -514,7 +443,6 @@ export class PropertiesService {
     const properties = await this.prisma.property.findMany({
       where: {
         ownerId: user.id,
-        lifecycleStatus: { not: PropertyLifecycleStatus.ARCHIVED },
       },
 
       orderBy: {
@@ -589,25 +517,31 @@ export class PropertiesService {
 
   async findNearby(query: NearbyPropertiesDto) {
     const { latitude, longitude, radius = 5 } = query;
-
     const latDelta = radius / 111;
-    const lonDelta = radius / (111 * Math.max(0.01, Math.cos(this.toRadians(latitude))));
+    const longitudeScale = Math.max(
+      Math.cos((latitude * Math.PI) / 180),
+      0.1,
+    );
+    const lngDelta = radius / (111 * longitudeScale);
+
+    const minLatitude = Math.max(-90, latitude - latDelta);
+    const maxLatitude = Math.min(90, latitude + latDelta);
+    const minLongitude = Math.max(-180, longitude - lngDelta);
+    const maxLongitude = Math.min(180, longitude + lngDelta);
 
     const properties = await this.prisma.property.findMany({
       where: {
-        lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
         isAvailable: true,
         isVerified: true,
         latitude: {
-          gte: latitude - latDelta,
-          lte: latitude + latDelta,
+          gte: minLatitude,
+          lte: maxLatitude,
         },
         longitude: {
-          gte: longitude - lonDelta,
-          lte: longitude + lonDelta,
+          gte: minLongitude,
+          lte: maxLongitude,
         },
       },
-
       include: {
         owner: {
           select: {
@@ -615,21 +549,22 @@ export class PropertiesService {
             fullName: true,
           },
         },
-
         images: {
           orderBy: {
             displayOrder: 'asc',
           },
           take: 1,
         },
-
         amenities: {
           include: {
             amenity: true,
           },
         },
-
-        reviews: true,
+        reviews: {
+          select: {
+            rating: true,
+          },
+        },
       },
     });
 
@@ -637,11 +572,15 @@ export class PropertiesService {
       .map((property) => {
         const lat = Number(property.latitude);
         const lng = Number(property.longitude);
-
-        const distance = this.calculateDistance(latitude, longitude, lat, lng);
+        const distance = this.calculateDistance(
+          latitude,
+          longitude,
+          lat,
+          lng,
+        );
 
         return {
-          ...this.toPublicProperty(property),
+          ...serializePrisma(property),
           distance: Number(distance.toFixed(2)),
           averageRating:
             property.reviews.length === 0
@@ -658,7 +597,8 @@ export class PropertiesService {
         };
       })
       .filter((property) => property.distance <= radius)
-      .sort((a, b) => a.distance - b.distance);
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 100);
 
     return {
       success: true,
@@ -672,11 +612,9 @@ export class PropertiesService {
   // ===========================
 
   async findOne(id: string) {
-    const property = await this.prisma.property.findFirst({
+    const property = await this.prisma.property.findUnique({
       where: {
         id,
-        lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
-        isAvailable: true,
       },
 
       include: {
@@ -746,7 +684,7 @@ export class PropertiesService {
     return {
       success: true,
       property: {
-        ...this.toPublicProperty(property),
+        ...serializePrisma(property),
         views: property.viewCount,
         totalViews: property.viewCount,
         averageRating,
@@ -764,7 +702,6 @@ export class PropertiesService {
       select: {
         id: true,
         ownerId: true,
-        lifecycleStatus: true,
         isVerified: true,
         owner: {
           select: {
@@ -777,10 +714,7 @@ export class PropertiesService {
       },
     });
 
-    const publiclyVisible = property?.lifecycleStatus === undefined
-      ? property?.isVerified === true
-      : property?.lifecycleStatus === PropertyLifecycleStatus.PUBLISHED;
-    if (!property || (!publiclyVisible && property.ownerId !== user.id)) {
+    if (!property || (!property.isVerified && property.ownerId !== user.id)) {
       throw new NotFoundException('Property not found.');
     }
 
@@ -850,7 +784,6 @@ export class PropertiesService {
           not: id,
         },
 
-        lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
         isAvailable: true,
         isVerified: true,
 
@@ -913,7 +846,7 @@ export class PropertiesService {
           : 0;
 
       return {
-        ...this.toPublicProperty(property),
+        ...serializePrisma(property),
         averageRating,
         totalReviews: property.reviews.length,
         totalFavorites: property.favorites.length,
@@ -933,90 +866,89 @@ export class PropertiesService {
 
   async update(id: string, updatePropertyDto: UpdatePropertyDto, user: any) {
     const property = await this.prisma.property.findUnique({
-      where: { id },
+      where: {
+        id,
+      },
+
+      include: {
+        amenities: true,
+      },
     });
 
-    if (!property) throw new NotFoundException('Property not found.');
-
-    const isOwner = property.ownerId === user.id;
-    const isAdmin = user.role === UserRole.ADMIN;
-    if (!isOwner && !isAdmin) {
-      throw new ForbiddenException('You are not allowed to update this property.');
+    if (!property) {
+      throw new NotFoundException('Property not found.');
     }
 
-    if ([PropertyLifecycleStatus.BOOKED, PropertyLifecycleStatus.OCCUPIED, PropertyLifecycleStatus.ARCHIVED].includes(property.lifecycleStatus as any)) {
-      throw new BadRequestException('This property cannot be edited in its current lifecycle state.');
+    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException(
+        'You are not allowed to update this property.',
+      );
     }
 
     const { amenityIds, ...propertyData } = updatePropertyDto;
-    const forbiddenClientFields = ['ownerId', 'isAvailable', 'isVerified', 'lifecycleStatus', 'createdAt', 'updatedAt'];
-    if (forbiddenClientFields.some((field) => Object.prototype.hasOwnProperty.call(updatePropertyDto as object, field))) {
-      throw new BadRequestException('Property lifecycle and ownership fields are server controlled.');
+
+    // Owners may not make an unverified property publicly available. Admin
+    // verification remains the authority for publishing a new listing.
+    if (propertyData.isAvailable === true && !property.isVerified && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Property must be verified by an admin before it can be marked available.');
     }
-
-
-    if ((propertyData.latitude === undefined) !== (propertyData.longitude === undefined)) {
-      throw new BadRequestException('Latitude and longitude must be supplied together.');
-    }
-
-    if (propertyData.dailyRentEnabled === true && propertyData.dailyRent === undefined && property.dailyRent === null) {
-      throw new BadRequestException('Daily rent is required when daily rent is enabled.');
-    }
-
-    if (propertyData.dailyRentEnabled === false && propertyData.dailyRent !== undefined) {
-      throw new BadRequestException('Daily rent cannot be supplied when daily rent is disabled.');
-    }
-
-    if (amenityIds !== undefined) {
-      const amenities = await this.prisma.amenity.findMany({
-        where: { id: { in: amenityIds } },
-        select: { id: true },
-      });
-      if (amenities.length !== amenityIds.length) {
-        throw new BadRequestException('One or more amenity IDs are invalid.');
-      }
-    }
-
-    const data: Prisma.PropertyUpdateInput = {
-      ...propertyData,
-      ...(isOwner
-        ? {
-            lifecycleStatus:
-              property.lifecycleStatus === PropertyLifecycleStatus.DRAFT
-                ? PropertyLifecycleStatus.DRAFT
-                : PropertyLifecycleStatus.SUBMITTED,
-            isVerified: false,
-            isAvailable: false,
-          }
-        : {}),
-      amenities:
-        amenityIds !== undefined
-          ? {
-              deleteMany: {},
-              create: amenityIds.map((amenityId) => ({
-                amenity: { connect: { id: amenityId } },
-              })),
-            }
-          : undefined,
-    };
 
     const updatedProperty = await this.prisma.property.update({
-      where: { id },
-      data,
+      where: {
+        id,
+      },
+
+      data: {
+        ...propertyData,
+        // Every owner edit requires a fresh admin review before the listing
+        // becomes public again. Admin edits preserve the approval state.
+        ...(user.role !== UserRole.ADMIN
+          ? { isVerified: false, isAvailable: false }
+          : {}),
+
+        amenities:
+          amenityIds !== undefined
+            ? {
+                deleteMany: {},
+
+                create: amenityIds.map((amenityId) => ({
+                  amenity: {
+                    connect: {
+                      id: amenityId,
+                    },
+                  },
+                })),
+              }
+            : undefined,
+      },
+
       include: {
         owner: {
-          select: { id: true, fullName: true, email: true, phone: true },
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
         },
-        amenities: { include: { amenity: true } },
-        images: { orderBy: { displayOrder: 'asc' } },
+
+        amenities: {
+          include: {
+            amenity: true,
+          },
+        },
+
+        images: {
+          orderBy: {
+            displayOrder: 'asc',
+          },
+        },
       },
     });
 
     return {
       success: true,
-      message: isOwner
-        ? 'Property updated and submitted for admin review.'
-        : 'Property updated successfully.',
+      message: 'Property updated successfully.',
       property: serializePrisma(updatedProperty),
     };
   }
@@ -1030,54 +962,51 @@ export class PropertiesService {
     dto: UpdatePropertyAmenitiesDto,
     user: any,
   ) {
-    const property = await this.prisma.property.findUnique({ where: { id: propertyId } });
-    if (!property) throw new NotFoundException('Property not found.');
+    const property = await this.prisma.property.findUnique({
+      where: {
+        id: propertyId,
+      },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found.');
+    }
 
     const userId = user.id ?? user.sub;
-    const isOwner = property.ownerId === userId;
-    const isAdmin = user.role === UserRole.ADMIN;
-    if (!isOwner && !isAdmin) {
-      throw new ForbiddenException('You are not allowed to update this property.');
+
+    if (property.ownerId !== userId) {
+      throw new ForbiddenException(
+        'You are not allowed to update this property.',
+      );
     }
 
-    if ([PropertyLifecycleStatus.BOOKED, PropertyLifecycleStatus.OCCUPIED, PropertyLifecycleStatus.ARCHIVED].includes(property.lifecycleStatus as any)) {
-      throw new BadRequestException('Amenities cannot be changed in the current lifecycle state.');
-    }
+    await this.prisma.propertyAmenity.deleteMany({
+      where: {
+        propertyId,
+      },
+    });
 
-    const amenities = dto.amenityIds.length
-      ? await this.prisma.amenity.findMany({
-          where: { id: { in: dto.amenityIds } },
-          select: { id: true },
-        })
-      : [];
-    if (amenities.length !== dto.amenityIds.length) {
-      throw new BadRequestException('One or more amenity IDs are invalid.');
-    }
-
-    const updatedProperty = await this.prisma.$transaction(async (tx) => {
-      await tx.propertyAmenity.deleteMany({ where: { propertyId } });
-
-      if (dto.amenityIds.length) {
-        await tx.propertyAmenity.createMany({
-          data: dto.amenityIds.map((amenityId) => ({ propertyId, amenityId })),
-          skipDuplicates: true,
-        });
-      }
-
-      return tx.property.update({
-        where: { id: propertyId },
-        data: isOwner
-          ? {
-              lifecycleStatus:
-                property.lifecycleStatus === PropertyLifecycleStatus.DRAFT
-                  ? PropertyLifecycleStatus.DRAFT
-                  : PropertyLifecycleStatus.SUBMITTED,
-              isVerified: false,
-              isAvailable: false,
-            }
-          : {},
-        include: { amenities: { include: { amenity: true } } },
+    if (dto.amenityIds.length > 0) {
+      await this.prisma.propertyAmenity.createMany({
+        data: dto.amenityIds.map((amenityId) => ({
+          propertyId,
+          amenityId,
+        })),
+        skipDuplicates: true,
       });
+    }
+
+    const updatedProperty = await this.prisma.property.findUnique({
+      where: {
+        id: propertyId,
+      },
+      include: {
+        amenities: {
+          include: {
+            amenity: true,
+          },
+        },
+      },
     });
 
     return serializePrisma(updatedProperty);
@@ -1114,124 +1043,36 @@ export class PropertiesService {
     return (value * Math.PI) / 180;
   }
 
-  async submit(id: string, user: { id: string; role: UserRole }) {
-    const property = await this.prisma.property.findUnique({ where: { id } });
-    if (!property) throw new NotFoundException('Property not found.');
-    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('Only the property owner can submit this listing.');
-    }
-    assertPropertyTransition(property.lifecycleStatus, PropertyLifecycleStatus.SUBMITTED);
-    const updated = await this.prisma.property.update({
-      where: { id },
-      data: {
-        lifecycleStatus: PropertyLifecycleStatus.SUBMITTED,
-        isVerified: false,
-        isAvailable: false,
-      },
-    });
-    return { success: true, message: 'Property submitted for admin review.', property: serializePrisma(updated) };
-  }
-
-  async approve(id: string) {
-    const property = await this.prisma.property.findUnique({ where: { id } });
-    if (!property) throw new NotFoundException('Property not found.');
-    if (property.lifecycleStatus !== PropertyLifecycleStatus.SUBMITTED) {
-      throw new BadRequestException('Only submitted properties can be approved.');
-    }
-    assertPropertyTransition(property.lifecycleStatus, PropertyLifecycleStatus.VERIFIED);
-    const updated = await this.prisma.property.update({
-      where: { id },
-      data: {
-        lifecycleStatus: PropertyLifecycleStatus.VERIFIED,
-        isVerified: true,
-        isAvailable: false,
-      },
-    });
-    return { success: true, message: 'Property verified. Publish it to make it public.', property: serializePrisma(updated) };
-  }
-
-  async publish(id: string, user: { id: string; role: UserRole }) {
-    const property = await this.prisma.property.findUnique({ where: { id } });
-    if (!property) throw new NotFoundException('Property not found.');
-    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('Only the owner or admin can publish this property.');
-    }
-    if (property.lifecycleStatus !== PropertyLifecycleStatus.VERIFIED && property.lifecycleStatus !== PropertyLifecycleStatus.UNAVAILABLE) {
-      throw new BadRequestException('Only verified or unavailable properties can be published.');
-    }
-    if (!property.isVerified) {
-      throw new BadRequestException('Property must be admin verified before publishing.');
-    }
-    const updated = await this.prisma.property.update({
-      where: { id },
-      data: { lifecycleStatus: PropertyLifecycleStatus.PUBLISHED, isAvailable: true, isVerified: true },
-    });
-    return { success: true, message: 'Property published successfully.', property: serializePrisma(updated) };
-  }
-
-  async setUnavailable(id: string, user: { id: string; role: UserRole }) {
-    const property = await this.prisma.property.findUnique({ where: { id } });
-    if (!property) throw new NotFoundException('Property not found.');
-    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('Only the owner or admin can hide this property.');
-    }
-    if (![PropertyLifecycleStatus.PUBLISHED, PropertyLifecycleStatus.VERIFIED].includes(property.lifecycleStatus as any)) {
-      throw new BadRequestException('Property cannot be hidden in its current lifecycle state.');
-    }
-    const updated = await this.prisma.property.update({
-      where: { id },
-      data: { lifecycleStatus: PropertyLifecycleStatus.UNAVAILABLE, isAvailable: false },
-    });
-    return { success: true, message: 'Property hidden from public listings.', property: serializePrisma(updated) };
-  }
-
-  async archive(id: string, user: { id: string; role: UserRole }) {
-    const property = await this.prisma.property.findUnique({
-      where: { id },
-      include: {
-        bookings: { where: { status: { in: ['PENDING', 'APPROVED', 'PAYMENT_PENDING', 'PAID'] } }, select: { id: true } },
-        leases: { where: { status: 'ACTIVE' }, select: { id: true } },
-      },
-    });
-    if (!property) throw new NotFoundException('Property not found.');
-    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('Only the owner or admin can archive this property.');
-    }
-    if (property.bookings.length || property.leases.length) {
-      throw new BadRequestException('A property with an active booking or lease cannot be archived.');
-    }
-    if (property.lifecycleStatus === PropertyLifecycleStatus.ARCHIVED) {
-      return { success: true, message: 'Property is already archived.', property: serializePrisma(property) };
-    }
-    assertPropertyTransition(property.lifecycleStatus, PropertyLifecycleStatus.ARCHIVED);
-    const updated = await this.prisma.property.update({
-      where: { id },
-      data: { lifecycleStatus: PropertyLifecycleStatus.ARCHIVED, isAvailable: false, isVerified: false },
-    });
-    return { success: true, message: 'Property archived successfully.', property: serializePrisma(updated) };
-  }
-
-  private toPublicProperty<T extends Record<string, any>>(property: T): T {
-    const serialized = serializePrisma(property) as T & {
-      latitude?: string | number | null;
-      longitude?: string | number | null;
-    };
-
-    if (serialized.latitude !== null && serialized.latitude !== undefined) {
-      serialized.latitude = Number(Number(serialized.latitude).toFixed(3));
-    }
-    if (serialized.longitude !== null && serialized.longitude !== undefined) {
-      serialized.longitude = Number(Number(serialized.longitude).toFixed(3));
-    }
-
-    return serialized as T;
-  }
-
   // ===========================
   // Delete Property
   // ===========================
 
   async remove(id: string, user: any) {
-    return this.archive(id, user);
+    const property = await this.prisma.property.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found.');
+    }
+
+    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException(
+        'You are not allowed to delete this property.',
+      );
+    }
+
+    await this.prisma.property.delete({
+      where: {
+        id,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Property deleted successfully.',
+    };
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geocoding/geocoding.dart' as geo;
@@ -5,31 +7,90 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/location_model.dart';
+import 'location_exception.dart';
+import 'location_privacy.dart';
 import 'web_reverse_geocoder_stub.dart'
     if (dart.library.js_interop) 'web_reverse_geocoder_web.dart';
 
 class LocationService {
   static const String _mapsApiKey = String.fromEnvironment('MAPS_API_KEY');
 
-  Future<bool> requestPermission() async {
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return false;
+  Future<LocationPermission> permissionStatus() {
+    return Geolocator.checkPermission();
+  }
 
-    LocationPermission permission = await Geolocator.checkPermission();
+  Future<bool> requestPermission() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      throw const LocationException(
+        LocationFailure.gpsDisabled,
+        'Location services are turned off. Enable GPS and try again.',
+      );
+    }
+
+    var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
-    return permission != LocationPermission.denied &&
-        permission != LocationPermission.deniedForever;
+
+    if (permission == LocationPermission.denied) {
+      throw const LocationException(
+        LocationFailure.permissionDenied,
+        'Location permission was denied. Allow location access to continue.',
+      );
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      throw const LocationException(
+        LocationFailure.permissionPermanentlyDenied,
+        'Location permission is permanently denied. Enable it in app settings.',
+      );
+    }
+
+    return permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always;
   }
 
-  Future<LocationModel?> getCurrentLocation() async {
-    final allowed = await requestPermission();
-    if (!allowed) return null;
+  Future<bool> openLocationSettings() => Geolocator.openLocationSettings();
 
-    final Position position = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-    );
+  Future<bool> openAppSettings() => Geolocator.openAppSettings();
+
+  Future<LocationModel> getCurrentLocation({
+    Duration timeout = const Duration(seconds: 15),
+    bool rejectMockLocation = true,
+  }) async {
+    await requestPermission();
+
+    final Position position;
+    try {
+      position = await Geolocator.getCurrentPosition(
+        locationSettings: LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: timeout,
+        ),
+      );
+    } on TimeoutException {
+      throw const LocationException(
+        LocationFailure.timeout,
+        'Location lookup timed out. Check GPS signal and try again.',
+      );
+    } on LocationServiceDisabledException {
+      throw const LocationException(
+        LocationFailure.gpsDisabled,
+        'Location services are turned off. Enable GPS and try again.',
+      );
+    } on PermissionDeniedException {
+      throw const LocationException(
+        LocationFailure.permissionDenied,
+        'Location permission is not available.',
+      );
+    }
+
+    if (rejectMockLocation && position.isMocked) {
+      throw const LocationException(
+        LocationFailure.mockLocation,
+        'A simulated location was detected. Turn off mock location and try again.',
+      );
+    }
 
     try {
       return await reverseGeocode(position.latitude, position.longitude);
@@ -42,76 +103,112 @@ class LocationService {
     }
   }
 
+  /// Returns a privacy-reduced coordinate suitable for ordinary user sharing.
+  LocationModel sanitizeForSharing(LocationModel location) {
+    return location.copyWith(
+      latitude: LocationPrivacy.roundForSharing(location.latitude),
+      longitude: LocationPrivacy.roundForSharing(location.longitude),
+    );
+  }
+
   Future<LocationModel> reverseGeocode(
     double latitude,
     double longitude,
   ) async {
-    if (kIsWeb) return _reverseGeocodeWeb(latitude, longitude);
-
-    final List<geo.Placemark> placemarks = await geo.placemarkFromCoordinates(
-      latitude,
-      longitude,
-    );
-    if (placemarks.isEmpty) {
-      return LocationModel(latitude: latitude, longitude: longitude);
+    if (!_validCoordinate(latitude, longitude)) {
+      throw const LocationException(
+        LocationFailure.unavailable,
+        'The selected coordinates are invalid.',
+      );
     }
 
-    final geo.Placemark place = placemarks.first;
-    final addressParts = <String>[
-      if ((place.street ?? '').isNotEmpty) place.street!,
-      if ((place.subLocality ?? '').isNotEmpty) place.subLocality!,
-      if ((place.locality ?? '').isNotEmpty) place.locality!,
-    ];
+    if (kIsWeb) return _reverseGeocodeWeb(latitude, longitude);
 
-    return LocationModel(
-      latitude: latitude,
-      longitude: longitude,
-      address: addressParts.join(', '),
-      locality: place.subLocality ?? '',
-      city: place.locality ?? '',
-      state: place.administrativeArea ?? '',
-      country: place.country ?? '',
-      postalCode: place.postalCode ?? '',
-    );
+    try {
+      final placemarks = await geo.placemarkFromCoordinates(
+        latitude,
+        longitude,
+      );
+      if (placemarks.isEmpty) {
+        return LocationModel(latitude: latitude, longitude: longitude);
+      }
+
+      final place = placemarks.first;
+      final addressParts = <String>[
+        if ((place.street ?? '').isNotEmpty) place.street!,
+        if ((place.subLocality ?? '').isNotEmpty) place.subLocality!,
+        if ((place.locality ?? '').isNotEmpty) place.locality!,
+      ];
+
+      return LocationModel(
+        latitude: latitude,
+        longitude: longitude,
+        address: addressParts.join(', '),
+        locality: place.subLocality ?? '',
+        city: place.locality ?? '',
+        state: place.administrativeArea ?? '',
+        country: place.country ?? '',
+        postalCode: place.postalCode ?? '',
+      );
+    } catch (_) {
+      throw const LocationException(
+        LocationFailure.unavailable,
+        'We could not resolve this location to an address.',
+      );
+    }
   }
 
   Future<LocationModel> _reverseGeocodeWeb(
     double latitude,
     double longitude,
   ) async {
-    // On web, use the Maps JavaScript API already loaded for the map. This
-    // avoids browser CORS/referrer restrictions on the Geocoding REST API.
     try {
       final browserResult = await reverseGeocodeWithGoogleMapsJs(
         latitude,
         longitude,
-      );
+      ).timeout(const Duration(seconds: 12));
       if (browserResult != null) return browserResult;
     } catch (error) {
       debugPrint('Maps JavaScript reverse geocoding failed: $error');
     }
 
-    // Keep the REST path as a fallback for deployments that explicitly inject
-    // a web-compatible MAPS_API_KEY.
     if (_mapsApiKey.isEmpty) {
-      throw StateError('MAPS_API_KEY is not configured for the web build.');
+      throw const LocationException(
+        LocationFailure.unavailable,
+        'Address lookup is unavailable on this web deployment.',
+      );
     }
 
-    final response = await Dio().get<Map<String, dynamic>>(
-      'https://maps.googleapis.com/maps/api/geocode/json',
-      queryParameters: {
-        'latlng': '$latitude,$longitude',
-        'key': _mapsApiKey,
-      },
-      options: Options(receiveTimeout: const Duration(seconds: 12)),
-    );
-    final body = response.data ?? const <String, dynamic>{};
-    final results = body['results'];
-    if (body['status'] != 'OK' || results is! List || results.isEmpty) {
-      throw StateError('Google reverse geocoding failed: ${body['status']}');
-    }
+    try {
+      final response = await Dio().get<Map<String, dynamic>>(
+        'https://maps.googleapis.com/maps/api/geocode/json',
+        queryParameters: {
+          'latlng': '$latitude,$longitude',
+          'key': _mapsApiKey,
+        },
+        options: Options(receiveTimeout: const Duration(seconds: 12)),
+      );
+      final body = response.data ?? const <String, dynamic>{};
+      final results = body['results'];
+      if (body['status'] != 'OK' || results is! List || results.isEmpty) {
+        throw StateError('Google reverse geocoding failed.');
+      }
 
-    final first = Map<String, dynamic>.from(results.first as Map);
+      final first = Map<String, dynamic>.from(results.first as Map);
+      return _locationFromGoogleResult(first, latitude, longitude);
+    } catch (_) {
+      throw const LocationException(
+        LocationFailure.unavailable,
+        'We could not resolve this location to an address.',
+      );
+    }
+  }
+
+  LocationModel _locationFromGoogleResult(
+    Map<String, dynamic> first,
+    double latitude,
+    double longitude,
+  ) {
     final components = (first['address_components'] as List? ?? const [])
         .whereType<Map>()
         .map(Map<String, dynamic>.from)
@@ -120,30 +217,29 @@ class LocationService {
     String component(List<String> preferredTypes) {
       for (final type in preferredTypes) {
         for (final item in components) {
-          final types = (item['types'] as List? ?? const []).map((e) => e.toString());
+          final types = (item['types'] as List? ?? const []).map(
+            (e) => e.toString(),
+          );
           if (types.contains(type)) return item['long_name']?.toString() ?? '';
         }
       }
       return '';
     }
 
-    final locality = component([
-      'sublocality_level_1',
-      'sublocality',
-      'neighborhood',
-    ]);
-    final city = component([
-      'locality',
-      'administrative_area_level_2',
-      'postal_town',
-    ]);
-
     return LocationModel(
       latitude: latitude,
       longitude: longitude,
       address: first['formatted_address']?.toString() ?? '',
-      locality: locality,
-      city: city,
+      locality: component([
+        'sublocality_level_1',
+        'sublocality',
+        'neighborhood',
+      ]),
+      city: component([
+        'locality',
+        'administrative_area_level_2',
+        'postal_town',
+      ]),
       state: component(['administrative_area_level_1']),
       country: component(['country']),
       postalCode: component(['postal_code']),
@@ -151,25 +247,37 @@ class LocationService {
   }
 
   Future<LocationModel?> searchAddress(String address) async {
+    if (address.trim().isEmpty) return null;
+
     if (kIsWeb) {
       if (_mapsApiKey.isEmpty) return null;
-      final response = await Dio().get<Map<String, dynamic>>(
-        'https://maps.googleapis.com/maps/api/geocode/json',
-        queryParameters: {'address': address, 'key': _mapsApiKey},
-      );
-      final results = response.data?['results'];
-      if (results is! List || results.isEmpty) return null;
-      final location = ((results.first as Map)['geometry'] as Map)['location'] as Map;
-      return reverseGeocode(
-        (location['lat'] as num).toDouble(),
-        (location['lng'] as num).toDouble(),
-      );
+      try {
+        final response = await Dio().get<Map<String, dynamic>>(
+          'https://maps.googleapis.com/maps/api/geocode/json',
+          queryParameters: {'address': address, 'key': _mapsApiKey},
+          options: Options(receiveTimeout: const Duration(seconds: 12)),
+        );
+        final results = response.data?['results'];
+        if (results is! List || results.isEmpty) return null;
+        final location =
+            ((results.first as Map)['geometry'] as Map)['location'] as Map;
+        return reverseGeocode(
+          (location['lat'] as num).toDouble(),
+          (location['lng'] as num).toDouble(),
+        );
+      } catch (_) {
+        return null;
+      }
     }
 
-    final List<geo.Location> locations = await geo.locationFromAddress(address);
-    if (locations.isEmpty) return null;
-    final geo.Location location = locations.first;
-    return reverseGeocode(location.latitude, location.longitude);
+    try {
+      final locations = await geo.locationFromAddress(address);
+      if (locations.isEmpty) return null;
+      final location = locations.first;
+      return reverseGeocode(location.latitude, location.longitude);
+    } catch (_) {
+      return null;
+    }
   }
 
   double calculateDistance({
@@ -204,4 +312,12 @@ class LocationService {
       throw Exception('Could not launch Google Maps');
     }
   }
+
+  bool _validCoordinate(double latitude, double longitude) =>
+      latitude.isFinite &&
+      longitude.isFinite &&
+      latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180;
 }

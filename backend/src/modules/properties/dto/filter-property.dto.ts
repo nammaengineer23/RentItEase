@@ -18,8 +18,9 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  Min,
   Max,
+  MaxLength,
+  Min,
 } from 'class-validator';
 
 
@@ -38,6 +39,7 @@ export class FilterPropertiesDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   search?: string;
 
 
@@ -47,6 +49,7 @@ export class FilterPropertiesDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   city?: string;
 
 
@@ -56,6 +59,7 @@ export class FilterPropertiesDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   locality?: string;
 
 
@@ -65,6 +69,7 @@ export class FilterPropertiesDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(20)
   pincode?: string;
 
 
@@ -269,6 +274,7 @@ export class FilterPropertiesDto {
   @Type(()=>Number)
   @IsInt()
   @Min(1)
+  @Max(100000)
   page:number=1;
 
 
@@ -280,7 +286,7 @@ export class FilterPropertiesDto {
   @Type(()=>Number)
   @IsInt()
   @Min(1)
-  @Max(50)
+  @Max(100)
   limit:number=10;
 
 
@@ -292,6 +298,7 @@ export class FilterPropertiesDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   sortBy:string='createdAt';
 
 

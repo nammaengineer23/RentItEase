@@ -9,6 +9,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 import 'firebase_options.dart';
 
+const _appCheckWebSiteKey = String.fromEnvironment(
+  'APP_CHECK_WEB_SITE_KEY',
+  defaultValue: '6LeUVawtAAAAAON8Mbvx2xNyYkpGv_LULjgRMF_A',
+);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -16,7 +21,6 @@ Future<void> main() async {
 
   runApp(const ProviderScope(child: RentItEaseApp()));
 
-  // Production Apple builds use App Attest so iOS can satisfy the backend App Check gate.
   // App Check strengthens backend requests but must never hold the first
   // Flutter frame. Play Integrity may take time after a cold start or process
   // restoration, which previously left a blank launch surface until Android
@@ -28,9 +32,9 @@ Future<void> _activateAppCheck() async {
   try {
     await FirebaseAppCheck.instance
         .activate(
-          providerWeb: ReCaptchaEnterpriseProvider(
-            '6LeUVawtAAAAAON8Mbvx2xNyYkpGv_LULjgRMF_A',
-          ),
+          providerWeb: kDebugMode
+              ? WebDebugProvider()
+              : ReCaptchaEnterpriseProvider(_appCheckWebSiteKey),
           providerAndroid: kDebugMode
               ? const AndroidDebugProvider()
               : const AndroidPlayIntegrityProvider(),
@@ -39,6 +43,7 @@ Future<void> _activateAppCheck() async {
               : const AppleAppAttestWithDeviceCheckFallbackProvider(),
         )
         .timeout(const Duration(seconds: 10));
+    await FirebaseAppCheck.instance.setTokenAutoRefreshEnabled(true);
   } catch (error, stackTrace) {
     debugPrint('Firebase App Check activation deferred: $error');
     debugPrintStack(stackTrace: stackTrace);

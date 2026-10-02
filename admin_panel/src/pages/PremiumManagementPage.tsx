@@ -10,6 +10,7 @@ import {
   type PlanInput,
   type PremiumPlanConfig,
 } from '../api/premiumManagementApi';
+import { integerInRange, positiveNumber, requiredText } from '../forms/validation';
 
 const blankPlan: PlanInput = { name: '', code: 'PREMIUM', description: '', price: 99, durationDays: 30, trialDays: 30, features: [], displayOrder: 0, isActive: true };
 const date = (value?: string | null) => value ? new Date(value).toLocaleDateString() : '—';
@@ -54,6 +55,16 @@ export function PremiumManagementPage() {
   }
 
   async function savePlan() {
+    if (busy) return;
+    const nameError = requiredText(planForm.name, 'Plan name', 100);
+    const priceError = positiveNumber(String(planForm.price), 'Price', true);
+    const durationError = positiveNumber(String(planForm.durationDays), 'Duration', false);
+    const trialError = positiveNumber(String(planForm.trialDays), 'Trial duration', true);
+    const orderError = integerInRange(Number(planForm.displayOrder), 'Display order', 0, 100000);
+    if (nameError || priceError || durationError || trialError || orderError) {
+      setError(nameError ?? priceError ?? durationError ?? trialError ?? orderError ?? 'Enter valid plan values.');
+      return;
+    }
     setBusy(true); setError('');
     const payload = { ...planForm, features: featuresText.split('\n').map((v) => v.trim()).filter(Boolean) };
     try {
@@ -69,7 +80,10 @@ export function PremiumManagementPage() {
   }
 
   async function saveMembership(status?: Membership['status']) {
-    if (!membershipDialog) return;
+    if (!membershipDialog || busy) return;
+    const extendError = integerInRange(Number(extendDays), 'Extend days', 0, 3650);
+    if (extendError) { setError(extendError); return; }
+    if (status === 'CANCELLED' && !window.confirm('Cancel this membership? This action should only be used when cancellation is intended.')) return;
     setBusy(true); setError('');
     try {
       await updateMembershipAccount(membershipDialog.id, {

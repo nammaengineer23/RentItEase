@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Query,
   Post,
   Req,
   UploadedFile,
@@ -19,12 +20,33 @@ import { GenerateVideoDto } from './dto/generate-video.dto';
 import { PublishPostDto } from './dto/publish-post.dto';
 import { SocialSettingsDto } from './dto/social-settings.dto';
 import { SocialMediaService } from './social-media.service';
+import { SocialAccountService } from './accounts/social-account.service';
+import { SocialAccountConnectionDto, SocialAccountDisconnectDto } from './dto/social-account.dto';
+import { SchedulePostDto } from './dto/schedule-post.dto';
 
 @Controller('admin/social-media')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class SocialMediaController {
-  constructor(private readonly service: SocialMediaService) {}
+  constructor(private readonly service: SocialMediaService, private readonly accounts: SocialAccountService) {}
+
+  @Get('accounts')
+  getAccounts() {
+    return this.accounts.getConnectionState();
+  }
+
+  @Post('accounts/connect')
+  connectAccount(@Body() dto: SocialAccountConnectionDto) {
+    return this.accounts.connect({
+      ...dto,
+      expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
+    });
+  }
+
+  @Post('accounts/disconnect')
+  disconnectAccount(@Body() dto: SocialAccountDisconnectDto) {
+    return this.accounts.disconnect(dto.platform, dto.accountId);
+  }
 
   @Get('settings')
   getSettings() {
@@ -32,8 +54,8 @@ export class SocialMediaController {
   }
 
   @Get('properties')
-  getProperties() {
-    return this.service.listProperties();
+  getProperties(@Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.service.listProperties(Number(page) || 1, Number(limit) || 20);
   }
 
   @Get('analytics')
@@ -92,7 +114,7 @@ export class SocialMediaController {
   @Post('properties/:propertyId/schedule')
   schedule(
     @Param('propertyId') propertyId: string,
-    @Body() dto: PublishPostDto & { scheduledAt: string },
+    @Body() dto: SchedulePostDto,
     @Req() req: any,
   ) {
     return this.service.schedule({

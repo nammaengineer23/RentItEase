@@ -53,7 +53,7 @@ class AuthenticationService {
     String? phoneIdToken,
   }) async {
     final response = await _client.dio.post<Map<String, dynamic>>(
-      '/auth/register/verified',
+      ApiPaths.register,
       data: {
         ...request.toJson(),
         'emailVerificationToken': emailVerificationToken,

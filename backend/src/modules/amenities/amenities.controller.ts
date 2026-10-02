@@ -6,17 +6,12 @@ import {
   Param,
   Patch,
   Post,
-  UseGuards,
 } from '@nestjs/common';
 
 import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
 
 import { AmenitiesService } from './amenities.service';
 
@@ -31,8 +26,6 @@ export class AmenitiesController {
   ) {}
 
  @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
 @ApiOperation({
   summary: 'Create Amenity',
 })
@@ -63,8 +56,6 @@ create(
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
 @ApiOperation({
   summary: 'Update Amenity',
 })
@@ -79,8 +70,6 @@ update(
 }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
   @ApiOperation({
     summary: 'Delete Amenity',
   })

@@ -1,113 +1,171 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
 
-const DEFAULT_PAGE = 1;
-const DEFAULT_LIMIT = 20;
-const MAX_LIMIT = 100;
-
 @Injectable()
 export class FavoritesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+  ) {}
 
-  async addFavorite(propertyId: string, user: any) {
-    const property = await this.prisma.property.findFirst({
-      where: { id: propertyId, isVerified: true, isAvailable: true },
-    });
+  // ==========================
+  // Add Favorite
+  // ==========================
 
-    if (!property) {
-      throw new NotFoundException('Property not found.');
-    }
-
-    try {
-      const favorite = await this.prisma.favorite.upsert({
-        where: { userId_propertyId: { userId: user.id, propertyId } },
-        create: { userId: user.id, propertyId },
-        update: {},
+  async addFavorite(
+    propertyId: string,
+    user: any,
+  ) {
+    const property =
+      await this.prisma.property.findFirst({
+        where: {
+          id: propertyId,
+          isVerified: true,
+          isAvailable: true,
+        },
       });
 
-      return {
-        success: true,
-        message: 'Property added to favorites.',
-        favorite: serializePrisma(favorite),
-      };
-    } catch (error) {
-      // The composite unique constraint remains the final concurrency guard.
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        const favorite = await this.prisma.favorite.findUnique({
-          where: { userId_propertyId: { userId: user.id, propertyId } },
-        });
-        if (favorite) {
-          return {
-            success: true,
-            message: 'Property already in favorites.',
-            favorite: serializePrisma(favorite),
-          };
-        }
-      }
-      throw error;
+    if (!property) {
+      throw new NotFoundException(
+        'Property not found.',
+      );
     }
+
+    const existing =
+      await this.prisma.favorite.findUnique({
+        where: {
+          userId_propertyId: {
+            userId: user.id,
+            propertyId,
+          },
+        },
+      });
+
+    if (existing) {
+      throw new BadRequestException(
+        'Property already added to favorites.',
+      );
+    }
+
+  const favorite =
+  await this.prisma.favorite.create({
+    data: {
+      userId: user.id,
+      propertyId,
+    },
+  });
+
+return {
+  success: true,
+  message: 'Property added to favorites.',
+  favorite: serializePrisma(favorite),
+};
   }
 
-  async getMyFavorites(user: any, page = DEFAULT_PAGE, limit = DEFAULT_LIMIT) {
-    const normalizedPage = Number.isFinite(page) && page > 0 ? Math.floor(page) : DEFAULT_PAGE;
-    const normalizedLimit = Number.isFinite(limit) && limit > 0
-      ? Math.min(Math.floor(limit), MAX_LIMIT)
-      : DEFAULT_LIMIT;
-    const skip = (normalizedPage - 1) * normalizedLimit;
+  // ==========================
+  // Get My Favorites
+  // ==========================
 
-    const [favorites, total] = await this.prisma.$transaction([
-      this.prisma.favorite.findMany({
-        where: { userId: user.id },
+  async getMyFavorites(user: any) {
+    const favorites =
+      await this.prisma.favorite.findMany({
+        where: {
+          userId: user.id,
+        },
+
         include: {
           property: {
             include: {
-              owner: { select: { id: true } },
-              images: { where: { isPrimary: true } },
+              owner: {
+                select: {
+                  id: true,
+                },
+              },
+
+              images: {
+                where: {
+                  isPrimary: true,
+                },
+              },
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: normalizedLimit,
-      }),
-      this.prisma.favorite.count({ where: { userId: user.id } }),
-    ]);
+
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
 
     return {
-      success: true,
-      page: normalizedPage,
-      limit: normalizedLimit,
-      total,
-      totalPages: Math.ceil(total / normalizedLimit),
-      favorites: serializePrisma(favorites),
-    };
+  success: true,
+  total: favorites.length,
+  favorites: serializePrisma(favorites),
+};
   }
 
-  async removeFavorite(propertyId: string, user: any) {
-    const deleted = await this.prisma.favorite.deleteMany({
-      where: { userId: user.id, propertyId },
+  // ==========================
+  // Remove Favorite
+  // ==========================
+
+  async removeFavorite(
+    propertyId: string,
+    user: any,
+  ) {
+    const favorite =
+      await this.prisma.favorite.findUnique({
+        where: {
+          userId_propertyId: {
+            userId: user.id,
+            propertyId,
+          },
+        },
+      });
+
+    if (!favorite) {
+      throw new NotFoundException(
+        'Favorite not found.',
+      );
+    }
+
+    await this.prisma.favorite.delete({
+      where: {
+        id: favorite.id,
+      },
     });
 
     return {
       success: true,
-      removed: deleted.count > 0,
-      message: deleted.count > 0
-        ? 'Property removed from favorites.'
-        : 'Property was not in favorites.',
+      message:
+        'Property removed from favorites.',
     };
   }
 
-  async isFavorite(propertyId: string, user: any) {
-    const favorite = await this.prisma.favorite.findUnique({
-      where: { userId_propertyId: { userId: user.id, propertyId } },
-    });
+  // ==========================
+  // Check Favorite
+  // ==========================
 
-    return { success: true, isFavorite: !!favorite };
+  async isFavorite(
+    propertyId: string,
+    user: any,
+  ) {
+    const favorite =
+      await this.prisma.favorite.findUnique({
+        where: {
+          userId_propertyId: {
+            userId: user.id,
+            propertyId,
+          },
+        },
+      });
+
+    return {
+      success: true,
+      isFavorite: !!favorite,
+    };
   }
 }

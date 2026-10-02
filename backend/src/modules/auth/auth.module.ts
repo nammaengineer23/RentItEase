@@ -9,9 +9,6 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { MailModule } from '../../mail/mail.module';
 import { OtpModule } from '../../common/otp/otp.module';
-import { FirebaseAppCheckGuard } from '../../firebase/firebase-app-check.guard';
-import { AuthRateLimitModule } from '../../common/auth/auth-rate-limit.module';
-import { JwtSecretService } from '../../common/auth/jwt-secret.service';
 
 
 @Module({
@@ -20,7 +17,6 @@ import { JwtSecretService } from '../../common/auth/jwt-secret.service';
     FirebaseModule,
     MailModule,
     OtpModule,
-    AuthRateLimitModule,
     PassportModule.register({
       defaultStrategy: 'jwt',
     }),
@@ -47,8 +43,6 @@ import { JwtSecretService } from '../../common/auth/jwt-secret.service';
   providers: [
     AuthService,
     JwtStrategy,
-    FirebaseAppCheckGuard,
-    JwtSecretService,
   ],
 
   exports: [

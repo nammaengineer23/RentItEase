@@ -1,9 +1,8 @@
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
-  it('should be defined', () => {
+  it('constructs with its security dependencies', () => {
     const service = new AuthService(
-      {} as any,
       {} as any,
       {} as any,
       {} as any,

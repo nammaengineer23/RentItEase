@@ -1,0 +1,36 @@
+name: iOS Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, fix/web-admin-panel-hash-route]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    name: Flutter iOS analysis, tests and build
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: mobile_app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.4"
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Analyze application source
+        run: flutter analyze lib test
+      - name: Tests
+        run: flutter test
+      - name: iOS build without signing
+        run: flutter build ios --release --no-codesign --dart-define=API_BASE_URL=https://api.rentitease.com/api/v1

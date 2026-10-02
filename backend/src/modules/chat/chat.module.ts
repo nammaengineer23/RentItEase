@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 
 import { DatabaseModule } from '../../database/database.module';
-import { StorageModule } from '../../storage/storage.module';
 
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PushNotificationsModule } from '../push-notifications/push-notifications.module';
@@ -11,7 +10,6 @@ import { ChatService } from './chat.service';
 @Module({
   imports: [
     DatabaseModule,
-    StorageModule,
     NotificationsModule,
     PushNotificationsModule,
   ],

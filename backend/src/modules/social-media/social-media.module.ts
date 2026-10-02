@@ -13,6 +13,7 @@ import { VideoTemplateService } from './video/video-template.service';
 import { RemotionVideoService } from './video/remotion-video.service';
 import { SocialMediaStorageService } from './social-media.storage.service';
 import { CampaignSchedulerService } from './campaigns/campaign-scheduler.service';
+import { SocialAccountService } from './accounts/social-account.service';
 
 @Module({
   imports: [PrismaModule],
@@ -28,6 +29,7 @@ import { CampaignSchedulerService } from './campaigns/campaign-scheduler.service
     YouTubeService,
     SocialMediaStorageService,
     CampaignSchedulerService,
+    SocialAccountService,
   ],
   exports: [SocialMediaService],
 })

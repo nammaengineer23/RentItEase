@@ -5,8 +5,8 @@ import {
   Delete,
   Param,
   UseGuards,
-  Query,
   Request as Req,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -15,6 +15,7 @@ import {
 } from '@nestjs/swagger';
 
 import { NotificationsService } from './notifications.service';
+import { NotificationPaginationDto } from './dto/notification-pagination.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { Request } from 'express';
 @ApiTags('Notifications')
@@ -36,13 +37,12 @@ export class NotificationsController {
   })
   getMyNotifications(
     @Req() req: Request,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query() query: NotificationPaginationDto,
   ) {
     return this.notificationsService.getMyNotifications(
       req.user,
-      Number(page) || 1,
-      Number(limit) || 20,
+      query.page,
+      query.limit,
     );
   }
 

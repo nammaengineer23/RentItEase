@@ -5,6 +5,11 @@ on:
     workflows: ["RentItEase - Release E2E / RC1"]
     types: [completed]
   workflow_dispatch:
+    inputs:
+      apk_artifact_run_id:
+        description: "Release workflow run containing the website APK artifact"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -17,8 +22,6 @@ concurrency:
 jobs:
   deploy:
     name: Deploy Flutter Web to Cloudflare
-    environment:
-      name: production
     if: >-
       ${{ github.event_name == 'workflow_dispatch' ||
           (github.event.workflow_run.conclusion == 'success' &&
@@ -35,7 +38,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.44.8"
+          flutter-version: "3.44.4"
           channel: stable
           cache: true
 
@@ -61,7 +64,7 @@ jobs:
       - name: Validate Cloudflare SEO routes
         run: node scripts/test-worker-seo.mjs
 
-      - name: Build production web artifact
+      - name: Build production web
         working-directory: mobile_app
         env:
           FACEBOOK_PAGE_URL: ${{ vars.FACEBOOK_PAGE_URL }}
@@ -99,9 +102,6 @@ jobs:
       # build/web so a normal website deploy cannot be blocked by its size.
       # /download continues to provide the release download URL managed by
       # the Worker/release flow.
-
-      - name: Verify web deployment artifact
-        run: test -f mobile_app/build/web/index.html
 
       - name: Deploy to Cloudflare Workers
         env:

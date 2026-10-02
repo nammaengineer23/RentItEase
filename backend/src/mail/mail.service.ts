@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { createHash } from 'crypto';
 import { PrismaService } from '../database/prisma.service';
 @Injectable()
 export class MailService {
@@ -18,6 +19,9 @@ export class MailService {
         user: this.configService.get<string>('MAIL_USER'),
         pass: this.configService.get<string>('MAIL_PASSWORD'),
       },
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
     });
   }
 
@@ -36,11 +40,7 @@ export class MailService {
       return { skipped: true, reason: 'Email notifications disabled by user' };
     }
 
-    return this.transporter.sendMail({
-      from: this.configService.get<string>('MAIL_FROM'),
-      ...options,
-      to: email,
-    });
+    return this.sendWithRetry(email, options);
   }
 
   // ==========================================
@@ -48,9 +48,8 @@ export class MailService {
   // ==========================================
 
   async sendAuthenticationOtp(email: string, otp: string) {
-    await this.transporter.sendMail({
+    await this.sendWithRetry(email, {
       from: this.configService.get<string>('MAIL_FROM'),
-      to: email,
       subject: 'Your RentItEase verification code',
       html: `
         <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto">
@@ -71,9 +70,8 @@ export class MailService {
   // ==========================================
 
   async sendWelcomeEmail(email: string, fullName: string) {
-    await this.transporter.sendMail({
+    await this.sendWithRetry(email, {
       from: this.configService.get<string>('MAIL_FROM'),
-      to: email,
       subject: 'Welcome to RentItEase 🎉',
       html: `
         <h2>Welcome ${fullName},</h2>
@@ -100,9 +98,8 @@ export class MailService {
     fullName: string,
     resetLink: string,
   ) {
-    await this.transporter.sendMail({
+    await this.sendWithRetry(email, {
       from: this.configService.get<string>('MAIL_FROM'),
-      to: email,
       subject: 'Reset Your RentItEase Password',
       html: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
@@ -313,9 +310,8 @@ export class MailService {
     fullName: string,
     resetLink: string,
   ) {
-    await this.transporter.sendMail({
+    await this.sendWithRetry(email, {
       from: this.configService.get<string>('MAIL_FROM'),
-      to: email,
       subject: 'Reset your RentItEase password',
       html: `
       <h2>Hello ${fullName},</h2>
@@ -338,4 +334,38 @@ export class MailService {
     `,
     });
   }
+
+  private async sendWithRetry(
+    email: string,
+    options: nodemailer.SendMailOptions,
+  ) {
+    const messageId = `<${createHash('sha256')
+      .update(`${email}|${options.subject ?? ''}|${String(options.html ?? options.text ?? '')}`)
+      .digest('hex')
+      .slice(0, 32)}@rentitease.com>`;
+
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      try {
+        return await this.transporter.sendMail({
+          ...options,
+          to: email,
+          messageId,
+        });
+      } catch (error) {
+        lastError = error;
+        if (attempt === 2) {
+          console.error(
+            `Email delivery failed after retries: type=${error instanceof Error ? error.name : 'unknown'}`,
+          );
+          throw error;
+        }
+        await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+      }
+    }
+
+    throw lastError;
+  }
+
 }

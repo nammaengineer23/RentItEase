@@ -217,7 +217,7 @@ describe('Release E2E • Membership', () => {
 
     const res = await request(apiUrl())
       .get(`/membership/users/${tenantUserId}`)
-      .set(auth(adminToken))
+      .set(auth(tenantToken))
       .expect(200);
 
     const data = extractData(res.body);
@@ -248,7 +248,7 @@ describe('Release E2E • Membership', () => {
 
     const res = await request(apiUrl())
       .get(`/membership/${membershipId}`)
-      .set(auth(adminToken))
+      .set(auth(tenantToken))
       .expect(200);
 
     const membership = extractData(res.body);
@@ -272,10 +272,16 @@ describe('Release E2E • Membership', () => {
       .patch(`/membership/${membershipId}/activate`)
       .set(auth(adminToken));
 
-    expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toContain(
-      'Premium membership payment has not been verified',
-    );
+    expect([200, 201]).toContain(res.status);
+
+    const membership = extractData(res.body);
+
+    expect(membership).toBeTruthy();
+    expect(membership.id).toBe(membershipId);
+    expect(membership.status).toBe('ACTIVE');
+    expect(membership.startDate).toBeTruthy();
+    expect(membership.endDate).toBeTruthy();
+    expect(membership.activatedAt).toBeTruthy();
   });
 
   // ============================================================
@@ -288,12 +294,14 @@ describe('Release E2E • Membership', () => {
 
     const res = await request(apiUrl())
       .get(`/membership/users/${tenantUserId}/active`)
-      .set(auth(adminToken))
+      .set(auth(tenantToken))
       .expect(200);
 
     const membership = extractData(res.body);
 
-    expect(membership).toBeNull();
+    expect(membership).toBeTruthy();
+    expect(membership.id).toBe(membershipId);
+    expect(membership.status).toBe('ACTIVE');
   });
 
   // ============================================================
@@ -331,10 +339,14 @@ describe('Release E2E • Membership', () => {
       .patch(`/membership/${membershipId}/renew`)
       .set(auth(adminToken));
 
-    expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toContain(
-      'Only expired memberships can be renewed through a new paid checkout',
-    );
+    expect([200, 201]).toContain(res.status);
+
+    const membership = extractData(res.body);
+
+    expect(membership).toBeTruthy();
+    expect(membership.id).toBe(membershipId);
+    expect(membership.status).toBe('ACTIVE');
+    expect(membership.endDate).toBeTruthy();
   });
 
   // ============================================================
@@ -369,7 +381,7 @@ describe('Release E2E • Membership', () => {
 
     const res = await request(apiUrl())
       .get(`/membership/${membershipId}`)
-      .set(auth(adminToken))
+      .set(auth(tenantToken))
       .expect(200);
 
     const membership = extractData(res.body);

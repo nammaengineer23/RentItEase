@@ -6,12 +6,10 @@ import { ListingAiService } from './listing-ai.service';
 
 import { DatabaseModule } from '../../database/database.module';
 import { AuthModule } from '../auth/auth.module';
-import { StorageModule } from '../../storage/storage.module';
 
 @Module({
-  imports: [DatabaseModule, AuthModule, StorageModule],
+  imports: [DatabaseModule, AuthModule],
   controllers: [PropertiesController],
   providers: [PropertiesService, ListingAiService],
-  exports: [PropertiesService],
 })
 export class PropertiesModule {}

@@ -76,14 +76,7 @@ async function main() {
       await jsonRequest(`/admin/properties/${property.id}`, { method: 'DELETE', headers });
       deleted += 1;
     } catch (error) {
-      const message = String(error?.message || error);
-      // Active bookings/leases intentionally block archival. Preserve these
-      // protected production properties instead of failing the cleanup job.
-      if (message.includes('active booking or lease cannot be archived')) {
-        console.log(`Preserved ${property.id}: active booking or lease prevents archival.`);
-        continue;
-      }
-      failures.push(`${property.id}: ${message}`);
+      failures.push(`${property.id}: ${error.message}`);
     }
   }
 

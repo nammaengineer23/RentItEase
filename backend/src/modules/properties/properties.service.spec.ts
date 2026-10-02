@@ -1,9 +1,6 @@
 import { ForbiddenException } from '@nestjs/common';
 import { MembershipStatus, UserRole } from '@prisma/client';
 
-jest.mock('../../firebase/firebase.service', () => ({ FirebaseService: class {} }));
-jest.mock('../../storage/r2-storage.service', () => ({ R2StorageService: class {} }));
-
 import { PropertiesService } from './properties.service';
 
 describe('PropertiesService public discovery and owner-contact privacy', () => {
@@ -19,13 +16,11 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
     membership,
   } as any;
 
-  const storageService = { deleteImage: jest.fn() } as any;
-
   let service: PropertiesService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new PropertiesService(prisma, storageService);
+    service = new PropertiesService(prisma);
   });
 
   it('limits every home collection to verified, available properties', async () => {

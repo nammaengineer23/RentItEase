@@ -2,59 +2,115 @@ import {
   Controller,
   Post,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
-import { extname } from 'path';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
-import { UploadsService } from './uploads.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import {
+  FileInterceptor,
+} from '@nestjs/platform-express';
 
-@ApiTags('Uploads')
+import {
+  memoryStorage,
+} from 'multer';
+
+import {
+  extname,
+} from 'path';
+
+import {
+  UploadsService,
+} from './uploads.service';
+
+
 @Controller('uploads')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class UploadsController {
+
   constructor(
     private readonly uploadsService: UploadsService,
   ) {}
 
   @Post('image')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @UseInterceptors(
+    FileInterceptor(
+      'file',
+      {
+        storage: memoryStorage(),
+
+        limits: {
+          fileSize:
+            5 * 1024 * 1024, // 5MB
+        },
+        fileFilter: (
+          req,
+          file,
+          callback,
+        ) => {
+          const allowedExtensions =
+            [
+              '.jpg',
+              '.jpeg',
+              '.png',
+              '.webp',
+            ];
+
+          const extension =
+            extname(
+              file.originalname,
+            ).toLowerCase();
+
+          if (
+            allowedExtensions.includes(
+              extension,
+            )
+          ) {
+            callback(
+              null,
+              true,
+            );
+          } else {
+            callback(
+              new Error(
+                'Only JPG, JPEG, PNG and WEBP files are allowed',
+              ),
+              false,
+            );
+          }
+        },
+      },
+    ),
+  )
+  async uploadImage(
+    @UploadedFile()
+    file: Express.Multer.File,
+  ) {
+    return this.uploadsService.uploadImage(
+      file,
+    );
+  }
+
+  @Post('file')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      limits: {
-        fileSize: 5 * 1024 * 1024,
-      },
-      fileFilter: (_req, file, callback) => {
-        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
-        const allowedMimeTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/webp',
+      limits: { fileSize: 15 * 1024 * 1024 },
+      fileFilter: (_request, file, callback) => {
+        const allowed = [
+          '.pdf', '.doc', '.docx', '.txt',
+          '.m4a', '.aac', '.mp3', '.wav', '.ogg',
         ];
-        const extension = extname(file.originalname).toLowerCase();
-
-        const valid =
-          allowedExtensions.includes(extension) &&
-          allowedMimeTypes.includes(file.mimetype);
-
         callback(
-          valid
+          allowed.includes(extname(file.originalname).toLowerCase())
             ? null
-            : new Error('Only JPEG, PNG and WEBP images are allowed.'),
-          valid,
+            : new Error('Unsupported chat file type.'),
+          allowed.includes(extname(file.originalname).toLowerCase()),
         );
       },
     }),
   )
-  async uploadImage(
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.uploadsService.uploadImage(file);
+  uploadFile(@UploadedFile() file: Express.Multer.File) {
+    return this.uploadsService.uploadFile(file);
   }
-
 }

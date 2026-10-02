@@ -1,21 +1,22 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 
-import { UserRole } from '@prisma/client';
+import { BookingStatus, LeaseStatus, MembershipStatus, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
 import { SocialMediaService } from '../social-media/social-media.service';
-import { PropertiesService } from '../properties/properties.service';
+import { AdminAuditService, AdminAuditContext } from './admin-audit.service';
 
 @Injectable()
 export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly socialMediaService: SocialMediaService,
-    private readonly propertiesService: PropertiesService,
+    private readonly audit: AdminAuditService,
   ) {}
 
   // ==========================
@@ -23,74 +24,40 @@ export class AdminService {
   // ==========================
   async getDashboard() {
     const [
-      users,
-      properties,
-      reviews,
-      favorites,
-      visits,
-    ] = await Promise.all([
-      this.prisma.user.findMany(),
-      this.prisma.property.findMany(),
-      this.prisma.review.findMany(),
-      this.prisma.favorite.findMany(),
-      this.prisma.propertyVisit.findMany(),
+      totalUsers,
+      totalOwners,
+      totalAdmins,
+      totalProperties,
+      activeProperties,
+      totalReviews,
+      totalFavorites,
+      totalVisits,
+      pendingVisits,
+      approvedVisits,
+      completedVisits,
+    ] = await this.prisma.$transaction([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { role: UserRole.OWNER } }),
+      this.prisma.user.count({ where: { role: UserRole.ADMIN } }),
+      this.prisma.property.count(),
+      this.prisma.property.count({ where: { isAvailable: true } }),
+      this.prisma.review.count(),
+      this.prisma.favorite.count(),
+      this.prisma.propertyVisit.count(),
+      this.prisma.propertyVisit.count({ where: { status: 'PENDING' } }),
+      this.prisma.propertyVisit.count({ where: { status: 'APPROVED' } }),
+      this.prisma.propertyVisit.count({ where: { status: 'COMPLETED' } }),
     ]);
 
-    const totalUsers = users.length;
-
-    const totalOwners = users.filter(
-      (u) => u.role === 'OWNER',
-    ).length;
-
-    const totalAdmins = users.filter(
-      (u) => u.role === 'ADMIN',
-    ).length;
-
-    const totalProperties = properties.length;
-
-    const activeProperties = properties.filter(
-      (p) => p.isAvailable,
-    ).length;
-
-    const rentedProperties =
-      totalProperties - activeProperties;
-
-    const pendingVisits = visits.filter(
-      (v) => v.status === 'PENDING',
-    ).length;
-
-    const approvedVisits = visits.filter(
-      (v) => v.status === 'APPROVED',
-    ).length;
-
-    const completedVisits = visits.filter(
-      (v) => v.status === 'COMPLETED',
-    ).length;
-
     return serializePrisma({
-      users: {
-        totalUsers,
-        totalOwners,
-        totalAdmins,
-      },
-
+      users: { totalUsers, totalOwners, totalAdmins },
       properties: {
         totalProperties,
         activeProperties,
-        rentedProperties,
+        rentedProperties: totalProperties - activeProperties,
       },
-
-      engagement: {
-        totalReviews: reviews.length,
-        totalFavorites: favorites.length,
-      },
-
-      visits: {
-        totalVisits: visits.length,
-        pendingVisits,
-        approvedVisits,
-        completedVisits,
-      },
+      engagement: { totalReviews, totalFavorites },
+      visits: { totalVisits, pendingVisits, approvedVisits, completedVisits },
     });
   }
 
@@ -99,30 +66,29 @@ export class AdminService {
   // ==========================
   async getUsers() {
     const users = await this.prisma.user.findMany({
-      include: {
-        properties: {
-          select: {
-            id: true,
-          },
-        },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        _count: { select: { properties: true } },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
 
-    return serializePrisma(
-      users.map((user) => ({
-        id: user.id,
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        isActive: user.isActive,
-        createdAt: user.createdAt,
-        totalProperties: user.properties.length,
-      })),
-    );
+    return serializePrisma(users.map((user) => ({
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      totalProperties: user._count.properties,
+    })));
   }
 
   // ==========================
@@ -196,181 +162,183 @@ visits: {
     });
   }
 
-  // ==========================
-  // Activate User
-  // ==========================
-  // ==========================
-// Activate User
-// ==========================
-async activateUser(id: string) {
-  const user = await this.prisma.user.findUnique({
-    where: { id },
-  });
-
-  if (!user) {
-    throw new NotFoundException('User not found.');
-  }
-
-  const updatedUser = await this.prisma.user.update({
-    where: { id },
-    data: {
-      isActive: true,
-    },
-    select: {
-      id: true,
-      fullName: true,
-      email: true,
-      phone: true,
-      role: true,
-      isActive: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
-
-  return serializePrisma(updatedUser);
-}
-  // ==========================
-// Deactivate User
-// ==========================
-async deactivateUser(id: string) {
-  const user = await this.prisma.user.findUnique({
-    where: { id },
-  });
-
-  if (!user) {
-    throw new NotFoundException('User not found.');
-  }
-
-  const updatedUser = await this.prisma.user.update({
-    where: { id },
-    data: {
-      isActive: false,
-    },
-    select: {
-      id: true,
-      fullName: true,
-      email: true,
-      phone: true,
-      role: true,
-      isActive: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
-
-  return serializePrisma(updatedUser);
-}
-  // ==========================
-  // Update User Role
-  // ==========================
-  async updateUserRole(id: string, role: UserRole) {
-    if (!Object.values(UserRole).includes(role)) {
-      throw new NotFoundException('Invalid user role.');
+  private async assertAdminActor(actorId: string) {
+    const actor = await this.prisma.user.findUnique({ where: { id: actorId } });
+    if (!actor || actor.role !== UserRole.ADMIN || !actor.isActive) {
+      throw new ForbiddenException('Active admin authorization is required.');
     }
-    const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException('User not found.');
+    return actor;
+  }
 
-    const updatedUser = await this.prisma.user.update({
-      where: { id },
-      data: {
-        role,
-        ...(role === UserRole.OWNER
-          ? { ownerRequestStatus: 'APPROVED', ownerReviewedAt: new Date() }
-          : role === UserRole.USER
-            ? { ownerReviewedAt: null }
-            : {}),
+  async activateUser(id: string, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
+    const user = await this.prisma.user.findUnique({ where: { id }, select: { id: true, role: true, isActive: true } });
+    if (!user) throw new NotFoundException('User not found.');
+    const updatedUser = await this.prisma.$transaction(
+      async (tx) => {
+        const updated = await tx.user.update({
+          where: { id },
+          data: { isActive: true },
+          select: { id: true, fullName: true, email: true, phone: true, role: true, isActive: true, createdAt: true, updatedAt: true },
+        });
+        await this.audit.recordTx(tx, context, 'USER_ACTIVATE', 'USER', id, user, updated);
+        return updated;
       },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        phone: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
     return serializePrisma(updatedUser);
   }
 
-  // ==========================
-  // Delete User
-  // ==========================
-  async deleteUser(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-    });
+  async deactivateUser(id: string, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
+    if (id === actorId) throw new BadRequestException('Admins cannot deactivate their own account.');
 
-    if (!user) {
-      throw new NotFoundException(
-        'User not found.',
-      );
-    }
-
-    await this.prisma.user.delete({
-      where: { id },
-    });
-
-    return {
-      success: true,
-      message:
-        'User deleted successfully.',
-    };
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        const user = await tx.user.findUnique({ where: { id }, select: { id: true, role: true, isActive: true } });
+        if (!user) throw new NotFoundException('User not found.');
+        if (
+          user.role === UserRole.ADMIN &&
+          user.isActive &&
+          (await tx.user.count({ where: { role: UserRole.ADMIN, isActive: true } })) <= 1
+        ) {
+          throw new BadRequestException('The last active admin cannot be deactivated.');
+        }
+        const updated = await tx.user.update({
+          where: { id },
+          data: { isActive: false },
+          select: { id: true, fullName: true, email: true, phone: true, role: true, isActive: true, createdAt: true, updatedAt: true },
+        });
+        await this.audit.recordTx(tx, context, 'USER_DEACTIVATE', 'USER', id, user, updated);
+        return updated;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+    return serializePrisma(result);
   }
+
+  async updateUserRole(id: string, role: UserRole, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
+    if (!Object.values(UserRole).includes(role)) throw new BadRequestException('Invalid user role.');
+    if (id === actorId) throw new BadRequestException('Admins cannot change their own role.');
+
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        const user = await tx.user.findUnique({ where: { id }, select: { id: true, role: true, isActive: true, ownerRequestStatus: true } });
+        if (!user) throw new NotFoundException('User not found.');
+        if (
+          user.role === UserRole.ADMIN &&
+          role !== UserRole.ADMIN &&
+          user.isActive &&
+          (await tx.user.count({ where: { role: UserRole.ADMIN, isActive: true } })) <= 1
+        ) {
+          throw new BadRequestException('The last active admin cannot be demoted.');
+        }
+        const updated = await tx.user.update({
+          where: { id },
+          data: {
+            role,
+            ...(role === UserRole.OWNER
+              ? { ownerRequestStatus: 'APPROVED', ownerReviewedAt: new Date() }
+              : role === UserRole.USER
+                ? { ownerReviewedAt: null }
+                : {}),
+          },
+          select: { id: true, fullName: true, email: true, phone: true, role: true, isActive: true, createdAt: true, updatedAt: true },
+        });
+        await this.audit.recordTx(tx, context, 'USER_ROLE_CHANGE', 'USER', id, user, updated);
+        return updated;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+    return serializePrisma(result);
+  }
+
+  async deleteUser(id: string, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
+    if (id === actorId) throw new BadRequestException('Admins cannot delete their own account.');
+
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        const user = await tx.user.findUnique({
+          where: { id },
+          select: { id: true, role: true, isActive: true, fullName: true, email: true },
+        });
+        if (!user) throw new NotFoundException('User not found.');
+        if (
+          user.role === UserRole.ADMIN &&
+          user.isActive &&
+          (await tx.user.count({ where: { role: UserRole.ADMIN, isActive: true } })) <= 1
+        ) {
+          throw new BadRequestException('The last active admin cannot be deleted.');
+        }
+
+        const [propertyCount, activeBookingCount, activeLeaseCount, activeMembershipCount] = await Promise.all([
+          tx.property.count({ where: { ownerId: id } }),
+          tx.booking.count({ where: { tenantId: id, status: { in: [BookingStatus.PENDING, BookingStatus.APPROVED, BookingStatus.PAYMENT_PENDING, BookingStatus.PAID] } } }),
+          tx.lease.count({ where: { tenantId: id, status: LeaseStatus.ACTIVE } }),
+          tx.membership.count({ where: { userId: id, status: MembershipStatus.ACTIVE } }),
+        ]);
+        if (propertyCount || activeBookingCount || activeLeaseCount || activeMembershipCount) {
+          throw new BadRequestException('User cannot be deleted while they own properties or have active rental, lease, or membership records. Deactivate the account instead.');
+        }
+
+        await tx.user.delete({ where: { id } });
+        await this.audit.recordTx(tx, context, 'USER_DELETE', 'USER', id, user, null);
+        return { success: true, message: 'User deleted successfully.' };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+    return result;
+  }
+
     // ==========================
   // Get All Properties
   // ==========================
   async getProperties() {
     const properties = await this.prisma.property.findMany({
-      include: {
-        owner: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-          },
-        },
+      select: {
+        id: true,
+        title: true,
+        city: true,
+        locality: true,
+        price: true,
+        isVerified: true,
+        isAvailable: true,
+        createdAt: true,
+        owner: { select: { id: true, fullName: true, email: true } },
         images: {
-          where: {
-            isPrimary: true,
-          },
+          where: { isPrimary: true },
+          orderBy: { displayOrder: 'asc' },
           take: 1,
+          select: { imageUrl: true },
         },
-        favorites: true,
-        visits: true,
-        reviews: true,
+        _count: {
+          select: { favorites: true, visits: true, reviews: true },
+        },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
 
-    return serializePrisma(
-      properties.map((property) => ({
-        id: property.id,
-        title: property.title,
-        city: property.city,
-        locality: property.locality,
-        price: Number(property.price),
-        owner: property.owner,
-        isVerified: property.isVerified,
-        isAvailable: property.isAvailable,
-        totalFavorites: property.favorites.length,
-        totalVisits: property.visits.length,
-        totalReviews: property.reviews.length,
-        primaryImage:
-          property.images.length > 0
-            ? property.images[0].imageUrl
-            : null,
-        createdAt: property.createdAt,
-      })),
-    );
+    return serializePrisma(properties.map((property) => ({
+      id: property.id,
+      title: property.title,
+      city: property.city,
+      locality: property.locality,
+      price: Number(property.price),
+      owner: property.owner,
+      isVerified: property.isVerified,
+      isAvailable: property.isAvailable,
+      totalFavorites: property._count.favorites,
+      totalVisits: property._count.visits,
+      totalReviews: property._count.reviews,
+      primaryImage: property.images[0]?.imageUrl ?? null,
+      createdAt: property.createdAt,
+    })));
   }
 
   // ==========================
-// Get Property Details
+  // Get Property Details
 // ==========================
 async getProperty(id: string) {
   const property = await this.prisma.property.findUnique({
@@ -467,30 +435,149 @@ async getProperty(id: string) {
   // ==========================
   // Hide Property
   // ==========================
-  async hideProperty(id: string) {
-    return this.propertiesService.setUnavailable(id, { id: 'admin', role: UserRole.ADMIN });
+  async hideProperty(id: string, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
+    const property = await this.prisma.property.findUnique({
+      where: { id },
+    });
 
+    if (!property) {
+      throw new NotFoundException(
+        'Property not found.',
+      );
+    }
+
+    const updated = await this.prisma.property.update({
+        where: { id },
+        data: {
+          isAvailable: false,
+        },
+      });
+    await this.audit.record(context, 'PROPERTY_HIDE', 'PROPERTY', id, property, updated);
+    return serializePrisma(updated);
   }
 
   // ==========================
   // Unhide Property
   // ==========================
-  async unhideProperty(id: string) {
-    return this.propertiesService.publish(id, { id: 'admin', role: UserRole.ADMIN });
+  async unhideProperty(id: string, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
+    const property = await this.prisma.property.findUnique({
+      where: { id },
+    });
 
+    if (!property) {
+      throw new NotFoundException(
+        'Property not found.',
+      );
+    }
+
+    const [activeBookings, activeLeases] = await Promise.all([
+      this.prisma.booking.count({
+        where: {
+          propertyId: id,
+          status: { in: [BookingStatus.PENDING, BookingStatus.APPROVED, BookingStatus.PAYMENT_PENDING, BookingStatus.PAID] },
+        },
+      }),
+      this.prisma.lease.count({ where: { propertyId: id, status: LeaseStatus.ACTIVE } }),
+    ]);
+    if (activeBookings || activeLeases) {
+      throw new BadRequestException('A property with an active booking or lease cannot be made available.');
+    }
+    const updated = await this.prisma.property.update({
+      where: { id },
+      data: { isAvailable: true },
+    });
+    await this.audit.record(context, 'PROPERTY_UNHIDE', 'PROPERTY', id, property, updated);
+    return serializePrisma(updated);
   }
 
-  async approveProperty(id: string) {
-    return this.propertiesService.approve(id);
+  async approveProperty(id: string, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
+    const property = await this.prisma.property.findUnique({ where: { id } });
+    if (!property) throw new NotFoundException('Property not found.');
+    if (property.isVerified) throw new BadRequestException('Property is already approved.');
 
+    const approved = await this.prisma.$transaction(
+      async (tx) => {
+        const updated = await tx.property.update({
+          where: { id },
+          data: { isVerified: true, isAvailable: true },
+        });
+        const ownerBefore = await tx.user.findUnique({
+          where: { id: property.ownerId },
+          select: { id: true, role: true, ownerRequestStatus: true },
+        });
+        const ownerAfter = await tx.user.update({
+          where: { id: property.ownerId },
+          data: {
+            role: UserRole.OWNER,
+            ownerRequestStatus: 'APPROVED',
+            ownerReviewedAt: new Date(),
+          },
+          select: { id: true, role: true, ownerRequestStatus: true },
+        });
+        await this.audit.recordTx(
+          tx,
+          context,
+          'PROPERTY_APPROVE',
+          'PROPERTY',
+          id,
+          { isVerified: property.isVerified, isAvailable: property.isAvailable },
+          { isVerified: updated.isVerified, isAvailable: updated.isAvailable },
+        );
+        await this.audit.recordTx(
+          tx,
+          context,
+          'USER_ROLE_PROMOTION',
+          'USER',
+          property.ownerId,
+          ownerBefore,
+          ownerAfter,
+        );
+        return updated;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+
+    // Prepare marketing content only after the approval transaction commits.
+    // Generation must never block or roll back property approval; the admin can
+    // regenerate from Social Media if preparation fails.
+    void this.socialMediaService.onPropertyApproved(id).catch((error) => {
+      console.error('Automatic reel preparation failed after property approval', {
+        propertyId: id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+
+    return serializePrisma(approved);
   }
 
   // ==========================
   // Delete Property
   // ==========================
-  async deleteProperty(id: string) {
-    return this.propertiesService.archive(id, { id: 'admin', role: UserRole.ADMIN });
+  async deleteProperty(id: string, actorId: string, context: AdminAuditContext) {
+    await this.assertAdminActor(actorId);
+    const property = await this.prisma.property.findUnique({
+      where: { id },
+    });
 
+    if (!property) {
+      throw new NotFoundException(
+        'Property not found.',
+      );
+    }
+
+    const [activeBookings, activeLeases] = await Promise.all([
+      this.prisma.booking.count({ where: { propertyId: id, status: { in: ['PENDING', 'APPROVED', 'PAYMENT_PENDING', 'PAID'] } } }),
+      this.prisma.lease.count({ where: { propertyId: id, status: 'ACTIVE' } }),
+    ]);
+    if (activeBookings || activeLeases) {
+      throw new BadRequestException('Property cannot be deleted while it has an active booking or lease.');
+    }
+    await this.prisma.property.delete({ where: { id } });
+    await this.audit.record(context, 'PROPERTY_DELETE', 'PROPERTY', id, property, null);
+    return { success: true, message: 'Property deleted successfully.' };
   }
 
   // ==========================
@@ -526,7 +613,8 @@ async getReviews() {
 // ==========================
 // Delete Review
 // ==========================
-async deleteReview(id: string) {
+async deleteReview(id: string, actorId: string, context: AdminAuditContext) {
+  await this.assertAdminActor(actorId);
   const review = await this.prisma.review.findUnique({
     where: { id },
   });
@@ -535,14 +623,9 @@ async deleteReview(id: string) {
     throw new NotFoundException('Review not found.');
   }
 
-  await this.prisma.review.delete({
-    where: { id },
-  });
-
-  return {
-    success: true,
-    message: 'Review deleted successfully.',
-  };
+  await this.prisma.review.delete({ where: { id } });
+  await this.audit.record(context, 'REVIEW_DELETE', 'REVIEW', id, review, null);
+  return { success: true, message: 'Review deleted successfully.' };
 }
 
 // ==========================
@@ -644,157 +727,49 @@ async completeVisit(id: string) {
 // Platform Analytics
 // ==========================
 async getAnalytics() {
-  const [
-    users,
-    properties,
-    reviews,
-    favorites,
-    visits,
-  ] = await Promise.all([
-    this.prisma.user.findMany(),
-    this.prisma.property.findMany(),
-    this.prisma.review.findMany(),
-    this.prisma.favorite.findMany(),
-    this.prisma.propertyVisit.findMany(),
-  ]);
+    const [
+      totalUsers,
+      owners,
+      tenants,
+      admins,
+      activeUsers,
+      totalProperties,
+      availableProperties,
+      reviews,
+      favorites,
+      visits,
+    ] = await this.prisma.$transaction([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { role: UserRole.OWNER } }),
+      this.prisma.user.count({ where: { role: UserRole.USER } }),
+      this.prisma.user.count({ where: { role: UserRole.ADMIN } }),
+      this.prisma.user.count({ where: { isActive: true } }),
+      this.prisma.property.count(),
+      this.prisma.property.count({ where: { isAvailable: true } }),
+      this.prisma.review.count(),
+      this.prisma.favorite.count(),
+      this.prisma.propertyVisit.count(),
+    ]);
 
-  return serializePrisma({
-    users: {
-      total: users.length,
-      owners: users.filter(u => u.role === 'OWNER').length,
-      tenants: users.filter(u => u.role === 'USER').length,
-      admins: users.filter(u => u.role === 'ADMIN').length,
-      active: users.filter(u => u.isActive).length,
-      inactive: users.filter(u => !u.isActive).length,
-    },
-
-    properties: {
-      total: properties.length,
-      available: properties.filter(p => p.isAvailable).length,
-      rented: properties.filter(p => !p.isAvailable).length,
-    },
-
-    engagement: {
-      reviews: reviews.length,
-      favorites: favorites.length,
-      visits: visits.length,
-    },
-  });
-}
-
-  // ==========================
-  // Universal admin status / condition override
-  // ==========================
-
-  async overrideStatus(
-    model: string,
-    id: string,
-    field: string,
-    value: unknown,
-  ) {
-    const definitions: Record<string, { field: string; values?: readonly string[]; boolean?: boolean }> = {
-      user: { field: 'role', values: ['USER', 'OWNER', 'ADMIN'] },
-      userOwnerRequestStatus: { field: 'ownerRequestStatus', values: ['NONE', 'PENDING', 'APPROVED', 'REJECTED'] },
-      userActive: { field: 'isActive', boolean: true },
-      propertyAvailable: { field: 'isAvailable', boolean: true },
-      propertyVerified: { field: 'isVerified', boolean: true },
-      booking: { field: 'status', values: ['PENDING', 'APPROVED', 'PAYMENT_PENDING', 'PAID', 'REJECTED', 'CANCELLED', 'COMPLETED'] },
-      visit: { field: 'status', values: ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'COMPLETED'] },
-      payment: { field: 'status', values: ['CREATED', 'PENDING', 'SUCCESS', 'FAILED', 'REFUNDED'] },
-      invoice: { field: 'status', values: ['GENERATED', 'PAID', 'CANCELLED'] },
-      lease: { field: 'status', values: ['ACTIVE', 'COMPLETED', 'TERMINATED', 'CANCELLED'] },
-      membership: { field: 'status', values: ['PENDING', 'ACTIVE', 'EXPIRED', 'CANCELLED'] },
-      premiumListing: { field: 'status', values: ['PENDING', 'ACTIVE', 'EXPIRED', 'CANCELLED'] },
-      paymentRefund: { field: 'status', values: ['PENDING', 'PROCESSED', 'FAILED', 'UNKNOWN'] },
-      paymentWebhookEvent: { field: 'status', values: ['RECEIVED', 'PROCESSED', 'IGNORED', 'FAILED'] },
-      socialMediaPost: { field: 'status', values: ['PENDING', 'GENERATING', 'READY', 'PUBLISHING', 'PUBLISHED', 'FAILED', 'CANCELLED'] },
-      socialCampaign: { field: 'status', values: ['DRAFT', 'QUEUED', 'GENERATING', 'READY', 'SCHEDULED', 'PUBLISHING', 'PUBLISHED', 'FAILED', 'CANCELLED'] },
-    };
-
-    if (model === 'propertyAvailable') {
-      if (typeof value !== 'boolean') {
-        throw new BadRequestException('Condition value must be boolean.');
-      }
-      return value
-        ? this.propertiesService.publish(id, { id: 'admin', role: UserRole.ADMIN })
-        : this.propertiesService.setUnavailable(id, { id: 'admin', role: UserRole.ADMIN });
-    }
-
-    if (model === 'propertyVerified') {
-      if (value !== true) {
-        throw new BadRequestException('Property verification can only be granted through the admin approval workflow.');
-      }
-      return this.propertiesService.approve(id);
-    }
-
-    const definition = definitions[model];
-    if (!definition) throw new BadRequestException('Unsupported admin status target.');
-
-    if (definition.field !== field) {
-      throw new BadRequestException(`Field ${field} is not mutable through the admin status override.`);
-    }
-
-    let normalized: string | boolean;
-    if (definition.boolean) {
-      if (typeof value !== 'boolean') {
-        throw new BadRequestException('Condition value must be boolean.');
-      }
-      normalized = value;
-    } else {
-      if (typeof value !== 'string' || !definition.values?.includes(value)) {
-        throw new BadRequestException(
-          `Invalid ${field} value. Allowed values: ${definition.values?.join(', ')}`,
-        );
-      }
-      normalized = value;
-    }
-
-    const clients: Record<string, any> = {
-      user: this.prisma.user,
-      booking: this.prisma.booking,
-      visit: this.prisma.propertyVisit,
-      payment: this.prisma.payment,
-      invoice: this.prisma.invoice,
-      lease: this.prisma.lease,
-      membership: this.prisma.membership,
-      premiumListing: this.prisma.premiumListing,
-      paymentRefund: this.prisma.paymentRefund,
-      paymentWebhookEvent: this.prisma.paymentWebhookEvent,
-      socialMediaPost: this.prisma.socialMediaPost,
-      socialCampaign: this.prisma.socialCampaign,
-      property: this.prisma.property,
-    };
-
-    const clientKey =
-      model === 'userOwnerRequestStatus' || model === 'userActive'
-        ? 'user'
-        : model.startsWith('property')
-          ? 'property'
-          : model;
-
-    const client = clients[clientKey];
-    if (!client) throw new BadRequestException('Unsupported admin status target.');
-
-    const existing = await client.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException(`${model} record not found.`);
-
-    const data: Record<string, unknown> = { [field]: normalized };
-
-    if (model === 'user') {
-      if (normalized === UserRole.OWNER) {
-        data.ownerRequestStatus = 'APPROVED';
-        data.ownerReviewedAt = new Date();
-      } else if (normalized === UserRole.USER) {
-        data.ownerRequestStatus = 'NONE';
-        data.ownerReviewedAt = null;
-      }
-    }
-
-    const updated = await client.update({ where: { id }, data });
     return serializePrisma({
-      success: true,
-      message: `Admin updated ${model}.`,
-      data: updated,
+      users: {
+        total: totalUsers,
+        owners,
+        tenants,
+        admins,
+        active: activeUsers,
+        inactive: totalUsers - activeUsers,
+      },
+      properties: {
+        total: totalProperties,
+        available: availableProperties,
+        rented: totalProperties - availableProperties,
+      },
+      engagement: {
+        reviews,
+        favorites,
+        visits,
+      },
     });
   }
 }

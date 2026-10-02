@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -6,6 +8,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/app_exception.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/config/auth_features.dart';
 import '../../../core/navigation/route_persistence_service.dart';
 import '../data/models/auth_response.dart';
@@ -25,6 +28,7 @@ class AuthenticationProvider extends ChangeNotifier {
   }) : _repository = repository ?? AuthenticationRepositoryImpl(),
        _pushNotificationService = pushNotificationService ?? PushNotificationService() {
     _loadRememberMePreference();
+    ApiClient.shared.onSessionExpired = _handleSessionExpired;
   }
 
   static const _rememberMeKey = 'auth_remember_me';
@@ -54,6 +58,14 @@ class AuthenticationProvider extends ChangeNotifier {
   AuthResponse? get authResponse => _authResponse;
   bool get isLoggedIn => _authResponse != null;
   bool get isSessionRestored => _sessionRestored;
+
+  @override
+  void dispose() {
+    if (ApiClient.shared.onSessionExpired == _handleSessionExpired) {
+      ApiClient.shared.onSessionExpired = null;
+    }
+    super.dispose();
+  }
 
   void togglePasswordVisibility() {
     _obscurePassword = !_obscurePassword;
@@ -180,9 +192,9 @@ class AuthenticationProvider extends ChangeNotifier {
       stage = 'Firebase account verification';
       final firebaseIdToken = await firebaseCredential.user?.getIdToken(true);
       if (firebaseIdToken == null || firebaseIdToken.isEmpty) throw Exception('Firebase did not return an ID token.');
-      stage = 'RentItEase account sign-in';
+      _pendingGoogleIdToken = firebaseIdToken; stage = 'RentItEase account sign-in';
       final response = await _repository.firebaseLogin(firebaseIdToken, createAccount: true);
-      _authResponse = response; await _saveSession(response); return true;
+      _authResponse = response; await _saveSession(response); _pendingGoogleIdToken = null; return true;
     } catch (error, stackTrace) {
       debugPrint('Google sign-in failed during $stage: ${error.runtimeType}: $error');
       debugPrintStack(stackTrace: stackTrace, label: 'Google sign-in failure');
@@ -229,19 +241,50 @@ class AuthenticationProvider extends ChangeNotifier {
     return 'Google sign-in could not be completed during $stage. Please try again.';
   }
 
+  void _handleSessionExpired() {
+    if (_authResponse == null) return;
+    _authResponse = null;
+    _isLoading = false;
+    _pendingGoogleIdToken = null;
+    unawaited(_pushNotificationService.deactivate());
+    unawaited(FirebaseAuth.instance.signOut());
+    unawaited(RoutePersistenceService.clear());
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     _errorMessage = null;
     try { await _pushNotificationService.deactivate(); } catch (_) {}
     try { await _repository.logout(); } catch (_) {}
-    finally { _authResponse = null; _isLoading = false; await RoutePersistenceService.clear(); notifyListeners(); }
+    try { await FirebaseAuth.instance.signOut(); } catch (_) {}
+    finally {
+      _authResponse = null;
+      _isLoading = false;
+      _pendingGoogleIdToken = null;
+      await RoutePersistenceService.clear();
+      notifyListeners();
+    }
   }
 
   Future<void> loadSavedSession() => _sessionRestoreFuture ??= _restoreSavedSession();
 
   Future<void> _restoreSavedSession() async {
-    try { _authResponse = await _repository.restoreSession(); if (_authResponse != null) await _pushNotificationService.activate(); }
-    catch (_) { _authResponse = null; }
-    finally { _sessionRestored = true; notifyListeners(); }
+    try {
+      _authResponse = await _repository.restoreSession();
+      if (_authResponse != null) {
+        await _pushNotificationService.activate();
+      }
+    } catch (error) {
+      // A rejected /auth/me response includes expired, revoked, and inactive
+      // accounts. Never keep a stale local session in memory in any of those
+      // cases; the backend remains authoritative for account state.
+      _authResponse = null;
+      try { await _pushNotificationService.deactivate(); } catch (_) {}
+      try { await FirebaseAuth.instance.signOut(); } catch (_) {}
+    } finally {
+      _sessionRestored = true;
+      notifyListeners();
+    }
   }
 
   Future<void> _saveSession(AuthResponse response) async {

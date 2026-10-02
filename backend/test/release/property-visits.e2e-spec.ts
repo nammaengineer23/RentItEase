@@ -1,6 +1,5 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
-import { createApprovedE2EProperty } from './helpers';
 
 describe('Property Visits E2E', () => {
   // ============================================================
@@ -401,19 +400,18 @@ describe('Property Visits E2E', () => {
       .post('/auth/login')
       .send({ login: adminEmail, password: adminPassword })
       .expect(201);
-
     adminToken = extractToken(adminLogin.body);
-
-    // Use the shared release fixture helper so the property lifecycle is
-    // exercised exactly as production requires: DRAFT -> SUBMITTED ->
-    // VERIFIED -> PUBLISHED/isAvailable.
-    propertyId = await createApprovedE2EProperty(
-      ownerToken,
-      adminToken,
-      'Release Visits',
-    );
-
+    const created = await request(apiUrl)
+      .post('/properties')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ title: `Release Visits ${Date.now()}`, description: 'Isolated visit E2E property.', price: 25000, address: '123 Visit Test Road', locality: 'HSR Layout', city: 'Bangalore', state: 'Karnataka', country: 'India', pincode: '560102', bedrooms: 2, bathrooms: 2, area: 1200, propertyType: 'APARTMENT', furnishing: 'SEMI_FURNISHED', parking: true, petFriendly: true, securityDeposit: 50000 });
+    const property = extractData(created.body)?.property ?? extractData(created.body);
+    propertyId = property?.id ?? '';
     expect(propertyId).toBeTruthy();
+    await request(apiUrl)
+      .patch(`/admin/properties/${propertyId}/approve`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect((res) => { if (![200, 201].includes(res.status)) throw new Error(JSON.stringify(res.body)); });
   });
 
   // ============================================================

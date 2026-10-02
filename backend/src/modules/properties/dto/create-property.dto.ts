@@ -1,162 +1,226 @@
 import {
-  ArrayUnique,
   IsArray,
+  ArrayMaxSize,
   IsBoolean,
   IsEnum,
-  IsLatitude,
-  IsLongitude,
   IsNumber,
   IsOptional,
-  IsPositive,
-  IsPostalCode,
   IsString,
+  IsPositive,
+  Max,
   MaxLength,
   Min,
-  MinLength,
   ValidateIf,
 } from 'class-validator';
+
 import { ApiProperty } from '@nestjs/swagger';
-import { FurnishingType, PropertyType } from '@prisma/client';
+
+import {
+  FurnishingType,
+  PropertyType,
+} from '@prisma/client';
 
 export class CreatePropertyDto {
-  @ApiProperty({ example: 'Spacious 2 BHK in HSR Layout' })
+  @ApiProperty({
+    example: '',
+  })
   @IsString()
-  @MinLength(5)
-  @MaxLength(120)
+  @MaxLength(200)
   title!: string;
 
-  @ApiProperty({ example: 'Spacious apartment with modern amenities.' })
+  @ApiProperty({
+    example: 'Spacious apartment with modern amenities.',
+  })
   @IsString()
-  @MinLength(20)
-  @MaxLength(5000)
+  @MaxLength(10000)
   description!: string;
 
-  @ApiProperty({ example: 25000 })
+  @ApiProperty({
+    example: 25000,
+  })
   @IsNumber({ maxDecimalPlaces: 2 })
-  @IsPositive()
+  @Min(0)
   price!: number;
 
-  @ApiProperty({ example: '123 MG Road' })
+  @ApiProperty({
+    example: '123 MG Road',
+  })
   @IsString()
-  @MinLength(5)
-  @MaxLength(250)
+  @MaxLength(300)
   address!: string;
 
-  @ApiProperty({ required: false, example: 'HSR Layout' })
+  @ApiProperty({
+    required: false,
+    example: 'HSR Layout',
+  })
   @IsOptional()
   @IsString()
-  @MaxLength(120)
   locality?: string;
 
-  @ApiProperty({ required: false, example: 'Near BDA Complex' })
+  @ApiProperty({
+    required: false,
+    example: 'Near BDA Complex',
+  })
   @IsOptional()
   @IsString()
-  @MaxLength(250)
   landmark?: string;
 
-  @ApiProperty({ example: 'Bengaluru' })
+  @ApiProperty({
+    example: 'Bangalore',
+  })
   @IsString()
-  @MinLength(2)
   @MaxLength(100)
   city!: string;
 
-  @ApiProperty({ example: 'Karnataka' })
+  @ApiProperty({
+    example: 'Karnataka',
+  })
   @IsString()
-  @MinLength(2)
   @MaxLength(100)
   state!: string;
 
-  @ApiProperty({ example: 'India' })
+  @ApiProperty({
+    example: 'India',
+  })
   @IsString()
-  @MinLength(2)
   @MaxLength(100)
   country!: string;
 
-  @ApiProperty({ example: '560102' })
+  @ApiProperty({
+    example: '560102',
+  })
   @IsString()
-  @IsPostalCode('IN')
+  @MaxLength(20)
   pincode!: string;
 
-  @ApiProperty({ required: false, example: 12.9116 })
+  @ApiProperty({
+    required: false,
+    example: 12.9116,
+  })
   @IsOptional()
-  @IsLatitude()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
   latitude?: number;
 
-  @ApiProperty({ required: false, example: 77.6474 })
+  @ApiProperty({
+    required: false,
+    example: 77.6474,
+  })
   @IsOptional()
-  @IsLongitude()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
   longitude?: number;
 
-  @ApiProperty({ example: 2 })
+  @ApiProperty({
+    example: 2,
+  })
   @IsNumber()
-  @IsPositive()
+  @Min(0)
+  @Max(100)
   bedrooms!: number;
 
-  @ApiProperty({ example: 2 })
+  @ApiProperty({
+    example: 2,
+  })
   @IsNumber()
-  @Min(1)
+  @Min(0)
+  @Max(100)
   bathrooms!: number;
 
   @ApiProperty({ example: 1, required: false, default: 0 })
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(100)
   balconies?: number;
 
   @ApiProperty({ example: 2, required: false, default: 0 })
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(1000)
   floor?: number;
 
   @ApiProperty({ example: 5, required: false, default: 0 })
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(1000)
   totalFloors?: number;
 
-  @ApiProperty({ example: 1200 })
+  @ApiProperty({
+    example: 1200,
+  })
   @IsNumber()
-  @IsPositive()
+  @Min(0)
+  @Max(10000000)
   area!: number;
 
-  @ApiProperty({ enum: PropertyType, example: PropertyType.APARTMENT })
+  @ApiProperty({
+    enum: PropertyType,
+    example: PropertyType.APARTMENT,
+  })
   @IsEnum(PropertyType)
   propertyType!: PropertyType;
 
-  @ApiProperty({ enum: FurnishingType, example: FurnishingType.SEMI_FURNISHED })
+  @ApiProperty({
+    enum: FurnishingType,
+    example: FurnishingType.SEMI_FURNISHED,
+  })
   @IsEnum(FurnishingType)
   furnishing!: FurnishingType;
 
-  @ApiProperty({ example: true })
+  @ApiProperty({
+    example: true,
+  })
   @IsBoolean()
   parking!: boolean;
 
-  @ApiProperty({ example: true })
+  @ApiProperty({
+    example: true,
+  })
   @IsBoolean()
   petFriendly!: boolean;
 
-  @ApiProperty({ example: 50000 })
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
+  @ApiProperty({
+    example: 50000,
+  })
+  @IsNumber()
   securityDeposit!: number;
 
-  @ApiProperty({ required: false, default: false })
+  @ApiProperty({
+    required: false,
+    default: false,
+    description: 'Allow short stays charged per day',
+  })
   @IsOptional()
   @IsBoolean()
   dailyRentEnabled?: boolean;
 
-  @ApiProperty({ required: false, example: 1800 })
+  @ApiProperty({
+    required: false,
+    example: 1800,
+    description: 'Owner-defined daily rent in INR',
+  })
   @ValidateIf((dto: CreatePropertyDto) => dto.dailyRentEnabled === true)
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
   dailyRent?: number;
 
-  @ApiProperty({ required: false, type: [String] })
+  @ApiProperty({
+    required: false,
+    type: [String],
+    description: 'List of Amenity IDs',
+    example: [
+      'cmrabc123456789',
+      'cmrxyz987654321',
+    ],
+  })
   @IsOptional()
   @IsArray()
-  @ArrayUnique()
   @IsString({ each: true })
-  @MinLength(1, { each: true })
+  @ArrayMaxSize(100)
   amenityIds?: string[];
 }

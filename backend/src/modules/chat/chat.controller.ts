@@ -8,8 +8,6 @@ import {
   Query,
   Post,
   UseGuards,
-  UploadedFile,
-  UseInterceptors,
 } from '@nestjs/common';
 
 import {
@@ -18,13 +16,13 @@ import {
 } from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 import { ChatService } from './chat.service';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { SendMessageDto } from './dto/send-message.dto';
+import { ChatPaginationDto } from './dto/chat-pagination.dto';
 
 @ApiTags('Chat')
 @Controller('chat')
@@ -73,6 +71,7 @@ export class ChatController {
   // ==========================
 
   @Post('conversations/:conversationId/messages')
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   sendMessage(
@@ -89,32 +88,6 @@ export class ChatController {
   }
 
 
-
-  @Post('conversations/:conversationId/attachments')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @UseInterceptors(FileInterceptor('file', {
-    storage: memoryStorage(),
-    limits: { fileSize: 15 * 1024 * 1024 },
-  }))
-  uploadAttachment(
-    @Param('conversationId') conversationId: string,
-    @CurrentUser() user: any,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.chatService.uploadAttachment(conversationId, user.id, file);
-  }
-
-  @Get('messages/:messageId/attachment')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  getAttachmentUrl(
-    @Param('messageId') messageId: string,
-    @CurrentUser() user: any,
-  ) {
-    return this.chatService.getAttachmentUrl(messageId, user.id);
-  }
-
   // ==========================
   // Get Messages
   // ==========================
@@ -125,10 +98,14 @@ export class ChatController {
   getMessages(
     @Param('conversationId') conversationId: string,
     @CurrentUser() user: any,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query() query: ChatPaginationDto,
   ) {
-    return this.chatService.getMessages(conversationId, user.id, page === undefined ? 1 : Number(page), limit === undefined ? 50 : Number(limit));
+    return this.chatService.getMessages(
+      conversationId,
+      user.id,
+      query.page,
+      query.limit,
+    );
   }
 
 

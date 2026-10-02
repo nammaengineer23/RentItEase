@@ -12,7 +12,7 @@
     "start:prod": "prisma migrate deploy && node dist/main",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"src/**/*.ts\"",
-    "test": "jest --config ./test/jest-unit.json",
+    "test": "jest --config ./jest.config.js",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json",
@@ -26,10 +26,10 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "cleanup:e2e": "ts-node scripts/cleanup-e2e-data.ts"
+    "cleanup:e2e": "ts-node scripts/cleanup-e2e-data.ts",
+    "social:live-verify": "ts-node scripts/social-provider-live-verification.ts"
   },
   "dependencies": {
-    "@nestjs-modules/mailer": "^2.3.7",
     "@nestjs/common": "^11.1.6",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.6",
@@ -37,7 +37,7 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.6",
     "@nestjs/serve-static": "^5.0.5",
-    "@nestjs/swagger": "^11.4.5",
+    "@nestjs/swagger": "^11.4.7",
     "@nestjs/throttler": "^6.5.0",
     "@prisma/client": "^6.19.3",
     "bcrypt": "^6.0.0",
@@ -46,21 +46,20 @@
     "cloudinary": "^2.10.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "file-type": "^18.7.0",
-    "firebase-admin": "^14.1.0",
+    "firebase-admin": "^14.5.0",
     "googleapis": "^174.0.1",
     "graphify": "^1.0.0",
     "handlebars": "^4.7.9",
     "helmet": "^8.3.0",
     "joi": "^18.2.3",
-    "multer": "^2.2.0",
-    "nodemailer": "^9.0.3",
+    "multer": "^2.4.0",
+    "nodemailer": "^10.0.11",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "razorpay": "^2.9.8",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.5",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^14.0.1"
   },
@@ -73,7 +72,6 @@
     "@types/jest": "^30.0.0",
     "@types/multer": "^2.2.0",
     "@types/node": "^24.13.3",
-    "@types/nodemailer": "^8.0.1",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.41.0",
@@ -91,5 +89,8 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.2"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.2"
   }
 }

@@ -1,26 +1,20 @@
 name: RentItEase - Release E2E / RC1
 
 on:
-  # RC1 is normally manual. The narrow trigger below is used only for the
-  # automated release-validation loop and fires for the dedicated trigger file.
   workflow_dispatch:
   push:
     branches: [main]
-    paths:
-      - ci/rc1-trigger
 
 # RC1 exercises the live production API with shared tenant/owner/admin
-# accounts and builds a signed Android artifact. PRs remain covered by
-# Backend CI and Flutter Fast Check / Android workflows.
+# accounts and builds a signed Android artifact.  Keep it as the gate for
+# main and releases, rather than running it for every pull request.  PRs are
+# still covered by Backend CI and Flutter Android Build.
 
 concurrency:
   # All refs share production E2E accounts and data. Serialize runs to avoid
   # pull-request and main workflows mutating the same records concurrently.
   group: rentitease-production-release-e2e
   cancel-in-progress: false
-
-permissions:
-  contents: read
 
 jobs:
 
@@ -102,8 +96,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -129,47 +121,10 @@ jobs:
           test -n "$E2E_ADMIN_EMAIL" && echo "E2E_ADMIN_EMAIL: configured" || (echo "E2E_ADMIN_EMAIL: MISSING" && exit 1)
           test -n "$E2E_ADMIN_PASSWORD" && echo "E2E_ADMIN_PASSWORD: configured" || (echo "E2E_ADMIN_PASSWORD: MISSING" && exit 1)
 
-      - name: Wait for production health to stabilize
+      - name: Wait for production deployment to stabilize
         run: |
-          set -euo pipefail
-
-          health_url="https://api.rentitease.com/api/v1/health"
-
-          consecutive_ok=0
-
-          for attempt in $(seq 1 40); do
-            response="$(curl --fail --silent --show-error --retry 3 --retry-delay 3 --retry-all-errors "$health_url" || true)"
-            health_status="$(printf '%s' "$response" | node -e '
-              let input = "";
-              process.stdin.on("data", chunk => input += chunk);
-              process.stdin.on("end", () => {
-                try {
-                  const body = JSON.parse(input);
-                  const status = body?.status || body?.data?.status || "";
-                  process.stdout.write(status);
-                } catch {
-                  process.stdout.write("");
-                }
-              });
-            ')"
-
-            echo "Production health check $attempt/40: status=${health_status:-unknown}"
-
-            if [ "$health_status" = "ok" ]; then
-              consecutive_ok=$((consecutive_ok + 1))
-              if [ "$consecutive_ok" -ge 2 ]; then
-                echo "Production health is OK for two consecutive checks."
-                exit 0
-              fi
-            else
-              consecutive_ok=0
-            fi
-
-            sleep 15
-          done
-
-          echo "Production health did not become OK within the stabilization window."
-          exit 1
+          sleep 60
+          curl --fail --silent --show-error --retry 24 --retry-delay 5 --retry-all-errors "https://api.rentitease.com/api/v1/health"
 
       - name: Release E2E suite except property visits
         run: |
@@ -325,7 +280,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.44.8"
+          flutter-version: "3.44.4"
           channel: stable
           cache: true
 
@@ -362,7 +317,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.44.8"
+          flutter-version: "3.44.4"
           channel: stable
           cache: true
 
@@ -410,7 +365,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.44.8"
+          flutter-version: "3.44.4"
           channel: stable
           cache: true
 

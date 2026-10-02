@@ -5,6 +5,7 @@ import '../../property/data/repositories/property_repository_impl.dart';
 import '../../property/domain/entities/property_entity.dart';
 import '../../property/providers/property_provider.dart';
 import '../models/location_model.dart';
+import '../services/location_exception.dart';
 import '../services/location_service.dart';
 
 final mapsProvider = ChangeNotifierProvider<MapsProvider>(
@@ -17,10 +18,6 @@ class MapsProvider extends ChangeNotifier {
   final PropertyRepositoryImpl _propertyRepository;
   final LocationService _locationService = LocationService();
 
-  //====================================================
-  // Default Location (Bengaluru)
-  //====================================================
-
   static const double defaultLatitude = 12.9716;
   static const double defaultLongitude = 77.5946;
 
@@ -29,71 +26,38 @@ class MapsProvider extends ChangeNotifier {
   double zoom = 15;
 
   bool isLoading = false;
-
+  String? errorMessage;
   String searchText = '';
 
-  //====================================================
-  // Selected Location
-  //====================================================
-
   LocationModel? selectedLocation;
-
-  //====================================================
-  // Nearby Properties
-  //====================================================
-
   List<PropertyEntity> nearbyProperties = [];
-
   PropertyEntity? selectedProperty;
-
-  //====================================================
-  // Search
-  //====================================================
 
   void updateSearch(String value) {
     searchText = value;
     notifyListeners();
   }
 
-  //====================================================
-  // Select Location
-  //====================================================
-
   void selectLocation(LocationModel location) {
     selectedLocation = location;
     latitude = location.latitude;
     longitude = location.longitude;
-
+    errorMessage = null;
     notifyListeners();
   }
-
-  //====================================================
-  // Select Property
-  //====================================================
 
   void selectProperty(PropertyEntity property) {
     selectedProperty = property;
-
     latitude = property.latitude;
     longitude = property.longitude;
-
     notifyListeners();
   }
-
-  //====================================================
-  // Camera
-  //====================================================
 
   void moveCamera({required double lat, required double lng}) {
     latitude = lat;
     longitude = lng;
-
     notifyListeners();
   }
-
-  //====================================================
-  // Zoom
-  //====================================================
 
   void zoomIn() {
     zoom++;
@@ -107,35 +71,36 @@ class MapsProvider extends ChangeNotifier {
     }
   }
 
-  //====================================================
-  // Current Location
-  //====================================================
-
   Future<void> fetchCurrentLocation() async {
+    if (isLoading) return;
     isLoading = true;
+    errorMessage = null;
     notifyListeners();
 
     try {
       final location = await _locationService.getCurrentLocation();
-
-      if (location != null) {
-        latitude = location.latitude;
-        longitude = location.longitude;
-        selectedLocation = location;
-
-        await loadNearbyProperties();
-      }
-    } catch (e) {
-      debugPrint('Current Location Error: $e');
+      latitude = location.latitude;
+      longitude = location.longitude;
+      selectedLocation = location;
+      await loadNearbyProperties();
+    } on LocationException catch (error) {
+      errorMessage = error.message;
+    } catch (_) {
+      errorMessage = 'We could not determine your location. Please try again.';
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
-
-    isLoading = false;
-    notifyListeners();
   }
 
-  //====================================================
-  // Load Nearby Properties
-  //====================================================
+  Future<bool> openLocationSettings() => _locationService.openLocationSettings();
+
+  Future<bool> openAppSettings() => _locationService.openAppSettings();
+
+  LocationModel? get privacySafeSelectedLocation {
+    final location = selectedLocation;
+    return location == null ? null : _locationService.sanitizeForSharing(location);
+  }
 
   Future<void> loadNearbyProperties({double radius = 5}) async {
     try {
@@ -144,80 +109,62 @@ class MapsProvider extends ChangeNotifier {
         longitude: longitude,
         radius: radius,
       );
-
       nearbyProperties = List<PropertyEntity>.from(properties);
-
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Nearby Properties Error: $e');
+    } catch (_) {
       nearbyProperties = [];
-      notifyListeners();
+      errorMessage ??= 'Nearby properties could not be loaded.';
     }
+    notifyListeners();
   }
 
-  //====================================================
-  // Search Address
-  //====================================================
-
   Future<void> searchLocation(String address) async {
-    if (address.trim().isEmpty) return;
+    if (address.trim().isEmpty || isLoading) return;
 
     isLoading = true;
+    errorMessage = null;
     notifyListeners();
 
     try {
       final result = await _locationService.searchAddress(address);
-
-      if (result != null) {
+      if (result == null) {
+        errorMessage = 'No matching location was found.';
+      } else {
         latitude = result.latitude;
         longitude = result.longitude;
         selectedLocation = result;
-
         await loadNearbyProperties();
       }
-    } catch (e) {
-      debugPrint('Search Error: $e');
+    } catch (_) {
+      errorMessage = 'Location search is temporarily unavailable.';
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
-
-    isLoading = false;
-    notifyListeners();
   }
-
-  //====================================================
-  // User Tapped Map
-  //====================================================
 
   Future<void> updateLocationFromMap(double lat, double lng) async {
     latitude = lat;
     longitude = lng;
-
     selectedProperty = null;
-
+    errorMessage = null;
     notifyListeners();
 
     try {
       selectedLocation = await _locationService.reverseGeocode(lat, lng);
-
       await loadNearbyProperties();
-    } catch (e) {
-      debugPrint('Reverse Geocode Error: $e');
+    } on LocationException catch (error) {
+      errorMessage = error.message;
+    } catch (_) {
+      errorMessage = 'We could not resolve this map location.';
     }
-
     notifyListeners();
   }
-
-  //====================================================
-  // Distance From Current Map Location
-  //====================================================
 
   double distanceFrom({
     required double userLatitude,
     required double userLongitude,
   }) {
-    if (selectedProperty == null) {
-      return 0;
-    }
-
+    if (selectedProperty == null) return 0;
     return _locationService.calculateDistance(
       startLat: userLatitude,
       startLng: userLongitude,
@@ -225,10 +172,6 @@ class MapsProvider extends ChangeNotifier {
       endLng: selectedProperty!.longitude,
     );
   }
-
-  //====================================================
-  // Distance To Property
-  //====================================================
 
   double distanceToProperty(PropertyEntity property) {
     return _locationService.calculateDistance(
@@ -239,40 +182,25 @@ class MapsProvider extends ChangeNotifier {
     );
   }
 
-  //====================================================
-  // Navigate To Selected Property
-  //====================================================
-
   Future<void> openPropertyNavigation(PropertyEntity property) async {
     selectedProperty = property;
-
     await _locationService.openNavigation(
       latitude: property.latitude,
       longitude: property.longitude,
     );
   }
 
-  //====================================================
-  // Navigate To Selected Location
-  //====================================================
-
   Future<void> openNavigation() async {
     if (selectedProperty != null) {
       await openPropertyNavigation(selectedProperty!);
       return;
     }
-
     if (selectedLocation == null) return;
-
     await _locationService.openNavigation(
       latitude: selectedLocation!.latitude,
       longitude: selectedLocation!.longitude,
     );
   }
-
-  //====================================================
-  // Open In Google Maps
-  //====================================================
 
   Future<void> openInGoogleMaps() async {
     if (selectedProperty != null) {
@@ -282,38 +210,26 @@ class MapsProvider extends ChangeNotifier {
       );
       return;
     }
-
     if (selectedLocation == null) return;
-
     await _locationService.openLocation(
       latitude: selectedLocation!.latitude,
       longitude: selectedLocation!.longitude,
     );
   }
 
-  //====================================================
-  // Clear Selected Property
-  //====================================================
-
   void clearSelectedProperty() {
     selectedProperty = null;
     notifyListeners();
   }
 
-  //====================================================
-  // Reset Selected Location
-  //====================================================
-
   void clearSelectedLocation() {
     selectedLocation = null;
     selectedProperty = null;
-
     latitude = defaultLatitude;
     longitude = defaultLongitude;
     zoom = 15;
-
     nearbyProperties = [];
-
+    errorMessage = null;
     notifyListeners();
   }
 }

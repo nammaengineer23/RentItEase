@@ -14,10 +14,8 @@ import { promisify } from 'util';
 import { PropertyImageSection, UserRole } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
-import { FileScanService } from '../../storage/file-scan.service';
 import { StorageService } from '../../storage/storage.service';
 import { ReorderImagesDto } from './dto/reorder-images.dto';
-import { validateImageUpload, validateVideoUpload } from '../../common/validators/upload-file.validator';
 
 const execFileAsync = promisify(execFile);
 
@@ -26,7 +24,6 @@ export class PropertyImagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
-    private readonly fileScanService: FileScanService,
   ) {}
 
   // =====================================
@@ -110,40 +107,32 @@ export class PropertyImagesService {
       });
     }
 
-    const uploadedObjects: string[] = [];
     const images = [];
 
-    try {
-      for (let index = 0; index < files.length; index++) {
-        await validateImageUpload(files[index]);
-        await this.fileScanService.scan(files[index]);
+    // ==========================================
+    // Upload files
+    // ==========================================
 
-        const uploadResult = await this.storageService.uploadImage(
-          files[index],
-          'properties',
-        );
-        uploadedObjects.push(uploadResult.publicId);
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index];
 
-        const image = await this.prisma.propertyImage.create({
-          data: {
-            propertyId,
-            imageUrl: uploadResult.imageUrl,
-            publicId: uploadResult.publicId,
-            displayOrder: currentCount + index,
-            section,
-            isPrimary: isPrimary && index === 0,
-          },
-        });
-
-        images.push(image);
-      }
-    } catch (error) {
-      await Promise.all(
-        uploadedObjects.map((publicId) =>
-          this.storageService.deleteImage(publicId).catch(() => undefined),
-        ),
+      const uploadResult = await this.storageService.uploadImage(
+        file,
+        'properties',
       );
-      throw error;
+
+      const image = await this.prisma.propertyImage.create({
+        data: {
+          propertyId,
+          imageUrl: uploadResult.imageUrl,
+          publicId: uploadResult.publicId,
+          displayOrder: currentCount + index,
+          section,
+          isPrimary: isPrimary && index === 0,
+        },
+      });
+
+      images.push(image);
     }
 
     return {
@@ -181,14 +170,22 @@ export class PropertyImagesService {
       throw new BadRequestException('No video uploaded.');
     }
 
-    await validateVideoUpload(file);
-
-    const durationSeconds = await this.readVideoDurationSeconds(file);
-    if (durationSeconds > 60) {
-      throw new BadRequestException('The property video must not exceed 60 seconds.');
+    const allowedMimeTypes = [
+      'video/mp4',
+      'video/quicktime',
+      'video/x-m4v',
+    ];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Only MP4, MOV and M4V videos are allowed.',
+      );
     }
 
-    await this.fileScanService.scan(file);
+    if (file.size > 100 * 1024 * 1024) {
+      throw new BadRequestException(
+        'The property video must not exceed 100 MB.',
+      );
+    }
 
     const uploaded = await this.storageService.uploadVideo(
       file,

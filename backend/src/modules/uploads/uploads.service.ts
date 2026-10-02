@@ -3,37 +3,59 @@ import {
   Injectable,
 } from '@nestjs/common';
 
-import {
-  validateImageUpload,
-} from '../../common/validators/upload-file.validator';
-import { FileScanService } from '../../storage/file-scan.service';
+import { ImageFileValidator } from '../../common/validators/image-file.validator';
 import { StorageService } from '../../storage/storage.service';
+
 
 @Injectable()
 export class UploadsService {
-  constructor(
+
+ constructor(
     private readonly storageService: StorageService,
-    private readonly fileScanService: FileScanService,
   ) {}
 
-  async uploadImage(file: Express.Multer.File) {
+
+  async uploadImage(
+    file: Express.Multer.File,
+  ) {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new BadRequestException(
+        'No file uploaded',
+      );
     }
 
-    await validateImageUpload(file);
-    await this.fileScanService.scan(file);
+    const validator =
+      new ImageFileValidator();
 
-    const uploadResult = await this.storageService.uploadImage(file, 'uploads/images');
+    if (!validator.isValid(file)) {
+      throw new BadRequestException(
+        validator.buildErrorMessage(),
+      );
+    }
 
+    const uploadResult =
+  await this.storageService.uploadImage(file);
+
+return {
+  success: true,
+  imageUrl: uploadResult.imageUrl,
+  filename: uploadResult.publicId,
+  originalName: file.originalname,
+  mimetype: file.mimetype,
+  size: file.size,
+};
+  }
+
+  async uploadFile(file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('No file uploaded');
+    const result = await this.storageService.uploadImage(file, 'chat');
     return {
       success: true,
-      imageUrl: uploadResult.imageUrl,
-      filename: uploadResult.publicId,
+      fileUrl: result.imageUrl,
+      filename: result.publicId,
       originalName: file.originalname,
       mimetype: file.mimetype,
       size: file.size,
     };
   }
-
 }

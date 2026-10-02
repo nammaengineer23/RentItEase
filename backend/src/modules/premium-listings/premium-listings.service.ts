@@ -2,7 +2,6 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 import {
   MembershipStatus,
@@ -61,36 +60,22 @@ export class PremiumListingsService {
       Math.ceil((endDate.getTime() - now.getTime()) / 86_400_000),
     );
 
-    return this.prisma.$transaction(async (tx) => {
-      const concurrent = await tx.premiumListing.findFirst({
-        where: {
-          propertyId,
-          status: PremiumListingStatus.ACTIVE,
-        },
-        include: {
-          property: true,
-          membership: { include: { plan: true } },
-        },
-      });
-      if (concurrent) return concurrent;
-
-      return tx.premiumListing.create({
-        data: {
-          propertyId,
-          userId,
-          membershipId: membership.id,
-          membershipPlanId: membership.planId,
-          status: PremiumListingStatus.ACTIVE,
-          startDate: now,
-          endDate,
-          activatedAt: now,
-          durationDays,
-          amount: new Prisma.Decimal(0),
-          currency: 'INR',
-        },
-        include: { property: true, membership: { include: { plan: true } } },
-      });
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    return this.prisma.premiumListing.create({
+      data: {
+        propertyId,
+        userId,
+        membershipId: membership.id,
+        membershipPlanId: membership.planId,
+        status: PremiumListingStatus.ACTIVE,
+        startDate: now,
+        endDate,
+        activatedAt: now,
+        durationDays,
+        amount: new Prisma.Decimal(0),
+        currency: 'INR',
+      },
+      include: { property: true, membership: { include: { plan: true } } },
+    });
   }
 
   // ============================================================
@@ -168,8 +153,8 @@ export class PremiumListingsService {
         membershipPlanId: activeMembership.planId,
         status: PremiumListingStatus.PENDING,
         durationDays,
-        amount: new Prisma.Decimal(0),
-        currency: 'INR',
+        amount: new Prisma.Decimal(dto.amount),
+        currency: dto.currency ?? 'INR',
       },
       include: {
         property: true,
@@ -186,7 +171,7 @@ export class PremiumListingsService {
   // GET
   // ============================================================
 
-  async findOne(id: string, user?: { id: string; role: string }) {
+  async findOne(id: string) {
     const listing =
       await this.prisma.premiumListing.findUnique({
         where: { id },
@@ -201,18 +186,15 @@ export class PremiumListingsService {
       });
 
     if (!listing) {
-      throw new NotFoundException('Premium listing not found');
+      throw new NotFoundException(
+        'Premium listing not found',
+      );
     }
-    if (user && user.role !== 'ADMIN' && listing.userId !== user.id) {
-      throw new ForbiddenException('You do not have access to this premium listing.');
-    }
+
     return listing;
   }
 
-  async findByUser(userId: string, user?: { id: string; role: string }) {
-    if (user && user.role !== 'ADMIN' && user.id !== userId) {
-      throw new ForbiddenException('You can only access your own premium listings.');
-    }
+  async findByUser(userId: string) {
     return this.prisma.premiumListing.findMany({
       where: { userId },
       include: {
@@ -288,9 +270,8 @@ export class PremiumListingsService {
   async update(
     id: string,
     dto: UpdatePremiumListingDto,
-    user: { id: string; role: string },
   ) {
-    await this.findOne(id, user);
+    await this.findOne(id);
 
     return this.prisma.premiumListing.update({
       where: { id },
@@ -298,7 +279,12 @@ export class PremiumListingsService {
         ...(dto.durationDays !== undefined && {
           durationDays: dto.durationDays,
         }),
-
+        ...(dto.amount !== undefined && {
+          amount: new Prisma.Decimal(dto.amount),
+        }),
+        ...(dto.currency !== undefined && {
+          currency: dto.currency,
+        }),
       },
       include: {
         property: true,
@@ -315,8 +301,8 @@ export class PremiumListingsService {
   // ACTIVATE
   // ============================================================
 
-  async activate(id: string, user: { id: string; role: string }) {
-    const listing = await this.findOne(id, user);
+  async activate(id: string) {
+    const listing = await this.findOne(id);
 
     if (listing.status === PremiumListingStatus.ACTIVE) {
       throw new BadRequestException(
@@ -350,6 +336,23 @@ export class PremiumListingsService {
       );
     }
 
+    const existingActive =
+      await this.prisma.premiumListing.findFirst({
+        where: {
+          propertyId: listing.propertyId,
+          status: PremiumListingStatus.ACTIVE,
+          NOT: {
+            id,
+          },
+        },
+      });
+
+    if (existingActive) {
+      throw new BadRequestException(
+        'This property already has another active premium listing',
+      );
+    }
+
     const startDate = new Date();
     const endDate = new Date(startDate);
 
@@ -361,58 +364,33 @@ export class PremiumListingsService {
       endDate.setTime(membership.endDate.getTime());
     }
 
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        const existingActive = await tx.premiumListing.findFirst({
-          where: {
-            propertyId: listing.propertyId,
-            status: PremiumListingStatus.ACTIVE,
-            NOT: { id },
-          },
-        });
-
-        if (existingActive) {
-          throw new BadRequestException(
-            'This property already has another active premium listing',
-          );
-        }
-
-        return tx.premiumListing.update({
-          where: { id },
-          data: {
-            status: PremiumListingStatus.ACTIVE,
-            startDate,
-            endDate,
-            activatedAt: startDate,
-            expiredAt: null,
-            cancelledAt: null,
-          },
+    return this.prisma.premiumListing.update({
+      where: { id },
+      data: {
+        status: PremiumListingStatus.ACTIVE,
+        startDate,
+        endDate,
+        activatedAt: startDate,
+        expiredAt: null,
+        cancelledAt: null,
+      },
+      include: {
+        property: true,
+        membership: {
           include: {
-            property: true,
-            membership: {
-              include: {
-                plan: true,
-              },
-            },
+            plan: true,
           },
-        });
-      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-    } catch (error: any) {
-      if (error?.code === 'P2034') {
-        throw new BadRequestException(
-          'Another premium listing activation is in progress. Please retry.',
-        );
-      }
-      throw error;
-    }
+        },
+      },
+    });
   }
 
   // ============================================================
   // CANCEL
   // ============================================================
 
-  async cancel(id: string, user: { id: string; role: string }) {
-    const listing = await this.findOne(id, user);
+  async cancel(id: string) {
+    const listing = await this.findOne(id);
 
     if (listing.status === PremiumListingStatus.CANCELLED) {
       throw new BadRequestException(
@@ -447,8 +425,8 @@ export class PremiumListingsService {
   // EXPIRY
   // ============================================================
 
-  async expire(id: string, user: { id: string; role: string }) {
-    const listing = await this.findOne(id, user);
+  async expire(id: string) {
+    const listing = await this.findOne(id);
 
     if (listing.status !== PremiumListingStatus.ACTIVE) {
       throw new BadRequestException(

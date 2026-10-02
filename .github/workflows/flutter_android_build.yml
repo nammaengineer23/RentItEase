@@ -1,0 +1,110 @@
+name: Flutter Android Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Android release artifacts
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile_app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.4"
+          channel: stable
+          cache: true
+      - name: Configure Android release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          test -n "$ANDROID_STORE_PASSWORD"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          {
+            echo "storeFile=upload-keystore.jks"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+            echo "storePassword=$ANDROID_STORE_PASSWORD"
+          } > android/key.properties
+      - name: Validate production API URL
+        env:
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+        run: |
+          test -n "$E2E_BASE_URL"
+          case "$E2E_BASE_URL" in
+            https://*) ;;
+            *) echo "E2E_BASE_URL must use HTTPS."; exit 1 ;;
+          esac
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Analyze Flutter project
+        run: flutter analyze
+      - name: Run Flutter tests
+        run: flutter test
+      - name: Run Flutter integration tests
+        run: flutter test test/integration/p0_chat_flow_test.dart
+      - name: Build Debug APK
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: |
+          test -n "$MAPS_API_KEY"
+          flutter build apk --debug --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1
+      - name: Sign Debug APK
+        env:
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+        run: |
+          APKSIGNER="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" sign --ks android/app/upload-keystore.jks --ks-key-alias "$ANDROID_KEY_ALIAS" --ks-pass env:ANDROID_STORE_PASSWORD --key-pass env:ANDROID_KEY_PASSWORD --out build/app/outputs/flutter-apk/app-debug-stable.apk build/app/outputs/flutter-apk/app-debug.apk
+          mv build/app/outputs/flutter-apk/app-debug-stable.apk build/app/outputs/flutter-apk/app-debug.apk
+          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-debug.apk
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RentItEase-debug-apk
+          path: mobile_app/build/app/outputs/flutter-apk/app-debug.apk
+      - name: Build Release APK
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: |
+          test -n "$MAPS_API_KEY"
+          flutter build apk --release --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1 --dart-define=ENABLE_GOOGLE_SIGN_IN=true --dart-define=ENABLE_PHONE_OTP=false
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RentItEase-release-apk
+          path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
+      - name: Build Release AAB
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: |
+          test -n "$MAPS_API_KEY"
+          flutter build appbundle --release --dart-define=API_BASE_URL=${{ secrets.E2E_BASE_URL }}/api/v1 --dart-define=ENABLE_GOOGLE_SIGN_IN=true --dart-define=ENABLE_PHONE_OTP=false
+      - name: Upload Release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: RentItEase-release-aab
+          path: mobile_app/build/app/outputs/bundle/release/app-release.aab

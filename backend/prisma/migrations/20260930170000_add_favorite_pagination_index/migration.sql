@@ -1,1 +1,0 @@
--- Add an index supporting per-user favorite pagination ordered by creation time.\nCREATE INDEX "Favorite_userId_createdAt_idx" ON "Favorite"("userId", "createdAt");\n

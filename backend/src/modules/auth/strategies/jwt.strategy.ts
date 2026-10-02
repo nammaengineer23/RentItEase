@@ -1,55 +1,41 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { JwtSecretService } from '../../../common/auth/jwt-secret.service';
+
+import { ConfigService } from '@nestjs/config';
+
 import { PrismaService } from '../../../database/prisma.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    private readonly prisma: PrismaService,
-    jwtSecretService: JwtSecretService,
-  ) {
-    super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
-      algorithms: ['HS256'],
-      secretOrKeyProvider: (_request, rawJwtToken, done) => {
-        try {
-          const header = JSON.parse(
-            Buffer.from(rawJwtToken.split('.')[0], 'base64url').toString('utf8'),
-          ) as { kid?: string };
+  private readonly prisma: PrismaService,
+  configService: ConfigService,
+) {
+  const accessSecret = configService.getOrThrow<string>(
+    'JWT_ACCESS_SECRET',
+  );
 
-          done(null, jwtSecretService.selectAccessSecret(header.kid));
-        } catch (error) {
-          done(error instanceof Error ? error : new Error('Invalid JWT.'));
-        }
-      },
-    });
-  }
+  super({
+    jwtFromRequest:
+      ExtractJwt.fromAuthHeaderAsBearerToken(),
 
-  async validate(payload: { sub?: string }) {
-    if (!payload.sub) {
-      throw new UnauthorizedException('Invalid access token.');
-    }
+    ignoreExpiration: false,
 
+    secretOrKey: accessSecret,
+  });
+}
+  async validate(payload: any) {
     const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        fullName: true,
-        isActive: true,
+      where: {
+        id: payload.sub,
       },
     });
 
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('Invalid or inactive account.');
+      return null;
     }
 
-    // Load role from the database so role changes take effect without
-    // waiting for an existing access token to expire.
     return {
       id: user.id,
       email: user.email,

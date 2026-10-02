@@ -1,13 +1,6 @@
-jest.mock('../../common/validators/upload-content.validator', () => ({
-  validateImageContent: jest.fn().mockResolvedValue(undefined),
-  validateVideoContent: jest.fn().mockResolvedValue(undefined),
-}));
-
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 
 import { PropertyImagesService } from './property-images.service';
-
-jest.mock('../../common/validators/upload-file.validator', () => ({ validateImageUpload: jest.fn(), validateVideoUpload: jest.fn() }));
 
 describe('PropertyImagesService video tours', () => {
   const property = {
@@ -20,23 +13,20 @@ describe('PropertyImagesService video tours', () => {
     uploadVideo: jest.fn(),
     deleteImage: jest.fn(),
   } as any;
-  const fileScan = { scan: jest.fn() } as any;
 
   let service: PropertyImagesService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new PropertyImagesService(prisma, storage, fileScan);
-    jest.spyOn(service as any, 'readVideoDurationSeconds').mockResolvedValue(45);
+    service = new PropertyImagesService(prisma, storage);
   });
 
   function videoFile(durationSeconds: number): Express.Multer.File {
-    const buffer = Buffer.alloc(256);
+    const buffer = Buffer.alloc(64);
     buffer.write('mvhd', 4, 'ascii');
     buffer.writeUInt8(0, 8);
     buffer.writeUInt32BE(1000, 20);
     buffer.writeUInt32BE(durationSeconds * 1000, 24);
-    buffer.writeUInt32BE(1, 28);
 
     return {
       buffer,
@@ -63,18 +53,16 @@ describe('PropertyImagesService video tours', () => {
     expect(storage.uploadImage).not.toHaveBeenCalled();
   });
 
-  it('rejects videos longer than 60 seconds', async () => {
+  it('rejects videos over the 100 MB upload limit', async () => {
     property.findUnique.mockResolvedValue({
       id: 'property-1',
       ownerId: 'owner-1',
     });
 
-    (service as any).readVideoDurationSeconds.mockResolvedValueOnce(61);
-
     await expect(
       service.uploadVideo(
         'property-1',
-        videoFile(61),
+        { ...videoFile(30), size: 101 * 1024 * 1024 },
         { id: 'owner-1', role: 'OWNER' },
       ),
     ).rejects.toBeInstanceOf(BadRequestException);

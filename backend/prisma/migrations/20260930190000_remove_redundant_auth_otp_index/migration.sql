@@ -1,1 +1,0 @@
-DROP INDEX IF EXISTS "AuthOtpChallenge_target_purpose_idx";

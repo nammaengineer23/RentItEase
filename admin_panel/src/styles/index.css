@@ -156,3 +156,28 @@ input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1
   .main-content { padding: 22px; }
   .sidebar { width: 220px; flex-basis: 220px; }
 }
+
+
+/* Accessibility: keep keyboard focus visible across every interactive control. */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 3px solid #4f46e5;
+  outline-offset: 2px;
+}
+button[disabled] { cursor: not-allowed; }
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  color: #6b7280;
+  font-size: 13px;
+}
+.pagination .table-button { min-width: 82px; }
+@media (max-width: 680px) {
+  .pagination { justify-content: center; }
+}

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../auth/AuthContext';
+import { requiredText } from '../forms/validation';
 
 export function LoginPage() {
   const { signIn, isAuthenticated, isLoading } = useAdminAuth();
@@ -19,6 +20,10 @@ export function LoginPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
+    const loginError = requiredText(loginValue, 'Email or phone', 254);
+    if (loginError) { setError(loginError); return; }
+    const passwordError = requiredText(password, 'Password', 256);
+    if (passwordError) { setError(passwordError); return; }
     setSubmitting(true);
 
     try {

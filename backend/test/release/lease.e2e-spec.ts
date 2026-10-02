@@ -113,12 +113,6 @@ describe('Release E2E • Lease', () => {
     );
 
     if (paidBookings.length === 0) {
-      if (!process.env.E2E_RAZORPAY_PAYMENT_ID) {
-        console.warn(
-          'Skipping lease payment fixture: no PAID booking is available and no real captured E2E payment is configured.',
-        );
-        return;
-      }
       // The release database may have been intentionally cleaned. Build a
       // complete isolated payment flow instead of depending on retained data.
       propertyId = await createApprovedE2EProperty(ownerToken, adminToken, 'Release Lease');
@@ -144,8 +138,7 @@ describe('Release E2E • Lease', () => {
       expect(orderId).toBeTruthy();
       const secret = process.env.E2E_RAZORPAY_KEY_SECRET;
       if (!secret) throw new Error('E2E_RAZORPAY_KEY_SECRET is required.');
-      const paymentId = process.env.E2E_RAZORPAY_PAYMENT_ID;
-      if (!paymentId) { console.warn('Skipping isolated lease payment verification: no real captured E2E payment configured.'); return; }
+      const paymentId = `pay_e2e_lease_${Date.now()}`;
       const signature = createHmac('sha256', secret).update(`${orderId}|${paymentId}`).digest('hex');
       const verified = await request(apiUrl()).post('/payments/verify').set(auth(tenantToken)).send({
         bookingId, razorpayOrderId: orderId, razorpayPaymentId: paymentId, razorpaySignature: signature,
@@ -273,7 +266,6 @@ describe('Release E2E • Lease', () => {
   // ============================================================
 
   it('3. create/reuse lease from paid booking', async () => {
-    if (!bookingId) return;
     expect(tenantToken).toBeTruthy();
     expect(bookingId).toBeTruthy();
 
@@ -336,19 +328,7 @@ describe('Release E2E • Lease', () => {
 
     expect(booking).toBeTruthy();
     expect(booking.id).toBe(bookingId);
-
-    if (booking.status !== 'PAID') {
-      if (!process.env.E2E_RAZORPAY_PAYMENT_ID) {
-        console.warn(
-          `Skipping lease creation: selected booking is ${booking.status}, and no captured E2E payment is configured.`,
-        );
-        bookingId = '';
-        return;
-      }
-      throw new Error(
-        `Lease E2E requires a PAID booking; received ${booking.status}.`,
-      );
-    }
+    expect(booking.status).toBe('PAID');
 
     // ----------------------------------------------------------
     // Create new lease.
@@ -471,7 +451,6 @@ describe('Release E2E • Lease', () => {
   // ============================================================
 
   it('4. retrieve and verify persisted lease', async () => {
-    if (!leaseId) return;
     expect(tenantToken).toBeTruthy();
     expect(leaseId).toBeTruthy();
 
@@ -504,7 +483,6 @@ describe('Release E2E • Lease', () => {
   // ============================================================
 
   it('5. tenant lease list contains the lease', async () => {
-    if (!leaseId) return;
     expect(tenantToken).toBeTruthy();
     expect(leaseId).toBeTruthy();
 
@@ -541,7 +519,6 @@ describe('Release E2E • Lease', () => {
   // ============================================================
 
   it('6. owner lease list contains the lease', async () => {
-    if (!leaseId) return;
     expect(ownerToken).toBeTruthy();
     expect(leaseId).toBeTruthy();
 

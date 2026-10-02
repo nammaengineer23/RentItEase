@@ -47,4 +47,3 @@ If sign-in fails, verify that:
 
 - Follow the project contribution guidelines in CONTRIBUTING.md.
 - Review the architecture overview in ARCHITECTURE.md for module boundaries and conventions.
-

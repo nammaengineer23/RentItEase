@@ -457,24 +457,7 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                     ),
                   ),
 
-                  // Show the owner-uploaded property video until an admin
-                  // publishes the approved reel to YouTube. Once a published
-                  // YouTube URL exists, it becomes the single public video
-                  // source instead of displaying both videos.
-                  if (property.youtubeReelUrl.isNotEmpty) ...[
-                    const SizedBox(height: 30),
-                    const Text(
-                      'Video tour',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    PropertyYoutubeReel(
-                      youtubeUrl: property.youtubeReelUrl,
-                    ),
-                  ] else if (property.videoUrl.isNotEmpty) ...[
+                  if (property.videoUrl.isNotEmpty) ...[
                     const SizedBox(height: 30),
                     const Text(
                       'Video tour',
@@ -485,6 +468,13 @@ class _PropertyDetailsPageState extends ConsumerState<PropertyDetailsPage> {
                     ),
                     const SizedBox(height: 12),
                     PropertyVideoTour(videoUrl: property.videoUrl),
+                  ],
+
+                  if (property.youtubeReelUrl.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    PropertyYoutubeReel(
+                      youtubeUrl: property.youtubeReelUrl,
+                    ),
                   ],
 
                   const SizedBox(height: 30),

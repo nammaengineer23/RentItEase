@@ -1,6 +1,7 @@
 import {
   IsBoolean,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Min,
@@ -11,6 +12,15 @@ export class UpdatePremiumListingDto {
   @IsInt()
   @Min(1)
   durationDays?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  amount?: number;
+
+  @IsOptional()
+  @IsString()
+  currency?: string;
 
   @IsOptional()
   @IsBoolean()
