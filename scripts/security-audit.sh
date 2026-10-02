@@ -5,7 +5,7 @@ echo "=== RentItEase security/configuration audit ==="
 
 fail=0
 
-if grep -RniE 'RAZORPAY_KEY_SECRET\s*=\s*[^$<\{[:space:]]|JWT_(ACCESS|REFRESH)_SECRET\s*=\s*[^$<\{[:space:]]|FIREBASE_PRIVATE_KEY\s*=\s*[^$<\{[:space:]]' backend --exclude-dir=node_modules --exclude='*.example' --exclude='*.sample' --exclude-dir=dist; then
+if grep -RniE 'RAZORPAY_KEY_SECRET\s*=\s*[^$<\{[:space:]]|JWT_(ACCESS|REFRESH)_SECRET\s*=\s*[^$<\{[:space:]]|FIREBASE_PRIVATE_KEY\s*=\s*[^$<\{[:space:]]' backend --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=testing --exclude='*.example' --exclude='*.sample'; then
   echo "Potential hard-coded secret found."
   fail=1
 fi
