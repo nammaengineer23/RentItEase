@@ -400,18 +400,64 @@ describe('Property Visits E2E', () => {
       .post('/auth/login')
       .send({ login: adminEmail, password: adminPassword })
       .expect(201);
+
     adminToken = extractToken(adminLogin.body);
-    const created = await request(apiUrl)
-      .post('/properties')
-      .set('Authorization', `Bearer ${ownerToken}`)
-      .send({ title: `Release Visits ${Date.now()}`, description: 'Isolated visit E2E property.', price: 25000, address: '123 Visit Test Road', locality: 'HSR Layout', city: 'Bangalore', state: 'Karnataka', country: 'India', pincode: '560102', bedrooms: 2, bathrooms: 2, area: 1200, propertyType: 'APARTMENT', furnishing: 'SEMI_FURNISHED', parking: true, petFriendly: true, securityDeposit: 50000 });
-    const property = extractData(created.body)?.property ?? extractData(created.body);
-    propertyId = property?.id ?? '';
+
+    // The RC1 workflow creates an isolated property fixture before this
+    // suite. Reuse it when available; otherwise create one locally.
+    if (!process.env.E2E_VISIT_PROPERTY_ID) {
+      const created = await request(apiUrl)
+        .post('/properties')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          title: `Release Visits ${Date.now()}`,
+          description: 'Isolated visit E2E property.',
+          price: 25000,
+          address: '123 Visit Test Road',
+          locality: 'HSR Layout',
+          city: 'Bangalore',
+          state: 'Karnataka',
+          country: 'India',
+          pincode: '560102',
+          bedrooms: 2,
+          bathrooms: 2,
+          area: 1200,
+          propertyType: 'APARTMENT',
+          furnishing: 'SEMI_FURNISHED',
+          parking: true,
+          petFriendly: true,
+          securityDeposit: 50000,
+        });
+
+      const property = extractData(created.body)?.property ?? extractData(created.body);
+      propertyId = property?.id ?? '';
+    } else {
+      propertyId = process.env.E2E_VISIT_PROPERTY_ID;
+    }
+
     expect(propertyId).toBeTruthy();
+
+    // Property creation starts in DRAFT. Admin approval is valid only after
+    // the owner submits the property for review.
+    const submit = await request(apiUrl)
+      .post(`/properties/${propertyId}/submit`)
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    if (![200, 201].includes(submit.status) &&
+        !String(submit.body?.message ?? '').toLowerCase().includes('already submitted')) {
+      throw new Error(
+        `Property submission failed (${submit.status}): ${JSON.stringify(submit.body)}`,
+      );
+    }
+
     await request(apiUrl)
       .patch(`/admin/properties/${propertyId}/approve`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .expect((res) => { if (![200, 201].includes(res.status)) throw new Error(JSON.stringify(res.body)); });
+      .expect((res) => {
+        if (![200, 201].includes(res.status)) {
+          throw new Error(JSON.stringify(res.body));
+        }
+      });
   });
 
   // ============================================================
