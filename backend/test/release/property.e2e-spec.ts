@@ -501,6 +501,18 @@ describe('Property E2E', () => {
       .patch(`/admin/properties/${propertyId}/approve`)
       .set('Authorization', `Bearer ${adminToken}`);
     assertSuccess(approval, 'Property approval');
+
+    const approvedProperty = extractProperty(approval.body);
+    expect(approvedProperty.lifecycleStatus).toBe('VERIFIED');
+
+    const publish = await request(apiUrl)
+      .patch(`/properties/${propertyId}/publish`)
+      .set('Authorization', `Bearer ${ownerToken}`);
+    assertSuccess(publish, 'Property publication');
+
+    const publishedProperty = extractProperty(publish.body);
+    expect(publishedProperty.lifecycleStatus).toBe('PUBLISHED');
+    expect(publishedProperty.isAvailable).toBe(true);
   });
 
   // ============================================================
