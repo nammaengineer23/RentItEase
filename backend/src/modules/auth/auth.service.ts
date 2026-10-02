@@ -454,7 +454,7 @@ export class AuthService {
     let matchedToken: (typeof storedTokens)[number] | null = null;
 
     for (const token of storedTokens) {
-      const matched = await bcrypt.compare(refreshToken, token.token);
+      const matched = await bcrypt.compare(refreshToken, token.hashedToken);
 
       if (matched) {
         matchedToken = token;
@@ -517,7 +517,7 @@ export class AuthService {
 
     await this.prisma.refreshToken.create({
       data: {
-        token: hashedToken,
+        hashedToken: hashedToken,
         userId,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
