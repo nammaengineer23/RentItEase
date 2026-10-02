@@ -1,17 +1,14 @@
 name: RentItEase - Release E2E / RC1
 
 on:
-  # RC1 runs after Railway has deployed the exact main commit.
-  # Keeping this workflow manual avoids a Railway "Wait for CI" deadlock:
-  # Railway can wait for every push check suite before deploying, while RC1
-  # itself waits for that deployment before starting remote E2E.
+  # RC1 is intentionally manual. Run it only after Railway has deployed
+  # the exact main commit and production health is confirmed. This avoids
+  # a Railway "Wait for CI" deadlock caused by RC1 itself waiting on deploy.
   workflow_dispatch:
-  deployment_status:
 
 # RC1 exercises the live production API with shared tenant/owner/admin
-# accounts and builds a signed Android artifact. Run it manually after the
-# Railway production deployment for the exact main commit is healthy.
-# PRs remain covered by Backend CI and Flutter Fast Check / Android workflows.
+# accounts and builds a signed Android artifact. PRs remain covered by
+# Backend CI and Flutter Fast Check / Android workflows.
 
 concurrency:
   # All refs share production E2E accounts and data. Serialize runs to avoid
@@ -30,11 +27,6 @@ jobs:
 
   backend-build:
     name: Backend Build
-    if: >-
-      ${{ github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'deployment_status' &&
-           github.event.deployment_status.state == 'success' &&
-           github.event.deployment_status.environment == 'production') }}
     runs-on: ubuntu-latest
 
     defaults:
