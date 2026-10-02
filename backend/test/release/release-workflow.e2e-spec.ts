@@ -24,7 +24,6 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
   let razorpayOrderId = '';
   let membershipId = '';
   let paymentVerified = false;
-  let membershipLifecycleVerified = false;
 
   // ============================================================
   // 01 Authentication
