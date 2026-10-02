@@ -459,6 +459,17 @@ describe('Property Visits E2E', () => {
         }
       });
 
+    // Admin verification does not make a property visitable by itself.
+    // Publishing is the lifecycle transition that sets isAvailable=true.
+    await request(apiUrl)
+      .patch(`/properties/${propertyId}/publish`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect((res) => {
+        if (![200, 201].includes(res.status)) {
+          throw new Error(JSON.stringify(res.body));
+        }
+      });
+
     // Admin verification moves the property to VERIFIED but intentionally
     // keeps it unavailable. Publish it before attempting to book a visit;
     // the visit API requires both verification and public availability.
