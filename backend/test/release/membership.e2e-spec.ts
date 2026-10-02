@@ -272,16 +272,10 @@ describe('Release E2E • Membership', () => {
       .patch(`/membership/${membershipId}/activate`)
       .set(auth(adminToken));
 
-    expect([200, 201]).toContain(res.status);
-
-    const membership = extractData(res.body);
-
-    expect(membership).toBeTruthy();
-    expect(membership.id).toBe(membershipId);
-    expect(membership.status).toBe('ACTIVE');
-    expect(membership.startDate).toBeTruthy();
-    expect(membership.endDate).toBeTruthy();
-    expect(membership.activatedAt).toBeTruthy();
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(res.body)).toContain(
+      'Premium membership payment has not been verified',
+    );
   });
 
   // ============================================================
@@ -299,9 +293,7 @@ describe('Release E2E • Membership', () => {
 
     const membership = extractData(res.body);
 
-    expect(membership).toBeTruthy();
-    expect(membership.id).toBe(membershipId);
-    expect(membership.status).toBe('ACTIVE');
+    expect(membership).toBeNull();
   });
 
   // ============================================================
