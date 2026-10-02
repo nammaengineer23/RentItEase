@@ -75,6 +75,30 @@ export class PropertiesController {
   @ApiOperation({ summary: 'Get Property By ID' })
   findOne(@Param('id') id: string) { return this.propertiesService.findOne(id); }
 
+  @Post(':id/submit')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Submit property for admin review' })
+  submit(@Param('id') id: string, @Request() req: any) {
+    return this.propertiesService.submit(id, req.user);
+  }
+
+  @Patch(':id/publish')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Publish a verified property' })
+  publish(@Param('id') id: string, @Request() req: any) {
+    return this.propertiesService.publish(id, req.user);
+  }
+
+  @Patch(':id/hide')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Hide a published property' })
+  hide(@Param('id') id: string, @Request() req: any) {
+    return this.propertiesService.setUnavailable(id, req.user);
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
