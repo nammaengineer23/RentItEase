@@ -12,6 +12,7 @@ import {
 describe('Release E2E • Membership', () => {
   let tenantToken = '';
   let ownerToken = '';
+  let adminToken = '';
 
   let tenantUserId = '';
   let planId = '';
@@ -41,9 +42,14 @@ describe('Release E2E • Membership', () => {
       process.env.E2E_OWNER_EMAIL!,
       process.env.E2E_OWNER_PASSWORD!,
     );
+    const admin = await login(
+      process.env.E2E_ADMIN_EMAIL!,
+      process.env.E2E_ADMIN_PASSWORD!,
+    );
 
     tenantToken = tenant.token;
     ownerToken = owner.token;
+    adminToken = admin.token;
 
     expect(tenantToken).toBeTruthy();
     expect(ownerToken).toBeTruthy();
@@ -171,7 +177,7 @@ describe('Release E2E • Membership', () => {
     expect(tenantUserId).toBeTruthy();
     expect(planId).toBeTruthy();
 
-    const cleared = await clearActiveMemberships(tenantUserId, ownerToken);
+    const cleared = await clearActiveMemberships(tenantUserId, adminToken);
 
     if (cleared > 0) {
       console.log(
@@ -181,7 +187,7 @@ describe('Release E2E • Membership', () => {
 
     const res = await request(apiUrl())
       .post(`/membership/users/${tenantUserId}`)
-      .set(auth(ownerToken))
+      .set(auth(adminToken))
       .send({
         planId,
       });
@@ -264,7 +270,7 @@ describe('Release E2E • Membership', () => {
 
     const res = await request(apiUrl())
       .patch(`/membership/${membershipId}/activate`)
-      .set(auth(ownerToken));
+      .set(auth(adminToken));
 
     expect([200, 201]).toContain(res.status);
 
@@ -308,7 +314,7 @@ describe('Release E2E • Membership', () => {
 
     const res = await request(apiUrl())
       .patch(`/membership/${membershipId}/auto-renew`)
-      .set(auth(ownerToken))
+      .set(auth(adminToken))
       .send({
         autoRenew: true,
       });
@@ -331,7 +337,7 @@ describe('Release E2E • Membership', () => {
 
     const res = await request(apiUrl())
       .patch(`/membership/${membershipId}/renew`)
-      .set(auth(ownerToken));
+      .set(auth(adminToken));
 
     expect([200, 201]).toContain(res.status);
 
@@ -353,7 +359,7 @@ describe('Release E2E • Membership', () => {
 
     const res = await request(apiUrl())
       .patch(`/membership/${membershipId}/cancel`)
-      .set(auth(ownerToken));
+      .set(auth(adminToken));
 
     expect([200, 201]).toContain(res.status);
 
