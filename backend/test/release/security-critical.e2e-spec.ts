@@ -52,7 +52,7 @@ describe('Release E2E • Critical security boundaries', () => {
       .expect(401);
 
     await request(apiUrl())
-      .post('/property-images/not-a-real-property/video')
+      .post('/property-images/not-a-real-property')
       .expect(401);
 
     await request(apiUrl())
