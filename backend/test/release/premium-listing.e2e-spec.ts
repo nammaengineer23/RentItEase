@@ -82,7 +82,7 @@ describe('Release E2E • Premium Listing', () => {
 
     const existingActiveMembershipResponse = await request(apiUrl())
       .get(`/membership/users/${ownerId}/active`)
-      .set(auth(ownerToken));
+      .set(auth(adminToken));
 
     console.log(
       'EXISTING ACTIVE MEMBERSHIP STATUS:',
@@ -115,7 +115,7 @@ describe('Release E2E • Premium Listing', () => {
     if (!membershipId) {
       const createMembership = await request(apiUrl())
         .post(`/membership/users/${ownerId}`)
-        .set(auth(ownerToken))
+        .set(auth(adminToken))
         .send({
           planId,
         });
@@ -159,7 +159,7 @@ describe('Release E2E • Premium Listing', () => {
     if (membershipStatus !== 'ACTIVE') {
       const activateMembership = await request(apiUrl())
         .patch(`/membership/${membershipId}/activate`)
-        .set(auth(ownerToken));
+        .set(auth(adminToken));
 
       console.log(
         'PREMIUM LISTING MEMBERSHIP ACTIVATE STATUS:',
