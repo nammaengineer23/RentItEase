@@ -1,10 +1,13 @@
 name: RentItEase - Release E2E / RC1
 
 on:
-  # RC1 is intentionally manual. Run it only after Railway has deployed
-  # the exact main commit and production health is confirmed. This avoids
-  # a Railway "Wait for CI" deadlock caused by RC1 itself waiting on deploy.
+  # RC1 is normally manual. The narrow trigger below is used only for the
+  # automated release-validation loop and fires for the dedicated trigger file.
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ci/rc1-trigger
 
 # RC1 exercises the live production API with shared tenant/owner/admin
 # accounts and builds a signed Android artifact. PRs remain covered by
