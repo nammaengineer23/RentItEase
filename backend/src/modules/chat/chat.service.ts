@@ -213,6 +213,10 @@ export class ChatService {
     senderId: string,
     text: string,
     messageType: MessageType = MessageType.TEXT,
+    attachmentPublicId?: string,
+    attachmentFileName?: string,
+    attachmentMimeType?: string,
+    attachmentSize?: number,
   ) {
     const conversation =
       await this.prisma.conversation.findUnique({
@@ -257,6 +261,16 @@ export class ChatService {
       );
     }
 
+    if (attachmentPublicId) {
+      const expectedPrefix = `chat/${conversationId}/`;
+      if (
+        !attachmentPublicId.startsWith(expectedPrefix) ||
+        attachmentPublicId.includes('..')
+      ) {
+        throw new BadRequestException('Invalid chat attachment.');
+      }
+    }
+
     const message =
       await this.prisma.message.create({
         data: {
@@ -264,6 +278,10 @@ export class ChatService {
           senderId,
           text,
           messageType,
+          attachmentPublicId,
+          attachmentFileName,
+          attachmentMimeType,
+          attachmentSize,
         },
         include: {
           sender: {
