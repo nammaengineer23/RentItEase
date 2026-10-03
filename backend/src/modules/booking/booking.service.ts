@@ -211,25 +211,34 @@ export class BookingService {
       throw error;
     }
 
-    await this.notificationsService.createNotification(
-      visit.property.owner.id,
-      'New Booking Request',
-      `${visit.tenant.fullName} requested to book "${visit.property.title}".`,
-      NotificationType.GENERAL,
-      booking.id,
-    );
+    // Booking creation is already committed; notification delivery is best-effort.
+    void this.notificationsService
+      .createNotification(
+        visit.property.owner.id,
+        'New Booking Request',
+        `${visit.tenant.fullName} requested to book "${visit.property.title}".`,
+        NotificationType.GENERAL,
+        booking.id,
+      )
+      .catch((error) => {
+        console.error('Booking request in-app notification failed:', error?.message || error);
+      });
 
-    await this.pushNotificationsService.sendToUser(
-      visit.property.owner.id,
-      'New Booking Request',
-      `${visit.tenant.fullName} requested to book "${visit.property.title}".`,
-      {
-        type: 'BOOKING_REQUEST',
-        bookingId: booking.id,
-        propertyId: visit.property.id,
-        visitId: visit.id,
-      },
-    );
+    void this.pushNotificationsService
+      .sendToUser(
+        visit.property.owner.id,
+        'New Booking Request',
+        `${visit.tenant.fullName} requested to book "${visit.property.title}".`,
+        {
+          type: 'BOOKING_REQUEST',
+          bookingId: booking.id,
+          propertyId: visit.property.id,
+          visitId: visit.id,
+        },
+      )
+      .catch((error) => {
+        console.error('Booking request push notification failed:', error?.message || error);
+      });
 
     return {
       success: true,
@@ -424,24 +433,33 @@ export class BookingService {
       },
     });
 
-    await this.notificationsService.createNotification(
-      booking.tenantId,
-      'Booking Approved',
-      `Your booking request for "${booking.property.title}" has been approved.`,
-      NotificationType.GENERAL,
-      booking.id,
-    );
+    // Booking approval is already persisted; notification delivery is best-effort.
+    void this.notificationsService
+      .createNotification(
+        booking.tenantId,
+        'Booking Approved',
+        `Your booking request for "${booking.property.title}" has been approved.`,
+        NotificationType.GENERAL,
+        booking.id,
+      )
+      .catch((error) => {
+        console.error('Booking approval in-app notification failed:', error?.message || error);
+      });
 
-    await this.pushNotificationsService.sendToUser(
-      booking.tenantId,
-      'Booking Approved',
-      `Your booking request for "${booking.property.title}" has been approved.`,
-      {
-        type: 'BOOKING_APPROVED',
-        bookingId: booking.id,
-        propertyId: booking.propertyId,
-      },
-    );
+    void this.pushNotificationsService
+      .sendToUser(
+        booking.tenantId,
+        'Booking Approved',
+        `Your booking request for "${booking.property.title}" has been approved.`,
+        {
+          type: 'BOOKING_APPROVED',
+          bookingId: booking.id,
+          propertyId: booking.propertyId,
+        },
+      )
+      .catch((error) => {
+        console.error('Booking approval push notification failed:', error?.message || error);
+      });
 
     return {
       success: true,
