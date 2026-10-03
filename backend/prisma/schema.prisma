@@ -513,6 +513,18 @@ model Lease {
   @@index([endDate])
 }
 
+
+model RazorpayWebhookEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  eventType   String
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([eventType, createdAt])
+}
+
 model Payment {
   id                String        @id @default(cuid())
   bookingId         String        @unique
