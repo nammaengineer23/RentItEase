@@ -196,7 +196,7 @@ export function PropertiesPage() {
 
       <div className="content-card">
         <div className="users-toolbar">
-          <input className="search-input" type="search" placeholder="Search property, city or owner..." value={search} onChange={(event) => setSearch(event.target.value)} />
+          <input className="search-input" type="search" placeholder="Search property, city or owner..."\n            maxLength={100} value={search} onChange={(event) => setSearch(event.target.value)} />
           <select className="filter-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>
             <option value="ALL">All properties</option><option value="PENDING">Pending approval</option><option value="AVAILABLE">Available</option><option value="HIDDEN">Hidden / unavailable</option>
           </select>
