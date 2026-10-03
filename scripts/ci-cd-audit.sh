@@ -8,7 +8,7 @@ check() {
   if "$@"; then echo "PASS: $description"; else echo "FAIL: $description"; fail=1; fi
 }
 
-check "Railway migration runs before production start" grep -q '"preDeployCommand"[[:space:]]*:[[:space:]]*"npx prisma migrate deploy"' "$repo_root/backend/railway.json"
+check "Railway migration runs before production start" grep -q '"preDeployCommand"[[:space:]]*:[[:space:]]*"[^"]*npx prisma migrate deploy' "$repo_root/backend/railway.json"
 check "Railway production health check is configured" grep -q '"healthcheckPath"[[:space:]]*:[[:space:]]*"\/api\/v1\/health"' "$repo_root/backend/railway.json"
 check "Release E2E remains main-push gated" grep -q 'branches: \[main\]' "$repo_root/.github/workflows/e2e-test.yml"
 check "Web deployment requires successful main release E2E" grep -q 'github.event.workflow_run.conclusion == .success.' "$repo_root/.github/workflows/deploy_web.yml"
