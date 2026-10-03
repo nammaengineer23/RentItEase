@@ -586,6 +586,10 @@ model Message {
   conversationId String
   senderId       String
   text           String
+  attachmentPublicId String?
+  attachmentFileName String?
+  attachmentMimeType String?
+  attachmentSize Int?
   isRead         Boolean      @default(false)
   createdAt      DateTime     @default(now())
   messageType    MessageType  @default(TEXT)
