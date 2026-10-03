@@ -1,8 +1,7 @@
 import request from 'supertest';
-import { createHmac } from 'crypto';
 import { describe, expect, it } from '@jest/globals';
 
-import { apiUrl, auth, createApprovedE2EProperty, extractData, futureIso, login, statusOk } from './helpers';
+import { apiUrl, auth, createApprovedE2EProperty, extractData, futureIso, login, markPaymentCapturedViaWebhook, statusOk } from './helpers';
 
 describe('Release E2E • Lease', () => {
   let tenantToken = '';
@@ -136,14 +135,12 @@ describe('Release E2E • Lease', () => {
       const payment = extractData(order.body);
       const orderId = payment?.razorpayOrderId ?? payment?.payment?.razorpayOrderId;
       expect(orderId).toBeTruthy();
-      const secret = process.env.E2E_RAZORPAY_KEY_SECRET;
-      if (!secret) throw new Error('E2E_RAZORPAY_KEY_SECRET is required.');
-      const paymentId = `pay_e2e_lease_${Date.now()}`;
-      const signature = createHmac('sha256', secret).update(`${orderId}|${paymentId}`).digest('hex');
-      const verified = await request(apiUrl()).post('/payments/verify').set(auth(tenantToken)).send({
-        bookingId, razorpayOrderId: orderId, razorpayPaymentId: paymentId, razorpaySignature: signature,
+      await markPaymentCapturedViaWebhook({
+        bookingId,
+        razorpayOrderId: orderId,
+        amount: Number(payment?.amount ?? payment?.amountInPaise ?? 0),
+        currency: payment?.currency ?? 'INR',
       });
-      statusOk(verified);
       console.log(`Created isolated PAID booking for lease: ${bookingId}`);
       return;
     }
