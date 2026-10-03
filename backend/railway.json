@@ -1,8 +1,8 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "deploy": {
-    "preDeployCommand": "npx prisma migrate deploy",
-    "startCommand": "npm run start:prod",
+    "preDeployCommand": "npx prisma migrate resolve --rolled-back 20261003073000_add_chat_attachment_metadata || true; npx prisma migrate deploy",
+    "startCommand": "node dist/main",
     "healthcheckPath": "/api/v1/health",
     "healthcheckTimeout": 120
   }
