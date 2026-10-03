@@ -1,0 +1,43 @@
+name: CI/CD Configuration Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+    paths:
+      - '.github/workflows/**'
+      - 'backend/railway.json'
+      - 'backend/docs/production-deployment-and-rollback.md'
+      - 'scripts/ci-cd-audit.sh'
+      - 'scripts/verify-artifact-no-secrets.sh'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - 'backend/railway.json'
+      - 'backend/docs/production-deployment-and-rollback.md'
+      - 'scripts/ci-cd-audit.sh'
+      - 'scripts/verify-artifact-no-secrets.sh'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: CI/CD gates and secret-safety audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run CI/CD configuration audit
+        run: |
+          chmod +x scripts/ci-cd-audit.sh
+          ./scripts/ci-cd-audit.sh
+
+      - name: Verify artifact scanner
+        run: |
+          chmod +x scripts/verify-artifact-no-secrets.sh
+          mkdir -p /tmp/rentitease-artifact-audit
+          printf 'safe test artifact\n' > /tmp/rentitease-artifact-audit/manifest.txt
+          ./scripts/verify-artifact-no-secrets.sh /tmp/rentitease-artifact-audit
