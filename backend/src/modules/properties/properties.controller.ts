@@ -38,6 +38,15 @@ export class PropertiesController {
   @ApiOperation({ summary: 'Get All Properties' })
   findAll(@Query() dto: FilterPropertiesDto) { return this.propertiesService.findAll(dto); }
 
+  @Post(':id/submit')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Submit property for admin verification' })
+  submit(@Param('id') id: string, @Request() req: any) {
+    return this.propertiesService.submit(id, req.user);
+  }
+
   @Post(':id/amenities')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
