@@ -362,7 +362,8 @@ export function UsersPage() {
           <input
             className="search-input"
             type="search"
-            placeholder="Search name, email or phone..."\n            maxLength={100}
+            placeholder="Search name, email or phone..."
+            maxLength={100}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
