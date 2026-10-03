@@ -3,6 +3,10 @@ import { MembershipStatus, UserRole } from '@prisma/client';
 
 import { PropertiesService } from './properties.service';
 
+jest.mock('../../storage/storage.service', () => ({
+  StorageService: class StorageService {},
+}));
+
 describe('PropertiesService public discovery and owner-contact privacy', () => {
   const property = {
     findMany: jest.fn(),
