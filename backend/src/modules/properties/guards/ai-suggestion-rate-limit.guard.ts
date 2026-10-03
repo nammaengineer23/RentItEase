@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable, TooManyRequestsException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 
 interface Bucket {
   count: number;
@@ -17,7 +17,10 @@ export class AiSuggestionRateLimitGuard implements CanActivate {
 
     // The route is JWT-protected; fail closed if authentication did not run.
     if (!userId) {
-      throw new TooManyRequestsException('AI suggestion access is rate limited.');
+      throw new HttpException(
+        'AI suggestion access is rate limited.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
 
     const now = Date.now();
@@ -29,7 +32,10 @@ export class AiSuggestionRateLimitGuard implements CanActivate {
     }
 
     if (current.count >= this.limit) {
-      throw new TooManyRequestsException('AI suggestion rate limit exceeded. Please try again shortly.');
+      throw new HttpException(
+        'AI suggestion rate limit exceeded. Please try again shortly.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
 
     current.count += 1;
