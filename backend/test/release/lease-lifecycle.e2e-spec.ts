@@ -1,6 +1,5 @@
 import request from 'supertest';
 import { describe, expect, it } from '@jest/globals';
-import { createHmac } from 'crypto';
 
 import {
   apiUrl,
@@ -10,6 +9,7 @@ import {
   futureIso,
   login,
   statusOk,
+  markPaymentCapturedViaWebhook,
 } from './helpers';
 
 describe('Release E2E • Lease Lifecycle', () => {
@@ -252,44 +252,19 @@ describe('Release E2E • Lease Lifecycle', () => {
     expect(payment.id).toBeTruthy();
     expect(payment.razorpayOrderId).toBeTruthy();
 
-    const secret = process.env.E2E_RAZORPAY_KEY_SECRET;
+    await markPaymentCapturedViaWebhook({
+      bookingId,
+      razorpayOrderId: payment.razorpayOrderId,
+      amount: Number(payment.amount),
+      currency: payment.currency,
+    });
 
-    if (!secret) {
-      throw new Error('E2E_RAZORPAY_KEY_SECRET is required.');
-    }
-
-    const razorpayPaymentId =
-      process.env.E2E_RAZORPAY_PAYMENT_ID ||
-      `pay_e2e_lease_lifecycle_${Date.now()}`;
-
-    const signature = createHmac('sha256', secret)
-      .update(`${payment.razorpayOrderId}|${razorpayPaymentId}`)
-      .digest('hex');
-
-    const res = await request(apiUrl())
-      .post('/payments/verify')
-      .set(auth(tenantToken))
-      .send({
-        bookingId,
-        razorpayOrderId: payment.razorpayOrderId,
-        razorpayPaymentId,
-        razorpaySignature: signature,
-      });
-
-    statusOk(res);
-
-    const paymentData = extractData(res.body);
-
-    expect(paymentData?.status).toBe('SUCCESS');
-
-    // Confirm persisted PAID state.
     const persisted = await request(apiUrl())
       .get(`/bookings/${bookingId}`)
       .set(auth(tenantToken))
       .expect(200);
 
     booking = extractData(persisted.body);
-
     expect(booking?.id).toBe(bookingId);
     expect(booking?.status).toBe('PAID');
     expect(booking?.payment?.status).toBe('SUCCESS');
