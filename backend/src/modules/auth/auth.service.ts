@@ -517,7 +517,7 @@ export class AuthService {
 
     await this.prisma.refreshToken.create({
       data: {
-        hashedToken: hashedToken,
+        hashedToken,
         userId,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
