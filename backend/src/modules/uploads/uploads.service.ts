@@ -60,14 +60,14 @@ export class UploadsService {
       throw new ForbiddenException('You are not allowed to upload to this conversation.');
     }
 
-    const result = await this.storageService.uploadImage(
+    const result = await this.storageService.uploadPrivateFile(
       file,
       `chat/${conversationId}`,
     );
 
     return {
       success: true,
-      fileUrl: result.imageUrl,
+      fileUrl: `/api/v1/uploads/file?conversationId=${encodeURIComponent(conversationId)}&filename=${encodeURIComponent(result.publicId)}`,
       filename: result.publicId,
       conversationId,
       originalName: file.originalname,
