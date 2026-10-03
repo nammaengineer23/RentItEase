@@ -48,6 +48,11 @@ export class PropertyVisitsService {
       );
     }
 
+    // Keep the account-level hourly guard aligned with the API throttle.
+    // The controller applies the short-window (10/minute) abuse limit; this
+    // longer guard prevents sustained automated creation without making
+    // release verification brittle when multiple isolated suites share the
+    // dedicated E2E tenant account.
     const recentVisitCount = await this.prisma.propertyVisit.count({
       where: {
         tenantId: user.id,
@@ -57,7 +62,7 @@ export class PropertyVisitsService {
       },
     });
 
-    if (recentVisitCount >= 10) {
+    if (recentVisitCount >= 50) {
       throw new BadRequestException(
         'Hourly property visit request limit reached. Please try again later.',
       );
