@@ -521,6 +521,12 @@ export class AuthService {
         userId,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
+      // Login only needs confirmation that the token row was created.
+      // Selecting the id avoids returning legacy metadata columns while
+      // production schema reconciliation is in progress.
+      select: {
+        id: true,
+      },
     });
   }
   //---------------------------------------
