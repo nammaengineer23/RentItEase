@@ -10,6 +10,11 @@ on:
         description: "Release workflow run containing the website APK artifact"
         required: false
         type: string
+      confirm_production_deploy:
+        description: "Required for manual production deployment"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -23,13 +28,20 @@ jobs:
   deploy:
     name: Deploy Flutter Web to Cloudflare
     if: >-
-      ${{ github.event_name == 'workflow_dispatch' ||
-          (github.event.workflow_run.conclusion == 'success' &&
-           github.event.workflow_run.event == 'push' &&
-           github.event.workflow_run.head_branch == 'main') }}
+      ${{ (github.event_name == 'workflow_run' &&
+            github.event.workflow_run.conclusion == 'success' &&
+            github.event.workflow_run.event == 'push' &&
+            github.event.workflow_run.head_branch == 'main') ||
+          (github.event_name == 'workflow_dispatch' &&
+           inputs.confirm_production_deploy == 'DEPLOY-RENTITEASE') }}
     runs-on: ubuntu-latest
 
     steps:
+      - name: Verify manual production deployment confirmation
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          test "${{ inputs.confirm_production_deploy }}" = "DEPLOY-RENTITEASE"
+
       - name: Checkout tested commit
         uses: actions/checkout@v4
         with:
