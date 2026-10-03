@@ -1,7 +1,4 @@
-import { ConfigService } from '@nestjs/config';
-
 import { FirebaseService } from '../firebase/firebase.service';
-import { R2StorageService } from './r2-storage.service';
 import { StorageService } from './storage.service';
 
 describe('StorageService', () => {
@@ -11,70 +8,45 @@ describe('StorageService', () => {
 
   const firebaseService = {
     uploadImage: jest.fn(),
+    uploadPrivateFile: jest.fn(),
     deleteImage: jest.fn(),
+    getPrivateDownloadUrl: jest.fn(),
   } as unknown as FirebaseService;
-
-  const r2StorageService = {
-    uploadImage: jest.fn(),
-    deleteImage: jest.fn(),
-  } as unknown as R2StorageService;
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('uses R2 for new uploads when configured', async () => {
-    const configService = {
-      get: jest.fn().mockReturnValue('r2'),
-    } as unknown as ConfigService;
-    const service = new StorageService(
-      configService,
-      firebaseService,
-      r2StorageService,
-    );
+  it('uses Firebase as the sole authoritative upload provider', async () => {
+    const service = new StorageService(firebaseService);
 
     await service.uploadImage(file, 'profiles');
 
-    expect(r2StorageService.uploadImage).toHaveBeenCalledWith(file, 'profiles');
-    expect(firebaseService.uploadImage).not.toHaveBeenCalled();
+    expect(firebaseService.uploadImage).toHaveBeenCalledWith(file, 'profiles');
   });
 
-  it('keeps Firebase as the default upload provider', async () => {
-    const configService = {
-      get: jest.fn().mockReturnValue(undefined),
-    } as unknown as ConfigService;
-    const service = new StorageService(
-      configService,
-      firebaseService,
-      r2StorageService,
-    );
-
-    await service.uploadImage(file);
-
-    expect(firebaseService.uploadImage).toHaveBeenCalledWith(
-      file,
-      'properties',
-    );
-  });
-
-  it('deletes legacy Firebase and new R2 objects with the correct provider', async () => {
-    const configService = {
-      get: jest.fn().mockReturnValue('r2'),
-    } as unknown as ConfigService;
-    const service = new StorageService(
-      configService,
-      firebaseService,
-      r2StorageService,
-    );
+  it('uses Firebase for deletion', async () => {
+    const service = new StorageService(firebaseService);
 
     await service.deleteImage('properties/legacy.jpg');
-    await service.deleteImage('r2:properties/new.jpg');
 
     expect(firebaseService.deleteImage).toHaveBeenCalledWith(
       'properties/legacy.jpg',
     );
-    expect(r2StorageService.deleteImage).toHaveBeenCalledWith(
-      'r2:properties/new.jpg',
+  });
+
+  it('supports private Firebase uploads and short-lived private URLs', async () => {
+    const service = new StorageService(firebaseService);
+
+    await service.uploadPrivateFile(file, 'chat/conversation-1');
+    await service.getPrivateDownloadUrl('chat/conversation-1/file.pdf');
+
+    expect(firebaseService.uploadPrivateFile).toHaveBeenCalledWith(
+      file,
+      'chat/conversation-1',
+    );
+    expect(firebaseService.getPrivateDownloadUrl).toHaveBeenCalledWith(
+      'chat/conversation-1/file.pdf',
     );
   });
 });
