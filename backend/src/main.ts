@@ -99,6 +99,14 @@ async function bootstrap() {
 
   if (isProduction) {
     app.use((req: Request, res: Response, next: NextFunction) => {
+      // Railway probes the configured healthcheck from inside its infrastructure.
+      // Do not subject that probe to the public host/HTTPS policy; all application
+      // routes remain protected by the exact production host allowlist.
+      if (req.path === '/api/v1/health' && (req.method === 'GET' || req.method === 'HEAD')) {
+        next();
+        return;
+      }
+
       const host = (req.get('host') || '').split(':')[0].toLowerCase();
       if (!host || !allowedHosts.includes(host)) {
         res.status(400).send('Invalid host');
