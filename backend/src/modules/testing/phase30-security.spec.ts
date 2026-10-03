@@ -77,7 +77,7 @@ describe('Phase 30 critical backend security regression suite', () => {
         findMany: jest.fn().mockResolvedValueOnce([
           {
             id: 'refresh-1',
-            token: await bcrypt.hash(refreshToken, 4),
+            hashedToken: await bcrypt.hash(refreshToken, 4),
             expiresAt: new Date(Date.now() + 60_000),
           },
         ]).mockResolvedValueOnce([]),
