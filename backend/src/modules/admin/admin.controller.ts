@@ -118,9 +118,22 @@ export class AdminController {
   }
 
   @Get('audit')
-  @ApiOperation({ summary: 'Get recent admin audit records' })
+  @ApiOperation({ summary: 'Query durable admin audit records' })
   getAudit(@Req() request: any) {
-    return this.audit.list(request.query?.limit);
+    const query = request.query ?? {};
+    const parseDate = (value: unknown) => {
+      if (!value) return undefined;
+      const date = new Date(String(value));
+      return Number.isNaN(date.getTime()) ? undefined : date;
+    };
+    return this.audit.list(query.limit, {
+      adminId: query.adminId,
+      action: query.action,
+      resource: query.resource,
+      resourceId: query.resourceId,
+      from: parseDate(query.from),
+      to: parseDate(query.to),
+    });
   }
 
   @Get('analytics')
