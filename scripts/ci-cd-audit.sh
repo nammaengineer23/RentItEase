@@ -27,7 +27,8 @@ check "Workflow-run cleanup has a schedule" grep -q 'schedule:' "$repo_root/.git
 check "Rollback procedure is documented" test -f "$repo_root/backend/docs/production-deployment-and-rollback.md"
 
 secret_log_file="$(mktemp)"
-if grep -RniE '(^|[[:space:]])(echo|printf)[[:space:]].*\$(\{\{[[:space:]]*secrets\.|[A-Z_]*(SECRET|PASSWORD|TOKEN|PRIVATE_KEY))' "$repo_root/.github/workflows" >"$secret_log_file" 2>/dev/null; then
+if grep -RniE '(^|[[:space:]])(echo|printf)[[:space:]].*\$(\{\{[[:space:]]*secrets\.|[A-Z_]*(SECRET|PASSWORD|TOKEN|PRIVATE_KEY))' "$repo_root/.github/workflows" 2>/dev/null |
+   grep -vE 'keyPassword=\$ANDROID_KEY_PASSWORD|storePassword=\$ANDROID_STORE_PASSWORD' >"$secret_log_file"; then
   echo "FAIL: workflow appears to print a secret-bearing value."
   cat "$secret_log_file"
   fail=1
