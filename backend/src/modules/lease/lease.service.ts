@@ -444,13 +444,21 @@ export class LeaseService {
       },
     });
 
-    await this.notificationsService.createNotification(
-      lease.tenantId,
-      'Lease Completed',
-      `Your lease for "${lease.property.title}" has been completed.`,
-      NotificationType.GENERAL,
-      lease.id,
-    );
+    // Completion is already persisted; notification delivery is best-effort.
+    await this.notificationsService
+      .createNotification(
+        lease.tenantId,
+        'Lease Completed',
+        `Your lease for "${lease.property.title}" has been completed.`,
+        NotificationType.GENERAL,
+        lease.id,
+      )
+      .catch((error) => {
+        console.error(
+          'Lease completed notification failed:',
+          error?.message || error,
+        );
+      });
 
     return {
       success: true,
