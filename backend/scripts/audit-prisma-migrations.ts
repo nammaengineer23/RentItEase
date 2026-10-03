@@ -52,7 +52,7 @@ function staticAudit() {
 }
 
 function databaseAudit(databaseUrl: string, label: string, applyMigrations: boolean) {
-  const env = { ...process.env, DATABASE_URL: databaseUrl };
+  const env: NodeJS.ProcessEnv = { ...process.env, DATABASE_URL: databaseUrl };
   const shadowDatabaseUrl = env.SHADOW_DATABASE_URL;
 
   if (!shadowDatabaseUrl) {
