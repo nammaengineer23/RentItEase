@@ -91,6 +91,7 @@
     "typescript": "^5.9.2"
   },
   "overrides": {
-    "deepmerge-ts": "^8.0.2"
+    "deepmerge-ts": "^8.0.2",
+    "@fastify/busboy": "^3.2.2"
   }
 }
