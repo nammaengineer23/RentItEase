@@ -70,6 +70,18 @@ import {
       );
     }
   
+    // Razorpay webhook endpoint. Signature is verified from the raw request body.
+    @Post('webhook')
+    @Throttle({ default: { limit: 30, ttl: 60_000 } })
+    @ApiOperation({ summary: 'Receive Razorpay webhook events' })
+    webhook(
+      @Req() req: any,
+      @Headers('x-razorpay-event-id') eventId: string,
+      @Headers('x-razorpay-signature') signature: string,
+    ) {
+      return this.paymentsService.handleWebhook(req.rawBody, eventId, signature);
+    }
+
     // =====================================
     // Get Payment
     // =====================================
