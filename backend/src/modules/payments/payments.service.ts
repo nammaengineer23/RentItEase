@@ -403,53 +403,81 @@ import {
       );
   
       // -------------------------------------
-      // Notify tenant
-      // -------------------------------------
-  
-      await this.notificationsService.createNotification(
-        payment.booking.tenantId,
-        'Payment Successful',
-        `Payment for "${payment.booking.property.title}" was successful.`,
-        NotificationType.GENERAL,
-        payment.booking.id,
-      );
-  
-      await this.pushNotificationsService.sendToUser(
-        payment.booking.tenantId,
-        'Payment Successful',
-        `Payment for "${payment.booking.property.title}" was successful.`,
-        {
-          type: 'PAYMENT_SUCCESS',
-          paymentId: updatedPayment.id,
-          bookingId: payment.bookingId,
-          propertyId: payment.booking.propertyId,
-        },
-      );
-  
+      // Notifications are best-effort. A successful payment must never be
+      // converted into HTTP 500 because notification persistence or an
+      // external push provider is temporarily unavailable.
+      await this.notificationsService
+        .createNotification(
+          payment.booking.tenantId,
+          'Payment Successful',
+          `Payment for "${payment.booking.property.title}" was successful.`,
+          NotificationType.GENERAL,
+          payment.booking.id,
+        )
+        .catch((error) => {
+          console.error(
+            'Payment success tenant notification failed:',
+            error?.message || error,
+          );
+        });
+
+      await this.pushNotificationsService
+        .sendToUser(
+          payment.booking.tenantId,
+          'Payment Successful',
+          `Payment for "${payment.booking.property.title}" was successful.`,
+          {
+            type: 'PAYMENT_SUCCESS',
+            paymentId: updatedPayment.id,
+            bookingId: payment.bookingId,
+            propertyId: payment.booking.propertyId,
+          },
+        )
+        .catch((error) => {
+          console.error(
+            'Payment success tenant push notification failed:',
+            error?.message || error,
+          );
+        });
+
       // -------------------------------------
       // Notify owner
       // -------------------------------------
-  
-      await this.notificationsService.createNotification(
-        payment.booking.property.ownerId,
-        'Booking Payment Received',
-        `Payment received for "${payment.booking.property.title}".`,
-        NotificationType.GENERAL,
-        payment.booking.id,
-      );
-  
-      await this.pushNotificationsService.sendToUser(
-        payment.booking.property.ownerId,
-        'Booking Payment Received',
-        `Payment received for "${payment.booking.property.title}".`,
-        {
-          type: 'BOOKING_PAYMENT_RECEIVED',
-          paymentId: updatedPayment.id,
-          bookingId: payment.bookingId,
-          propertyId: payment.booking.propertyId,
-        },
-      );
-  
+
+      await this.notificationsService
+        .createNotification(
+          payment.booking.property.ownerId,
+          'Booking Payment Received',
+          `Payment received for "${payment.booking.property.title}".`,
+          NotificationType.GENERAL,
+          payment.booking.id,
+        )
+        .catch((error) => {
+          console.error(
+            'Payment received owner notification failed:',
+            error?.message || error,
+          );
+        });
+
+      await this.pushNotificationsService
+        .sendToUser(
+          payment.booking.property.ownerId,
+          'Booking Payment Received',
+          `Payment received for "${payment.booking.property.title}".`,
+          {
+            type: 'BOOKING_PAYMENT_RECEIVED',
+            paymentId: updatedPayment.id,
+            bookingId: payment.bookingId,
+            propertyId: payment.booking.propertyId,
+          },
+        )
+        .catch((error) => {
+          console.error(
+            'Payment received owner push notification failed:',
+            error?.message || error,
+          );
+        });
+
       return {
         success: true,
         message: 'Payment verified successfully.',
