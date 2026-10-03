@@ -1,0 +1,61 @@
+name: Prisma Migration Audit
+
+on:
+  pull_request:
+    paths:
+      - "backend/prisma/**"
+      - "backend/scripts/audit-prisma-migrations.ts"
+      - "backend/package.json"
+      - "backend/package-lock.json"
+      - ".github/workflows/prisma-migration-audit.yml"
+  workflow_dispatch:
+
+jobs:
+  migration-audit:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rentitease_migration_audit
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d rentitease_migration_audit"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Fresh database migration + drift audit
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_migration_audit?schema=public
+          MIGRATION_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_migration_audit?schema=public
+        run: npx ts-node scripts/audit-prisma-migrations.ts --require-db
+
+      - name: Validate committed schema matches migration chain
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_migration_audit?schema=public
+        run: npx prisma migrate diff --from-migrations ./prisma/migrations --to-schema-datamodel ./prisma/schema.prisma --exit-code
