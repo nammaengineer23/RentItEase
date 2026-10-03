@@ -174,45 +174,75 @@ export class LeaseService {
       },
     });
 
-    await this.notificationsService.createNotification(
-      booking.tenantId,
-      'Lease Created',
-      `Your lease for "${booking.property.title}" has been created successfully.`,
-      NotificationType.GENERAL,
-      lease.id,
-    );
+    // Notifications are best-effort. Lease creation is already persisted,
+    // so notification-provider failures must never turn it into HTTP 500.
+    await this.notificationsService
+      .createNotification(
+        booking.tenantId,
+        'Lease Created',
+        `Your lease for "${booking.property.title}" has been created successfully.`,
+        NotificationType.GENERAL,
+        lease.id,
+      )
+      .catch((error) => {
+        console.error(
+          'Lease created tenant notification failed:',
+          error?.message || error,
+        );
+      });
 
-    await this.pushNotificationsService.sendToUser(
-      booking.tenantId,
-      'Lease Created',
-      `Your lease for "${booking.property.title}" has been created successfully.`,
-      {
-        type: 'LEASE_CREATED',
-        leaseId: lease.id,
-        bookingId: booking.id,
-        propertyId: booking.propertyId,
-      },
-    );
+    await this.pushNotificationsService
+      .sendToUser(
+        booking.tenantId,
+        'Lease Created',
+        `Your lease for "${booking.property.title}" has been created successfully.`,
+        {
+          type: 'LEASE_CREATED',
+          leaseId: lease.id,
+          bookingId: booking.id,
+          propertyId: booking.propertyId,
+        },
+      )
+      .catch((error) => {
+        console.error(
+          'Lease created tenant push notification failed:',
+          error?.message || error,
+        );
+      });
 
-    await this.notificationsService.createNotification(
-      booking.property.owner.id,
-      'Lease Created',
-      `A lease has been created for "${booking.property.title}".`,
-      NotificationType.GENERAL,
-      lease.id,
-    );
+    await this.notificationsService
+      .createNotification(
+        booking.property.owner.id,
+        'Lease Created',
+        `A lease has been created for "${booking.property.title}".`,
+        NotificationType.GENERAL,
+        lease.id,
+      )
+      .catch((error) => {
+        console.error(
+          'Lease created owner notification failed:',
+          error?.message || error,
+        );
+      });
 
-    await this.pushNotificationsService.sendToUser(
-      booking.property.owner.id,
-      'Lease Created',
-      `A lease has been created for "${booking.property.title}".`,
-      {
-        type: 'LEASE_CREATED',
-        leaseId: lease.id,
-        bookingId: booking.id,
-        propertyId: booking.propertyId,
-      },
-    );
+    await this.pushNotificationsService
+      .sendToUser(
+        booking.property.owner.id,
+        'Lease Created',
+        `A lease has been created for "${booking.property.title}".`,
+        {
+          type: 'LEASE_CREATED',
+          leaseId: lease.id,
+          bookingId: booking.id,
+          propertyId: booking.propertyId,
+        },
+      )
+      .catch((error) => {
+        console.error(
+          'Lease created owner push notification failed:',
+          error?.message || error,
+        );
+      });
 
     return {
       success: true,
