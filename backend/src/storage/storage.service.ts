@@ -20,6 +20,13 @@ export class StorageService {
     return this.firebaseService.uploadImage(file, folder);
   }
 
+  uploadPrivateFile(
+    file: Express.Multer.File,
+    folder: string,
+  ): Promise<{ publicId: string }> {
+    return this.firebaseService.uploadPrivateFile(file, folder);
+  }
+
   deleteImage(publicId: string): Promise<boolean> {
     return this.firebaseService.deleteImage(publicId);
   }
