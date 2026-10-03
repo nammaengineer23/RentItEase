@@ -1,4 +1,5 @@
 import request, { Response } from 'supertest';
+import { createHmac } from 'crypto';
 
 export const baseUrl = () => {
   const base = process.env.E2E_BASE_URL;
@@ -204,4 +205,60 @@ export async function clearActiveMemberships(
   }
 
   return activeMemberships.length;
+}
+
+
+/**
+ * Simulate a captured Razorpay provider callback without creating a real-money
+ * transaction against the production gateway. The webhook is authenticated
+ * with the production webhook secret and exercises the same state transition
+ * used by Razorpay after a captured payment.
+ */
+export async function markPaymentCapturedViaWebhook(
+  payment: { bookingId: string; razorpayOrderId: string; amount: number; currency: string },
+) {
+  const secret = process.env.E2E_RAZORPAY_WEBHOOK_SECRET;
+  if (!secret) {
+    throw new Error('E2E_RAZORPAY_WEBHOOK_SECRET is required.');
+  }
+
+  const razorpayPaymentId = `pay_e2e_webhook_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const eventId = `e2e-${process.env.GITHUB_RUN_ID ?? Date.now()}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const payload = {
+    entity: 'event',
+    account_id: 'e2e',
+    event: 'payment.captured',
+    payload: {
+      payment: {
+        entity: {
+          id: razorpayPaymentId,
+          entity: 'payment',
+          amount: Math.round(Number(payment.amount) * 100),
+          currency: payment.currency,
+          status: 'captured',
+          order_id: payment.razorpayOrderId,
+        },
+      },
+    },
+  };
+
+  const rawBody = JSON.stringify(payload);
+  const signature = createHmac('sha256', secret)
+    .update(rawBody)
+    .digest('hex');
+
+  const response = await request(apiUrl())
+    .post('/payments/webhook')
+    .set('x-razorpay-event-id', eventId)
+    .set('x-razorpay-signature', signature)
+    .set('content-type', 'application/json')
+    .send(rawBody);
+
+  statusOk(response, [200]);
+  if (response.body?.success !== true) {
+    throw new Error(`Razorpay webhook simulation failed: ${JSON.stringify(response.body)}`);
+  }
+
+  return { razorpayPaymentId, eventId, response: response.body };
 }
