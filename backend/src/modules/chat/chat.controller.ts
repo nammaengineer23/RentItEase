@@ -9,16 +9,10 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-
-import {
-  ApiBearerAuth,
-  ApiTags,
-} from '@nestjs/swagger';
-
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Throttle } from '@nestjs/throttler';
-
 import { ChatService } from './chat.service';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -27,48 +21,25 @@ import { ChatPaginationDto } from './dto/chat-pagination.dto';
 @ApiTags('Chat')
 @Controller('chat')
 export class ChatController {
-  constructor(
-    private readonly chatService: ChatService,
-  ) {}
-
-
-  // ==========================
-  // Start Conversation
-  // ==========================
+  constructor(private readonly chatService: ChatService) {}
 
   @Post('conversations')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   createConversation(
     @CurrentUser() user: any,
     @Body() dto: CreateConversationDto,
   ) {
-    return this.chatService.createConversation(
-      dto.propertyId,
-      user.id,
-    );
+    return this.chatService.createConversation(dto.propertyId, user.id);
   }
-
-
-  // ==========================
-  // Conversation List
-  // ==========================
 
   @Get('conversations')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  listConversations(
-    @CurrentUser() user: any,
-  ) {
-    return this.chatService.listConversations(
-      user.id,
-    );
+  listConversations(@CurrentUser() user: any) {
+    return this.chatService.listConversations(user.id);
   }
-
-
-  // ==========================
-  // Send Message
-  // ==========================
 
   @Post('conversations/:conversationId/messages')
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
@@ -84,13 +55,12 @@ export class ChatController {
       user.id,
       dto.text,
       dto.messageType,
+      dto.attachmentPublicId,
+      dto.attachmentFileName,
+      dto.attachmentMimeType,
+      dto.attachmentSize,
     );
   }
-
-
-  // ==========================
-  // Get Messages
-  // ==========================
 
   @Get('conversations/:conversationId/messages')
   @UseGuards(JwtAuthGuard)
@@ -108,11 +78,6 @@ export class ChatController {
     );
   }
 
-
-  // ==========================
-  // Mark Conversation Messages Read
-  // ==========================
-
   @Patch('conversations/:conversationId/read')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -120,18 +85,11 @@ export class ChatController {
     @Param('conversationId') conversationId: string,
     @CurrentUser() user: any,
   ) {
-    return this.chatService.markAsRead(
-      conversationId,
-      user.id,
-    );
+    return this.chatService.markAsRead(conversationId, user.id);
   }
 
-
-  // ==========================
-  // Edit Message
-  // ==========================
-
   @Patch('messages/:messageId')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   editMessage(
@@ -139,28 +97,17 @@ export class ChatController {
     @CurrentUser() user: any,
     @Body() dto: SendMessageDto,
   ) {
-    return this.chatService.editMessage(
-      messageId,
-      user.id,
-      dto.text,
-    );
+    return this.chatService.editMessage(messageId, user.id, dto.text);
   }
 
-
-  // ==========================
-  // Delete Message
-  // ==========================
-
   @Delete('messages/:messageId')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   deleteMessage(
     @Param('messageId') messageId: string,
     @CurrentUser() user: any,
   ) {
-    return this.chatService.deleteMessage(
-      messageId,
-      user.id,
-    );
+    return this.chatService.deleteMessage(messageId, user.id);
   }
 }

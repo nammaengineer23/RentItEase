@@ -149,6 +149,8 @@ import { StorageModule } from './storage/storage.module';
 
         CORS_ORIGINS: Joi.string().optional(),
 
+        ALLOWED_HOSTS: Joi.string().default('api.rentitease.com'),
+
         TRUST_PROXY: Joi.alternatives().try(Joi.boolean(), Joi.number().integer().min(0)).optional(),
 
         SWAGGER_ENABLED: Joi.boolean().default(false),

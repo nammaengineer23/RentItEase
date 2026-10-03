@@ -22,6 +22,8 @@ export class AdminAuditService {
     ) as Prisma.InputJsonValue;
   }
 
+  // Audit logs are append-only through the application API. There are deliberately
+  // no update/delete methods exposed to ordinary admins.
   async record(
     context: AdminAuditContext,
     action: string,
@@ -69,9 +71,33 @@ export class AdminAuditService {
     });
   }
 
-  async list(limit = 100) {
+  async list(
+    limit = 100,
+    filters?: {
+      adminId?: string;
+      action?: string;
+      resource?: string;
+      resourceId?: string;
+      from?: Date;
+      to?: Date;
+    },
+  ) {
     const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
     return this.prisma.adminAuditLog.findMany({
+      where: {
+        ...(filters?.adminId ? { adminId: filters.adminId } : {}),
+        ...(filters?.action ? { action: filters.action } : {}),
+        ...(filters?.resource ? { resource: filters.resource } : {}),
+        ...(filters?.resourceId ? { resourceId: filters.resourceId } : {}),
+        ...(filters?.from || filters?.to
+          ? {
+              createdAt: {
+                ...(filters.from ? { gte: filters.from } : {}),
+                ...(filters.to ? { lte: filters.to } : {}),
+              },
+            }
+          : {}),
+      },
       take: safeLimit,
       orderBy: { createdAt: 'desc' },
       include: {

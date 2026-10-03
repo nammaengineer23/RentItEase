@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
@@ -11,6 +11,7 @@ import { NearbyPropertiesDto } from './dto/nearby-properties.dto';
 import { UpdatePropertyAmenitiesDto } from './dto/update-property-amenities.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { AiSuggestionDto } from './dto/ai-suggestion.dto';
+import { AiSuggestionRateLimitGuard } from './guards/ai-suggestion-rate-limit.guard';
 import { ListingAiService } from './listing-ai.service';
 import { PropertiesService } from './properties.service';
 
@@ -28,10 +29,16 @@ export class PropertiesController {
 
   @Post('ai-suggestion')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, AiSuggestionRateLimitGuard, RolesGuard)
   @Roles(UserRole.OWNER)
   @ApiBearerAuth()
-  suggestListing(@Body() dto: AiSuggestionDto) { return this.listingAi.suggest(dto); }
+  suggestListing(@Body() dto: AiSuggestionDto) {
+    const payloadBytes = Buffer.byteLength(JSON.stringify(dto), 'utf8');
+    if (payloadBytes > 8 * 1024) {
+      throw new BadRequestException('AI suggestion input is too large.');
+    }
+    return this.listingAi.suggest(dto);
+  }
 
   @Get()
   @Throttle({ default: { limit: 60, ttl: 60_000 } })

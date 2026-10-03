@@ -19,6 +19,27 @@ export class SendMessageDto {
   @MaxLength(2000)
   text!: string;
 
+  @ApiPropertyOptional({ description: 'Private chat attachment storage key returned by the upload endpoint.' })
+  @IsOptional()
+  @IsString()
+  attachmentPublicId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  attachmentFileName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  attachmentMimeType?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  attachmentSize?: number;
+
   @ApiPropertyOptional({
     enum: MessageType,
     default: MessageType.TEXT,

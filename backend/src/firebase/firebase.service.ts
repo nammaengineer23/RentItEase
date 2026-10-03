@@ -59,15 +59,50 @@ export class FirebaseService {
       'Firebase Storage upload',
     );
 
-    const imageUrl = await this.withTimeout(
-      getDownloadURL(firebaseFile),
-      15_000,
-    );
+    const imageUrl = await this.withTimeout(getDownloadURL(firebaseFile), 15_000);
 
     return {
       publicId: fileName,
       imageUrl,
     };
+  }
+
+  async uploadPrivateFile(
+    file: Express.Multer.File,
+    folder: string,
+  ): Promise<{ publicId: string }> {
+    const bucket = this.getStorage().bucket();
+    const fileName = `${folder}/${Date.now()}-${file.originalname}`;
+    const firebaseFile = bucket.file(fileName);
+
+    await this.withRetry(
+      () =>
+        this.withTimeout(
+          firebaseFile.save(file.buffer, {
+            metadata: { contentType: file.mimetype },
+          }),
+          15_000,
+        ),
+      3,
+      'Firebase private storage upload',
+    );
+
+    return { publicId: fileName };
+  }
+
+  async getPrivateDownloadUrl(
+    publicId: string,
+    expiresInMs = 15 * 60 * 1000,
+  ): Promise<string> {
+    const bucket = this.getStorage().bucket();
+    const [url] = await this.withTimeout(
+      bucket.file(publicId).getSignedUrl({
+        action: 'read',
+        expires: Date.now() + expiresInMs,
+      }),
+      15_000,
+    );
+    return url;
   }
 
   async deleteImage(publicId: string) {

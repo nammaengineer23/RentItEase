@@ -4,8 +4,14 @@ on:
   workflow_dispatch:
   push:
     branches: ['**']
+    paths:
+      - 'admin_panel/**'
+      - '.github/workflows/admin_ci.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'admin_panel/**'
+      - '.github/workflows/admin_ci.yml'
 
 permissions:
   contents: read

@@ -15,7 +15,7 @@ import {
     UserRole,
   } from '@prisma/client';
   
-  import { createHmac } from 'crypto';
+  import { createHmac, timingSafeEqual } from 'crypto';
   
   import { PrismaService } from '../../prisma/prisma.service';
   import { serializePrisma } from '../../common/utils/prisma-response.util';
@@ -249,6 +249,53 @@ import {
       };
     }
   
+    private signaturesMatch(expected: string, actual: string): boolean {
+      const expectedBuffer = Buffer.from(expected, 'utf8');
+      const actualBuffer = Buffer.from(actual, 'utf8');
+      return expectedBuffer.length === actualBuffer.length && timingSafeEqual(expectedBuffer, actualBuffer);
+    }
+
+    private async fetchGatewayPayment(paymentId: string, orderId: string) {
+      const gatewayPayment = await this.razorpay.payments.fetch(paymentId);
+      if (gatewayPayment.order_id !== orderId) throw new BadRequestException('Razorpay payment does not belong to the expected order.');
+      return gatewayPayment;
+    }
+
+    async handleWebhook(rawBody: Buffer, eventId: string, signature: string) {
+      const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+      if (!webhookSecret) throw new ServiceUnavailableException('Razorpay webhook secret is not configured.');
+      if (!eventId || !signature) throw new BadRequestException('Razorpay webhook signature headers are required.');
+      const expected = createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
+      if (!this.signaturesMatch(expected, signature)) throw new BadRequestException('Razorpay webhook signature verification failed.');
+      let payload: any;
+      try { payload = JSON.parse(rawBody.toString('utf8')); } catch { throw new BadRequestException('Invalid Razorpay webhook payload.'); }
+      const eventType = String(payload?.event || '');
+      const existing = await this.prisma.razorpayWebhookEvent.findUnique({ where: { eventId } });
+      if (existing?.processedAt) return { success: true, duplicate: true };
+      if (!existing) await this.prisma.razorpayWebhookEvent.create({ data: { eventId, eventType, payload } });
+      const entity = payload?.payload?.payment?.entity;
+      if (entity && ['payment.captured', 'order.paid'].includes(eventType)) {
+        const orderId = entity.order_id || payload?.payload?.order?.entity?.id;
+        const payment = orderId ? await this.prisma.payment.findUnique({ where: { razorpayOrderId: orderId } }) : null;
+        if (payment) {
+          if (Number(entity.amount) !== Math.round(Number(payment.amount) * 100) || String(entity.currency) !== payment.currency) throw new BadRequestException('Razorpay webhook amount or currency does not match the payment record.');
+          if (entity.status && entity.status !== 'captured') throw new BadRequestException('Razorpay webhook payment is not captured.');
+          if (payment.status !== PaymentStatus.SUCCESS) {
+            await this.prisma.$transaction(async (tx) => {
+              const current = await tx.payment.findUnique({ where: { id: payment.id }, include: { booking: { include: { property: true } } } });
+              if (!current || current.status === PaymentStatus.SUCCESS) return;
+              const updated = await tx.payment.update({ where: { id: current.id }, data: { status: PaymentStatus.SUCCESS, razorpayPaymentId: entity.id, paidAt: new Date() } });
+              await tx.booking.update({ where: { id: current.bookingId }, data: { status: BookingStatus.PAID } });
+              await tx.property.update({ where: { id: current.booking.propertyId }, data: { isAvailable: false } });
+              await tx.invoice.upsert({ where: { invoiceNumber: 'RIE-' + current.bookingId }, update: { status: 'PAID', amount: current.amount, totalAmount: current.amount, paymentId: updated.id }, create: { invoiceNumber: 'RIE-' + current.bookingId, userId: current.booking.tenantId, paymentId: updated.id, amount: current.amount, taxAmount: 0, totalAmount: current.amount, currency: current.currency, status: 'PAID', description: 'Payment invoice for ' + current.booking.property.title } });
+            });
+          }
+        }
+      }
+      await this.prisma.razorpayWebhookEvent.update({ where: { eventId }, data: { processedAt: new Date() } });
+      return { success: true, duplicate: false };
+    }
+
     // =====================================
     // Verify Razorpay Payment
     // =====================================
@@ -327,7 +374,7 @@ import {
         )
         .digest('hex');
   
-      if (generatedSignature !== dto.razorpaySignature) {
+      if (!this.signaturesMatch(generatedSignature, dto.razorpaySignature)) {
         // A bad callback must never mutate the authoritative payment state.
         // The legitimate payment may still be pending and can be verified
         // later with a valid signature/webhook.
@@ -335,6 +382,13 @@ import {
           'Payment signature verification failed.',
         );
       }
+
+      // Client callbacks are not authoritative; verify payment status and amount directly with Razorpay.
+      let gatewayPayment: any;
+      try { gatewayPayment = await this.fetchGatewayPayment(dto.razorpayPaymentId, payment.razorpayOrderId); }
+      catch (error) { if (error instanceof BadRequestException) throw error; throw new ServiceUnavailableException('Unable to verify payment status with Razorpay.'); }
+      if (gatewayPayment.status !== 'captured') throw new BadRequestException('Razorpay payment has not been captured.');
+      if (Number(gatewayPayment.amount) !== Math.round(Number(payment.amount) * 100) || String(gatewayPayment.currency) !== payment.currency) throw new BadRequestException('Razorpay payment amount or currency does not match the payment record.');
 
       // -------------------------------------
       // Mark payment successful

@@ -513,6 +513,18 @@ model Lease {
   @@index([endDate])
 }
 
+
+model RazorpayWebhookEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  eventType   String
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([eventType, createdAt])
+}
+
 model Payment {
   id                String        @id @default(cuid())
   bookingId         String        @unique
@@ -574,6 +586,10 @@ model Message {
   conversationId String
   senderId       String
   text           String
+  attachmentPublicId String?
+  attachmentFileName String?
+  attachmentMimeType String?
+  attachmentSize Int?
   isRead         Boolean      @default(false)
   createdAt      DateTime     @default(now())
   messageType    MessageType  @default(TEXT)

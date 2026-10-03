@@ -88,7 +88,8 @@ export function ReviewsPage() {
     <div className="section-heading"><div><h2>Review Management</h2><p className="muted">Review, edit and moderate user feedback.</p></div><button className="secondary-button" onClick={() => void loadReviews()}>Refresh</button></div>
     {error && <div className="error-banner">{error}</div>}
     <div className="content-card">
-      <div className="users-toolbar"><input className="search-input" type="search" placeholder="Search user, property or review..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
+      <div className="users-toolbar"><input className="search-input" type="search" placeholder="Search user, property or review..."
+            maxLength={100} value={search} onChange={(e) => setSearch(e.target.value)} /></div>
       <div className="table-summary">Showing {filteredReviews.length} of {reviews.length} reviews</div>
       {filteredReviews.length === 0 ? <div className="empty-state"><h3>No reviews found</h3></div> : <div className="table-container"><table className="data-table"><thead><tr><th>User</th><th>Property</th><th>Rating</th><th>Comment</th><th>Updated</th><th>Action</th></tr></thead><tbody>
         {paginatedReviews.map((r) => <tr key={r.id}><td><div className="user-cell"><strong>{r.user.fullName}</strong><span>{r.user.email}</span></div></td><td><div className="user-cell"><strong>{r.property.title}</strong><span>{r.property.city}{r.property.locality ? `, ${r.property.locality}` : ''}</span></div></td><td><span className="rating-stars"><Stars rating={r.rating} /></span> {r.rating}/5</td><td><div className="review-comment">{r.comment || 'No comment'}</div></td><td>{formatDate(r.updatedAt || r.createdAt)}</td><td><button className="table-button" onClick={() => openReview(r)}>Details / Edit</button></td></tr>)}
