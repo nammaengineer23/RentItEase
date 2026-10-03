@@ -12,12 +12,22 @@ check "Railway migration runs before production start" grep -q 'preDeployCommand
 check "Railway production health check is configured" grep -q 'healthcheckPath: "/api/v1/health"' "$repo_root/backend/railway.json"
 check "Release E2E remains main-push gated" grep -q 'branches: \[main\]' "$repo_root/.github/workflows/e2e-test.yml"
 check "Web deployment requires successful main release E2E" grep -q 'github.event.workflow_run.conclusion == .success.' "$repo_root/.github/workflows/deploy_web.yml"
+check "Manual web deployment requires explicit confirmation" grep -q 'DEPLOY-RENTITEASE' "$repo_root/.github/workflows/deploy_web.yml"
+check "Release workflow supplies explicit production confirmation" grep -q 'confirm_production_deploy="DEPLOY-RENTITEASE"' "$repo_root/.github/workflows/release.yml"
 check "Flutter Fast Check remains automatic" grep -q 'pull_request:' "$repo_root/.github/workflows/flutter_ci.yml"
 check "Android release build is manual/milestone only" ! grep -q '^  push:' "$repo_root/.github/workflows/flutter_android_build.yml"
 check "Admin CI is path scoped" grep -q "'admin_panel/\*\*'" "$repo_root/.github/workflows/admin_ci.yml"
 check "Automatic E2E cleanup is workflow-run triggered" grep -q 'workflow_run:' "$repo_root/.github/workflows/e2e-data-cleanup.yml"
 check "Workflow-run cleanup has a schedule" grep -q 'schedule:' "$repo_root/.github/workflows/cleanup-workflow-runs.yml"
 check "Rollback procedure is documented" test -f "$repo_root/backend/docs/production-deployment-and-rollback.md"
+if grep -RniE 'echo .*\$\{\{ secrets\.|echo .*\$[A-Z_]*(SECRET|PASSWORD|TOKEN|KEY)' "$repo_root/.github/workflows" >/tmp/rentitease-secret-log-audit.txt 2>/dev/null; then
+  echo "FAIL: workflow appears to echo a secret-bearing value."
+  cat /tmp/rentitease-secret-log-audit.txt
+  fail=1
+else
+  echo "PASS: workflow secret-bearing values are not intentionally echoed."
+fi
+rm -f /tmp/rentitease-secret-log-audit.txt
 
 if git -C "$repo_root" grep -nI -E '(^|[[:space:]])(JWT_ACCESS_SECRET|JWT_REFRESH_SECRET|RAZORPAY_KEY_SECRET|OPENAI_API_KEY|CLOUDFLARE_API_TOKEN)[[:space:]]*=[[:space:]]*[^$<\{[:space:]]' -- ':!*.example' ':!*.sample' ':!*.md' ':!.github/workflows/*' >/tmp/rentitease-secret-audit.txt 2>/dev/null; then
   echo "FAIL: possible hard-coded production secret assignment detected."
