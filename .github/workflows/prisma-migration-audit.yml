@@ -53,7 +53,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_migration_audit?schema=public
           MIGRATION_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_migration_audit?schema=public
-        run: npx ts-node scripts/audit-prisma-migrations.ts --require-db
+        run: npx ts-node scripts/audit-prisma-migrations.ts --require-db --apply
 
       - name: Validate committed schema matches migration chain
         env:
