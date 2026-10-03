@@ -70,6 +70,9 @@ async function bootstrap() {
   app.use(
     json({
       limit: '1mb',
+      verify: (req: Request, _res: Response, buffer: Buffer) => {
+        (req as Request & { rawBody?: Buffer }).rawBody = Buffer.from(buffer);
+      },
     }),
     urlencoded({
       extended: true,
