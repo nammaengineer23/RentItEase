@@ -47,6 +47,7 @@ describe('StorageService', () => {
     );
     expect(firebaseService.getPrivateDownloadUrl).toHaveBeenCalledWith(
       'chat/conversation-1/file.pdf',
+      15 * 60 * 1000,
     );
   });
 });
