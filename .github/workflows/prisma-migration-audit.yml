@@ -49,13 +49,20 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
+      - name: Create disposable shadow database
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d postgres -c 'CREATE DATABASE rentitease_migration_shadow;'
+
       - name: Fresh database migration + drift audit
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_migration_audit?schema=public
           MIGRATION_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_migration_audit?schema=public
+          SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_migration_shadow?schema=public
         run: npx ts-node scripts/audit-prisma-migrations.ts --require-db --apply
 
       - name: Validate committed schema matches migration chain
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_migration_audit?schema=public
-        run: npx prisma migrate diff --from-migrations ./prisma/migrations --to-schema-datamodel ./prisma/schema.prisma --exit-code
+          SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_migration_shadow?schema=public
+        run: npx prisma migrate diff --from-migrations ./prisma/migrations --to-schema-datamodel ./prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --exit-code
