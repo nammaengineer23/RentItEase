@@ -28,7 +28,8 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "cleanup:e2e": "ts-node scripts/cleanup-e2e-data.ts",
     "social:live-verify": "ts-node scripts/social-provider-live-verification.ts",
-    "storage:reconcile": "ts-node scripts/reconcile-storage.ts"
+    "storage:reconcile": "ts-node scripts/reconcile-storage.ts",
+    "admin:audit:retention": "ts-node scripts/retention-admin-audit.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",
