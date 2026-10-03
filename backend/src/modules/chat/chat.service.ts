@@ -271,18 +271,30 @@ export class ChatService {
       }
     }
 
+    const messageData: Parameters<
+      typeof this.prisma.message.create
+    >[0]['data'] = {
+      conversationId,
+      senderId,
+      text,
+      messageType: messageType ?? MessageType.TEXT,
+      ...(attachmentPublicId !== undefined && {
+        attachmentPublicId,
+      }),
+      ...(attachmentFileName !== undefined && {
+        attachmentFileName,
+      }),
+      ...(attachmentMimeType !== undefined && {
+        attachmentMimeType,
+      }),
+      ...(attachmentSize !== undefined && {
+        attachmentSize,
+      }),
+    };
+
     const message =
       await this.prisma.message.create({
-        data: {
-          conversationId,
-          senderId,
-          text,
-          messageType,
-          attachmentPublicId,
-          attachmentFileName,
-          attachmentMimeType,
-          attachmentSize,
-        },
+        data: messageData,
         include: {
           sender: {
             select: {
