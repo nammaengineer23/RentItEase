@@ -15,6 +15,7 @@ const apiUrl = `${baseUrl}${apiPrefix}`;
 const required = ['E2E_BASE_URL', 'E2E_ADMIN_EMAIL', 'E2E_ADMIN_PASSWORD'];
 const MAX_RETRIES = 4;
 const INITIAL_BACKOFF_MS = 1000;
+const REQUEST_PACING_MS = 300;
 
 function unwrap(body) {
   let current = body;
@@ -108,8 +109,9 @@ async function main() {
   let skippedProtected = 0;
   const failures = [];
 
-  for (const property of marked) {
+  for (const [index, property] of marked.entries()) {
     if (!property?.id) continue;
+    if (index > 0) await sleep(REQUEST_PACING_MS);
 
     try {
       await jsonRequest(`/admin/properties/${property.id}`, { method: 'DELETE', headers });
@@ -134,6 +136,7 @@ async function main() {
   console.log(`E2E properties deleted: ${deleted}`);
   console.log(`E2E properties skipped (active booking/lease): ${skippedProtected}`);
   console.log(`E2E cleanup failures: ${failures.length}`);
+  console.log(`Deletion request pacing: ${REQUEST_PACING_MS}ms between fixtures; 429 retries use exponential backoff/Retry-After`);
   console.log('Dedicated E2E tenant/owner/admin accounts: PRESERVED');
   console.log('Cleanup mode: authenticated API only; no broad database deletes');
   console.log('==============================================');
