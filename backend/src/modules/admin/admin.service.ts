@@ -502,7 +502,11 @@ async getProperty(id: string) {
       async (tx) => {
         const updated = await tx.property.update({
           where: { id },
-          data: { isVerified: true, isAvailable: true },
+          data: {
+            isVerified: true,
+            isAvailable: true,
+            lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
+          },
         });
         const ownerBefore = await tx.user.findUnique({
           where: { id: property.ownerId },
