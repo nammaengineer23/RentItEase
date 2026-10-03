@@ -29,12 +29,9 @@ function getCorsOrigins(): string[] {
     .filter(Boolean);
 
   if (process.env.NODE_ENV === 'production') {
-    const origins = configured.length > 0 ? configured : PRODUCTION_ORIGINS;
-    return origins.filter(
-      (origin) =>
-        origin.startsWith('https://') &&
-        !origin.includes('localhost') &&
-        !origin.includes('127.0.0.1'),
+    // Production CORS is an exact allowlist. Never accept arbitrary HTTPS origins.
+    return [...new Set(configured.length > 0 ? configured : PRODUCTION_ORIGINS)].filter(
+      (origin) => PRODUCTION_ORIGINS.includes(origin),
     );
   }
 
@@ -64,6 +61,10 @@ async function bootstrap() {
   app.getHttpAdapter().getInstance().set('trust proxy', getTrustProxy());
 
   const isProduction = process.env.NODE_ENV === 'production';
+  const allowedHosts = (process.env.ALLOWED_HOSTS || 'api.rentitease.com')
+    .split(',')
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean);
   const swaggerEnabled = process.env.SWAGGER_ENABLED === 'true';
   const swaggerToken = process.env.SWAGGER_DOCS_TOKEN;
 
@@ -98,12 +99,13 @@ async function bootstrap() {
 
   if (isProduction) {
     app.use((req: Request, res: Response, next: NextFunction) => {
+      const host = (req.get('host') || '').split(':')[0].toLowerCase();
+      if (!host || !allowedHosts.includes(host)) {
+        res.status(400).send('Invalid host');
+        return;
+      }
+
       if (!req.secure) {
-        const host = req.get('host');
-        if (!host) {
-          res.status(400).send('Invalid host');
-          return;
-        }
         res.redirect(308, `https://${host}${req.originalUrl}`);
         return;
       }
