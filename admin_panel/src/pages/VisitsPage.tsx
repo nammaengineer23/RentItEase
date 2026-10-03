@@ -102,7 +102,7 @@ export function VisitsPage() {
     {error && <div className="error-banner">{error}</div>}
     <div className="content-card">
       <div className="users-toolbar">
-        <input className="search-input" type="search" placeholder="Search tenant, property or location..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input className="search-input" type="search" placeholder="Search tenant, property or location..." maxLength={100} value={search} onChange={(e) => setSearch(e.target.value)} />
         <select className="filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
           <option value="ALL">All statuses</option><option value="PENDING">Pending</option><option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option><option value="CANCELLED">Cancelled</option><option value="COMPLETED">Completed</option>
         </select>
