@@ -6,10 +6,10 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
-    "start": "prisma migrate deploy && node dist/main",
+    "start": "prisma migrate resolve --rolled-back 20261003073000_add_chat_attachment_metadata || true; prisma migrate deploy && node dist/main",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "prisma migrate deploy && node dist/main",
+    "start:prod": "prisma migrate resolve --rolled-back 20261003073000_add_chat_attachment_metadata || true; prisma migrate deploy && node dist/main",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"src/**/*.ts\"",
     "test": "jest --config ./jest.config.js",
