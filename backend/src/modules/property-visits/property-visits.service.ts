@@ -157,27 +157,41 @@ export class PropertyVisitsService {
     // In-App Notification
     // ============================================================
 
-    await this.notificationsService.createNotification(
-      visit.property.owner.id,
-      'New Visit Request',
-      `${visit.tenant.fullName} requested a property visit.`,
-      NotificationType.VISIT_REQUEST,
-    );
+    // Notifications are best-effort and must never turn a successful
+    // visit creation into an HTTP 500 when an external notification
+    // provider or notification persistence is temporarily unavailable.
+    void this.notificationsService
+      .createNotification(
+        visit.property.owner.id,
+        'New Visit Request',
+        `${visit.tenant.fullName} requested a property visit.`,
+        NotificationType.VISIT_REQUEST,
+      )
+      .catch((error) => {
+        console.error(
+          'Visit request in-app notification failed:',
+          error?.message || error,
+        );
+      });
 
-    // ============================================================
-    // Push Notification
-    // ============================================================
-
-    await this.pushNotificationsService.sendToUser(
-      visit.property.owner.id,
-      'New Visit Request',
-      `${visit.tenant.fullName} requested a property visit for "${visit.property.title}".`,
-      {
-        type: 'VISIT_REQUEST',
-        propertyId: visit.property.id,
-        visitId: visit.id,
-      },
-    );
+    // Push notifications are also best-effort.
+    void this.pushNotificationsService
+      .sendToUser(
+        visit.property.owner.id,
+        'New Visit Request',
+        `${visit.tenant.fullName} requested a property visit for "${visit.property.title}".`,
+        {
+          type: 'VISIT_REQUEST',
+          propertyId: visit.property.id,
+          visitId: visit.id,
+        },
+      )
+      .catch((error) => {
+        console.error(
+          'Visit request push notification failed:',
+          error?.message || error,
+        );
+      });
 
     return {
       success: true,
