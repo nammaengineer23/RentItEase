@@ -334,18 +334,6 @@ export class AuthService {
           },
         ],
       },
-      // Keep login independent of unrelated User columns so production
-      // schema drift outside the authentication fields cannot cause a 500.
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        phone: true,
-        role: true,
-        passwordHash: true,
-        isActive: true,
-        photoUrl: true,
-      },
     });
 
     if (!user) {
