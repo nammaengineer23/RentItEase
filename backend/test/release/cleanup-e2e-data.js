@@ -3,12 +3,18 @@
 /**
  * Safe production release-E2E cleanup.
  * Uses authenticated APIs only. It removes explicitly marked E2E properties
- * and legacy isolated visit fixtures while preserving the dedicated accounts.
+ * and legacy isolated visit fixtures while preserving dedicated accounts.
+ *
+ * Cleanup is intentionally tolerant of protected production fixtures:
+ * active bookings/leases must not be deleted and are reported as skipped.
+ * Transient 429 responses are retried with exponential backoff.
  */
 const baseUrl = (process.env.E2E_BASE_URL || '').replace(/\/+$/, '');
 const apiPrefix = '/' + (process.env.E2E_API_PREFIX || '/api/v1').replace(/^\/+|\/+$/g, '');
 const apiUrl = `${baseUrl}${apiPrefix}`;
 const required = ['E2E_BASE_URL', 'E2E_ADMIN_EMAIL', 'E2E_ADMIN_PASSWORD'];
+const MAX_RETRIES = 4;
+const INITIAL_BACKOFF_MS = 1000;
 
 function unwrap(body) {
   let current = body;
@@ -23,14 +29,45 @@ function tokenFrom(body) {
   return body?.accessToken || body?.data?.accessToken || body?.data?.data?.accessToken || body?.token || body?.data?.token;
 }
 
-async function jsonRequest(path, options = {}) {
+function isRateLimitedError(error) {
+  return error?.status === 429;
+}
+
+function isProtectedPropertyError(error) {
+  const message = String(error?.message || '').toLowerCase();
+  return message.includes('active booking') || message.includes('active lease') ||
+    message.includes('cannot be deleted while it has an active booking or lease');
+}
+
+async function sleep(ms) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function jsonRequest(path, options = {}, attempt = 0) {
   const response = await fetch(`${apiUrl}${path}`, options);
   const text = await response.text();
   let body = null;
   if (text) {
     try { body = JSON.parse(text); } catch { body = text; }
   }
-  if (!response.ok) throw new Error(`${options.method || 'GET'} ${path} failed (${response.status}): ${JSON.stringify(body)}`);
+
+  if (!response.ok) {
+    const error = new Error(`${options.method || 'GET'} ${path} failed (${response.status}): ${JSON.stringify(body)}`);
+    error.status = response.status;
+    error.body = body;
+
+    if (response.status === 429 && attempt < MAX_RETRIES) {
+      const retryAfter = Number(response.headers.get('retry-after'));
+      const delay = Number.isFinite(retryAfter) && retryAfter > 0
+        ? Math.min(retryAfter * 1000, 30_000)
+        : INITIAL_BACKOFF_MS * (2 ** attempt);
+      await sleep(delay);
+      return jsonRequest(path, options, attempt + 1);
+    }
+
+    throw error;
+  }
+
   return body;
 }
 
@@ -68,15 +105,24 @@ async function main() {
   const properties = asArray(await jsonRequest('/admin/properties', { headers }));
   const marked = properties.filter(isE2EProperty);
   let deleted = 0;
+  let skippedProtected = 0;
   const failures = [];
 
   for (const property of marked) {
     if (!property?.id) continue;
+
     try {
       await jsonRequest(`/admin/properties/${property.id}`, { method: 'DELETE', headers });
       deleted += 1;
     } catch (error) {
-      failures.push(`${property.id}: ${error.message}`);
+      if (isProtectedPropertyError(error)) {
+        skippedProtected += 1;
+        console.warn(`Skipping protected E2E property ${property.id}: ${error.message}`);
+      } else if (isRateLimitedError(error)) {
+        failures.push(`${property.id}: rate limit persisted after ${MAX_RETRIES} retries: ${error.message}`);
+      } else {
+        failures.push(`${property.id}: ${error.message}`);
+      }
     }
   }
 
@@ -86,11 +132,15 @@ async function main() {
   console.log(`Admin-visible properties scanned: ${properties.length}`);
   console.log(`Explicit E2E properties matched: ${marked.length}`);
   console.log(`E2E properties deleted: ${deleted}`);
+  console.log(`E2E properties skipped (active booking/lease): ${skippedProtected}`);
+  console.log(`E2E cleanup failures: ${failures.length}`);
   console.log('Dedicated E2E tenant/owner/admin accounts: PRESERVED');
   console.log('Cleanup mode: authenticated API only; no broad database deletes');
   console.log('==============================================');
 
-  if (failures.length) throw new Error(`E2E cleanup had ${failures.length} failure(s):\n${failures.join('\n')}`);
+  if (failures.length) {
+    throw new Error(`E2E cleanup had ${failures.length} failure(s):\n${failures.join('\n')}`);
+  }
 }
 
 main().catch((error) => {
