@@ -9,8 +9,8 @@ import {
   login,
   statusOk,
   futureIso,
+  markPaymentCapturedViaWebhook,
 } from './helpers';
-import { createHmac } from 'crypto';
 
 describe('RentItEase Release Workflow • sequential smoke', () => {
   let tenantToken = '';
@@ -161,31 +161,20 @@ describe('RentItEase Release Workflow • sequential smoke', () => {
     expect(paymentId).toBeTruthy();
     expect(razorpayOrderId).toBeTruthy();
 
-    const secret = process.env.E2E_RAZORPAY_KEY_SECRET;
-
-    if (!secret) {
-      throw new Error('E2E_RAZORPAY_KEY_SECRET is required.');
-    }
-
-    const razorpayPaymentId = `pay_release_${Date.now()}`;
-
-    const signature = createHmac('sha256', secret)
-      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-      .digest('hex');
-
-    const verify = await request(apiUrl())
-      .post('/payments/verify')
+    const paymentDetails = await request(apiUrl())
+      .get(`/bookings/${bookingId}`)
       .set(auth(tenantToken))
-      .send({
-        bookingId,
-        razorpayOrderId,
-        razorpayPaymentId,
-        razorpaySignature: signature,
-      });
+      .expect(200);
+    const paymentData = extractData(paymentDetails.body)?.payment;
+    expect(paymentData?.amount).toBeTruthy();
+    expect(paymentData?.currency).toBe('INR');
 
-    statusOk(verify);
-
-    expect(extractData(verify.body)?.status).toBe('SUCCESS');
+    await markPaymentCapturedViaWebhook({
+      bookingId,
+      razorpayOrderId,
+      amount: Number(paymentData.amount),
+      currency: paymentData.currency,
+    });
 
     const booking = await request(apiUrl())
       .get(`/bookings/${bookingId}`)
