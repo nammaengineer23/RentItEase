@@ -8,6 +8,7 @@ import {
 import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { Prisma } from '@prisma/client';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { FirebaseService } from '../../firebase/firebase.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -41,49 +42,30 @@ export class AuthService {
     const email = dto.email.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({ where: { email } });
 
-    if (existing) {
-      throw new ConflictException('Email already exists.');
-    }
-
+    if (existing) throw new ConflictException('Email already exists.');
     await this.createEmailOtpChallenge(email, this.signupEmailPurpose);
 
-    return {
-      success: true,
-      message: 'Verification code sent to your email.',
-    };
+    return { success: true, message: 'Verification code sent to your email.' };
   }
 
   async verifySignupEmailOtp(dto: VerifyEmailOtpDto) {
     const email = dto.email.trim().toLowerCase();
-    await this.consumeEmailOtpChallenge(
-      email,
-      this.signupEmailPurpose,
-      dto.otp,
-    );
+    await this.consumeEmailOtpChallenge(email, this.signupEmailPurpose, dto.otp);
 
     const verificationToken = await this.jwtService.signAsync(
       { type: this.signupEmailPurpose, email },
-      {
-        secret: process.env.JWT_ACCESS_SECRET,
-        expiresIn: '10m',
-      },
+      { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '10m' },
     );
 
-    return {
-      success: true,
-      message: 'Email verified.',
-      verificationToken,
-    };
+    return { success: true, message: 'Email verified.', verificationToken };
   }
 
   async registerVerified(dto: VerifiedRegisterDto) {
     const email = dto.email.trim().toLowerCase();
-    const proof = await this.jwtService.verifyAsync<{
-      type: string;
-      email: string;
-    }>(dto.emailVerificationToken, {
-      secret: process.env.JWT_ACCESS_SECRET,
-    });
+    const proof = await this.jwtService.verifyAsync<{ type: string; email: string }>(
+      dto.emailVerificationToken,
+      { secret: process.env.JWT_ACCESS_SECRET },
+    );
 
     if (proof.type !== this.signupEmailPurpose || proof.email !== email) {
       throw new UnauthorizedException('Invalid email verification proof.');
@@ -92,25 +74,14 @@ export class AuthService {
     const phone = dto.phone?.trim() || null;
     if (phone != null) {
       if (!dto.phoneIdToken) {
-        throw new UnauthorizedException(
-          'Verify the mobile number before registering it.',
-        );
+        throw new UnauthorizedException('Verify the mobile number before registering it.');
       }
-      const decodedPhone = await this.firebaseService.verifyToken(
-        dto.phoneIdToken,
-      );
+      const decodedPhone = await this.firebaseService.verifyToken(dto.phoneIdToken);
       const verifiedPhone = decodedPhone.phone_number;
-      if (
-        !verifiedPhone ||
-        this.normalizePhone(verifiedPhone) !== this.normalizePhone(phone)
-      ) {
-        throw new UnauthorizedException(
-          'Verified phone number does not match registration phone.',
-        );
+      if (!verifiedPhone || this.normalizePhone(verifiedPhone) !== this.normalizePhone(phone)) {
+        throw new UnauthorizedException('Verified phone number does not match registration phone.');
       }
-      const phoneOwner = await this.prisma.user.findUnique({
-        where: { phone },
-      });
+      const phoneOwner = await this.prisma.user.findUnique({ where: { phone } });
       if (phoneOwner) {
         throw new ConflictException(
           'This mobile number is already registered. Please sign in or use a different number.',
@@ -130,9 +101,7 @@ export class AuthService {
     const email = dto.email.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({ where: { email } });
 
-    if (user?.isActive) {
-      await this.createEmailOtpChallenge(email, this.loginEmailPurpose);
-    }
+    if (user?.isActive) await this.createEmailOtpChallenge(email, this.loginEmailPurpose);
 
     return {
       success: true,
@@ -145,9 +114,7 @@ export class AuthService {
     await this.consumeEmailOtpChallenge(email, this.loginEmailPurpose, dto.otp);
 
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user || !user.isActive) {
-      throw new UnauthorizedException('Invalid or inactive account.');
-    }
+    if (!user || !user.isActive) throw new UnauthorizedException('Invalid or inactive account.');
 
     return this.createSession(user);
   }
@@ -157,9 +124,7 @@ export class AuthService {
     const phone = decoded.phone_number;
 
     if (!phone) {
-      throw new UnauthorizedException(
-        'Verified phone number not found in Firebase token.',
-      );
+      throw new UnauthorizedException('Verified phone number not found in Firebase token.');
     }
 
     const normalized = this.normalizePhone(phone);
@@ -167,16 +132,11 @@ export class AuthService {
     const user = await this.prisma.user.findFirst({
       where: {
         isActive: true,
-        phone: {
-          in: [normalized, digits, digits.substring(digits.length - 10)],
-        },
+        phone: { in: [normalized, digits, digits.substring(digits.length - 10)] },
       },
     });
 
-    if (!user) {
-      throw new UnauthorizedException('No account exists for this phone.');
-    }
-
+    if (!user) throw new UnauthorizedException('No account exists for this phone.');
     return this.createSession(user);
   }
 
@@ -184,36 +144,21 @@ export class AuthService {
     const otp = this.otpService.generateOtp();
     const otpHash = await this.otpService.hashOtp(otp);
 
-    await this.prisma.authOtpChallenge.deleteMany({
-      where: { target, purpose },
-    });
+    await this.prisma.authOtpChallenge.deleteMany({ where: { target, purpose } });
     await this.prisma.authOtpChallenge.create({
-      data: {
-        target,
-        purpose,
-        otpHash,
-        expiresAt: this.otpService.getExpiryDate(),
-      },
+      data: { target, purpose, otpHash, expiresAt: this.otpService.getExpiryDate() },
     });
 
     await this.mailService.sendAuthenticationOtp(target, otp);
   }
 
-  private async consumeEmailOtpChallenge(
-    target: string,
-    purpose: string,
-    otp: string,
-  ) {
+  private async consumeEmailOtpChallenge(target: string, purpose: string, otp: string) {
     const challenge = await this.prisma.authOtpChallenge.findFirst({
       where: { target, purpose },
       orderBy: { createdAt: 'desc' },
     });
 
-    if (
-      !challenge ||
-      challenge.expiresAt < new Date() ||
-      challenge.attempts >= 5
-    ) {
+    if (!challenge || challenge.expiresAt < new Date() || challenge.attempts >= 5) {
       throw new UnauthorizedException('Invalid or expired verification code.');
     }
 
@@ -226,9 +171,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired verification code.');
     }
 
-    await this.prisma.authOtpChallenge.delete({
-      where: { id: challenge.id },
-    });
+    await this.prisma.authOtpChallenge.delete({ where: { id: challenge.id } });
   }
 
   private normalizePhone(phone: string) {
@@ -264,22 +207,11 @@ export class AuthService {
     };
   }
 
-  // ==========================================
-  // Register
-  // ==========================================
   async register(dto: RegisterDto) {
-    const existing = await this.prisma.user.findUnique({
-      where: {
-        email: dto.email,
-      },
-    });
-
-    if (existing) {
-      throw new ConflictException('Email already exists.');
-    }
+    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (existing) throw new ConflictException('Email already exists.');
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-
     const user = await this.prisma.user.create({
       data: {
         fullName: dto.fullName,
@@ -290,12 +222,8 @@ export class AuthService {
     });
 
     const tokens = await this.generateTokens(user.id, user.email);
-
     await this.saveRefreshToken(user.id, tokens.refreshToken);
 
-    // Account creation must not wait for the external SMTP server. A slow or
-    // unavailable mail provider previously caused the mobile request to hit
-    // its 30-second timeout even though the user had already been created.
     void this.mailService
       .sendWelcomeEmail(user.email, user.fullName)
       .catch((error: unknown) => {
@@ -319,39 +247,18 @@ export class AuthService {
     };
   }
 
-  // ==========================================
-  // Login
-  // ==========================================
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          {
-            email: dto.login,
-          },
-          {
-            phone: dto.login,
-          },
-        ],
-      },
+      where: { OR: [{ email: dto.login }, { phone: dto.login }] },
     });
 
-    if (!user) {
-      throw new UnauthorizedException('Invalid email or password.');
-    }
-
-    if (!user.isActive) {
-      throw new UnauthorizedException('Your account has been deactivated.');
-    }
+    if (!user) throw new UnauthorizedException('Invalid email or password.');
+    if (!user.isActive) throw new UnauthorizedException('Your account has been deactivated.');
 
     const matched = await bcrypt.compare(dto.password, user.passwordHash);
-
-    if (!matched) {
-      throw new UnauthorizedException('Invalid email or password.');
-    }
+    if (!matched) throw new UnauthorizedException('Invalid email or password.');
 
     const tokens = await this.generateTokens(user.id, user.email);
-
     await this.saveRefreshToken(user.id, tokens.refreshToken);
 
     return {
@@ -367,28 +274,18 @@ export class AuthService {
       ...tokens,
     };
   }
-  // ==========================================
-  // Firebase Login
-  // ==========================================
+
   async firebaseLogin(idToken: string, createAccount = false) {
     const decoded = await this.firebaseService.verifyToken(idToken);
-
     const phone = decoded.phone_number?.trim();
     const email = decoded.email?.trim().toLowerCase();
 
     if (!phone && !email) {
-      throw new UnauthorizedException(
-        'Phone number or verified email not found in Firebase token.',
-      );
+      throw new UnauthorizedException('Phone number or verified email not found in Firebase token.');
     }
 
-    let user = phone
-      ? await this.prisma.user.findUnique({ where: { phone } })
-      : null;
-
-    if (!user && email) {
-      user = await this.prisma.user.findUnique({ where: { email } });
-    }
+    let user = phone ? await this.prisma.user.findUnique({ where: { phone } }) : null;
+    if (!user && email) user = await this.prisma.user.findUnique({ where: { email } });
 
     if (!user) {
       if (!createAccount) {
@@ -398,9 +295,7 @@ export class AuthService {
       }
 
       if (!email || decoded.email_verified !== true) {
-        throw new UnauthorizedException(
-          'A verified Google email is required to create an account.',
-        );
+        throw new UnauthorizedException('A verified Google email is required to create an account.');
       }
 
       user = await this.prisma.user.create({
@@ -414,12 +309,9 @@ export class AuthService {
       });
     }
 
-    if (!user.isActive) {
-      throw new UnauthorizedException('Your account has been deactivated.');
-    }
+    if (!user.isActive) throw new UnauthorizedException('Your account has been deactivated.');
 
     const tokens = await this.generateTokens(user.id, user.email);
-
     await this.saveRefreshToken(user.id, tokens.refreshToken);
 
     return {
@@ -437,120 +329,91 @@ export class AuthService {
     };
   }
 
-  // ==========================================
-  // Refresh Token
-  // ==========================================
   async refreshToken(refreshToken: string) {
     const payload = await this.jwtService.verifyAsync(refreshToken, {
       secret: process.env.JWT_REFRESH_SECRET,
     });
 
     const storedTokens = await this.prisma.refreshToken.findMany({
-      where: {
-        userId: payload.sub,
-      },
+      where: { userId: payload.sub },
     });
 
     let matchedToken: (typeof storedTokens)[number] | null = null;
 
     for (const token of storedTokens) {
       const matched = await bcrypt.compare(refreshToken, token.hashedToken);
-
       if (matched) {
         matchedToken = token;
         break;
       }
     }
 
-    if (!matchedToken) {
-      throw new UnauthorizedException('Invalid refresh token.');
-    }
+    if (!matchedToken) throw new UnauthorizedException('Invalid refresh token.');
 
     if (matchedToken.expiresAt < new Date()) {
-      await this.prisma.refreshToken.delete({
-        where: {
-          id: matchedToken.id,
-        },
-      });
-
+      await this.prisma.refreshToken.delete({ where: { id: matchedToken.id } });
       throw new UnauthorizedException('Refresh token expired.');
     }
 
-    await this.prisma.refreshToken.delete({
-      where: {
-        id: matchedToken.id,
-      },
-    });
+    await this.prisma.refreshToken.delete({ where: { id: matchedToken.id } });
 
     const tokens = await this.generateTokens(payload.sub, payload.email);
-
     await this.saveRefreshToken(payload.sub, tokens.refreshToken);
 
-    return {
-      success: true,
-      message: 'Token refreshed successfully.',
-      ...tokens,
-    };
+    return { success: true, message: 'Token refreshed successfully.', ...tokens };
   }
 
-  // ==========================================
-  // Logout
-  // ==========================================
   async logout(userId: string) {
-    await this.prisma.refreshToken.deleteMany({
-      where: {
-        userId,
-      },
-    });
-
-    return {
-      success: true,
-      message: 'Logged out successfully.',
-    };
+    await this.prisma.refreshToken.deleteMany({ where: { userId } });
+    return { success: true, message: 'Logged out successfully.' };
   }
 
-  // ==========================================
-  // Save Refresh Token
-  // ==========================================
   private async saveRefreshToken(userId: string, token: string) {
     const hashedToken = await bcrypt.hash(token, 10);
+    const data = {
+      hashedToken,
+      userId,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    };
 
-    await this.prisma.refreshToken.create({
-      data: {
-        hashedToken,
-        userId,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
-      // Login only needs confirmation that the token row was created.
-      // Selecting the id avoids returning legacy metadata columns while
-      // production schema reconciliation is in progress.
-      select: {
-        id: true,
-      },
-    });
+    try {
+      await this.prisma.refreshToken.create({
+        data,
+        select: { id: true },
+      });
+    } catch (error: unknown) {
+      const isLegacyJtiConstraint =
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2011' &&
+        Array.isArray(error.meta?.constraint) &&
+        error.meta.constraint.includes('jti');
+
+      if (!isLegacyJtiConstraint) throw error;
+
+      this.logger.warn(
+        'Detected legacy RefreshToken.jti constraint; removing obsolete column and retrying token creation.',
+      );
+
+      await this.prisma.$executeRawUnsafe(
+        'ALTER TABLE "RefreshToken" DROP COLUMN IF EXISTS "jti"',
+      );
+
+      await this.prisma.refreshToken.create({
+        data,
+        select: { id: true },
+      });
+    }
   }
-  //---------------------------------------
-  // Validate User
-  //---------------------------------------
+
   async validateUser(userId: string) {
     return this.prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        phone: true,
-      },
+      where: { id: userId },
+      select: { id: true, fullName: true, email: true, phone: true },
     });
   }
 
   private async generateTokens(userId: string, email: string) {
-    const payload = {
-      sub: userId,
-      email,
-    };
+    const payload = { sub: userId, email };
 
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_ACCESS_SECRET,
@@ -562,20 +425,12 @@ export class AuthService {
       expiresIn: '7d',
     });
 
-    return {
-      accessToken,
-      refreshToken,
-    };
+    return { accessToken, refreshToken };
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        email: dto.email,
-      },
-    });
+    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
 
-    // Always return the same response
     if (!user) {
       return {
         success: true,
@@ -583,24 +438,15 @@ export class AuthService {
       };
     }
 
-    // Delete previous reset tokens
-    await this.prisma.passwordResetToken.deleteMany({
-      where: {
-        userId: user.id,
-      },
-    });
+    await this.prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
 
-    // Generate secure token
     const token = crypto.randomBytes(32).toString('hex');
 
-    // Save token
     await this.prisma.passwordResetToken.create({
       data: {
         token,
         userId: user.id,
-        expiresAt: new Date(
-          Date.now() + 60 * 60 * 1000, // 1 hour
-        ),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
       },
     });
 
@@ -609,25 +455,18 @@ export class AuthService {
     const separator = resetBaseUrl.includes('?') ? '&' : '?';
     const resetLink = `${resetBaseUrl}${separator}token=${encodeURIComponent(token)}`;
 
-    await this.mailService.sendPasswordResetEmail(
-      user.email,
-      user.fullName,
-      resetLink,
-    );
+    await this.mailService.sendPasswordResetEmail(user.email, user.fullName, resetLink);
 
     return {
       success: true,
       message: 'If the email exists, a password reset link has been sent.',
     };
   }
+
   async resetPassword(dto: ResetPasswordDto) {
     const resetToken = await this.prisma.passwordResetToken.findUnique({
-      where: {
-        token: dto.token,
-      },
-      include: {
-        user: true,
-      },
+      where: { token: dto.token },
+      include: { user: true },
     });
 
     if (!resetToken || resetToken.expiresAt < new Date()) {
@@ -637,30 +476,18 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     await this.prisma.user.update({
-      where: {
-        id: resetToken.userId,
-      },
-      data: {
-        passwordHash: hashedPassword,
-      },
+      where: { id: resetToken.userId },
+      data: { passwordHash: hashedPassword },
     });
 
-    await this.prisma.passwordResetToken.delete({
-      where: {
-        id: resetToken.id,
-      },
-    });
+    await this.prisma.passwordResetToken.delete({ where: { id: resetToken.id } });
 
-    return {
-      success: true,
-      message: 'Password reset successfully.',
-    };
+    return { success: true, message: 'Password reset successfully.' };
   }
+
   async me(userId: string) {
     return this.prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
+      where: { id: userId },
       select: {
         id: true,
         fullName: true,
@@ -678,9 +505,7 @@ export class AuthService {
       select: { id: true },
     });
 
-    if (!existingUser) {
-      throw new NotFoundException('User not found.');
-    }
+    if (!existingUser) throw new NotFoundException('User not found.');
 
     if (dto.phone != null) {
       const phoneOwner = await this.prisma.user.findUnique({
@@ -694,7 +519,7 @@ export class AuthService {
       }
     }
 
-    const user = await this.prisma.user.update({
+    return this.prisma.user.update({
       where: { id: userId },
       data: {
         ...(dto.fullName != null && { fullName: dto.fullName.trim() }),
@@ -710,41 +535,21 @@ export class AuthService {
         role: true,
       },
     });
-
-    return user;
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('User not found.');
-    }
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('User not found.');
 
     const matched = await bcrypt.compare(dto.oldPassword, user.passwordHash);
-
-    if (!matched) {
-      throw new UnauthorizedException('Old password is incorrect.');
-    }
+    if (!matched) throw new UnauthorizedException('Old password is incorrect.');
 
     const hashed = await bcrypt.hash(dto.newPassword, 10);
-
     await this.prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        passwordHash: hashed,
-      },
+      where: { id: userId },
+      data: { passwordHash: hashed },
     });
 
-    return {
-      success: true,
-      message: 'Password changed successfully.',
-    };
+    return { success: true, message: 'Password changed successfully.' };
   }
 }
