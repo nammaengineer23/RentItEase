@@ -53,6 +53,14 @@ function staticAudit() {
 
 function databaseAudit(databaseUrl: string, label: string, applyMigrations: boolean) {
   const env = { ...process.env, DATABASE_URL: databaseUrl };
+  const shadowDatabaseUrl = env.SHADOW_DATABASE_URL;
+
+  if (!shadowDatabaseUrl) {
+    throw new Error(
+      'SHADOW_DATABASE_URL is required for migration-directory diff checks. ' +
+      'Provide a disposable shadow PostgreSQL database URL.',
+    );
+  }
 
   if (applyMigrations) {
     console.log(`\nApplying complete migration chain to ${label} database...`);
@@ -70,6 +78,8 @@ function databaseAudit(databaseUrl: string, label: string, applyMigrations: bool
     migrationsDir,
     '--to-schema-datamodel',
     schemaPath,
+    '--shadow-database-url',
+    shadowDatabaseUrl,
     '--exit-code',
   ], env);
 
@@ -81,6 +91,8 @@ function databaseAudit(databaseUrl: string, label: string, applyMigrations: bool
     schemaPath,
     '--to-migrations',
     migrationsDir,
+    '--shadow-database-url',
+    shadowDatabaseUrl,
     '--exit-code',
   ], env);
 
