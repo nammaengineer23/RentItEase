@@ -292,18 +292,12 @@ export class ChatService {
       }),
     };
 
-    const message =
-      await this.prisma.message.create({
-        data: messageData,
-        include: {
-          sender: {
-            select: {
-              id: true,
-              fullName: true,
-            },
-          },
-        },
-      });
+    // Persist the message first. The sender is already loaded from the
+    // participant query above, so message creation does not depend on a
+    // second relation read.
+    const message = await this.prisma.message.create({
+      data: messageData,
+    });
 
     await this.prisma.conversation.update({
       where: {
