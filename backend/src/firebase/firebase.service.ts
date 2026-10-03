@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
 
-import { getStorage } from 'firebase-admin/storage';
+import { getStorage, getDownloadURL } from 'firebase-admin/storage';
 
 import { getAuth } from 'firebase-admin/auth';
 import { getMessaging } from 'firebase-admin/messaging';
@@ -59,7 +59,7 @@ export class FirebaseService {
       'Firebase Storage upload',
     );
 
-    const imageUrl = await this.getPrivateDownloadUrl(fileName);
+    const imageUrl = await this.withTimeout(getDownloadURL(firebaseFile), 15_000);
 
     return {
       publicId: fileName,
