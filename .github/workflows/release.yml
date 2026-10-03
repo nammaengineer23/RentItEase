@@ -18,6 +18,11 @@ on:
         required: true
         default: "5"
         type: string
+      confirm_production_deploy:
+        description: "Required confirmation before triggering production web deployment"
+        required: true
+        default: "DEPLOY-RENTITEASE"
+        type: string
 
 permissions:
   contents: write
@@ -183,6 +188,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         working-directory: .
         run: |
+          test "${{ inputs.confirm_production_deploy }}" = "DEPLOY-RENTITEASE"
           gh workflow run deploy_web.yml \
             --ref main \
-            -f apk_artifact_run_id="${{ github.run_id }}"
+            -f apk_artifact_run_id="${{ github.run_id }}" \
+            -f confirm_production_deploy="${{ inputs.confirm_production_deploy }}"
