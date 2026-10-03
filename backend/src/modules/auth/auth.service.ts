@@ -382,20 +382,23 @@ export class AuthService {
         select: { id: true },
       });
     } catch (error: unknown) {
-      const isLegacyJtiConstraint =
+      const isLegacyRefreshTokenConstraint =
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2011' &&
         Array.isArray(error.meta?.constraint) &&
-        error.meta.constraint.includes('jti');
+        (error.meta.constraint.includes('jti') || error.meta.constraint.includes('familyId'));
 
-      if (!isLegacyJtiConstraint) throw error;
+      if (!isLegacyRefreshTokenConstraint) throw error;
 
       this.logger.warn(
-        'Detected legacy RefreshToken.jti constraint; removing obsolete column and retrying token creation.',
+        'Detected legacy RefreshToken schema constraint; removing obsolete columns and retrying token creation.',
       );
 
       await this.prisma.$executeRawUnsafe(
         'ALTER TABLE "RefreshToken" DROP COLUMN IF EXISTS "jti"',
+      );
+      await this.prisma.$executeRawUnsafe(
+        'ALTER TABLE "RefreshToken" DROP COLUMN IF EXISTS "familyId"',
       );
 
       await this.prisma.refreshToken.create({
