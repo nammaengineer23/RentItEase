@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
 
-import { getStorage, getDownloadURL } from 'firebase-admin/storage';
+import { getStorage } from 'firebase-admin/storage';
 
 import { getAuth } from 'firebase-admin/auth';
 import { getMessaging } from 'firebase-admin/messaging';
@@ -59,15 +59,27 @@ export class FirebaseService {
       'Firebase Storage upload',
     );
 
-    const imageUrl = await this.withTimeout(
-      getDownloadURL(firebaseFile),
-      15_000,
-    );
+    const imageUrl = await this.getPrivateDownloadUrl(fileName);
 
     return {
       publicId: fileName,
       imageUrl,
     };
+  }
+
+  async getPrivateDownloadUrl(
+    publicId: string,
+    expiresInMs = 15 * 60 * 1000,
+  ): Promise<string> {
+    const bucket = this.getStorage().bucket();
+    const [url] = await this.withTimeout(
+      bucket.file(publicId).getSignedUrl({
+        action: 'read',
+        expires: Date.now() + expiresInMs,
+      }),
+      15_000,
+    );
+    return url;
   }
 
   async deleteImage(publicId: string) {
