@@ -954,6 +954,36 @@ export class PropertiesService {
   }
 
   // ===========================
+  // Submit Property for admin verification
+  // ===========================
+
+  async submit(id: string, user: any) {
+    const property = await this.prisma.property.findUnique({ where: { id } });
+    if (!property) throw new NotFoundException('Property not found.');
+    if (property.ownerId !== user.id) {
+      throw new ForbiddenException('You are not allowed to submit this property.');
+    }
+    if (property.lifecycleStatus !== 'DRAFT') {
+      throw new ForbiddenException('Only draft properties can be submitted.');
+    }
+
+    const updatedProperty = await this.prisma.property.update({
+      where: { id },
+      data: {
+        lifecycleStatus: 'SUBMITTED',
+        isVerified: false,
+        isAvailable: false,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Property submitted successfully.',
+      property: serializePrisma(updatedProperty),
+    };
+  }
+
+  // ===========================
   // Update Property Amenities
   // ===========================
 
