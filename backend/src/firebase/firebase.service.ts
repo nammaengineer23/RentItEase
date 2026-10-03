@@ -67,6 +67,29 @@ export class FirebaseService {
     };
   }
 
+  async uploadPrivateFile(
+    file: Express.Multer.File,
+    folder: string,
+  ): Promise<{ publicId: string }> {
+    const bucket = this.getStorage().bucket();
+    const fileName = `${folder}/${Date.now()}-${file.originalname}`;
+    const firebaseFile = bucket.file(fileName);
+
+    await this.withRetry(
+      () =>
+        this.withTimeout(
+          firebaseFile.save(file.buffer, {
+            metadata: { contentType: file.mimetype },
+          }),
+          15_000,
+        ),
+      3,
+      'Firebase private storage upload',
+    );
+
+    return { publicId: fileName };
+  }
+
   async getPrivateDownloadUrl(
     publicId: string,
     expiresInMs = 15 * 60 * 1000,
