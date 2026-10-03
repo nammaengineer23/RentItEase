@@ -55,6 +55,10 @@ export class ChatController {
       user.id,
       dto.text,
       dto.messageType,
+      dto.attachmentPublicId,
+      dto.attachmentFileName,
+      dto.attachmentMimeType,
+      dto.attachmentSize,
     );
   }
 
