@@ -12,10 +12,14 @@ import { UpdatePropertyDto } from './dto/update-property.dto';
 import { FilterPropertiesDto } from './dto/filter-property.dto';
 import { UpdatePropertyAmenitiesDto } from './dto/update-property-amenities.dto';
 import { NearbyPropertiesDto } from './dto/nearby-properties.dto';
+import { StorageService } from '../../storage/storage.service';
 
 @Injectable()
 export class PropertiesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
+  ) {}
 
 
   // ===========================
@@ -1079,8 +1083,11 @@ export class PropertiesService {
 
   async remove(id: string, user: any) {
     const property = await this.prisma.property.findUnique({
-      where: {
-        id,
+      where: { id },
+      include: {
+        images: {
+          select: { publicId: true },
+        },
       },
     });
 
@@ -1094,10 +1101,22 @@ export class PropertiesService {
       );
     }
 
+    const storageIds = [
+      ...property.images
+        .map((image) => image.publicId)
+        .filter((publicId): publicId is string => Boolean(publicId)),
+      ...(property.videoPublicId ? [property.videoPublicId] : []),
+    ];
+
+    // Delete storage objects first. If a storage deletion fails, the DB row
+    // remains intact so we never report a successful deletion while media
+    // still exists due to a partial cleanup.
+    for (const publicId of storageIds) {
+      await this.storageService.deleteImage(publicId);
+    }
+
     await this.prisma.property.delete({
-      where: {
-        id,
-      },
+      where: { id },
     });
 
     return {
