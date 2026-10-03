@@ -1102,7 +1102,7 @@ export class PropertiesService {
 
     return {
       success: true,
-      message: 'Property deleted successfully.',
+      message: 'Property archived successfully.',
     };
   }
 }
