@@ -255,7 +255,7 @@ export async function markPaymentCapturedViaWebhook(
     .set('content-type', 'application/json')
     .send(rawBody);
 
-  statusOk(response, [200]);
+  statusOk(response, [200, 201]);
   if (response.body?.success !== true) {
     throw new Error(`Razorpay webhook simulation failed: ${JSON.stringify(response.body)}`);
   }
