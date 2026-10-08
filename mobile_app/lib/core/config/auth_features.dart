@@ -5,7 +5,7 @@ const enableGoogleSignIn = bool.fromEnvironment(
 
 const enablePhoneOtp = bool.fromEnvironment(
   'ENABLE_PHONE_OTP',
-  defaultValue: true,
+  defaultValue: false,
 );
 
 // OAuth 2.0 Web application client for the Firebase project. Android Google
