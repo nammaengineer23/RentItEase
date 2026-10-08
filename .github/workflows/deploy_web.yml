@@ -100,6 +100,8 @@ jobs:
           flutter build web \
             --release \
             --dart-define=API_BASE_URL=https://api.rentitease.com/api/v1 \
+            --dart-define=ENABLE_GOOGLE_SIGN_IN=true \
+            --dart-define=ENABLE_PHONE_OTP=false \
             --dart-define=MAPS_API_KEY="$GOOGLE_MAPS_WEB_API_KEY" \
             --dart-define=FACEBOOK_PAGE_URL="$FACEBOOK_PAGE_URL" \
             --dart-define=INSTAGRAM_PROFILE_URL="$INSTAGRAM_PROFILE_URL" \
