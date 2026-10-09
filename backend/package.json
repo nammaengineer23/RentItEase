@@ -55,7 +55,7 @@
     "firebase-admin": "^14.5.0",
     "googleapis": "^174.0.1",
     "graphify": "^1.0.0",
-    "handlebars": "^4.7.9",
+    "handlebars": "^4.7.10",
     "helmet": "^8.3.0",
     "joi": "^18.2.3",
     "multer": "^2.4.0",
