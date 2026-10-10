@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PropertyDocumentReviewStatus, UserRole } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
