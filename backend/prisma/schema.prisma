@@ -143,6 +143,20 @@ model Property {
   title                  String
   description            String
   price                  Decimal                 @db.Decimal(10, 2)
+  transactionType        PropertyTransactionType @default(RENT)
+  askingPrice            Decimal?                @db.Decimal(12, 2)
+  priceNegotiable        Boolean                 @default(false)
+  leaseTermMonths        Int?
+  leaseRenewalTerms      String?
+  landArea               Float?
+  landAreaUnit           String?
+  siteFrontage           Float?
+  siteFacing             String?
+  roadAccess             Boolean?
+  zoning                 String?
+  layoutApprovalDetails  String?
+  surveyReference        String?
+  documentReviewStatus   PropertyDocumentReviewStatus @default(NOT_SUBMITTED)
   dailyRentEnabled       Boolean                 @default(false)
   dailyRent              Decimal?                @db.Decimal(10, 2)
   address                String
@@ -759,6 +773,21 @@ enum OwnerRequestStatus {
   NONE
   PENDING
   APPROVED
+  REJECTED
+}
+
+enum PropertyTransactionType {
+  RENT
+  LEASE
+  SALE
+  SITE_SALE
+}
+
+enum PropertyDocumentReviewStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  UNDER_REVIEW
+  VERIFIED
   REJECTED
 }
 
