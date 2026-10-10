@@ -121,6 +121,7 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
       id: 'property-1',
       ownerId: owner.id,
       isVerified: true,
+      transactionType: PropertyTransactionType.RENT,
       owner,
     });
     membership.findFirst.mockResolvedValue({ id: 'membership-1' });
