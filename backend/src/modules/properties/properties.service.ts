@@ -26,6 +26,13 @@ export class PropertiesService {
     return process.env.PROPERTY_MARKETPLACE_ENABLED === 'true';
   }
 
+  private serializePublicProperty(property: any) {
+    const serialized = serializePrisma(property) as Record<string, any>;
+    // Survey references can expose private title/document identifiers; never return them on public discovery/detail APIs.
+    delete serialized.surveyReference;
+    return serialized;
+  }
+
   private validateMarketplaceListing(data: Partial<CreatePropertyDto>): void {
     const type = data.transactionType ?? PropertyTransactionType.RENT;
     if (type !== PropertyTransactionType.RENT && !this.marketplaceEnabled()) {
@@ -298,7 +305,7 @@ export class PropertiesService {
           : 0;
 
       return {
-        ...serializePrisma(property),
+        ...this.serializePublicProperty(property),
         averageRating,
         totalReviews: property.reviews.length,
       };
@@ -457,12 +464,12 @@ export class PropertiesService {
     return {
       success: true,
 
-      featured: featured.map((p) => serializePrisma(p)),
+      featured: featured.map((p) => this.serializePublicProperty(p)),
 
-      latest: latest.map((p) => serializePrisma(p)),
+      latest: latest.map((p) => this.serializePublicProperty(p)),
 
       mostFavorited: mostFavorited.map((p) => ({
-        ...serializePrisma(p),
+        ...this.serializePublicProperty(p),
         favorites: p._count.favorites,
       })),
 
@@ -722,7 +729,7 @@ export class PropertiesService {
     return {
       success: true,
       property: {
-        ...serializePrisma(property),
+        ...this.serializePublicProperty(property),
         views: property.viewCount,
         totalViews: property.viewCount,
         averageRating,
@@ -886,7 +893,7 @@ export class PropertiesService {
           : 0;
 
       return {
-        ...serializePrisma(property),
+        ...this.serializePublicProperty(property),
         averageRating,
         totalReviews: property.reviews.length,
         totalFavorites: property.favorites.length,
