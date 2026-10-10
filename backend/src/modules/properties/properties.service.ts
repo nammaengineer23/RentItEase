@@ -337,7 +337,7 @@ export class PropertiesService {
           where: {
             isAvailable: true,
             isVerified: true,
-        transactionType: true,
+            transactionType: PropertyTransactionType.RENT,
           },
           take: 10,
           orderBy: {
@@ -932,7 +932,13 @@ export class PropertiesService {
       );
     }
 
-    this.validateMarketplaceListing({ ...property, ...updatePropertyDto, transactionType: updatePropertyDto.transactionType ?? property.transactionType });
+    this.validateMarketplaceListing({
+      transactionType: updatePropertyDto.transactionType ?? property.transactionType,
+      askingPrice: updatePropertyDto.askingPrice ?? (property.askingPrice == null ? undefined : Number(property.askingPrice)),
+      leaseTermMonths: updatePropertyDto.leaseTermMonths ?? property.leaseTermMonths ?? undefined,
+      landArea: updatePropertyDto.landArea ?? property.landArea ?? undefined,
+      landAreaUnit: updatePropertyDto.landAreaUnit ?? property.landAreaUnit ?? undefined,
+    });
     const { amenityIds, ...propertyData } = updatePropertyDto;
 
     // Owners may not make an unverified property publicly available. Admin
