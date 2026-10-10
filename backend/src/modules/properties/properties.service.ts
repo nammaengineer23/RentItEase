@@ -357,6 +357,7 @@ export class PropertiesService {
           where: {
             isAvailable: true,
             isVerified: true,
+            ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
           },
           take: 10,
           orderBy: {
@@ -377,6 +378,7 @@ export class PropertiesService {
           where: {
             isAvailable: true,
             isVerified: true,
+            ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
           },
           take: 10,
           orderBy: {
@@ -401,6 +403,7 @@ export class PropertiesService {
           where: {
             isAvailable: true,
             isVerified: true,
+            ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
           },
           take: 10,
           include: {
@@ -417,6 +420,7 @@ export class PropertiesService {
           where: {
             isAvailable: true,
             isVerified: true,
+            ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
           },
           _count: {
             id: true,
@@ -737,6 +741,7 @@ export class PropertiesService {
         id: true,
         ownerId: true,
         isVerified: true,
+            ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
         owner: {
           select: {
             id: true,
