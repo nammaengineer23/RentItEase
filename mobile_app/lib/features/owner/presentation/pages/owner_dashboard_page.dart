@@ -38,6 +38,11 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
             onPressed: () => context.push('/owner/booking-requests'),
             icon: const Icon(Icons.book_online_outlined),
           ),
+          IconButton(
+            tooltip: 'Property enquiries',
+            onPressed: () => context.push('/owner/property-enquiries'),
+            icon: const Icon(Icons.mark_email_unread_outlined),
+          ),
           PopupMenuButton<String>(
             tooltip: 'Notifications and activity',
             icon: const Icon(Icons.notifications_outlined),
