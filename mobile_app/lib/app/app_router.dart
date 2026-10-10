@@ -590,7 +590,7 @@ class AppRouter {
           GoRoute(
             path: '/owner/add-marketplace-listing',
             name: 'owner-add-marketplace-listing',
-            builder: (context, state) => const AddMarketplaceListingPage(),
+            builder: (context, state) => AddMarketplaceListingPage(\n              propertyId: state.uri.queryParameters['propertyId'],\n            ),
           ),
 
           // Add Property
