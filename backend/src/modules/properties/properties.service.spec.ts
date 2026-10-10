@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import { MembershipStatus, UserRole } from '@prisma/client';
+import { MembershipStatus, PropertyTransactionType, UserRole } from '@prisma/client';
 
 import { PropertiesService } from './properties.service';
 
@@ -83,6 +83,7 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
       id: 'property-1',
       ownerId: 'owner-1',
       isVerified: true,
+      transactionType: PropertyTransactionType.RENT,
       owner: {
         id: 'owner-1',
         fullName: 'Owner',
