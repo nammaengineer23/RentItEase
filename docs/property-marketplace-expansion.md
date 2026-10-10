@@ -34,7 +34,7 @@ Asking price, total land area and unit, frontage/dimensions, facing, road access
 
 ## Feature-flagged rollout
 
-1. Add a server-side feature flag for non-rental listing categories, default OFF in production.
+1. Add the server-side `PROPERTY_MARKETPLACE_ENABLED` flag. Only the exact value `true` enables non-rental categories; missing, false, or any other value keeps them disabled.
 2. Introduce a backward-compatible Prisma schema migration. Existing records must default to `RENT`; migration must not rewrite rental pricing/deposit semantics.
 3. Add strict DTO validation and authorization for category-specific fields. Reject fields that do not apply to the selected category.
 4. Add search/filter support by transaction category and category-appropriate price/area fields.
