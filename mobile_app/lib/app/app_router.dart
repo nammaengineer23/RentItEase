@@ -52,6 +52,7 @@ import '../features/profile/presentation/pages/premium_membership_page.dart';
 import '../features/property/domain/entities/property_entity.dart';
 import '../features/property/presentation/pages/property_details_page.dart';
 import '../features/property/presentation/pages/property_listing_page.dart';
+import '../features/property/presentation/pages/property_marketplace_page.dart';
 import '../features/property/presentation/pages/property_page.dart';
 
 import '../features/property_visits/presentation/pages/book_visit_page.dart';
@@ -283,6 +284,12 @@ class AppRouter {
             path: '/property',
             name: 'property-list',
             builder: (context, state) => const PropertyPage(),
+          ),
+
+          GoRoute(
+            path: '/marketplace',
+            name: 'property-marketplace',
+            builder: (context, state) => const PropertyMarketplacePage(),
           ),
 
           GoRoute(
