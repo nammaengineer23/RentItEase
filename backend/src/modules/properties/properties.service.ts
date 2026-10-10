@@ -337,7 +337,7 @@ export class PropertiesService {
           where: {
             isAvailable: true,
             isVerified: true,
-            ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
+        transactionType: true,
           },
           take: 10,
           orderBy: {
@@ -760,7 +760,7 @@ export class PropertiesService {
       },
     });
 
-    if (!property || (!property.isVerified && property.ownerId !== user.id)) {
+    if (!property || (!this.marketplaceEnabled() && property.transactionType !== PropertyTransactionType.RENT) || (!property.isVerified && property.ownerId !== user.id)) {
       throw new NotFoundException('Property not found.');
     }
 
