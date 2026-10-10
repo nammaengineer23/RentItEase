@@ -10,7 +10,8 @@ const bool _marketplaceEnabled = bool.fromEnvironment(
 );
 
 class AddMarketplaceListingPage extends ConsumerStatefulWidget {
-  const AddMarketplaceListingPage({super.key});
+  const AddMarketplaceListingPage({super.key, this.propertyId});
+  final String? propertyId;
 
   @override
   ConsumerState<AddMarketplaceListingPage> createState() =>
@@ -38,6 +39,52 @@ class _AddMarketplaceListingPageState
   bool _negotiable = false;
   bool _roadAccess = false;
   bool _saving = false;
+  bool _loadingExisting = false;
+  String? _loadError;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.propertyId != null && _marketplaceEnabled) {
+      _loadExisting();
+    }
+  }
+
+  dynamic _unwrap(dynamic value) {
+    while (value is Map && value.containsKey('data')) value = value['data'];
+    if (value is Map && value['property'] is Map) value = value['property'];
+    return value;
+  }
+
+  Future<void> _loadExisting() async {
+    setState(() { _loadingExisting = true; _loadError = null; });
+    try {
+      final response = await ref.read(dioProvider).get('/properties/${widget.propertyId}');
+      final value = _unwrap(response.data);
+      if (value is! Map) throw const FormatException('Unexpected property response.');
+      _title.text = value['title']?.toString() ?? '';
+      _description.text = value['description']?.toString() ?? '';
+      _address.text = value['address']?.toString() ?? '';
+      _locality.text = value['locality']?.toString() ?? '';
+      _city.text = value['city']?.toString() ?? '';
+      _state.text = value['state']?.toString() ?? '';
+      _pincode.text = value['pincode']?.toString() ?? '';
+      _category = value['transactionType']?.toString() ?? 'SALE';
+      _propertyType = value['propertyType']?.toString() ?? 'HOUSE';
+      _askingPrice.text = value['askingPrice']?.toString() ?? '';
+      _leaseMonths.text = value['leaseTermMonths']?.toString() ?? '12';
+      _landArea.text = value['landArea']?.toString() ?? value['area']?.toString() ?? '';
+      _landUnit.text = value['landAreaUnit']?.toString() ?? 'sq_ft';
+      _bedrooms.text = value['bedrooms']?.toString() ?? '0';
+      _bathrooms.text = value['bathrooms']?.toString() ?? '0';
+      _negotiable = value['priceNegotiable'] == true;
+      _roadAccess = value['roadAccess'] == true;
+    } catch (_) {
+      if (mounted) setState(() => _loadError = 'Could not load this listing for editing.');
+    } finally {
+      if (mounted) setState(() => _loadingExisting = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -108,11 +155,15 @@ class _AddMarketplaceListingPageState
           'roadAccess': _roadAccess,
         },
       };
-      await ref.read(dioProvider).post('/properties', data: payload);
+      if (widget.propertyId == null) {
+        await ref.read(dioProvider).post('/properties', data: payload);
+      } else {
+        await ref.read(dioProvider).patch('/properties/${widget.propertyId}', data: payload);
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Listing created. Complete review before publication.'),
+          content: Text(widget.propertyId == null ? 'Listing created. Complete review before publication.' : 'Listing updated.'),
         ),
       );
       Navigator.of(context).pop(true);
@@ -135,7 +186,7 @@ class _AddMarketplaceListingPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add sale or lease listing')),
+      appBar: AppBar(title: Text(widget.propertyId == null ? 'Add sale or lease listing' : 'Edit sale or lease listing')),
       body: !_marketplaceEnabled
           ? const Center(
               child: Padding(
@@ -255,7 +306,7 @@ class _AddMarketplaceListingPageState
                     icon: _saving
                         ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.save_outlined),
-                    label: Text(_saving ? 'Creating…' : 'Create listing'),
+                    label: Text(_saving ? 'Saving…' : widget.propertyId == null ? 'Create listing' : 'Save changes'),
                   ),
                   const SizedBox(height: 12),
                   const Text(
