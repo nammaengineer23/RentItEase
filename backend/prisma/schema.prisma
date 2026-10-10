@@ -56,6 +56,7 @@ model User {
   settings                UserSettings?
   appFeedback             AppFeedback[]
   adminAuditLogs           AdminAuditLog[] @relation("AdminAuditLogs")
+  propertyEnquiries         PropertyEnquiry[]
 
   @@index([ownerRequestStatus])
 }
@@ -201,6 +202,7 @@ model Property {
   reviews                Review[]
   socialMarketingConsent SocialMarketingConsent?
   socialMediaPosts       SocialMediaPost[]
+  enquiries              PropertyEnquiry[]
 
   @@index([dailyRentEnabled])
   @@index([isVerified, isAvailable, createdAt])
@@ -896,4 +898,26 @@ enum SocialCampaignStatus {
   PUBLISHED
   FAILED
   CANCELLED
+}
+
+
+enum PropertyEnquiryStatus {
+  OPEN
+  CONTACTED
+  CLOSED
+}
+
+model PropertyEnquiry {
+  id         String                @id @default(cuid())
+  propertyId String
+  senderId   String
+  message    String
+  status     PropertyEnquiryStatus @default(OPEN)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  property   Property              @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  sender     User                  @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId, status, createdAt])
+  @@index([senderId, createdAt])
 }
