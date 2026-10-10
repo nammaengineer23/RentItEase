@@ -40,6 +40,7 @@ import '../features/owner/presentation/pages/owner_analytics_page.dart';
 import '../features/owner/presentation/pages/owner_activity_page.dart';
 import '../features/owner/presentation/pages/owner_dashboard_page.dart';
 import '../features/owner/presentation/pages/owner_visits_page.dart';
+import '../features/owner/presentation/pages/owner_property_enquiries_page.dart';
 import '../features/owner/presentation/pages/property_details_page.dart';
 
 import '../features/payment/presentation/pages/payment_page.dart';
@@ -564,6 +565,12 @@ class AppRouter {
             path: '/owner/dashboard',
             name: 'owner-dashboard',
             builder: (context, state) => const OwnerDashboardPage(),
+          ),
+
+          GoRoute(
+            path: '/owner/property-enquiries',
+            name: 'owner-property-enquiries',
+            builder: (context, state) => const OwnerPropertyEnquiriesPage(),
           ),
 
           GoRoute(
