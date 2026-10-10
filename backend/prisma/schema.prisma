@@ -205,6 +205,8 @@ model Property {
   enquiries              PropertyEnquiry[]
 
   @@index([dailyRentEnabled])
+  @@index([transactionType, isAvailable, createdAt])
+  @@index([transactionType, city, isAvailable])
   @@index([isVerified, isAvailable, createdAt])
   @@index([isVerified, isAvailable, city, createdAt])
   @@index([ownerId, createdAt])
