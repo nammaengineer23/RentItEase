@@ -149,6 +149,11 @@ class _HomePageState extends ConsumerState<HomePage> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Property Marketplace',
+            onPressed: () => context.push('/marketplace'),
+            icon: const Icon(Icons.storefront_outlined),
+          ),
           Stack(
             children: [
               IconButton(
