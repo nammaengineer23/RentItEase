@@ -1,11 +1,12 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma.service';
-import { MembershipStatus, Prisma, UserRole } from '@prisma/client';
+import { MembershipStatus, Prisma, PropertyTransactionType, UserRole } from '@prisma/client';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -21,12 +22,32 @@ export class PropertiesService {
     private readonly storageService: StorageService,
   ) {}
 
+  private marketplaceEnabled(): boolean {
+    return process.env.PROPERTY_MARKETPLACE_ENABLED === 'true';
+  }
+
+  private validateMarketplaceListing(data: Partial<CreatePropertyDto>): void {
+    const type = data.transactionType ?? PropertyTransactionType.RENT;
+    if (type !== PropertyTransactionType.RENT && !this.marketplaceEnabled()) {
+      throw new BadRequestException('Sales and long-term lease listings are not enabled yet.');
+    }
+    if ((type === PropertyTransactionType.SALE || type === PropertyTransactionType.SITE_SALE) && !(Number(data.askingPrice) > 0)) {
+      throw new BadRequestException('A positive askingPrice is required for sale listings.');
+    }
+    if (type === PropertyTransactionType.LEASE && !(Number(data.leaseTermMonths) > 0)) {
+      throw new BadRequestException('A positive leaseTermMonths value is required for lease listings.');
+    }
+    if (type === PropertyTransactionType.SITE_SALE && (!(Number(data.landArea) > 0) || !data.landAreaUnit)) {
+      throw new BadRequestException('Site-sale listings require a positive landArea and landAreaUnit.');
+    }
+  }
 
   // ===========================
   // Create Property
   // ===========================
 
   async create(createPropertyDto: CreatePropertyDto, user: any) {
+    this.validateMarketplaceListing(createPropertyDto);
     const { amenityIds, ...propertyData } = createPropertyDto;
 
     const property = await this.prisma.property.create({
@@ -100,11 +121,18 @@ export class PropertiesService {
       petFriendly,
       isAvailable,
       dailyRentEnabled,
+      transactionType,
       minDailyRent,
       maxDailyRent,
     } = filterDto;
 
     const where: Prisma.PropertyWhereInput = { isVerified: true };
+    // The rollout flag is enforced server-side; when off, public search can only return rentals.
+    if (this.marketplaceEnabled()) {
+      if (transactionType) where.transactionType = transactionType;
+    } else {
+      where.transactionType = PropertyTransactionType.RENT;
+    }
 
     if (search) {
       where.OR = [
@@ -889,6 +917,7 @@ export class PropertiesService {
       );
     }
 
+    this.validateMarketplaceListing({ ...property, ...updatePropertyDto, transactionType: updatePropertyDto.transactionType ?? property.transactionType });
     const { amenityIds, ...propertyData } = updatePropertyDto;
 
     // Owners may not make an unverified property publicly available. Admin
