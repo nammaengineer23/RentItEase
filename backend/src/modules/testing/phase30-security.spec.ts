@@ -191,7 +191,7 @@ describe('Phase 30 critical backend security regression suite', () => {
           tenantId: 'tenant-owner',
           propertyId: 'property-1',
           status: VisitStatus.APPROVED,
-          property: { ownerId: 'owner-1', isAvailable: true },
+          property: { ownerId: 'owner-1', isAvailable: true, transactionType: PropertyTransactionType.RENT },
           booking: null,
         }),
       },
