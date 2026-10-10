@@ -39,7 +39,7 @@ Asking price, total land area and unit, frontage/dimensions, facing, road access
 3. Add strict DTO validation and authorization for category-specific fields. Reject fields that do not apply to the selected category.
 4. Add search/filter support by transaction category and category-appropriate price/area fields.
 5. Update owner listing creation/editing in Flutter and web. Hide new categories while the feature flag is OFF.
-6. Update buyer/tenant listing details, enquiry, and visit flows. Sale/site enquiries must not create rental bookings or leases.
+6. Add the authenticated `/property-enquiries` API for buyer/tenant enquiries, owner inbox, and status updates. It is separately feature-gated, owner-authorized, and rate-limited; sale/site enquiries must not create rental bookings or leases. Flutter and web surfaces remain outstanding.
 7. Add admin moderation and explicit document-review states: `NOT_SUBMITTED`, `SUBMITTED`, `UNDER_REVIEW`, `VERIFIED`, `REJECTED`. An uploaded document must never imply verified ownership.
 8. Add tests and regression coverage before enabling the flag in any environment.
 
