@@ -9,6 +9,7 @@ import {
   BookingStatus,
   Prisma,
   PropertyLifecycleStatus,
+  PropertyTransactionType,
   NotificationType,
   UserRole,
   VisitStatus,
@@ -67,6 +68,11 @@ export class BookingService {
 
     if (!visit) {
       throw new NotFoundException('Property visit not found.');
+    }
+
+    // Sale, site-sale, and lease enquiries must never enter the rental booking/payment state machine.
+    if (visit.property.transactionType !== PropertyTransactionType.RENT) {
+      throw new BadRequestException('Rental bookings are only available for RENT listings. Use the listing enquiry flow for other categories.');
     }
 
     if (![UserRole.USER, UserRole.OWNER].includes(user.role)) {
