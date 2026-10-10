@@ -748,7 +748,7 @@ export class PropertiesService {
         id: true,
         ownerId: true,
         isVerified: true,
-            ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
+        transactionType: true,
         owner: {
           select: {
             id: true,
