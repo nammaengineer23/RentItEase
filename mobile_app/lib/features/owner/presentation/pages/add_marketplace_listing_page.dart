@@ -245,7 +245,7 @@ class _AddMarketplaceListingPageState
                       DropdownMenuItem(value: 'HOUSE', child: Text('House')),
                       DropdownMenuItem(value: 'APARTMENT', child: Text('Apartment')),
                       DropdownMenuItem(value: 'VILLA', child: Text('Villa')),
-                      DropdownMenuItem(value: 'LAND', child: Text('Land')),
+                      
                     ],
                     onChanged: _saving ? null : (value) => setState(() => _propertyType = value ?? 'HOUSE'),
                   ),
