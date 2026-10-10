@@ -35,7 +35,7 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
 
     for (const call of property.findMany.mock.calls) {
       expect(call[0].where).toEqual(
-        expect.objectContaining({ isAvailable: true, isVerified: true }),
+        expect.objectContaining({ isAvailable: true, isVerified: true, transactionType: 'RENT' }),
       );
     }
     expect(prisma.property.groupBy).toHaveBeenCalledWith(
@@ -43,6 +43,7 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
         where: expect.objectContaining({
           isAvailable: true,
           isVerified: true,
+          transactionType: 'RENT',
         }),
       }),
     );
