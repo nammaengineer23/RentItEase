@@ -330,6 +330,7 @@ export class PropertiesService {
           where: {
             isAvailable: true,
             isVerified: true,
+            ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
           },
           take: 10,
           orderBy: {
@@ -565,6 +566,7 @@ export class PropertiesService {
       where: {
         isAvailable: true,
         isVerified: true,
+        ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
         latitude: {
           gte: minLatitude,
           lte: maxLatitude,
@@ -699,7 +701,7 @@ export class PropertiesService {
       },
     });
 
-    if (!property) {
+    if (!property || (!this.marketplaceEnabled() && property.transactionType !== PropertyTransactionType.RENT)) {
       throw new NotFoundException('Property not found.');
     }
 
@@ -818,6 +820,7 @@ export class PropertiesService {
 
         isAvailable: true,
         isVerified: true,
+        ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
 
         city: property.city,
 
