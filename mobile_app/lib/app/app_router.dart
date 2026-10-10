@@ -34,6 +34,7 @@ import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/owner/data/models/owner_property_model.dart';
 import '../features/owner/providers/owner_provider.dart';
 import '../features/owner/presentation/pages/add_property_page.dart';
+import '../features/owner/presentation/pages/add_marketplace_listing_page.dart';
 import '../features/owner/presentation/pages/edit_property_page.dart';
 import '../features/owner/presentation/pages/my_properties_page.dart';
 import '../features/owner/presentation/pages/owner_analytics_page.dart';
@@ -584,6 +585,12 @@ class AppRouter {
             path: '/owner/properties',
             name: 'owner-properties',
             builder: (context, state) => const MyPropertiesPage(),
+          ),
+
+          GoRoute(
+            path: '/owner/add-marketplace-listing',
+            name: 'owner-add-marketplace-listing',
+            builder: (context, state) => const AddMarketplaceListingPage(),
           ),
 
           // Add Property
