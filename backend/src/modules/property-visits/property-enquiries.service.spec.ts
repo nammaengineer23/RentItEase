@@ -32,6 +32,22 @@ describe('PropertyEnquiriesService', () => {
     expect(prisma.property.findUnique).not.toHaveBeenCalled();
   });
 
+  it('blocks enquiry inbox reads while the marketplace flag is disabled', async () => {
+    process.env.PROPERTY_MARKETPLACE_ENABLED = 'false';
+    await expect(service.findMine(user)).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.findForOwner({ id: 'owner-1', role: UserRole.OWNER }))
+      .rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.propertyEnquiry.findMany).not.toHaveBeenCalled();
+  });
+
+  it('blocks enquiry status changes while the marketplace flag is disabled', async () => {
+    process.env.PROPERTY_MARKETPLACE_ENABLED = 'false';
+    await expect(service.updateStatus('e1', { status: PropertyEnquiryStatus.CLOSED }, user))
+      .rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.propertyEnquiry.findUnique).not.toHaveBeenCalled();
+    expect(prisma.propertyEnquiry.update).not.toHaveBeenCalled();
+  });
+
   it('does not disclose missing, unverified, unavailable, or rental listings', async () => {
     prisma.property.findUnique.mockResolvedValue({
       id: 'p1', ownerId: 'owner-1', transactionType: PropertyTransactionType.RENT,
