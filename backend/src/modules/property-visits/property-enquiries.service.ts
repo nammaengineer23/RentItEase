@@ -45,6 +45,9 @@ export class PropertyEnquiriesService {
   }
 
   async findMine(user: any) {
+    if (!this.marketplaceEnabled()) {
+      throw new BadRequestException('Property sales and lease enquiries are not enabled yet.');
+    }
     return serializePrisma(await this.prisma.propertyEnquiry.findMany({
       where: { senderId: user.id },
       select: {
@@ -57,6 +60,9 @@ export class PropertyEnquiriesService {
   }
 
   async findForOwner(user: any) {
+    if (!this.marketplaceEnabled()) {
+      throw new BadRequestException('Property sales and lease enquiries are not enabled yet.');
+    }
     return serializePrisma(await this.prisma.propertyEnquiry.findMany({
       where: { property: { ownerId: user.id } },
       select: {
@@ -70,6 +76,9 @@ export class PropertyEnquiriesService {
   }
 
   async updateStatus(id: string, dto: UpdatePropertyEnquiryStatusDto, user: any) {
+    if (!this.marketplaceEnabled()) {
+      throw new BadRequestException('Property sales and lease enquiries are not enabled yet.');
+    }
     if (!Object.values(PropertyEnquiryStatus).includes(dto.status as PropertyEnquiryStatus)) {
       throw new BadRequestException('Invalid enquiry status.');
     }
