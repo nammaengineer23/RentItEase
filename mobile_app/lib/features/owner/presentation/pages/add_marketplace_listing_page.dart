@@ -39,8 +39,6 @@ class _AddMarketplaceListingPageState
   bool _negotiable = false;
   bool _roadAccess = false;
   bool _saving = false;
-  bool _loadingExisting = false;
-  String? _loadError;
 
   @override
   void initState() {
@@ -162,7 +160,7 @@ class _AddMarketplaceListingPageState
       }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(widget.propertyId == null ? 'Listing created. Complete review before publication.' : 'Listing updated.'),
         ),
       );
