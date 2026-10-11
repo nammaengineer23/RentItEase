@@ -34,12 +34,14 @@ import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/owner/data/models/owner_property_model.dart';
 import '../features/owner/providers/owner_provider.dart';
 import '../features/owner/presentation/pages/add_property_page.dart';
+import '../features/owner/presentation/pages/add_marketplace_listing_page.dart';
 import '../features/owner/presentation/pages/edit_property_page.dart';
 import '../features/owner/presentation/pages/my_properties_page.dart';
 import '../features/owner/presentation/pages/owner_analytics_page.dart';
 import '../features/owner/presentation/pages/owner_activity_page.dart';
 import '../features/owner/presentation/pages/owner_dashboard_page.dart';
 import '../features/owner/presentation/pages/owner_visits_page.dart';
+import '../features/owner/presentation/pages/owner_property_enquiries_page.dart';
 import '../features/owner/presentation/pages/property_details_page.dart';
 
 import '../features/payment/presentation/pages/payment_page.dart';
@@ -52,6 +54,7 @@ import '../features/profile/presentation/pages/premium_membership_page.dart';
 import '../features/property/domain/entities/property_entity.dart';
 import '../features/property/presentation/pages/property_details_page.dart';
 import '../features/property/presentation/pages/property_listing_page.dart';
+import '../features/property/presentation/pages/property_marketplace_page.dart';
 import '../features/property/presentation/pages/property_page.dart';
 
 import '../features/property_visits/presentation/pages/book_visit_page.dart';
@@ -283,6 +286,12 @@ class AppRouter {
             path: '/property',
             name: 'property-list',
             builder: (context, state) => const PropertyPage(),
+          ),
+
+          GoRoute(
+            path: '/marketplace',
+            name: 'property-marketplace',
+            builder: (context, state) => const PropertyMarketplacePage(),
           ),
 
           GoRoute(
@@ -560,6 +569,12 @@ class AppRouter {
           ),
 
           GoRoute(
+            path: '/owner/property-enquiries',
+            name: 'owner-property-enquiries',
+            builder: (context, state) => const OwnerPropertyEnquiriesPage(),
+          ),
+
+          GoRoute(
             path: '/owner/booking-requests',
             name: 'owner-booking-requests',
             builder: (context, state) => const OwnerBookingRequestsPage(),
@@ -570,6 +585,14 @@ class AppRouter {
             path: '/owner/properties',
             name: 'owner-properties',
             builder: (context, state) => const MyPropertiesPage(),
+          ),
+
+          GoRoute(
+            path: '/owner/add-marketplace-listing',
+            name: 'owner-add-marketplace-listing',
+            builder: (context, state) => AddMarketplaceListingPage(
+              propertyId: state.uri.queryParameters['propertyId'],
+            ),
           ),
 
           // Add Property

@@ -41,6 +41,12 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
     required super.visitRequests,
     super.imageUrls,
     super.amenities,
+    super.transactionType,
+    super.askingPrice,
+    super.leaseTermMonths,
+    super.landArea,
+    super.landAreaUnit,
+    super.roadAccess,
   });
 
   factory OwnerPropertyModel.fromJson(Map<String, dynamic> json) {
@@ -91,6 +97,12 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
       visitRequests: _toInt(json['visitRequests']),
       imageUrls: _imageUrls(json),
       amenities: _amenities(json),
+      transactionType: json['transactionType']?.toString() ?? 'RENT',
+      askingPrice: _toNullableDouble(json['askingPrice']),
+      leaseTermMonths: json['leaseTermMonths'] == null ? null : _toInt(json['leaseTermMonths']),
+      landArea: _toNullableDouble(json['landArea']),
+      landAreaUnit: json['landAreaUnit']?.toString(),
+      roadAccess: json['roadAccess'] as bool?,
     );
   }
 
@@ -134,6 +146,12 @@ class OwnerPropertyModel extends OwnerPropertyEntity {
       'visitRequests': visitRequests,
       'imageUrls': imageUrls,
       'amenities': amenities,
+      'transactionType': transactionType,
+      if (askingPrice != null) 'askingPrice': askingPrice,
+      if (leaseTermMonths != null) 'leaseTermMonths': leaseTermMonths,
+      if (landArea != null) 'landArea': landArea,
+      if (landAreaUnit != null) 'landAreaUnit': landAreaUnit,
+      if (roadAccess != null) 'roadAccess': roadAccess,
     };
   }
 

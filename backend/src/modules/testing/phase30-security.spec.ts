@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { BookingStatus, LeaseStatus, MembershipStatus, PaymentStatus, UserRole, VisitStatus } from '@prisma/client';
+import { BookingStatus, LeaseStatus, MembershipStatus, PaymentStatus, PropertyTransactionType, UserRole, VisitStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 import { AuthService } from '../auth/auth.service';
@@ -191,7 +191,7 @@ describe('Phase 30 critical backend security regression suite', () => {
           tenantId: 'tenant-owner',
           propertyId: 'property-1',
           status: VisitStatus.APPROVED,
-          property: { ownerId: 'owner-1', isAvailable: true },
+          property: { ownerId: 'owner-1', isAvailable: true, transactionType: PropertyTransactionType.RENT },
           booking: null,
         }),
       },

@@ -4,6 +4,7 @@ import {
   FurnishingType,
   PropertyStatus,
   PropertyType,
+  PropertyTransactionType,
 } from '@prisma/client';
 
 import {
@@ -73,6 +74,11 @@ export class FilterPropertiesDto {
   pincode?: string;
 
 
+
+  @ApiPropertyOptional({ enum: PropertyTransactionType, description: 'Marketplace transaction category; non-rental categories require PROPERTY_MARKETPLACE_ENABLED=true.' })
+  @IsOptional()
+  @IsEnum(PropertyTransactionType)
+  transactionType?: PropertyTransactionType;
 
   @ApiPropertyOptional({
     enum: PropertyType,

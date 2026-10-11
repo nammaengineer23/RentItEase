@@ -38,6 +38,22 @@ class _OwnerDashboardPageState extends ConsumerState<OwnerDashboardPage> {
             onPressed: () => context.push('/owner/booking-requests'),
             icon: const Icon(Icons.book_online_outlined),
           ),
+          IconButton(
+            tooltip: 'Property enquiries',
+            onPressed: () => context.push('/owner/property-enquiries'),
+            icon: const Icon(Icons.mark_email_unread_outlined),
+          ),
+          IconButton(
+            tooltip: 'Add sale or lease listing',
+            onPressed: () async {
+              final created =
+                  await context.push<bool>('/owner/add-marketplace-listing');
+              if (created == true && mounted) {
+                await ref.read(ownerProvider.notifier).refreshDashboard();
+              }
+            },
+            icon: const Icon(Icons.real_estate_agent_outlined),
+          ),
           PopupMenuButton<String>(
             tooltip: 'Notifications and activity',
             icon: const Icon(Icons.notifications_outlined),

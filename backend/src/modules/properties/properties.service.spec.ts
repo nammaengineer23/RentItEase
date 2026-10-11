@@ -1,5 +1,5 @@
-import { ForbiddenException } from '@nestjs/common';
-import { MembershipStatus, UserRole } from '@prisma/client';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { MembershipStatus, PropertyTransactionType, UserRole } from '@prisma/client';
 
 import { PropertiesService } from './properties.service';
 
@@ -24,7 +24,21 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new PropertiesService(prisma);
+    service = new PropertiesService(prisma, {} as any);
+  });
+
+  it('rejects non-rental listing creation while the marketplace flag is off', async () => {
+    const previous = process.env.PROPERTY_MARKETPLACE_ENABLED;
+    delete process.env.PROPERTY_MARKETPLACE_ENABLED;
+    try {
+      await expect(
+        service.create({ transactionType: 'SALE' } as any, { id: 'owner-1' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(property.create).toBeUndefined();
+    } finally {
+      if (previous === undefined) delete process.env.PROPERTY_MARKETPLACE_ENABLED;
+      else process.env.PROPERTY_MARKETPLACE_ENABLED = previous;
+    }
   });
 
   it('limits every home collection to verified, available properties', async () => {
@@ -35,7 +49,7 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
 
     for (const call of property.findMany.mock.calls) {
       expect(call[0].where).toEqual(
-        expect.objectContaining({ isAvailable: true, isVerified: true }),
+        expect.objectContaining({ isAvailable: true, isVerified: true, transactionType: 'RENT' }),
       );
     }
     expect(prisma.property.groupBy).toHaveBeenCalledWith(
@@ -43,6 +57,7 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
         where: expect.objectContaining({
           isAvailable: true,
           isVerified: true,
+          transactionType: 'RENT',
         }),
       }),
     );
@@ -68,6 +83,7 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
       id: 'property-1',
       ownerId: 'owner-1',
       isVerified: true,
+      transactionType: PropertyTransactionType.RENT,
       owner: {
         id: 'owner-1',
         fullName: 'Owner',
@@ -105,6 +121,7 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
       id: 'property-1',
       ownerId: owner.id,
       isVerified: true,
+      transactionType: PropertyTransactionType.RENT,
       owner,
     });
     membership.findFirst.mockResolvedValue({ id: 'membership-1' });
