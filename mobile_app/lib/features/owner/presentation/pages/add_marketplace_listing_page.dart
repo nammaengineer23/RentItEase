@@ -39,6 +39,8 @@ class _AddMarketplaceListingPageState
   bool _negotiable = false;
   bool _roadAccess = false;
   bool _saving = false;
+  bool _loadingExisting = false;
+  String? _loadError;
 
   @override
   void initState() {
@@ -195,13 +197,29 @@ class _AddMarketplaceListingPageState
                 ),
               ),
             )
-          : Form(
+          : _loadingExisting
+              ? const Center(child: CircularProgressIndicator())
+              : _loadError != null
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(_loadError!, textAlign: TextAlign.center),
+                            const SizedBox(height: 12),
+                            FilledButton(onPressed: _loadExisting, child: const Text('Retry')),
+                          ],
+                        ),
+                      ),
+                    )
+                  : Form(
               key: _formKey,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
                   DropdownButtonFormField<String>(
-                    value: _category,
+                    initialValue: _category,
                     decoration: const InputDecoration(
                       labelText: 'Listing category',
                       border: OutlineInputBorder(),
@@ -288,7 +306,7 @@ class _AddMarketplaceListingPageState
                   TextFormField(controller: _pincode, decoration: const InputDecoration(labelText: 'PIN code', border: OutlineInputBorder()), validator: _required),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: _propertyType,
+                    initialValue: _propertyType,
                     decoration: const InputDecoration(labelText: 'Property type', border: OutlineInputBorder()),
                     items: const [
                       DropdownMenuItem(value: 'HOUSE', child: Text('House')),
