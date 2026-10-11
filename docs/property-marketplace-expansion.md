@@ -38,19 +38,32 @@ Asking price, total land area and unit, frontage/dimensions, facing, road access
 - [x] Backward-compatible Prisma schema/migrations with existing listings retaining `RENT` semantics.
 - [x] DTO validation, authorization, and category-aware search/filter support.
 - [x] Flutter owner create/edit flows for sale, lease, and site categories. The Flutter screens are shared by the Android and Flutter Web app; visibility remains feature-flagged.
-- [x] Authenticated `/property-enquiries` API for creating enquiries, viewing a user's enquiries, owner inbox, and status updates; feature-gated and rate-limited.
+- [x] Authenticated `/property-enquiries` API for creating enquiries, viewing a user's enquiries, owner inbox, and status updates; all four operations enforce the marketplace feature flag, and creation is rate-limited.
 - [x] React Admin Panel document-review queue/status UI and audited admin endpoints.
 - [x] Document-review states: `NOT_SUBMITTED`, `SUBMITTED`, `UNDER_REVIEW`, `VERIFIED`, `REJECTED`. Review status does not automatically verify ownership or publish a listing.
-- [x] Backend tests, Flutter Fast Check, Admin CI, iOS validation, Prisma migration audit, and dependency/security audit passed on commit `ef7ec8927c3ec4da3f48614597ae01c7102d125a`.
+- [x] Backend tests cover marketplace enquiry flag-off behavior for create/read/update, listing eligibility, own-listing protection, IDOR protection, owner/admin status changes, and missing enquiry IDs.
+- [x] At the previously recorded head `676516c805ec9e494ad9ea9c15aac3e04801d4d0`, Backend CI, Flutter Fast Check, Admin Panel CI, iOS Build, Prisma Migration Audit, and Dependency/Security Audit passed. New commits require fresh checks; do not treat those earlier results as validation of subsequent changes.
 
-## Feature-flagged rollout
+## Remaining tasks and release gates
 
-1. Keep `PROPERTY_MARKETPLACE_ENABLED` disabled in production until deployment and isolated end-to-end/regression validation are complete.
-2. Apply the additive Prisma migration to a non-production database first; validate migration recovery before any production rollout.
-3. Verify each category's required and prohibited fields, category filters, and owner/admin authorization in an isolated environment.
-4. Exercise buyer/tenant enquiry creation, owner inbox/status updates, rate limiting, and IDOR protections with isolated test accounts.
-5. Re-run existing rental listing, booking, and payment regressions to confirm no behavior changes.
-6. Confirm backend, Flutter Web/mobile, and admin deployments are compatible before enabling the flag in any environment.
+### Implementation follow-ups
+- [ ] Expand DTO/service tests for category-specific required fields, invalid prices/areas/lease terms, and category changes that could leave contradictory fields.
+- [ ] Add controller/API-level authorization tests for all enquiry and document-review routes, not only service-level tests.
+- [ ] Add document-review transition and audit tests, including requiring a reason for rejection if that becomes the chosen moderation policy.
+- [ ] Add duplicate-submission/rate-limit and concurrent-update coverage where supported by the test infrastructure.
+- [ ] Verify Flutter create/edit/reopen flows for each non-rental category, including loading, empty, error, retry, and duplicate-submit states.
+- [ ] Verify public property serialization never returns `surveyReference` and review status never implicitly verifies or publishes a listing.
+
+### Deployment and end-to-end gates
+- [ ] Diagnose the latest failed Cloudflare Workers deployment from its actual build logs; do not guess at a configuration fix.
+- [ ] Run the worker SEO smoke test and validate the deployed home, SEO routes, sitemap, robots.txt, and admin panel.
+- [ ] Apply and validate migrations against both a clean non-production database and a representative existing database.
+- [ ] Run isolated marketplace E2E for SALE, LEASE, and SITE_SALE, including enquiries and owner status updates.
+- [ ] Run rental regression tests for listing, booking, payment, and lease behavior.
+- [ ] Re-run all affected GitHub Actions after the latest code changes and record the exact validated commit SHA here.
+- [ ] Keep the PR in draft and production `PROPERTY_MARKETPLACE_ENABLED` disabled until deployment and isolated E2E/regression gates pass.
+
+Do not run the Release E2E / RC1 workflow against shared production accounts/data for PR validation; it may create production fixtures or mutate shared data.
 
 ## Safety and compatibility requirements
 
