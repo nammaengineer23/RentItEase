@@ -6,12 +6,12 @@ on:
       build_number:
         description: "Android version code"
         required: true
-        default: "7"
+        default: "9"
         type: string
       build_name:
         description: "Android version name"
         required: true
-        default: "1.0.5"
+        default: "1.0.6"
         type: string
       release_status:
         description: "Play release status"
