@@ -6,6 +6,8 @@ import { NotificationsModule } from '../notifications/notifications.module';
 
 import { PropertyVisitsController } from './property-visits.controller';
 import { PropertyVisitsService } from './property-visits.service';
+import { PropertyEnquiriesController } from './property-enquiries.controller';
+import { PropertyEnquiriesService } from './property-enquiries.service';
 
 import { PushNotificationsModule } from '../push-notifications/push-notifications.module';
 
@@ -16,7 +18,7 @@ import { PushNotificationsModule } from '../push-notifications/push-notification
     MailModule,
     PushNotificationsModule,
   ],
-  controllers: [PropertyVisitsController],
-  providers: [PropertyVisitsService],
+  controllers: [PropertyVisitsController, PropertyEnquiriesController],
+  providers: [PropertyVisitsService, PropertyEnquiriesService],
 })
 export class PropertyVisitsModule {}

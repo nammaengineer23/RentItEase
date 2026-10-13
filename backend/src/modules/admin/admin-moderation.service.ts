@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { VisitStatus } from '@prisma/client';
+import { PropertyDocumentReviewStatus, VisitStatus } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
@@ -11,6 +11,68 @@ export class AdminModerationService {
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
   ) {}
+
+
+  async listPropertiesForDocumentReview() {
+    return serializePrisma(
+      await this.prisma.property.findMany({
+        where: {
+          documentReviewStatus: {
+            in: [PropertyDocumentReviewStatus.SUBMITTED, PropertyDocumentReviewStatus.UNDER_REVIEW],
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          transactionType: true,
+          city: true,
+          locality: true,
+          documentReviewStatus: true,
+          owner: { select: { id: true, fullName: true, email: true } },
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { updatedAt: 'asc' },
+      }),
+    );
+  }
+
+  async updatePropertyDocumentReview(
+    id: string,
+    status: PropertyDocumentReviewStatus,
+    context?: AdminAuditContext,
+  ) {
+    if (!Object.values(PropertyDocumentReviewStatus).includes(status)) {
+      throw new BadRequestException('Invalid property document review status.');
+    }
+    const property = await this.prisma.property.findUnique({ where: { id } });
+    if (!property) throw new NotFoundException('Property not found.');
+
+    const updated = await this.prisma.property.update({
+      where: { id },
+      data: { documentReviewStatus: status },
+      select: {
+        id: true,
+        title: true,
+        transactionType: true,
+        documentReviewStatus: true,
+        isVerified: true,
+        isAvailable: true,
+      },
+    });
+    if (context) {
+      await this.audit.record(
+        context,
+        'PROPERTY_DOCUMENT_REVIEW',
+        'PROPERTY',
+        id,
+        { documentReviewStatus: property.documentReviewStatus },
+        { documentReviewStatus: updated.documentReviewStatus },
+      );
+    }
+    // Document review is deliberately separate from property verification/publishing.
+    return serializePrisma(updated);
+  }
 
   async updateReview(
     id: string,

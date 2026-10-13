@@ -131,10 +131,14 @@ class _MyPropertiesPageState extends ConsumerState<MyPropertiesPage> {
                                           '/owner/property-details/${property.id}',
                                           extra: property,
                                         ),
-                                        onEdit: () => context.push(
-                                          '/owner/edit-property/${property.id}',
-                                          extra: property,
-                                        ),
+                                        onEdit: () => property.transactionType == 'RENT'
+                                            ? context.push(
+                                                '/owner/edit-property/${property.id}',
+                                                extra: property,
+                                              )
+                                            : context.push(
+                                                '/owner/add-marketplace-listing?propertyId=${Uri.encodeComponent(property.id)}',
+                                              ),
                                         onDelete: () => _deleteProperty(context, property.id),
                                       );
                                     },
