@@ -42,12 +42,13 @@ Asking price, total land area and unit, frontage/dimensions, facing, road access
 - [x] React Admin Panel document-review queue/status UI and audited admin endpoints.
 - [x] Document-review states: `NOT_SUBMITTED`, `SUBMITTED`, `UNDER_REVIEW`, `VERIFIED`, `REJECTED`. Review status does not automatically verify ownership or publish a listing.
 - [x] Backend tests cover marketplace enquiry flag-off behavior for create/read/update, listing eligibility, own-listing protection, IDOR protection, owner/admin status changes, and missing enquiry IDs.
+- [x] Added focused property-service tests for invalid SALE asking prices, invalid SITE_SALE price/land area/unit, invalid LEASE duration, marketplace flag-off, and preservation of RENT creation when the flag is off.
 - [x] At the previously recorded head `676516c805ec9e494ad9ea9c15aac3e04801d4d0`, Backend CI, Flutter Fast Check, Admin Panel CI, iOS Build, Prisma Migration Audit, and Dependency/Security Audit passed. New commits require fresh checks; do not treat those earlier results as validation of subsequent changes.
 
 ## Remaining tasks and release gates
 
 ### Implementation follow-ups
-- [ ] Expand DTO/service tests for category-specific required fields, invalid prices/areas/lease terms, and category changes that could leave contradictory fields.
+- [ ] Extend DTO-level validation and category-change tests, including contradictory stale fields when switching a listing between categories.
 - [ ] Add controller/API-level authorization tests for all enquiry and document-review routes, not only service-level tests.
 - [ ] Add document-review transition and audit tests, including requiring a reason for rejection if that becomes the chosen moderation policy.
 - [ ] Add duplicate-submission/rate-limit and concurrent-update coverage where supported by the test infrastructure.
@@ -55,12 +56,12 @@ Asking price, total land area and unit, frontage/dimensions, facing, road access
 - [ ] Verify public property serialization never returns `surveyReference` and review status never implicitly verifies or publishes a listing.
 
 ### Deployment and end-to-end gates
-- [ ] Diagnose the latest failed Cloudflare Workers deployment from its actual build logs; do not guess at a configuration fix.
+- [ ] Diagnose the latest failed Cloudflare Workers deployment from its actual build logs; dashboard logs are not available through the connected GitHub API, so the exact failure must be retrieved from the linked Cloudflare build.
 - [ ] Run the worker SEO smoke test and validate the deployed home, SEO routes, sitemap, robots.txt, and admin panel.
 - [ ] Apply and validate migrations against both a clean non-production database and a representative existing database.
 - [ ] Run isolated marketplace E2E for SALE, LEASE, and SITE_SALE, including enquiries and owner status updates.
 - [ ] Run rental regression tests for listing, booking, payment, and lease behavior.
-- [ ] Re-run all affected GitHub Actions after the latest code changes and record the exact validated commit SHA here.
+- [ ] Re-run all affected GitHub Actions after the latest test commit and record the exact validated commit SHA here.
 - [ ] Keep the PR in draft and production `PROPERTY_MARKETPLACE_ENABLED` disabled until deployment and isolated E2E/regression gates pass.
 
 Do not run the Release E2E / RC1 workflow against shared production accounts/data for PR validation; it may create production fixtures or mutate shared data.
