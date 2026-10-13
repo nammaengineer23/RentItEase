@@ -103,7 +103,7 @@ export class PropertiesService {
     return {
       success: true,
       message: 'Property created successfully.',
-      property: serializePrisma(property),
+      property: this.serializePublicProperty(property),
     };
   }
 
@@ -454,7 +454,7 @@ export class PropertiesService {
             : 0;
 
         return {
-          ...serializePrisma(property),
+          ...this.serializePublicProperty(property),
           averageRating,
           totalReviews: property.reviews.length,
         };
