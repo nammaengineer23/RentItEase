@@ -9,6 +9,7 @@ jest.mock('../../storage/storage.service', () => ({
 
 describe('PropertiesService public discovery and owner-contact privacy', () => {
   const property = {
+    create: jest.fn(),
     findMany: jest.fn(),
     findUnique: jest.fn(),
   };
@@ -35,6 +36,45 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
         service.create({ transactionType: 'SALE' } as any, { id: 'owner-1' }),
       ).rejects.toBeInstanceOf(BadRequestException);
       expect(property.create).toBeUndefined();
+    } finally {
+      if (previous === undefined) delete process.env.PROPERTY_MARKETPLACE_ENABLED;
+      else process.env.PROPERTY_MARKETPLACE_ENABLED = previous;
+    }
+  });
+
+  it('omits private survey references from create responses', async () => {
+    const previous = process.env.PROPERTY_MARKETPLACE_ENABLED;
+    process.env.PROPERTY_MARKETPLACE_ENABLED = 'true';
+    property.create.mockResolvedValue({
+      id: 'property-1',
+      transactionType: PropertyTransactionType.SITE_SALE,
+      surveyReference: 'PRIVATE-REFERENCE',
+    });
+    try {
+      const result = await service.create(
+        { transactionType: PropertyTransactionType.SITE_SALE, askingPrice: 100000, landArea: 100, landAreaUnit: 'SQ_FT' } as any,
+        { id: 'owner-1' },
+      );
+      expect(result.property).not.toHaveProperty('surveyReference');
+    } finally {
+      if (previous === undefined) delete process.env.PROPERTY_MARKETPLACE_ENABLED;
+      else process.env.PROPERTY_MARKETPLACE_ENABLED = previous;
+    }
+  });
+
+  it('omits private survey references from the top-rated home collection', async () => {
+    const previous = process.env.PROPERTY_MARKETPLACE_ENABLED;
+    delete process.env.PROPERTY_MARKETPLACE_ENABLED;
+    property.findMany.mockResolvedValue([{
+      id: 'property-1',
+      transactionType: PropertyTransactionType.RENT,
+      surveyReference: 'PRIVATE-REFERENCE',
+      reviews: [],
+    }]);
+    prisma.property.groupBy = jest.fn().mockResolvedValue([]);
+    try {
+      const result = await service.home();
+      expect(result.topRated[0]).not.toHaveProperty('surveyReference');
     } finally {
       if (previous === undefined) delete process.env.PROPERTY_MARKETPLACE_ENABLED;
       else process.env.PROPERTY_MARKETPLACE_ENABLED = previous;
