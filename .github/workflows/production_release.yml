@@ -1,0 +1,168 @@
+name: Build and Prepare Android Production Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_name:
+        description: "Android version name"
+        required: true
+        default: "1.0.7"
+        type: string
+      build_number:
+        description: "Android version code (must be greater than current Alpha 9)"
+        required: true
+        default: "10"
+        type: string
+      release_status:
+        description: "Use draft first; completed publishes to Production"
+        required: true
+        default: "draft"
+        type: choice
+        options:
+          - draft
+          - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rentitease-production-release
+  cancel-in-progress: false
+
+jobs:
+  production-release:
+    name: Build and upload Production release
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile_app
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.8"
+          channel: stable
+          cache: true
+
+      - name: Configure Android release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          test -n "$ANDROID_STORE_PASSWORD"
+
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          {
+            echo "storeFile=upload-keystore.jks"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+            echo "storePassword=$ANDROID_STORE_PASSWORD"
+          } > android/key.properties
+
+      - name: Validate production inputs
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          BUILD_NAME: ${{ inputs.build_name }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          RELEASE_STATUS: ${{ inputs.release_status }}
+        run: |
+          test -n "$API_BASE_URL"
+          test -n "$MAPS_API_KEY"
+          case "$API_BASE_URL" in
+            https://*) ;;
+            *) echo "API_BASE_URL must use HTTPS."; exit 1 ;;
+          esac
+          case "$BUILD_NUMBER" in
+            ''|*[!0-9]*) echo "build_number must contain only digits."; exit 1 ;;
+          esac
+          if [ "$BUILD_NUMBER" -le 9 ]; then
+            echo "build_number must be greater than the current Alpha version code 9."
+            exit 1
+          fi
+          test -n "$BUILD_NAME"
+          case "$RELEASE_STATUS" in
+            draft|completed) ;;
+            *) echo "release_status must be draft or completed."; exit 1 ;;
+          esac
+
+      - name: Verify upload-key SHA-1 is registered in Firebase
+        env:
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+        run: |
+          SIGNING_SHA1="$(
+            keytool -list -v \
+              -keystore android/app/upload-keystore.jks \
+              -alias "$ANDROID_KEY_ALIAS" \
+              -storepass "$ANDROID_STORE_PASSWORD" \
+              | awk -F': ' '/SHA1:/{gsub(":", "", $2); print tolower($2); exit}'
+          )"
+          test -n "$SIGNING_SHA1"
+          jq -e --arg sha "$SIGNING_SHA1" '
+            .client[].oauth_client[]?
+            | select(
+                .client_type == 1
+                and .android_info.package_name == "com.rentitease.app"
+                and (.android_info.certificate_hash | ascii_downcase) == $sha
+              )
+          ' android/app/google-services.json > /dev/null || {
+            echo "Release signing SHA-1 is not registered in Firebase."
+            exit 1
+          }
+          echo "Firebase upload-key SHA-1 validation passed."
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze Flutter project
+        run: flutter analyze
+
+      - name: Run Flutter tests
+        run: flutter test
+
+      - name: Build signed Production AAB
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          BUILD_NAME: ${{ inputs.build_name }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+        run: |
+          flutter build appbundle \
+            --release \
+            --build-name="$BUILD_NAME" \
+            --build-number="$BUILD_NUMBER" \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=MAPS_API_KEY="$MAPS_API_KEY" \
+            --dart-define=ENABLE_GOOGLE_SIGN_IN=true \
+            --dart-define=ENABLE_PHONE_OTP=false
+
+          test -f build/app/outputs/bundle/release/app-release.aab
+          ls -lh build/app/outputs/bundle/release/app-release.aab
+
+      - name: Upload AAB to Google Play Production
+        uses: joutvhu/publish-android@v2
+        with:
+          serviceAccountJson: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.rentitease.app
+          releaseFile: mobile_app/build/app/outputs/bundle/release/app-release.aab
+          track: production
+          status: ${{ inputs.release_status }}
+          releaseName: "RentItEase ${{ inputs.build_name }} (${{ inputs.build_number }})"
