@@ -1,4 +1,4 @@
-name: Build and Prepare Android Production Release
+name: Build Android App Bundle for Play Testing
 
 on:
   workflow_dispatch:
@@ -9,14 +9,23 @@ on:
         default: "1.0.7"
         type: string
       build_number:
-        description: "Android version code (must be greater than current Alpha 9)"
+        description: "Android version code (10 is already used by the production draft)"
         required: true
-        default: "10"
+        default: "11"
         type: string
-      release_status:
-        description: "Use draft first; completed publishes to Production"
+      track:
+        description: "Google Play testing track"
         required: true
-        default: "draft"
+        default: "alpha"
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+      release_status:
+        description: "Use completed to make this testing release available to testers"
+        required: true
+        default: "completed"
         type: choice
         options:
           - draft
@@ -26,12 +35,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: rentitease-production-release
+  group: rentitease-android-testing-release
   cancel-in-progress: false
 
 jobs:
-  production-release:
-    name: Build and upload Production release
+  android-testing-release:
+    name: Build signed AAB and upload to Play testing
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -76,12 +85,13 @@ jobs:
             echo "storePassword=$ANDROID_STORE_PASSWORD"
           } > android/key.properties
 
-      - name: Validate production inputs
+      - name: Validate testing inputs
         env:
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
           BUILD_NAME: ${{ inputs.build_name }}
           BUILD_NUMBER: ${{ inputs.build_number }}
+          TRACK: ${{ inputs.track }}
           RELEASE_STATUS: ${{ inputs.release_status }}
         run: |
           test -n "$API_BASE_URL"
@@ -93,11 +103,15 @@ jobs:
           case "$BUILD_NUMBER" in
             ''|*[!0-9]*) echo "build_number must contain only digits."; exit 1 ;;
           esac
-          if [ "$BUILD_NUMBER" -le 9 ]; then
-            echo "build_number must be greater than the current Alpha version code 9."
+          if [ "$BUILD_NUMBER" -le 10 ]; then
+            echo "build_number must be greater than 10; version code 10 is already used by the Production draft."
             exit 1
           fi
           test -n "$BUILD_NAME"
+          case "$TRACK" in
+            internal|alpha|beta) ;;
+            *) echo "Only testing tracks (internal, alpha, beta) are allowed."; exit 1 ;;
+          esac
           case "$RELEASE_STATUS" in
             draft|completed) ;;
             *) echo "release_status must be draft or completed."; exit 1 ;;
@@ -138,7 +152,7 @@ jobs:
       - name: Run Flutter tests
         run: flutter test
 
-      - name: Build signed Production AAB
+      - name: Build signed Android App Bundle
         env:
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
@@ -157,12 +171,20 @@ jobs:
           test -f build/app/outputs/bundle/release/app-release.aab
           ls -lh build/app/outputs/bundle/release/app-release.aab
 
-      - name: Upload AAB to Google Play Production
+      - name: Save AAB as downloadable workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RentItEase-1.0.7-11-AAB
+          path: mobile_app/build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload AAB to Google Play testing track
         uses: joutvhu/publish-android@v2
         with:
           serviceAccountJson: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.rentitease.app
           releaseFile: mobile_app/build/app/outputs/bundle/release/app-release.aab
-          track: production
+          track: ${{ inputs.track }}
           status: ${{ inputs.release_status }}
           releaseName: "RentItEase ${{ inputs.build_name }} (${{ inputs.build_number }})"
