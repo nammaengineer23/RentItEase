@@ -950,14 +950,35 @@ export class PropertiesService {
       );
     }
 
+    const nextTransactionType = updatePropertyDto.transactionType ?? property.transactionType;
+    const categoryChanged = nextTransactionType !== property.transactionType;
     this.validateMarketplaceListing({
-      transactionType: updatePropertyDto.transactionType ?? property.transactionType,
-      askingPrice: updatePropertyDto.askingPrice ?? (property.askingPrice == null ? undefined : Number(property.askingPrice)),
-      leaseTermMonths: updatePropertyDto.leaseTermMonths ?? property.leaseTermMonths ?? undefined,
-      landArea: updatePropertyDto.landArea ?? property.landArea ?? undefined,
-      landAreaUnit: updatePropertyDto.landAreaUnit ?? property.landAreaUnit ?? undefined,
+      transactionType: nextTransactionType,
+      // When changing category, validate the new category's submitted fields,
+      // not stale fields from the previous category. Required fields must be
+      // supplied again and the write below clears fields that no longer apply.
+      askingPrice: categoryChanged
+        ? updatePropertyDto.askingPrice
+        : updatePropertyDto.askingPrice ?? (property.askingPrice == null ? undefined : Number(property.askingPrice)),
+      leaseTermMonths: categoryChanged
+        ? updatePropertyDto.leaseTermMonths
+        : updatePropertyDto.leaseTermMonths ?? property.leaseTermMonths ?? undefined,
+      leaseRenewalTerms: categoryChanged
+        ? updatePropertyDto.leaseRenewalTerms
+        : updatePropertyDto.leaseRenewalTerms ?? property.leaseRenewalTerms ?? undefined,
+      landArea: categoryChanged ? updatePropertyDto.landArea : updatePropertyDto.landArea ?? property.landArea ?? undefined,
+      landAreaUnit: categoryChanged ? updatePropertyDto.landAreaUnit : updatePropertyDto.landAreaUnit ?? property.landAreaUnit ?? undefined,
     });
     const { amenityIds, ...propertyData } = updatePropertyDto;
+    const resetCategoryFields = categoryChanged
+      ? nextTransactionType === PropertyTransactionType.RENT
+        ? { askingPrice: null, priceNegotiable: false, leaseTermMonths: null, leaseRenewalTerms: null, landArea: null, landAreaUnit: null }
+        : nextTransactionType === PropertyTransactionType.SALE
+          ? { leaseTermMonths: null, leaseRenewalTerms: null, landArea: null, landAreaUnit: null }
+          : nextTransactionType === PropertyTransactionType.LEASE
+            ? { askingPrice: null, priceNegotiable: false, landArea: null, landAreaUnit: null }
+            : { leaseTermMonths: null, leaseRenewalTerms: null }
+      : {};
 
     // Owners may not make an unverified property publicly available. Admin
     // verification remains the authority for publishing a new listing.
@@ -972,6 +993,7 @@ export class PropertiesService {
 
       data: {
         ...propertyData,
+        ...resetCategoryFields,
         // Every owner edit requires a fresh admin review before the listing
         // becomes public again. Admin edits preserve the approval state.
         ...(user.role !== UserRole.ADMIN
