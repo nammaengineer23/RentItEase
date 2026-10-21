@@ -35,8 +35,11 @@ jobs:
       E2E_RUN_ID: ${{ github.run_id }}
 
     steps:
-      - name: Checkout
+      - name: Checkout PR branch under test
         uses: actions/checkout@v4
+        with:
+          # workflow_dispatch must exist on the default branch; keep the test target explicit.
+          ref: feat/property-sales-lease-sites
 
       - name: Verify staging target and required secrets
         shell: bash
