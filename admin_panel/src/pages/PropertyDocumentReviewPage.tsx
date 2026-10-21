@@ -43,7 +43,12 @@ export function PropertyDocumentReviewPage() {
   useEffect(() => { void load(); }, [load]);
 
   async function save(item: DocumentReviewProperty) {
+    if (busyId === item.id) return;
     const status = statusById[item.id] ?? item.documentReviewStatus;
+    if (status === "REJECTED" && !(reasonById[item.id] ?? "").trim()) {
+      setError("Enter a rejection reason before rejecting documents.");
+      return;
+    }
     if (status === "VERIFIED" && !window.confirm("Mark the submitted documents as reviewed/verified? This does not verify property ownership or publish the listing.")) return;
     setBusyId(item.id);
     setError("");
@@ -100,7 +105,7 @@ export function PropertyDocumentReviewPage() {
                       <input
                         className="search-input"
                         aria-label={"Review reason for " + item.title}
-                        placeholder="Reason / audit note (optional)"
+                        placeholder={statusById[item.id] === "REJECTED" ? "Rejection reason (required)" : "Reason / audit note (optional)"}
                         maxLength={500}
                         value={reasonById[item.id] ?? ""}
                         onChange={(event) => setReasonById((current) => ({ ...current, [item.id]: event.target.value }))}
