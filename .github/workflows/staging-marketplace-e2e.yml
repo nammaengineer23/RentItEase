@@ -1,0 +1,107 @@
+name: RentItEase - Isolated Staging E2E
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rentitease-isolated-staging-e2e
+  cancel-in-progress: false
+
+jobs:
+  staging-e2e:
+    name: Marketplace + Rental Regression (staging only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      E2E_BASE_URL: ${{ secrets.STAGING_E2E_BASE_URL }}
+      E2E_API_PREFIX: /api/v1
+      E2E_TENANT_EMAIL: ${{ secrets.E2E_TENANT_EMAIL }}
+      E2E_TENANT_PASSWORD: ${{ secrets.E2E_TENANT_PASSWORD }}
+      E2E_OWNER_EMAIL: ${{ secrets.E2E_OWNER_EMAIL }}
+      E2E_OWNER_PASSWORD: ${{ secrets.E2E_OWNER_PASSWORD }}
+      E2E_OTHER_OWNER_EMAIL: ${{ secrets.E2E_OTHER_OWNER_EMAIL }}
+      E2E_OTHER_OWNER_PASSWORD: ${{ secrets.E2E_OTHER_OWNER_PASSWORD }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_RAZORPAY_KEY_SECRET: ${{ secrets.STAGING_E2E_RAZORPAY_KEY_SECRET }}
+      E2E_RAZORPAY_WEBHOOK_SECRET: ${{ secrets.STAGING_E2E_RAZORPAY_WEBHOOK_SECRET }}
+      E2E_STRICT: "true"
+      E2E_RUN_ID: ${{ github.run_id }}
+
+    steps:
+      - name: Checkout PR branch under test
+        uses: actions/checkout@v4
+        with:
+          # workflow_dispatch must exist on the default branch; keep the test target explicit.
+          ref: feat/property-sales-lease-sites
+
+      - name: Verify staging target and required secrets
+        shell: bash
+        run: |
+          node <<'NODE'
+          const raw = process.env.E2E_BASE_URL;
+          if (!raw) throw new Error('Missing secret STAGING_E2E_BASE_URL.');
+          let url;
+          try { url = new URL(raw); } catch { throw new Error('STAGING_E2E_BASE_URL must be a valid absolute URL.'); }
+          if (url.protocol !== 'https:') throw new Error('Staging E2E target must use HTTPS.');
+          const hostname = url.hostname.toLowerCase();
+          if (['api.rentitease.com', 'rentitease.com', 'www.rentitease.com'].includes(hostname)) {
+            throw new Error('Refusing to run mutating E2E tests against a production RentItEase host.');
+          }
+          if (!/(staging|stage|test|e2e)/i.test(hostname)) {
+            throw new Error('Staging hostname must visibly contain staging, stage, test, or e2e; use a dedicated non-production host.');
+          }
+          if (url.pathname !== '/' || url.username || url.password || url.search || url.hash) {
+            throw new Error('STAGING_E2E_BASE_URL must not contain credentials, query parameters, or fragments.');
+          }
+          const required = [
+            'E2E_TENANT_EMAIL', 'E2E_TENANT_PASSWORD',
+            'E2E_OWNER_EMAIL', 'E2E_OWNER_PASSWORD',
+            'E2E_OTHER_OWNER_EMAIL', 'E2E_OTHER_OWNER_PASSWORD',
+            'E2E_ADMIN_EMAIL', 'E2E_ADMIN_PASSWORD',
+            'E2E_RAZORPAY_KEY_SECRET', 'E2E_RAZORPAY_WEBHOOK_SECRET',
+          ];
+          const missing = required.filter((key) => !process.env[key]);
+          if (missing.length) throw new Error('Missing required staging secrets: ' + missing.join(', '));
+          console.log('Staging target validated; URL and account identifiers are intentionally not logged.');
+          NODE
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies and generate Prisma client
+        run: |
+          npm ci
+          npx prisma generate
+
+      - name: Confirm staging API health
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors \
+            "${E2E_BASE_URL%/}${E2E_API_PREFIX}/health" >/dev/null
+          echo "Staging health check passed."
+
+      - name: Marketplace E2E (SALE, LEASE, SITE_SALE, enquiries, IDOR)
+        run: npx jest --config test/jest-release-e2e.json --runInBand --verbose test/release/marketplace.e2e-spec.ts
+
+      - name: Rental property regression
+        run: npx jest --config test/jest-release-e2e.json --runInBand --verbose test/release/property.e2e-spec.ts
+
+      - name: Booking regression
+        run: npx jest --config test/jest-release-e2e.json --runInBand --verbose test/release/booking.e2e-spec.ts
+
+      - name: Payment regression (staging test gateway only)
+        run: npx jest --config test/jest-release-e2e.json --runInBand --verbose test/release/payment.e2e-spec.ts
+
+      - name: Lease lifecycle regression
+        run: npx jest --config test/jest-release-e2e.json --runInBand --verbose test/release/lease-lifecycle.e2e-spec.ts
