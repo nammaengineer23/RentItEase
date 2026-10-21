@@ -78,7 +78,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_upgrade_audit?schema=public
         run: |
-          git fetch origin main
+          git fetch origin main:refs/remotes/origin/main
           mkdir -p /tmp/rentitease-base
           git archive origin/main backend/prisma | tar -x -C /tmp/rentitease-base
           npx prisma migrate deploy --schema /tmp/rentitease-base/backend/prisma/schema.prisma
@@ -90,4 +90,4 @@ jobs:
         run: |
           npx prisma migrate deploy
           npx prisma migrate status
-          npx prisma migrate diff --from-schema-datasource ./prisma/schema.prisma --to-schema-datamodel ./prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --exit-code
+          npx prisma migrate diff --from-schema-datasource ./prisma/schema.prisma --to-schema-datamodel ./prisma/schema.prisma --exit-code
