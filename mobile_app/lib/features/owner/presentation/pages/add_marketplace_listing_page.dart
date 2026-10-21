@@ -106,7 +106,7 @@ class _AddMarketplaceListingPageState
   }
 
   Future<void> _submit() async {
-    if (!_marketplaceEnabled) return;
+    if (!_marketplaceEnabled || _saving) return;
     if (!_formKey.currentState!.validate()) return;
     if (_category == 'LEASE' && (int.tryParse(_leaseMonths.text) ?? 0) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
