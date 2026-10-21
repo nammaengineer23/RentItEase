@@ -47,10 +47,14 @@ jobs:
           let url;
           try { url = new URL(raw); } catch { throw new Error('STAGING_E2E_BASE_URL must be a valid absolute URL.'); }
           if (url.protocol !== 'https:') throw new Error('Staging E2E target must use HTTPS.');
-          if (['api.rentitease.com', 'rentitease.com', 'www.rentitease.com'].includes(url.hostname.toLowerCase())) {
+          const hostname = url.hostname.toLowerCase();
+          if (['api.rentitease.com', 'rentitease.com', 'www.rentitease.com'].includes(hostname)) {
             throw new Error('Refusing to run mutating E2E tests against a production RentItEase host.');
           }
-          if (url.username || url.password || url.search || url.hash) {
+          if (!/(staging|stage|test|e2e)/i.test(hostname)) {
+            throw new Error('Staging hostname must visibly contain staging, stage, test, or e2e; use a dedicated non-production host.');
+          }
+          if (url.pathname !== '/' || url.username || url.password || url.search || url.hash) {
             throw new Error('STAGING_E2E_BASE_URL must not contain credentials, query parameters, or fragments.');
           }
           const required = [
