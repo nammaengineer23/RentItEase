@@ -46,7 +46,7 @@ export class PropertiesService {
     }
     const hasSiteFields = data.landArea !== undefined || data.landAreaUnit !== undefined;
     const hasLeaseFields = data.leaseTermMonths !== undefined || data.leaseRenewalTerms !== undefined;
-    const hasSaleFields = data.askingPrice !== undefined || data.priceNegotiable !== undefined;
+    const hasSaleFields = data.askingPrice !== undefined;
 
     // Reject contradictory category-specific data rather than silently storing
     // a mixed listing that the UI and search filters may interpret differently.
