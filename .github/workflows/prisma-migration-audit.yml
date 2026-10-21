@@ -79,8 +79,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_upgrade_audit?schema=public
         run: |
           git fetch origin main:refs/remotes/origin/main
-          mkdir -p /tmp/rentitease-base
-          git archive origin/main | tar -x -C /tmp/rentitease-base
+          git worktree add --detach /tmp/rentitease-base origin/main
           npx prisma migrate deploy --schema /tmp/rentitease-base/backend/prisma/schema.prisma
 
       - name: Upgrade existing-schema fixture with PR migrations
