@@ -44,6 +44,24 @@ export class PropertiesService {
     if (type === PropertyTransactionType.LEASE && !(Number(data.leaseTermMonths) > 0)) {
       throw new BadRequestException('A positive leaseTermMonths value is required for lease listings.');
     }
+    const hasSiteFields = data.landArea !== undefined || data.landAreaUnit !== undefined;
+    const hasLeaseFields = data.leaseTermMonths !== undefined || data.leaseRenewalTerms !== undefined;
+    const hasSaleFields = data.askingPrice !== undefined || data.priceNegotiable !== undefined;
+
+    // Reject contradictory category-specific data rather than silently storing
+    // a mixed listing that the UI and search filters may interpret differently.
+    if (type === PropertyTransactionType.RENT && (hasSiteFields || hasLeaseFields || hasSaleFields)) {
+      throw new BadRequestException('Rental listings cannot include sale, site-sale, or lease-specific fields.');
+    }
+    if (type === PropertyTransactionType.SALE && (hasSiteFields || hasLeaseFields)) {
+      throw new BadRequestException('Sale listings cannot include site-sale or lease-specific fields.');
+    }
+    if (type === PropertyTransactionType.LEASE && (hasSiteFields || hasSaleFields)) {
+      throw new BadRequestException('Lease listings cannot include sale or site-sale-specific fields.');
+    }
+    if (type === PropertyTransactionType.SITE_SALE && hasLeaseFields) {
+      throw new BadRequestException('Site-sale listings cannot include lease-specific fields.');
+    }
     if (type === PropertyTransactionType.SITE_SALE && (!(Number(data.landArea) > 0) || !data.landAreaUnit)) {
       throw new BadRequestException('Site-sale listings require a positive landArea and landAreaUnit.');
     }
