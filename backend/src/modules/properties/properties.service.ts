@@ -44,9 +44,9 @@ export class PropertiesService {
     if (type === PropertyTransactionType.LEASE && !(Number(data.leaseTermMonths) > 0)) {
       throw new BadRequestException('A positive leaseTermMonths value is required for lease listings.');
     }
-    const hasSiteFields = data.landArea !== undefined || data.landAreaUnit !== undefined;
-    const hasLeaseFields = data.leaseTermMonths !== undefined || data.leaseRenewalTerms !== undefined;
-    const hasSaleFields = data.askingPrice !== undefined;
+    const hasSiteFields = data.landArea != null || data.landAreaUnit != null;
+    const hasLeaseFields = data.leaseTermMonths != null || data.leaseRenewalTerms != null;
+    const hasSaleFields = data.askingPrice != null;
 
     // Reject contradictory category-specific data rather than silently storing
     // a mixed listing that the UI and search filters may interpret differently.
