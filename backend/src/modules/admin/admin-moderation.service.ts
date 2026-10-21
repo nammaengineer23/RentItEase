@@ -45,6 +45,9 @@ export class AdminModerationService {
     if (!Object.values(PropertyDocumentReviewStatus).includes(status)) {
       throw new BadRequestException('Invalid property document review status.');
     }
+    if (status === PropertyDocumentReviewStatus.REJECTED && !context?.reason?.trim()) {
+      throw new BadRequestException('A rejection reason is required for document review rejection.');
+    }
     const property = await this.prisma.property.findUnique({ where: { id } });
     if (!property) throw new NotFoundException('Property not found.');
 
