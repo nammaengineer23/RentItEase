@@ -80,7 +80,7 @@ jobs:
         run: |
           git fetch origin main:refs/remotes/origin/main
           mkdir -p /tmp/rentitease-base
-          git archive origin/main backend/prisma | tar -x -C /tmp/rentitease-base
+          git archive origin/main | tar -x -C /tmp/rentitease-base
           npx prisma migrate deploy --schema /tmp/rentitease-base/backend/prisma/schema.prisma
 
       - name: Upgrade existing-schema fixture with PR migrations
