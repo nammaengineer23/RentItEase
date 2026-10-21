@@ -25,6 +25,14 @@ describe('PropertiesService marketplace category validation', () => {
     ['SITE_SALE', { askingPrice: 100000, landArea: 100 }],
     ['LEASE', { leaseTermMonths: 0 }],
     ['LEASE', { leaseTermMonths: -12 }],
+    ['RENT', { askingPrice: 100000 }],
+    ['RENT', { leaseTermMonths: 12 }],
+    ['RENT', { landArea: 100, landAreaUnit: 'SQ_FT' }],
+    ['SALE', { askingPrice: 100000, leaseTermMonths: 12 }],
+    ['SALE', { askingPrice: 100000, landArea: 100, landAreaUnit: 'SQ_FT' }],
+    ['LEASE', { leaseTermMonths: 12, askingPrice: 100000 }],
+    ['LEASE', { leaseTermMonths: 12, landArea: 100, landAreaUnit: 'SQ_FT' }],
+    ['SITE_SALE', { askingPrice: 100000, landArea: 100, landAreaUnit: 'SQ_FT', leaseTermMonths: 12 }],
   ] as const)('rejects invalid %s fields', async (transactionType, fields) => {
     await expect(
       service.create({ transactionType: transactionType as PropertyTransactionType, ...fields } as any, owner),
