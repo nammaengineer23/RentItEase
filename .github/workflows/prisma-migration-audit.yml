@@ -35,6 +35,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -66,3 +68,25 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_migration_audit?schema=public
           SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_migration_shadow?schema=public
         run: npx prisma migrate diff --from-migrations ./prisma/migrations --to-schema-datamodel ./prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --exit-code
+
+      - name: Create disposable upgrade-test database
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d postgres -c 'CREATE DATABASE rentitease_upgrade_audit;'
+
+      - name: Apply base branch migrations to existing-schema fixture
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_upgrade_audit?schema=public
+        run: |
+          git fetch origin main:refs/remotes/origin/main
+          git worktree add --detach /tmp/rentitease-base origin/main
+          npx prisma migrate deploy --schema /tmp/rentitease-base/backend/prisma/schema.prisma
+
+      - name: Upgrade existing-schema fixture with PR migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_upgrade_audit?schema=public
+          SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rentitease_migration_shadow?schema=public
+        run: |
+          npx prisma migrate deploy
+          npx prisma migrate status
+          npx prisma migrate diff --from-schema-datasource ./prisma/schema.prisma --to-schema-datamodel ./prisma/schema.prisma --exit-code

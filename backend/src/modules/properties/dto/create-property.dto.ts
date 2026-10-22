@@ -18,6 +18,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   FurnishingType,
   PropertyType,
+  PropertyTransactionType,
 } from '@prisma/client';
 
 export class CreatePropertyDto {
@@ -208,6 +209,84 @@ export class CreatePropertyDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
   dailyRent?: number;
+
+  @ApiProperty({ enum: PropertyTransactionType, required: false, default: PropertyTransactionType.RENT })
+  @IsOptional()
+  @IsEnum(PropertyTransactionType)
+  transactionType?: PropertyTransactionType;
+
+  @ApiProperty({ required: false, example: 25000000, description: 'Asking price in INR for sale listings' })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsPositive()
+  askingPrice?: number;
+
+  @ApiProperty({ required: false, default: false })
+  @IsOptional()
+  @IsBoolean()
+  priceNegotiable?: boolean;
+
+  @ApiProperty({ required: false, example: 24, description: 'Lease duration in months' })
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  @Max(600)
+  leaseTermMonths?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  leaseRenewalTerms?: string;
+
+  @ApiProperty({ required: false, example: 1200 })
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  @Max(100000000)
+  landArea?: number;
+
+  @ApiProperty({ required: false, example: 'sq_ft' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  landAreaUnit?: string;
+
+  @ApiProperty({ required: false, example: 30 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100000)
+  siteFrontage?: number;
+
+  @ApiProperty({ required: false, example: 'NORTH' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  siteFacing?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  roadAccess?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  zoning?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  layoutApprovalDetails?: string;
+
+  @ApiProperty({ required: false, description: 'Non-sensitive survey reference only; never upload private identity/document numbers here.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  surveyReference?: string;
 
   @ApiProperty({
     required: false,

@@ -38,6 +38,12 @@ class OwnerPropertyEntity {
     required this.visitRequests,
     this.imageUrls = const [],
     this.amenities = const [],
+    this.transactionType = 'RENT',
+    this.askingPrice,
+    this.leaseTermMonths,
+    this.landArea,
+    this.landAreaUnit,
+    this.roadAccess,
   });
 
   final String id;
@@ -91,4 +97,10 @@ class OwnerPropertyEntity {
 
   final List<String> imageUrls;
   final List<String> amenities;
+  final String transactionType;
+  final double? askingPrice;
+  final int? leaseTermMonths;
+  final double? landArea;
+  final String? landAreaUnit;
+  final bool? roadAccess;
 }

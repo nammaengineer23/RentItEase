@@ -1,11 +1,12 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma.service';
-import { MembershipStatus, Prisma, UserRole } from '@prisma/client';
+import { MembershipStatus, Prisma, PropertyTransactionType, UserRole } from '@prisma/client';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -21,12 +22,57 @@ export class PropertiesService {
     private readonly storageService: StorageService,
   ) {}
 
+  private marketplaceEnabled(): boolean {
+    return process.env.PROPERTY_MARKETPLACE_ENABLED === 'true';
+  }
+
+  private serializePublicProperty(property: any) {
+    const serialized = serializePrisma(property) as Record<string, any>;
+    // Survey references can expose private title/document identifiers; never return them on public discovery/detail APIs.
+    delete serialized.surveyReference;
+    return serialized;
+  }
+
+  private validateMarketplaceListing(data: Partial<CreatePropertyDto>): void {
+    const type = data.transactionType ?? PropertyTransactionType.RENT;
+    if (type !== PropertyTransactionType.RENT && !this.marketplaceEnabled()) {
+      throw new BadRequestException('Sales and long-term lease listings are not enabled yet.');
+    }
+    if ((type === PropertyTransactionType.SALE || type === PropertyTransactionType.SITE_SALE) && !(Number(data.askingPrice) > 0)) {
+      throw new BadRequestException('A positive askingPrice is required for sale listings.');
+    }
+    if (type === PropertyTransactionType.LEASE && !(Number(data.leaseTermMonths) > 0)) {
+      throw new BadRequestException('A positive leaseTermMonths value is required for lease listings.');
+    }
+    const hasSiteFields = data.landArea != null || data.landAreaUnit != null;
+    const hasLeaseFields = data.leaseTermMonths != null || data.leaseRenewalTerms != null;
+    const hasSaleFields = data.askingPrice != null;
+
+    // Reject contradictory category-specific data rather than silently storing
+    // a mixed listing that the UI and search filters may interpret differently.
+    if (type === PropertyTransactionType.RENT && (hasSiteFields || hasLeaseFields || hasSaleFields)) {
+      throw new BadRequestException('Rental listings cannot include sale, site-sale, or lease-specific fields.');
+    }
+    if (type === PropertyTransactionType.SALE && (hasSiteFields || hasLeaseFields)) {
+      throw new BadRequestException('Sale listings cannot include site-sale or lease-specific fields.');
+    }
+    if (type === PropertyTransactionType.LEASE && (hasSiteFields || hasSaleFields)) {
+      throw new BadRequestException('Lease listings cannot include sale or site-sale-specific fields.');
+    }
+    if (type === PropertyTransactionType.SITE_SALE && hasLeaseFields) {
+      throw new BadRequestException('Site-sale listings cannot include lease-specific fields.');
+    }
+    if (type === PropertyTransactionType.SITE_SALE && (!(Number(data.landArea) > 0) || !data.landAreaUnit)) {
+      throw new BadRequestException('Site-sale listings require a positive landArea and landAreaUnit.');
+    }
+  }
 
   // ===========================
   // Create Property
   // ===========================
 
   async create(createPropertyDto: CreatePropertyDto, user: any) {
+    this.validateMarketplaceListing(createPropertyDto);
     const { amenityIds, ...propertyData } = createPropertyDto;
 
     const property = await this.prisma.property.create({
@@ -75,7 +121,7 @@ export class PropertiesService {
     return {
       success: true,
       message: 'Property created successfully.',
-      property: serializePrisma(property),
+      property: this.serializePublicProperty(property),
     };
   }
 
@@ -100,11 +146,18 @@ export class PropertiesService {
       petFriendly,
       isAvailable,
       dailyRentEnabled,
+      transactionType,
       minDailyRent,
       maxDailyRent,
     } = filterDto;
 
     const where: Prisma.PropertyWhereInput = { isVerified: true };
+    // The rollout flag is enforced server-side; when off, public search can only return rentals.
+    if (this.marketplaceEnabled()) {
+      if (transactionType) where.transactionType = transactionType;
+    } else {
+      where.transactionType = PropertyTransactionType.RENT;
+    }
 
     if (search) {
       where.OR = [
@@ -270,7 +323,7 @@ export class PropertiesService {
           : 0;
 
       return {
-        ...serializePrisma(property),
+        ...this.serializePublicProperty(property),
         averageRating,
         totalReviews: property.reviews.length,
       };
@@ -302,6 +355,7 @@ export class PropertiesService {
           where: {
             isAvailable: true,
             isVerified: true,
+            transactionType: PropertyTransactionType.RENT,
           },
           take: 10,
           orderBy: {
@@ -328,6 +382,7 @@ export class PropertiesService {
           where: {
             isAvailable: true,
             isVerified: true,
+            ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
           },
           take: 10,
           orderBy: {
@@ -348,6 +403,7 @@ export class PropertiesService {
           where: {
             isAvailable: true,
             isVerified: true,
+            ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
           },
           take: 10,
           orderBy: {
@@ -372,6 +428,7 @@ export class PropertiesService {
           where: {
             isAvailable: true,
             isVerified: true,
+            ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
           },
           take: 10,
           include: {
@@ -388,6 +445,7 @@ export class PropertiesService {
           where: {
             isAvailable: true,
             isVerified: true,
+            ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
           },
           _count: {
             id: true,
@@ -414,7 +472,7 @@ export class PropertiesService {
             : 0;
 
         return {
-          ...serializePrisma(property),
+          ...this.serializePublicProperty(property),
           averageRating,
           totalReviews: property.reviews.length,
         };
@@ -424,12 +482,12 @@ export class PropertiesService {
     return {
       success: true,
 
-      featured: featured.map((p) => serializePrisma(p)),
+      featured: featured.map((p) => this.serializePublicProperty(p)),
 
-      latest: latest.map((p) => serializePrisma(p)),
+      latest: latest.map((p) => this.serializePublicProperty(p)),
 
       mostFavorited: mostFavorited.map((p) => ({
-        ...serializePrisma(p),
+        ...this.serializePublicProperty(p),
         favorites: p._count.favorites,
       })),
 
@@ -537,6 +595,7 @@ export class PropertiesService {
       where: {
         isAvailable: true,
         isVerified: true,
+        ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
         latitude: {
           gte: minLatitude,
           lte: maxLatitude,
@@ -671,7 +730,7 @@ export class PropertiesService {
       },
     });
 
-    if (!property) {
+    if (!property || (!this.marketplaceEnabled() && property.transactionType !== PropertyTransactionType.RENT)) {
       throw new NotFoundException('Property not found.');
     }
 
@@ -688,7 +747,7 @@ export class PropertiesService {
     return {
       success: true,
       property: {
-        ...serializePrisma(property),
+        ...this.serializePublicProperty(property),
         views: property.viewCount,
         totalViews: property.viewCount,
         averageRating,
@@ -707,6 +766,7 @@ export class PropertiesService {
         id: true,
         ownerId: true,
         isVerified: true,
+        transactionType: true,
         owner: {
           select: {
             id: true,
@@ -718,7 +778,7 @@ export class PropertiesService {
       },
     });
 
-    if (!property || (!property.isVerified && property.ownerId !== user.id)) {
+    if (!property || (!this.marketplaceEnabled() && property.transactionType !== PropertyTransactionType.RENT) || (!property.isVerified && property.ownerId !== user.id)) {
       throw new NotFoundException('Property not found.');
     }
 
@@ -790,6 +850,7 @@ export class PropertiesService {
 
         isAvailable: true,
         isVerified: true,
+        ...(this.marketplaceEnabled() ? {} : { transactionType: PropertyTransactionType.RENT }),
 
         city: property.city,
 
@@ -850,7 +911,7 @@ export class PropertiesService {
           : 0;
 
       return {
-        ...serializePrisma(property),
+        ...this.serializePublicProperty(property),
         averageRating,
         totalReviews: property.reviews.length,
         totalFavorites: property.favorites.length,
@@ -889,7 +950,35 @@ export class PropertiesService {
       );
     }
 
+    const nextTransactionType = updatePropertyDto.transactionType ?? property.transactionType;
+    const categoryChanged = nextTransactionType !== property.transactionType;
+    this.validateMarketplaceListing({
+      transactionType: nextTransactionType,
+      // When changing category, validate the new category's submitted fields,
+      // not stale fields from the previous category. Required fields must be
+      // supplied again and the write below clears fields that no longer apply.
+      askingPrice: categoryChanged
+        ? updatePropertyDto.askingPrice
+        : updatePropertyDto.askingPrice ?? (property.askingPrice == null ? undefined : Number(property.askingPrice)),
+      leaseTermMonths: categoryChanged
+        ? updatePropertyDto.leaseTermMonths
+        : updatePropertyDto.leaseTermMonths ?? property.leaseTermMonths ?? undefined,
+      leaseRenewalTerms: categoryChanged
+        ? updatePropertyDto.leaseRenewalTerms
+        : updatePropertyDto.leaseRenewalTerms ?? property.leaseRenewalTerms ?? undefined,
+      landArea: categoryChanged ? updatePropertyDto.landArea : updatePropertyDto.landArea ?? property.landArea ?? undefined,
+      landAreaUnit: categoryChanged ? updatePropertyDto.landAreaUnit : updatePropertyDto.landAreaUnit ?? property.landAreaUnit ?? undefined,
+    });
     const { amenityIds, ...propertyData } = updatePropertyDto;
+    const resetCategoryFields = categoryChanged
+      ? nextTransactionType === PropertyTransactionType.RENT
+        ? { askingPrice: null, priceNegotiable: false, leaseTermMonths: null, leaseRenewalTerms: null, landArea: null, landAreaUnit: null }
+        : nextTransactionType === PropertyTransactionType.SALE
+          ? { leaseTermMonths: null, leaseRenewalTerms: null, landArea: null, landAreaUnit: null }
+          : nextTransactionType === PropertyTransactionType.LEASE
+            ? { askingPrice: null, priceNegotiable: false, landArea: null, landAreaUnit: null }
+            : { leaseTermMonths: null, leaseRenewalTerms: null }
+      : {};
 
     // Owners may not make an unverified property publicly available. Admin
     // verification remains the authority for publishing a new listing.
@@ -904,6 +993,7 @@ export class PropertiesService {
 
       data: {
         ...propertyData,
+        ...resetCategoryFields,
         // Every owner edit requires a fresh admin review before the listing
         // becomes public again. Admin edits preserve the approval state.
         ...(user.role !== UserRole.ADMIN

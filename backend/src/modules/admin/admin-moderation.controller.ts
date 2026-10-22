@@ -1,6 +1,6 @@
-import { Body, Controller, Param, Patch, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
+import { PropertyDocumentReviewStatus, UserRole } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -25,6 +25,27 @@ export class AdminModerationController {
       device: request.headers?.['user-agent'] ?? null,
       reason: reason?.trim() || null,
     };
+  }
+
+
+  @Get('properties/document-review')
+  @ApiOperation({ summary: 'List properties awaiting document review' })
+  listPropertiesForDocumentReview() {
+    return this.moderation.listPropertiesForDocumentReview();
+  }
+
+  @Patch('properties/:id/document-review')
+  @ApiOperation({ summary: 'Set property document review status (does not verify/publish the property)' })
+  updatePropertyDocumentReview(
+    @Param('id') id: string,
+    @Body() body: { status: PropertyDocumentReviewStatus; reason?: string },
+    @Req() request: any,
+  ) {
+    return this.moderation.updatePropertyDocumentReview(
+      id,
+      body.status,
+      this.context(request, body.reason),
+    );
   }
 
   @Patch('reviews/:id')
