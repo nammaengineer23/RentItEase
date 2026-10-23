@@ -1,0 +1,87 @@
+name: RentItEase - Isolated Prisma Migration Audit
+
+on:
+  push:
+    branches:
+      - rentitease-pr92-e2e
+    paths:
+      - '.github/workflows/prisma-isolated-migration-audit.yml'
+      - 'backend/prisma/**'
+      - 'backend/scripts/audit-prisma-migrations.ts'
+      - 'backend/package.json'
+      - 'backend/package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rentitease-isolated-prisma-migration-audit
+  cancel-in-progress: false
+
+jobs:
+  migration-audit:
+    name: Apply migrations to isolated Neon test schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      MIGRATION_TEST_DATABASE_URL: ${{ secrets.MIGRATION_TEST_DATABASE_URL }}
+      SHADOW_DATABASE_URL: ${{ secrets.SHADOW_DATABASE_URL }}
+
+    steps:
+      - name: Checkout isolated verification branch
+        uses: actions/checkout@v4
+        with:
+          ref: rentitease-pr92-e2e
+
+      - name: Validate isolated database targets without printing credentials
+        shell: bash
+        run: |
+          node <<'NODE'
+          function validate(name, expectedSchema) {
+            const raw = process.env[name];
+            if (!raw) throw new Error('Missing required GitHub Actions secret: ' + name);
+            let url;
+            try { url = new URL(raw); } catch { throw new Error(name + ' is not a valid PostgreSQL URL.'); }
+            if (!['postgres:', 'postgresql:'].includes(url.protocol)) {
+              throw new Error(name + ' must use PostgreSQL.');
+            }
+            if (!url.hostname || !url.pathname || url.pathname === '/') {
+              throw new Error(name + ' must include a database name.');
+            }
+            if (['api.rentitease.com', 'rentitease.com', 'www.rentitease.com'].includes(url.hostname.toLowerCase())) {
+              throw new Error('Refusing production host for ' + name + '.');
+            }
+            if (url.searchParams.get('schema') !== expectedSchema) {
+              throw new Error(name + ' must target schema=' + expectedSchema + '.');
+            }
+            return { host: url.hostname, database: url.pathname, schema: expectedSchema };
+          }
+          const test = validate('MIGRATION_TEST_DATABASE_URL', 'rentitease_migration_test');
+          const shadow = validate('SHADOW_DATABASE_URL', 'rentitease_migration_shadow');
+          if (test.host !== shadow.host || test.database !== shadow.database) {
+            console.log('Test and shadow URLs use distinct database targets; host/database differ.');
+          } else {
+            console.log('Test and shadow schemas validated on the same isolated Neon database.');
+          }
+          console.log('Database target validation passed; credentials and full URLs are not logged.');
+          NODE
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run static audit and apply complete migration chain to isolated test schema
+        run: npx ts-node scripts/audit-prisma-migrations.ts
