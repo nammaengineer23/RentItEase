@@ -42,7 +42,7 @@ jobs:
         run: |
           node <<'NODE'
           const fs = require('node:fs');
-function validate(name) {
+          function validate(name) {
             const raw = process.env[name];
             if (!raw) throw new Error('Missing required GitHub Actions secret: ' + name);
             let url;
@@ -56,17 +56,22 @@ function validate(name) {
             if (['api.rentitease.com', 'rentitease.com', 'www.rentitease.com'].includes(url.hostname.toLowerCase())) {
               throw new Error('Refusing production host for ' + name + '.');
             }
-            if (url.searchParams.get('schema') !== expectedSchema) {
-              throw new Error(name + ' must target schema=' + expectedSchema + '.');
+            const suppliedSchema = url.searchParams.get('schema');
+            if (suppliedSchema && !['public', 'rentitease_migration_test'].includes(suppliedSchema)) {
+              throw new Error(name + ' has an unexpected schema parameter.');
             }
-            return { host: url.hostname, database: url.pathname, schema: expectedSchema };
+            // Historical migrations explicitly inspect/modify public. Normalize only
+            // these disposable Neon branch URLs so the audit matches migration SQL.
+            url.searchParams.set('schema', 'public');
+            fs.appendFileSync(process.env.GITHUB_ENV, name + '=' + url.toString() + '\\n');
+            return { host: url.hostname, database: url.pathname, schema: 'public' };
           }
-          const test = validate('MIGRATION_TEST_DATABASE_URL', 'public');
-          const shadow = validate('SHADOW_DATABASE_URL', 'public');
+          const test = validate('MIGRATION_TEST_DATABASE_URL');
+          const shadow = validate('SHADOW_DATABASE_URL');
           if (test.host !== shadow.host || test.database !== shadow.database) {
             console.log('Test and shadow URLs use distinct database targets; host/database differ.');
           } else {
-            console.log('Test and shadow URLs both target schema=public on the isolated Neon branches.');
+            console.log('Test and shadow URLs both target schema=public on isolated Neon branches.');
           }
           console.log('Database target validation passed; credentials and full URLs are not logged.');
           NODE
