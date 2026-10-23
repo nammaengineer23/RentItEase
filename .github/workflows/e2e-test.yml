@@ -83,6 +83,10 @@ jobs:
       E2E_OWNER_EMAIL: ${{ secrets.E2E_OWNER_EMAIL }}
       E2E_OWNER_PASSWORD: ${{ secrets.E2E_OWNER_PASSWORD }}
 
+      # Second owner: required for marketplace ownership / IDOR regression tests
+      E2E_OTHER_OWNER_EMAIL: ${{ secrets.E2E_OTHER_OWNER_EMAIL }}
+      E2E_OTHER_OWNER_PASSWORD: ${{ secrets.E2E_OTHER_OWNER_PASSWORD }}
+
       # Admin
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
@@ -121,6 +125,8 @@ jobs:
           test -n "$E2E_OWNER_PASSWORD" && echo "E2E_OWNER_PASSWORD: configured" || (echo "E2E_OWNER_PASSWORD: MISSING" && exit 1)
           test -n "$E2E_ADMIN_EMAIL" && echo "E2E_ADMIN_EMAIL: configured" || (echo "E2E_ADMIN_EMAIL: MISSING" && exit 1)
           test -n "$E2E_ADMIN_PASSWORD" && echo "E2E_ADMIN_PASSWORD: configured" || (echo "E2E_ADMIN_PASSWORD: MISSING" && exit 1)
+          test -n "$E2E_OTHER_OWNER_EMAIL" && echo "E2E_OTHER_OWNER_EMAIL: configured" || (echo "E2E_OTHER_OWNER_EMAIL: MISSING (required for marketplace ownership tests)" && exit 1)
+          test -n "$E2E_OTHER_OWNER_PASSWORD" && echo "E2E_OTHER_OWNER_PASSWORD: configured" || (echo "E2E_OTHER_OWNER_PASSWORD: MISSING (required for marketplace ownership tests)" && exit 1)
 
       - name: Wait for production deployment to stabilize
         run: |
