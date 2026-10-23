@@ -83,5 +83,13 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
-      - name: Run static audit and apply complete migration chain to isolated test schema
+      # This workflow exclusively targets the validated, disposable test schema.
+      # Reset that schema first so a previous failed migration record (P3009)
+      # cannot block a clean replay. Never point this secret at production.
+      - name: Reset only the isolated migration test schema
+        env:
+          DATABASE_URL: ${{ secrets.MIGRATION_TEST_DATABASE_URL }}
+        run: npx prisma migrate reset --force --schema prisma/schema.prisma
+
+      - name: Run static audit and verify complete migration chain
         run: npx ts-node scripts/audit-prisma-migrations.ts
