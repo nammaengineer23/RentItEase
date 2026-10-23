@@ -4,9 +4,14 @@
 
 DO $$
 BEGIN
+  -- Check the current migration target schema, not every schema in the database.
+  -- Neon staging schemas may coexist with an existing public schema containing
+  -- an enum of the same name.
   IF NOT EXISTS (
-    SELECT 1 FROM pg_type
+    SELECT 1
+    FROM pg_type
     WHERE typname = 'PropertyLifecycleStatus'
+      AND typnamespace = current_schema()::regnamespace
   ) THEN
     CREATE TYPE "PropertyLifecycleStatus" AS ENUM (
       'DRAFT',
