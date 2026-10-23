@@ -2,6 +2,12 @@ name: RentItEase - Isolated Staging E2E
 
 on:
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or commit to test (must contain the staging workflow and marketplace tests)
+        required: false
+        default: main
+        type: string
 
 permissions:
   contents: read
@@ -32,14 +38,15 @@ jobs:
       E2E_RAZORPAY_KEY_SECRET: ${{ secrets.STAGING_E2E_RAZORPAY_KEY_SECRET }}
       E2E_RAZORPAY_WEBHOOK_SECRET: ${{ secrets.STAGING_E2E_RAZORPAY_WEBHOOK_SECRET }}
       E2E_STRICT: "true"
+      E2E_EXPECT_MARKETPLACE_ENABLED: "true"
       E2E_RUN_ID: ${{ github.run_id }}
 
     steps:
       - name: Checkout PR branch under test
         uses: actions/checkout@v4
         with:
-          # workflow_dispatch must exist on the default branch; keep the test target explicit.
-          ref: feat/property-sales-lease-sites
+          # The staging API must be a dedicated non-production deployment with the flag enabled.
+          ref: ${{ inputs.ref || 'main' }}
 
       - name: Verify staging target and required secrets
         shell: bash
