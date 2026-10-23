@@ -19,6 +19,8 @@ describe('Staging E2E • Property marketplace', () => {
   const tenantPassword = process.env.E2E_TENANT_PASSWORD;
   const adminEmail = process.env.E2E_ADMIN_EMAIL;
   const adminPassword = process.env.E2E_ADMIN_PASSWORD;
+  // RC1 production verifies the feature remains gated; isolated staging opts in explicitly.
+  const expectMarketplaceEnabled = process.env.E2E_EXPECT_MARKETPLACE_ENABLED === 'true';
 
   let ownerToken = '';
   let otherOwnerToken = '';
@@ -49,7 +51,7 @@ describe('Staging E2E • Property marketplace', () => {
     ]);
   });
 
-  async function createAndApprove(type: 'SALE' | 'LEASE' | 'SITE_SALE') {
+  async function createAndApprove(type: 'SALE' | 'LEASE' | 'SITE_SALE'): Promise<string | null> {
     const title = `${e2eMarker()} Marketplace ${type} ${Date.now()}`;
     const payload: Record<string, unknown> = {
       title,
@@ -87,6 +89,11 @@ describe('Staging E2E • Property marketplace', () => {
     }
 
     const created = await request(apiUrl()).post('/properties').set(auth(ownerToken)).send(payload);
+    if (!expectMarketplaceEnabled) {
+      expect(created.status).toBe(400);
+      expect(JSON.stringify(created.body)).toContain('Sales and long-term lease listings are not enabled yet.');
+      return null;
+    }
     statusOk(created);
     const property = extractData(created.body)?.property ?? extractData(created.body);
     expect(property?.id).toBeTruthy();
@@ -105,6 +112,12 @@ describe('Staging E2E • Property marketplace', () => {
     const browse = await request(apiUrl()).get('/properties').query({ transactionType: type, search: e2eMarker() });
     statusOk(browse);
     const results = unwrapArray(browse.body);
+    if (!expectMarketplaceEnabled) {
+      expect(results.every((item: any) => item.transactionType === 'RENT')).toBe(true);
+      expect(results.some((item: any) => item.transactionType === type)).toBe(false);
+      expect(id).toBeNull();
+      return;
+    }
     expect(results.some((item: any) => item.id === id && item.transactionType === type)).toBe(true);
 
     const detail = await request(apiUrl()).get(`/properties/${id}`);
@@ -112,7 +125,13 @@ describe('Staging E2E • Property marketplace', () => {
     expect((extractData(detail.body)?.property ?? extractData(detail.body))?.transactionType).toBe(type);
   });
 
-  it('routes enquiries to the sender and listing owner, and permits owner status updates', async () => {
+  it(expectMarketplaceEnabled
+    ? 'routes enquiries to the sender and listing owner, and permits owner status updates'
+    : 'keeps marketplace enquiry flow inactive while the feature flag is off', async () => {
+    if (!expectMarketplaceEnabled) {
+      expect(createdListings).toHaveLength(0);
+      return;
+    }
     const listing = createdListings.find((item) => item.type === 'SALE');
     expect(listing).toBeTruthy();
 
