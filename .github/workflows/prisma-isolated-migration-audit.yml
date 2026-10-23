@@ -37,11 +37,12 @@ jobs:
         with:
           ref: rentitease-pr92-e2e
 
-      - name: Validate isolated database targets without printing credentials
+      - name: Validate and normalize isolated database targets without printing credentials
         shell: bash
         run: |
           node <<'NODE'
-          function validate(name, expectedSchema) {
+          const fs = require('node:fs');
+function validate(name) {
             const raw = process.env[name];
             if (!raw) throw new Error('Missing required GitHub Actions secret: ' + name);
             let url;
@@ -88,7 +89,7 @@ jobs:
       # cannot block a clean replay. Never point this secret at production.
       - name: Reset only the isolated migration branch public schema
         env:
-          DATABASE_URL: ${{ secrets.MIGRATION_TEST_DATABASE_URL }}
+          DATABASE_URL: ${{ env.MIGRATION_TEST_DATABASE_URL }}
         run: npx prisma migrate reset --force --schema prisma/schema.prisma
 
       - name: Run static audit and verify complete migration chain
