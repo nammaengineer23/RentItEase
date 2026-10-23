@@ -63,7 +63,7 @@ jobs:
             // Historical migrations explicitly inspect/modify public. Normalize only
             // these disposable Neon branch URLs so the audit matches migration SQL.
             url.searchParams.set('schema', 'public');
-            fs.appendFileSync(process.env.GITHUB_ENV, name + '=' + url.toString() + '\\n');
+            fs.appendFileSync(process.env.GITHUB_ENV, name + '=' + url.toString() + '\n');
             return { host: url.hostname, database: url.pathname, schema: 'public' };
           }
           const test = validate('MIGRATION_TEST_DATABASE_URL');
