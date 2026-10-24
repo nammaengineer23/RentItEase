@@ -103,6 +103,16 @@ android {
 
     buildTypes {
         release {
+            // Enable R8 code shrinking and resource shrinking for
+            // release artifacts. Keep rules preserve Razorpay's
+            // callback/reflection entry points.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+
             if (keystorePropertiesFile.exists()) {
                 signingConfig =
                     signingConfigs.getByName("release")
