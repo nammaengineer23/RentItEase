@@ -1,0 +1,42 @@
+name: Seed Isolated E2E Accounts
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      E2E_DATABASE_URL: ${{ secrets.STAGING_E2E_DATABASE_URL }}
+      E2E_ALLOWED_DATABASE_HOST: ${{ secrets.STAGING_E2E_ALLOWED_DATABASE_HOST }}
+      E2E_CONFIRMED_NEON_BRANCH: rentitease-e2e-fresh
+      E2E_TENANT_EMAIL: ${{ secrets.E2E_TENANT_EMAIL }}
+      E2E_TENANT_PASSWORD: ${{ secrets.E2E_TENANT_PASSWORD }}
+      E2E_OWNER_EMAIL: ${{ secrets.E2E_OWNER_EMAIL }}
+      E2E_OWNER_PASSWORD: ${{ secrets.E2E_OWNER_PASSWORD }}
+      E2E_OTHER_OWNER_EMAIL: ${{ secrets.E2E_OTHER_OWNER_EMAIL }}
+      E2E_OTHER_OWNER_PASSWORD: ${{ secrets.E2E_OTHER_OWNER_PASSWORD }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/property-sales-lease-sites
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci && npx prisma generate
+      - name: Validate required secrets
+        run: |
+          node -e "for (const k of ['E2E_DATABASE_URL','E2E_ALLOWED_DATABASE_HOST','E2E_TENANT_EMAIL','E2E_TENANT_PASSWORD','E2E_OWNER_EMAIL','E2E_OWNER_PASSWORD','E2E_OTHER_OWNER_EMAIL','E2E_OTHER_OWNER_PASSWORD','E2E_ADMIN_EMAIL','E2E_ADMIN_PASSWORD']) if (!process.env[k]) throw new Error('Missing required secret: '+k)"
+      - name: Seed four isolated test accounts
+        run: npx ts-node scripts/seed-isolated-e2e-users.ts
