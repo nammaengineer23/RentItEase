@@ -6,6 +6,8 @@ on:
       - fix/startup-session-restore-loading
     paths:
       - .github/workflows/remediate-backend-audit.yml
+      - backend/package.json
+      - backend/package-lock.json
   workflow_dispatch:
 
 permissions:
@@ -36,7 +38,7 @@ jobs:
         run: |
           # npm audit fix may exit non-zero while still applying safe updates.
           npm audit fix || echo "Initial audit fix left advisories; attempting compatible direct dependency updates."
-          npm update multer @nestjs/platform-express --save
+          npm install @nestjs/platform-express@^11.2.8 multer@^2.5.0 --save
       - name: Verify clean reproducible install
         working-directory: backend
         run: npm ci
