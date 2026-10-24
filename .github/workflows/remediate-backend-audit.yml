@@ -1,0 +1,53 @@
+name: Remediate backend npm audit
+
+on:
+  push:
+    branches:
+      - fix/startup-session-restore-loading
+    paths:
+      - .github/workflows/remediate-backend-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  remediate:
+    name: Resolve compatible backend advisories
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/startup-session-restore-loading
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Apply non-breaking npm security updates
+        working-directory: backend
+        run: npm audit fix
+      - name: Verify clean reproducible install
+        working-directory: backend
+        run: npm ci
+      - name: Require no high or critical production advisories
+        working-directory: backend
+        run: npm audit --omit=dev --audit-level=high
+      - name: Commit updated dependency manifests
+        shell: bash
+        run: |
+          if git diff --quiet -- backend/package.json backend/package-lock.json; then
+            echo "No dependency changes were produced."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/package.json backend/package-lock.json
+          git commit -m "fix(security): remediate backend npm audit advisories"
+          git push origin HEAD:fix/startup-session-restore-loading
