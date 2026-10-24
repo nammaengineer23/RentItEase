@@ -15,8 +15,9 @@ void main() {
         const ProviderScope(child: RentItEaseApp()),
       );
 
-      // Allow the splash page's delayed initialization to progress.
-      await tester.pump(const Duration(seconds: 2));
+      // Advance past the bounded 15-second session-restore timeout. The
+      // app should leave the splash state even when the test has no network.
+      await tester.pump(const Duration(seconds: 16));
 
       // Allow any resulting navigation/rebuilds to complete.
       await tester.pump();
