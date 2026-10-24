@@ -30,16 +30,26 @@ jobs:
       - name: Install locked dependencies
         working-directory: backend
         run: npm ci
-      - name: Apply non-breaking npm security updates
+      - name: Apply compatible dependency updates
         working-directory: backend
-        run: npm audit fix
+        shell: bash
+        run: |
+          # npm audit fix may exit non-zero while still applying safe updates.
+          npm audit fix || echo "Initial audit fix left advisories; attempting compatible direct dependency updates."
+          npm update multer @nestjs/platform-express --save
       - name: Verify clean reproducible install
         working-directory: backend
         run: npm ci
       - name: Require no high or critical production advisories
         working-directory: backend
         run: npm audit --omit=dev --audit-level=high
-      - name: Commit updated dependency manifests
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+      - name: Run backend unit tests
+        working-directory: backend
+        run: npm test -- --runInBand
+      - name: Commit verified dependency manifests
         shell: bash
         run: |
           if git diff --quiet -- backend/package.json backend/package-lock.json; then
