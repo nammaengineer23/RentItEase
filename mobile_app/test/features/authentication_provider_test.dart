@@ -37,6 +37,9 @@ void main() {
       repository: _FakeAuthRepository(),
       pushNotificationService: pushService,
     );
+    // Let the constructor's asynchronous preference load notify listeners
+    // before this test disposes the provider.
+    await Future<void>.delayed(Duration.zero);
 
     await provider.loadSavedSession().timeout(const Duration(seconds: 1));
 
