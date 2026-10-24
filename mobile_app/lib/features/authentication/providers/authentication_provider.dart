@@ -270,21 +270,54 @@ class AuthenticationProvider extends ChangeNotifier {
 
   Future<void> _restoreSavedSession() async {
     try {
-      _authResponse = await _repository.restoreSession();
-      if (_authResponse != null) {
-        await _pushNotificationService.activate();
-      }
-    } catch (error) {
+      // A cold start must not wait indefinitely for the backend to restore the
+      // session. If it is unavailable, render the signed-out flow so the user
+      // can retry instead of leaving the splash screen spinning forever.
+      _authResponse = await _repository
+          .restoreSession()
+          .timeout(const Duration(seconds: 15));
+    } catch (error, stackTrace) {
       // A rejected /auth/me response includes expired, revoked, and inactive
       // accounts. Never keep a stale local session in memory in any of those
       // cases; the backend remains authoritative for account state.
       _authResponse = null;
-      try { await _pushNotificationService.deactivate(); } catch (_) {}
-      try { await FirebaseAuth.instance.signOut(); } catch (_) {}
+      debugPrint('Session restoration failed; showing signed-out flow: $error');
+      debugPrintStack(stackTrace: stackTrace);
     } finally {
+      // Mark restoration complete before optional push-notification setup.
+      // FCM permission/token registration is not required to render the app.
       _sessionRestored = true;
       notifyListeners();
     }
+
+    if (_authResponse != null) {
+      unawaited(_activatePushNotificationsInBackground());
+    } else {
+      unawaited(_clearRejectedSessionInBackground());
+    }
+  }
+
+  Future<void> _activatePushNotificationsInBackground() async {
+    try {
+      await _pushNotificationService
+          .activate()
+          .timeout(const Duration(seconds: 8));
+    } catch (error) {
+      debugPrint('Push notifications deferred during startup: $error');
+    }
+  }
+
+  Future<void> _clearRejectedSessionInBackground() async {
+    try {
+      await _pushNotificationService
+          .deactivate()
+          .timeout(const Duration(seconds: 5));
+    } catch (_) {}
+    try {
+      await FirebaseAuth.instance
+          .signOut()
+          .timeout(const Duration(seconds: 5));
+    } catch (_) {}
   }
 
   Future<void> _saveSession(AuthResponse response) async {

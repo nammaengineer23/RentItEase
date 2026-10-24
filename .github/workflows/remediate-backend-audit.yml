@@ -1,0 +1,75 @@
+name: Remediate backend npm audit
+
+on:
+  push:
+    branches:
+      - fix/startup-session-restore-loading
+    paths:
+      - .github/workflows/remediate-backend-audit.yml
+      - backend/package.json
+      - backend/package-lock.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  remediate:
+    name: Resolve compatible backend advisories
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/startup-session-restore-loading
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Reconcile dependencies and lockfile
+        working-directory: backend
+        run: npm install --no-audit
+      - name: Apply compatible dependency updates
+        working-directory: backend
+        shell: bash
+        run: |
+          # npm audit fix may exit non-zero while still applying safe updates.
+          npm audit fix || echo "Initial audit fix left advisories; attempting compatible direct dependency updates."
+          npm install @nestjs/platform-express@^11.2.8 multer@^2.5.0 --save
+      - name: Commit reconciled lockfile for CI
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/package.json backend/package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "fix(deps): synchronize backend lockfile"
+            git push origin HEAD:fix/startup-session-restore-loading
+          fi
+      - name: Verify clean reproducible install
+        working-directory: backend
+        run: npm ci
+      - name: Require no high or critical production advisories
+        working-directory: backend
+        run: npm audit --omit=dev --audit-level=high
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+      - name: Run backend unit tests
+        working-directory: backend
+        run: npm test -- --runInBand
+      - name: Commit verified dependency manifests
+        shell: bash
+        run: |
+          if git diff --quiet -- backend/package.json backend/package-lock.json; then
+            echo "No dependency changes were produced."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/package.json backend/package-lock.json
+          git commit -m "fix(security): remediate backend npm audit advisories"
+          git push origin HEAD:fix/startup-session-restore-loading

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -5,6 +7,7 @@ import 'package:mobile_app/features/authentication/data/models/auth_response.dar
 import 'package:mobile_app/features/authentication/data/models/login_request.dart';
 import 'package:mobile_app/features/authentication/data/repositories/authentication_repository_impl.dart';
 import 'package:mobile_app/features/authentication/providers/authentication_provider.dart';
+import 'package:mobile_app/features/notifications/services/push_notification_service.dart';
 
 void main() {
   setUp(() {
@@ -25,6 +28,26 @@ void main() {
     expect(provider.errorMessage, isNull);
     expect(provider.authResponse?.user.role, 'OWNER');
 
+    provider.dispose();
+  });
+
+  test('session restoration completes even when push setup stalls', () async {
+    final pushService = _StalledPushNotificationService();
+    final provider = AuthenticationProvider(
+      repository: _FakeAuthRepository(),
+      pushNotificationService: pushService,
+    );
+    // Let the constructor's asynchronous preference load notify listeners
+    // before this test disposes the provider.
+    await Future<void>.delayed(Duration.zero);
+
+    await provider.loadSavedSession().timeout(const Duration(seconds: 1));
+
+    expect(provider.isSessionRestored, isTrue);
+    expect(provider.isLoggedIn, isTrue);
+
+    // Release the fake pending Future so the test leaves no timer behind.
+    pushService.complete();
     provider.dispose();
   });
 
@@ -74,4 +97,27 @@ class _FakeAuthRepository extends AuthenticationRepositoryImpl {
 
   @override
   Future<void> saveSession(AuthResponse response) async {}
+
+  @override
+  Future<AuthResponse?> restoreSession() async => const AuthResponse(
+    accessToken: 'access-token',
+    refreshToken: 'refresh-token',
+    user: UserModel(
+      id: 'user-1',
+      fullName: 'Owner User',
+      email: 'owner@example.com',
+      role: 'OWNER',
+      isVerified: true,
+      isActive: true,
+    ),
+  );
+}
+
+class _StalledPushNotificationService extends PushNotificationService {
+  final Completer<bool> _activation = Completer<bool>();
+
+  @override
+  Future<bool> activate() => _activation.future;
+
+  void complete() => _activation.complete(true);
 }
