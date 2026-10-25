@@ -20,8 +20,13 @@ describe('Staging E2E • Property marketplace', () => {
   const adminEmail = process.env.E2E_ADMIN_EMAIL;
   const adminPassword = process.env.E2E_ADMIN_PASSWORD;
   const expectMarketplaceEnabled = process.env.E2E_EXPECT_MARKETPLACE_ENABLED === 'true';
-  // Mutating marketplace coverage is restricted to the isolated staging workflow.
-  const marketplaceReadOnly = process.env.E2E_MARKETPLACE_READ_ONLY === 'true';
+  // Production marketplace coverage is read-only even if an older workflow omits the explicit flag.
+  const configuredBaseUrl = process.env.E2E_BASE_URL ?? '';
+  const configuredHost = (() => {
+    try { return new URL(configuredBaseUrl).hostname.toLowerCase(); } catch { return ''; }
+  })();
+  const productionHost = ['api.rentitease.com', 'rentitease.com', 'www.rentitease.com'].includes(configuredHost);
+  const marketplaceReadOnly = process.env.E2E_MARKETPLACE_READ_ONLY === 'true' || productionHost;
 
   let ownerToken = '';
   let otherOwnerToken = '';
