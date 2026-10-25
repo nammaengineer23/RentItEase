@@ -30,18 +30,16 @@ void main() {
       expect(find.text('Sample apartment'), findsOneWidget);
       expect(find.text('Book Visit'), findsOneWidget);
 
-      // Invoke the rendered button callback directly so this validation test
-      // is independent of viewport size and scroll physics on CI runners.
+      // Invoke the rendered callback directly so the validation test is
+      // independent of viewport size and scroll physics on CI runners.
       final bookVisitButton = find.byType(ElevatedButton);
       expect(bookVisitButton, findsOneWidget);
       final button = tester.widget<ElevatedButton>(bookVisitButton);
       expect(button.onPressed, isNotNull);
       button.onPressed!();
       await tester.pump();
-      // ScaffoldMessenger inserts and animates the SnackBar on subsequent frames.
-      await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byKey(const ValueKey('visit-date-validation-error')), findsOneWidget);
     });
 
     testWidgets('bookings show an actionable empty state when none exist', (tester) async {
