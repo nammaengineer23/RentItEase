@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'authenticated_shell.dart';
+import 'route_access_policy.dart';
 
 import '../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../features/authentication/presentation/pages/authentication_page.dart';
@@ -82,84 +83,15 @@ class AppRouter {
     // ============================================================
     redirect: (context, state) {
       final container = ProviderScope.containerOf(context, listen: false);
-
       final auth = container.read(authenticationProvider);
-
-      final location = state.matchedLocation;
-      final role = auth.authResponse?.user.role.trim().toUpperCase();
-      final publicPath = (kIsWeb && location.startsWith('/property/')) ||
-          const {
-        '/',
-        '/about',
-        '/contact',
-        '/privacy',
-        '/terms',
-        '/delete-account',
-        '/splash',
-        '/onboarding',
-        '/auth',
-        '/sign-in',
-        '/register',
-        '/forgot-password',
-      }.contains(location);
-
-      // A discarded web tab is rebuilt from its URL. Do not allow a protected
-      // page to request data until the persisted session has been restored.
-      if (!auth.isSessionRestored) return null;
-
-      if (!auth.isLoggedIn && !publicPath) {
-        return '/auth';
-      }
-
-      // Browser Back can revisit an authentication URL that remains in the
-      // history stack after sign-in. Keep the persisted session active and
-      // return authenticated users to their role home instead of showing the
-      // signed-out flow.
-      const authPaths = {
-        '/auth',
-        '/sign-in',
-        '/register',
-        '/forgot-password',
-      };
-      if (kIsWeb && auth.isLoggedIn && authPaths.contains(location)) {
-        return switch (role) {
-          'ADMIN' => '/admin/dashboard',
-          'OWNER' => '/owner/dashboard',
-          _ => '/home',
-        };
-      }
-
-      if (location.startsWith('/admin/') && role != 'ADMIN') {
-        return auth.isLoggedIn ? '/home' : '/auth';
-      }
-
-      // My Visits is a tenant-only screen. Admin activity uses its own
-      // dashboard route and must not receive the all-visits response here.
-      if (location == '/my-visits' && role != 'USER') {
-        return role == 'ADMIN' ? '/admin/dashboard' : '/home';
-      }
-
-      if (role == 'ADMIN' &&
-          !publicPath &&
-          !location.startsWith('/admin/') &&
-          !location.startsWith('/profile') &&
-          !location.startsWith('/settings')) {
-        return '/admin/dashboard';
-      }
-
-      // ----------------------------------------------------------
-      // OWNER-only routes
-      //
-      // USER / tenant accounts must not access any /owner/*
-      // screen even by manually entering the URL.
-      // ----------------------------------------------------------
-      if (location.startsWith('/owner/')) {
-        if (role != 'OWNER') {
-          return '/home';
-        }
-      }
-
-      return null;
+      final role = auth.authResponse?.user.role;
+      return routeAccessRedirect(
+        location: state.matchedLocation,
+        isWeb: kIsWeb,
+        isLoggedIn: auth.isLoggedIn,
+        isSessionRestored: auth.isSessionRestored,
+        role: role,
+      );
     },
 
     routes: [
