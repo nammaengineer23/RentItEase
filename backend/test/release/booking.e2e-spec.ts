@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { describe, expect, it } from '@jest/globals';
+import { beforeAll, describe, expect, it } from '@jest/globals';
 
 import {
   apiUrl,
@@ -19,22 +19,37 @@ describe('Release E2E • Booking', () => {
   let visitId = '';
   let bookingId = '';
 
-  it('0. tenant and owner login', async () => {
+  // Authenticate before any dependent test is allowed to run. A failed login
+  // now fails the suite setup instead of cascading into empty IDs and HTTP 401s.
+  beforeAll(async () => {
     const tenantLogin = await login(
       process.env.E2E_TENANT_EMAIL!,
       process.env.E2E_TENANT_PASSWORD!,
     );
+    tenantToken = tenantLogin.token;
 
     const ownerLogin = await login(
       process.env.E2E_OWNER_EMAIL!,
       process.env.E2E_OWNER_PASSWORD!,
     );
-    const adminLogin = await login(process.env.E2E_ADMIN_EMAIL!, process.env.E2E_ADMIN_PASSWORD!);
-
-    tenantToken = tenantLogin.token;
     ownerToken = ownerLogin.token;
+
+    const adminLogin = await login(
+      process.env.E2E_ADMIN_EMAIL!,
+      process.env.E2E_ADMIN_PASSWORD!,
+    );
     adminToken = adminLogin.token;
 
+    for (const [role, token] of [
+      ['tenant', tenantToken],
+      ['owner', ownerToken],
+      ['admin', adminToken],
+    ] as const) {
+      if (!token) throw new Error(`Authentication did not produce a valid ${role} token.`);
+    }
+  });
+
+  it('0. tenant, owner and admin authentication succeeds before fixtures', () => {
     expect(tenantToken).toBeTruthy();
     expect(ownerToken).toBeTruthy();
     expect(adminToken).toBeTruthy();
