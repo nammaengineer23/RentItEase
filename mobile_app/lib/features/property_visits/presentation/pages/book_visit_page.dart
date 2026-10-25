@@ -30,6 +30,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
       TextEditingController();
 
   DateTime? visitDate;
+  bool showVisitDateValidation = false;
 
   bool loading = false;
   late String propertyTitle;
@@ -72,9 +73,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
     }
 
     if (selectedVisitDate == null) {
-      _showMessage(
-        context.tr('selectVisitDate'),
-      );
+      setState(() => showVisitDateValidation = true);
       return;
     }
 
@@ -299,9 +298,19 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
 
                   setState(() {
                     visitDate = date;
+                    showVisitDateValidation = false;
                   });
                 },
               ),
+
+              if (showVisitDateValidation) ...[
+                const SizedBox(height: 8),
+                Text(
+                  context.tr('selectVisitDate'),
+                  key: const ValueKey('visit-date-validation-error'),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
 
               const SizedBox(height: 25),
 
