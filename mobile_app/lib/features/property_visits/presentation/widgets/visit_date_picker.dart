@@ -13,6 +13,7 @@ class VisitDatePicker extends StatefulWidget {
 
 class _VisitDatePickerState extends State<VisitDatePicker> {
   late DateTime selectedDateTime;
+  bool hasSelectedDate = false;
 
   @override
   void initState() {
@@ -22,12 +23,15 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
 
     selectedDateTime =
         widget.initialDate ?? DateTime(now.year, now.month, now.day + 1, 10, 0);
+    hasSelectedDate = widget.initialDate != null;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        widget.onChanged(selectedDateTime);
-      }
-    });
+    if (hasSelectedDate) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          widget.onChanged(selectedDateTime);
+        }
+      });
+    }
   }
 
   Future<void> pickDate() async {
@@ -52,6 +56,7 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
         selectedDateTime.hour,
         selectedDateTime.minute,
       );
+      hasSelectedDate = true;
     });
 
     widget.onChanged(selectedDateTime);
@@ -77,7 +82,9 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
       );
     });
 
-    widget.onChanged(selectedDateTime);
+    if (hasSelectedDate) {
+      widget.onChanged(selectedDateTime);
+    }
   }
 
   String get formattedDate {
@@ -123,7 +130,9 @@ class _VisitDatePickerState extends State<VisitDatePicker> {
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.calendar_today),
               title: Text(context.tr('visitDate')),
-              subtitle: Text(formattedDate),
+              subtitle: Text(
+                hasSelectedDate ? formattedDate : context.tr('selectVisitDate'),
+              ),
               trailing: const Icon(Icons.chevron_right),
               onTap: pickDate,
             ),

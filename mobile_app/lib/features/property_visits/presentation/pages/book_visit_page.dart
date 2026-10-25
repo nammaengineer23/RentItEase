@@ -30,6 +30,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
       TextEditingController();
 
   DateTime? visitDate;
+  bool showVisitDateValidation = false;
 
   bool loading = false;
   late String propertyTitle;
@@ -63,18 +64,25 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
     }
   }
 
-  Future<void> bookVisit() async {
-    final selectedVisitDate = visitDate;
-
+  void onBookVisitPressed() {
     if (widget.propertyId.trim().isEmpty) {
       _showMessage(context.tr('propertyMissing'));
       return;
     }
 
+    if (visitDate == null) {
+      setState(() => showVisitDateValidation = true);
+      return;
+    }
+
+    // Keep the no-date validation synchronous with the button press. The
+    // async booking flow only starts after a date has been selected.
+    bookVisit();
+  }
+
+  Future<void> bookVisit() async {
+    final selectedVisitDate = visitDate;
     if (selectedVisitDate == null) {
-      _showMessage(
-        context.tr('selectVisitDate'),
-      );
       return;
     }
 
@@ -299,9 +307,19 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
 
                   setState(() {
                     visitDate = date;
+                    showVisitDateValidation = false;
                   });
                 },
               ),
+
+              if (showVisitDateValidation) ...[
+                const SizedBox(height: 8),
+                Text(
+                  context.tr('selectVisitDate'),
+                  key: const ValueKey('visit-date-validation-error'),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
 
               const SizedBox(height: 25),
 
@@ -331,8 +349,9 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton.icon(
+                  key: const ValueKey('book-visit-submit'),
                   onPressed:
-                      loading ? null : bookVisit,
+                      loading ? null : onBookVisitPressed,
                   icon: loading
                       ? const SizedBox(
                           width: 22,

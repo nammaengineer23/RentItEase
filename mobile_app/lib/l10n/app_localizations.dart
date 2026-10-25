@@ -157,10 +157,8 @@ const _authenticationTranslations = <String, Map<String, String>>{
     'loginFailed': 'Login failed',
     'unableSendLoginOtp': 'Unable to send login OTP.',
     'emailOtpLogin': 'Email OTP Login',
-    'phoneOtpLogin': 'Phone OTP Login',
     'validEmailOrMobile': 'Enter a valid email or 10-digit mobile number.',
     'phoneVerificationFailed': 'Phone verification failed',
-    'otpLoginFailed': 'OTP login failed.',
     'googleSignInFailed': 'Google sign-in failed',
     'createAccount': 'Create Account',
     'registerSubtitle':
@@ -224,10 +222,8 @@ const _authenticationTranslations = <String, Map<String, String>>{
     'loginFailed': 'ಲಾಗಿನ್ ವಿಫಲವಾಗಿದೆ',
     'unableSendLoginOtp': 'ಲಾಗಿನ್ OTP ಕಳುಹಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.',
     'emailOtpLogin': 'ಇಮೇಲ್ OTP ಲಾಗಿನ್',
-    'phoneOtpLogin': 'ಫೋನ್ OTP ಲಾಗಿನ್',
     'validEmailOrMobile': 'ಮಾನ್ಯ ಇಮೇಲ್ ಅಥವಾ 10 ಅಂಕಿಯ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ.',
     'phoneVerificationFailed': 'ಫೋನ್ ಪರಿಶೀಲನೆ ವಿಫಲವಾಗಿದೆ',
-    'otpLoginFailed': 'OTP ಲಾಗಿನ್ ವಿಫಲವಾಗಿದೆ.',
     'googleSignInFailed': 'Google ಸೈನ್-ಇನ್ ವಿಫಲವಾಗಿದೆ',
     'createAccount': 'ಖಾತೆ ರಚಿಸಿ',
     'registerSubtitle':

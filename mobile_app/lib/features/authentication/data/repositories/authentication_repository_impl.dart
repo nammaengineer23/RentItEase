@@ -37,18 +37,6 @@ class AuthenticationRepositoryImpl {
     );
   }
 
-  Future<void> requestLoginEmailOtp(String email) {
-    return _service.requestLoginEmailOtp(email);
-  }
-
-  Future<AuthResponse> loginWithEmailOtp(String email, String otp) {
-    return _service.loginWithEmailOtp(email, otp);
-  }
-
-  Future<AuthResponse> loginWithPhoneOtp(String idToken) {
-    return _service.loginWithPhoneOtp(idToken);
-  }
-
   Future<void> forgotPassword(String email) {
     return _service.forgotPassword(email);
   }

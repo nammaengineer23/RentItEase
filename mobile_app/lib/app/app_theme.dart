@@ -80,6 +80,15 @@ class AppTheme {
     );
 
     return base.copyWith(
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: <TargetPlatform, PageTransitionsBuilder>{
+          TargetPlatform.android: _RentItEasePageTransitionsBuilder(),
+          TargetPlatform.iOS: _RentItEasePageTransitionsBuilder(),
+          TargetPlatform.linux: _RentItEasePageTransitionsBuilder(),
+          TargetPlatform.macOS: _RentItEasePageTransitionsBuilder(),
+          TargetPlatform.windows: _RentItEasePageTransitionsBuilder(),
+        },
+      ),
       textTheme: textTheme,
       canvasColor: surface,
       appBarTheme: AppBarTheme(
@@ -346,6 +355,40 @@ class AppTheme {
           fontWeight: FontWeight.w600,
         ),
       ),
+    );
+  }
+}
+
+
+/// Subtle fade-and-lift navigation motion shared by all Material routes.
+class _RentItEasePageTransitionsBuilder extends PageTransitionsBuilder {
+  const _RentItEasePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+      return child;
+    }
+
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    final position = Tween<Offset>(
+      begin: const Offset(0.025, 0.012),
+      end: Offset.zero,
+    ).animate(curved);
+
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(position: position, child: child),
     );
   }
 }

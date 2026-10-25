@@ -3,6 +3,7 @@ import {
   getDashboard,
   type AdminDashboard,
 } from '../api/adminApi';
+import { getDashboardViewState } from './dashboardViewState';
 
 function StatCard({
   label,
@@ -59,7 +60,9 @@ export function DashboardPage() {
     void loadDashboard();
   }, []);
 
-  if (loading) {
+  const viewState = getDashboardViewState({ loading, error, dashboard });
+
+  if (viewState === 'loading') {
     return (
       <section className="page-section">
         <div className="content-card">
@@ -69,7 +72,7 @@ export function DashboardPage() {
     );
   }
 
-  if (error) {
+  if (viewState === 'error') {
     return (
       <section className="page-section">
         <div className="content-card">
@@ -88,7 +91,7 @@ export function DashboardPage() {
     );
   }
 
-  if (!dashboard) {
+  if (viewState === 'empty' || !dashboard) {
     return (
       <section className="page-section">
         <div className="content-card">
