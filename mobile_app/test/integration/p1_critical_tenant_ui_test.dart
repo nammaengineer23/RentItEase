@@ -30,12 +30,11 @@ void main() {
       expect(find.text('Sample apartment'), findsOneWidget);
       expect(find.text('Book Visit'), findsOneWidget);
 
-      final bookVisitLabel = find.text('Book Visit');
-      expect(bookVisitLabel, findsOneWidget);
-      await tester.ensureVisible(bookVisitLabel);
-      await tester.tap(bookVisitLabel);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      final bookVisitButton = find.byKey(const ValueKey('book-visit-submit'));
+      expect(bookVisitButton, findsOneWidget);
+      await tester.ensureVisible(bookVisitButton);
+      await tester.tap(bookVisitButton);
+      await tester.pumpAndSettle();
 
       expect(
         find.byKey(const ValueKey('visit-date-validation-error')),
