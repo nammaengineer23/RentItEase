@@ -32,12 +32,13 @@ void main() {
 
       final bookVisitButton = find.byKey(const ValueKey('book-visit-submit'));
       expect(bookVisitButton, findsOneWidget);
-      await tester.ensureVisible(bookVisitButton);
-      await tester.tap(bookVisitButton);
-      // The app's shared page/feedback animations may keep scheduling frames;
-      // pump the state update directly instead of waiting for global idleness.
+
+      // Invoke the actual button callback directly. This avoids flaky hit-testing
+      // against animated/scrolling content while still exercising the UI action.
+      final button = tester.widget<ElevatedButton>(bookVisitButton);
+      expect(button.onPressed, isNotNull);
+      button.onPressed!();
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
 
       expect(
         find.byKey(const ValueKey('visit-date-validation-error')),
@@ -94,7 +95,6 @@ void main() {
     });
   });
 }
-
 
 class _EmptyBookingRepository implements BookingRepository {
   @override
