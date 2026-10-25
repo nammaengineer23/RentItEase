@@ -34,7 +34,10 @@ void main() {
       expect(bookVisitButton, findsOneWidget);
       await tester.ensureVisible(bookVisitButton);
       await tester.tap(bookVisitButton);
-      await tester.pumpAndSettle();
+      // The app's shared page/feedback animations may keep scheduling frames;
+      // pump the state update directly instead of waiting for global idleness.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(
         find.byKey(const ValueKey('visit-date-validation-error')),
