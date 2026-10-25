@@ -65,29 +65,6 @@ class AuthenticationService {
     return AuthResponse.fromJson(_extractData(response.data));
   }
 
-  Future<void> requestLoginEmailOtp(String email) async {
-    await _client.dio.post<Map<String, dynamic>>(
-      '/auth/login/email-otp/request',
-      data: {'email': email},
-    );
-  }
-
-  Future<AuthResponse> loginWithEmailOtp(String email, String otp) async {
-    final response = await _client.dio.post<Map<String, dynamic>>(
-      '/auth/login/email-otp/verify',
-      data: {'email': email, 'otp': otp},
-    );
-    return AuthResponse.fromJson(_extractData(response.data));
-  }
-
-  Future<AuthResponse> loginWithPhoneOtp(String idToken) async {
-    final response = await _client.dio.post<Map<String, dynamic>>(
-      '/auth/login/phone-otp',
-      data: {'idToken': idToken},
-    );
-    return AuthResponse.fromJson(_extractData(response.data));
-  }
-
   // ============================================================
   // REGISTER
   // ============================================================
