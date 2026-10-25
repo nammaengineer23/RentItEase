@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
+import { login as releaseLogin } from './helpers';
 
 describe('Property Visits E2E', () => {
   // ============================================================
@@ -335,8 +336,28 @@ describe('Property Visits E2E', () => {
   // Before all tests
   // ============================================================
 
-  beforeAll(() => {
+  beforeAll(async () => {
     requireEnvironment();
+
+    // Authenticate serially once before dependent tests. The shared helper
+    // retries HTTP 429 with bounded backoff; failed auth blocks the suite setup.
+    tenantToken = (await releaseLogin(tenantEmail!, tenantPassword!)).token;
+    ownerToken = (await releaseLogin(ownerEmail!, ownerPassword!)).token;
+    adminToken = (await releaseLogin(adminEmail!, adminPassword!)).token;
+
+    for (const [role, token] of [
+      ['tenant', tenantToken],
+      ['owner', ownerToken],
+      ['admin', adminToken],
+    ] as const) {
+      if (!token) throw new Error(`Authentication did not produce a valid ${role} token.`);
+      const verified = await request(apiUrl)
+        .get('/auth/me')
+        .set('Authorization', `Bearer ${token}`);
+      if (verified.status !== 200) {
+        throw new Error(`The ${role} token failed verification (${verified.status}).`);
+      }
+    }
 
     console.log('');
     console.log('==============================================');
@@ -353,54 +374,21 @@ describe('Property Visits E2E', () => {
   // 1. Tenant Login
   // ============================================================
 
-  it('1. Tenant can login', async () => {
-    const response = await request(apiUrl)
-      .post('/auth/login')
-      .send({
-        login: tenantEmail,
-        password: tenantPassword,
-      })
-      .expect(201);
-
-    expect(response.body).toBeTruthy();
-
-    tenantToken = extractToken(response.body);
-
+  it('1. Tenant can login', () => {
     expect(tenantToken).toBeTruthy();
-
     console.log('✓ Tenant login successful');
-    console.log(`  Tenant: ${tenantEmail}`);
   });
 
   // ============================================================
   // 2. Owner Login
   // ============================================================
 
-  it('2. Owner can login', async () => {
-    const response = await request(apiUrl)
-      .post('/auth/login')
-      .send({
-        login: ownerEmail,
-        password: ownerPassword,
-      })
-      .expect(201);
-
-    expect(response.body).toBeTruthy();
-
-    ownerToken = extractToken(response.body);
-
+  it('2. Owner can login', () => {
     expect(ownerToken).toBeTruthy();
-
     console.log('✓ Owner login successful');
-    console.log(`  Owner: ${ownerEmail}`);
   });
 
   it('2a. Admin approves an isolated visit property', async () => {
-    const adminLogin = await request(apiUrl)
-      .post('/auth/login')
-      .send({ login: adminEmail, password: adminPassword })
-      .expect(201);
-    adminToken = extractToken(adminLogin.body);
     const created = await request(apiUrl)
       .post('/properties')
       .set('Authorization', `Bearer ${ownerToken}`)
