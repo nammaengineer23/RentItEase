@@ -30,13 +30,17 @@ void main() {
       expect(find.text('Sample apartment'), findsOneWidget);
       expect(find.text('Book Visit'), findsOneWidget);
 
-      final bookVisitButton = find.byType(ElevatedButton);
-      expect(bookVisitButton, findsOneWidget);
-      await tester.ensureVisible(bookVisitButton);
-      await tester.tap(bookVisitButton);
+      final bookVisitLabel = find.text('Book Visit');
+      expect(bookVisitLabel, findsOneWidget);
+      await tester.ensureVisible(bookVisitLabel);
+      await tester.tap(bookVisitLabel);
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.byKey(const ValueKey('visit-date-validation-error')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('visit-date-validation-error')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('bookings show an actionable empty state when none exist', (tester) async {
