@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
+import { login as releaseLogin } from './helpers';
 
 describe('Property Visits E2E', () => {
   // ============================================================
@@ -46,7 +47,8 @@ describe('Property Visits E2E', () => {
   const adminEmail = process.env.E2E_ADMIN_EMAIL;
   const adminPassword = process.env.E2E_ADMIN_PASSWORD;
 
-  let propertyId = '';
+  // Reuse the CI-created fixture when supplied; local runs can create their own.
+  let propertyId = process.env.E2E_PROPERTY_ID ?? '';
 
   // ============================================================
   // Runtime state
@@ -95,64 +97,6 @@ describe('Property Visits E2E', () => {
         ].join('\n'),
       );
     }
-  }
-
-  // ============================================================
-  // JWT extraction
-  // ============================================================
-
-  function extractToken(body: any): string {
-    /*
-     * Supports all of these possible response structures:
-     *
-     * {
-     *   accessToken: "..."
-     * }
-     *
-     * {
-     *   data: {
-     *     accessToken: "..."
-     *   }
-     * }
-     *
-     * {
-     *   data: {
-     *     data: {
-     *       accessToken: "..."
-     *     }
-     *   }
-     * }
-     */
-
-    const possibleTokens = [
-      body?.accessToken,
-      body?.access_token,
-      body?.token,
-
-      body?.data?.accessToken,
-      body?.data?.access_token,
-      body?.data?.token,
-
-      body?.data?.data?.accessToken,
-      body?.data?.data?.access_token,
-      body?.data?.data?.token,
-    ];
-
-    const token = possibleTokens.find(
-      (value) => typeof value === 'string' && value.length > 0,
-    );
-
-    if (!token) {
-      throw new Error(
-        [
-          'Unable to extract JWT token from login response.',
-          '',
-          JSON.stringify(body, null, 2),
-        ].join('\n'),
-      );
-    }
-
-    return token;
   }
 
   // ============================================================
@@ -335,8 +279,28 @@ describe('Property Visits E2E', () => {
   // Before all tests
   // ============================================================
 
-  beforeAll(() => {
+  beforeAll(async () => {
     requireEnvironment();
+
+    // Authenticate serially once before dependent tests. The shared helper
+    // retries HTTP 429 with bounded backoff; failed auth blocks the suite setup.
+    tenantToken = (await releaseLogin(tenantEmail!, tenantPassword!)).token;
+    ownerToken = (await releaseLogin(ownerEmail!, ownerPassword!)).token;
+    adminToken = (await releaseLogin(adminEmail!, adminPassword!)).token;
+
+    for (const [role, token] of [
+      ['tenant', tenantToken],
+      ['owner', ownerToken],
+      ['admin', adminToken],
+    ] as const) {
+      if (!token) throw new Error(`Authentication did not produce a valid ${role} token.`);
+      const verified = await request(apiUrl)
+        .get('/auth/me')
+        .set('Authorization', `Bearer ${token}`);
+      if (verified.status !== 200) {
+        throw new Error(`The ${role} token failed verification (${verified.status}).`);
+      }
+    }
 
     console.log('');
     console.log('==============================================');
@@ -353,60 +317,29 @@ describe('Property Visits E2E', () => {
   // 1. Tenant Login
   // ============================================================
 
-  it('1. Tenant can login', async () => {
-    const response = await request(apiUrl)
-      .post('/auth/login')
-      .send({
-        login: tenantEmail,
-        password: tenantPassword,
-      })
-      .expect(201);
-
-    expect(response.body).toBeTruthy();
-
-    tenantToken = extractToken(response.body);
-
+  it('1. Tenant can login', () => {
     expect(tenantToken).toBeTruthy();
-
     console.log('✓ Tenant login successful');
-    console.log(`  Tenant: ${tenantEmail}`);
   });
 
   // ============================================================
   // 2. Owner Login
   // ============================================================
 
-  it('2. Owner can login', async () => {
-    const response = await request(apiUrl)
-      .post('/auth/login')
-      .send({
-        login: ownerEmail,
-        password: ownerPassword,
-      })
-      .expect(201);
-
-    expect(response.body).toBeTruthy();
-
-    ownerToken = extractToken(response.body);
-
+  it('2. Owner can login', () => {
     expect(ownerToken).toBeTruthy();
-
     console.log('✓ Owner login successful');
-    console.log(`  Owner: ${ownerEmail}`);
   });
 
   it('2a. Admin approves an isolated visit property', async () => {
-    const adminLogin = await request(apiUrl)
-      .post('/auth/login')
-      .send({ login: adminEmail, password: adminPassword })
-      .expect(201);
-    adminToken = extractToken(adminLogin.body);
-    const created = await request(apiUrl)
-      .post('/properties')
-      .set('Authorization', `Bearer ${ownerToken}`)
-      .send({ title: `Release Visits ${Date.now()}`, description: 'Isolated visit E2E property.', price: 25000, address: '123 Visit Test Road', locality: 'HSR Layout', city: 'Bangalore', state: 'Karnataka', country: 'India', pincode: '560102', bedrooms: 2, bathrooms: 2, area: 1200, propertyType: 'APARTMENT', furnishing: 'SEMI_FURNISHED', parking: true, petFriendly: true, securityDeposit: 50000 });
-    const property = extractData(created.body)?.property ?? extractData(created.body);
-    propertyId = property?.id ?? '';
+    if (!propertyId) {
+      const created = await request(apiUrl)
+        .post('/properties')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ title: `Release Visits ${Date.now()}`, description: 'Isolated visit E2E property.', price: 25000, address: '123 Visit Test Road', locality: 'HSR Layout', city: 'Bangalore', state: 'Karnataka', country: 'India', pincode: '560102', bedrooms: 2, bathrooms: 2, area: 1200, propertyType: 'APARTMENT', furnishing: 'SEMI_FURNISHED', parking: true, petFriendly: true, securityDeposit: 50000 });
+      const property = extractData(created.body)?.property ?? extractData(created.body);
+      propertyId = property?.id ?? '';
+    }
     expect(propertyId).toBeTruthy();
     await request(apiUrl)
       .patch(`/admin/properties/${propertyId}/approve`)

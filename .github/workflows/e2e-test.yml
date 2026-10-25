@@ -95,8 +95,10 @@ jobs:
       E2E_RAZORPAY_KEY_SECRET: ${{ secrets.E2E_RAZORPAY_KEY_SECRET }}
       E2E_RAZORPAY_WEBHOOK_SECRET: ${{ secrets.RAZORPAY_WEBHOOK_SECRET }}
 
-      # Production keeps marketplace gated; the E2E suite verifies rejection and rental-only discovery.
-      E2E_EXPECT_MARKETPLACE_ENABLED: "false"
+      # Production marketplace is enabled. Keep this suite read-only for marketplace listings;
+      # full SALE/LEASE/SITE_SALE create/approve/enquiry mutations run only in isolated staging.
+      E2E_EXPECT_MARKETPLACE_ENABLED: "true"
+      E2E_MARKETPLACE_READ_ONLY: "true"
 
       # Strict release configuration validation
       E2E_STRICT: "true"
@@ -170,21 +172,35 @@ jobs:
             return body?.accessToken || body?.data?.accessToken || body?.data?.data?.accessToken || body?.token || body?.data?.token;
           }
 
-          async function main() {
-            const loginResponse = await fetch(`${apiUrl}/auth/login`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                login: process.env.E2E_OWNER_EMAIL,
-                password: process.env.E2E_OWNER_PASSWORD,
-              }),
-            });
-
-            const loginBody = await loginResponse.json();
-            if (!loginResponse.ok) {
-              throw new Error(`Owner login failed (${loginResponse.status}): ${JSON.stringify(loginBody)}`);
+          async function loginWithRetry() {
+            const maxRetries = 6;
+            for (let attempt = 0; ; attempt += 1) {
+              const response = await fetch(`${apiUrl}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  login: process.env.E2E_OWNER_EMAIL,
+                  password: process.env.E2E_OWNER_PASSWORD,
+                }),
+              });
+              const body = await response.json();
+              if (response.status === 429 && attempt < maxRetries) {
+                const retryAfter = Number(response.headers.get('retry-after'));
+                const delayMs = Number.isFinite(retryAfter) && retryAfter > 0
+                  ? Math.min(retryAfter * 1000, 30_000)
+                  : Math.min(2_000 * (2 ** attempt), 30_000);
+                await new Promise((resolve) => setTimeout(resolve, delayMs));
+                continue;
+              }
+              if (!response.ok) {
+                throw new Error(`Owner login failed (${response.status}): ${JSON.stringify(body)}`);
+              }
+              return body;
             }
+          }
 
+          async function main() {
+            const loginBody = await loginWithRetry();
             const token = tokenFrom(loginBody);
             if (!token) {
               throw new Error('Unable to extract owner access token for property-visit fixture.');

@@ -19,8 +19,14 @@ describe('Staging E2E • Property marketplace', () => {
   const tenantPassword = process.env.E2E_TENANT_PASSWORD;
   const adminEmail = process.env.E2E_ADMIN_EMAIL;
   const adminPassword = process.env.E2E_ADMIN_PASSWORD;
-  // RC1 production verifies the feature remains gated; isolated staging opts in explicitly.
   const expectMarketplaceEnabled = process.env.E2E_EXPECT_MARKETPLACE_ENABLED === 'true';
+  // Production marketplace coverage is read-only even if an older workflow omits the explicit flag.
+  const configuredBaseUrl = process.env.E2E_BASE_URL ?? '';
+  const configuredHost = (() => {
+    try { return new URL(configuredBaseUrl).hostname.toLowerCase(); } catch { return ''; }
+  })();
+  const productionHost = ['api.rentitease.com', 'rentitease.com', 'www.rentitease.com'].includes(configuredHost);
+  const marketplaceReadOnly = process.env.E2E_MARKETPLACE_READ_ONLY === 'true' || productionHost;
 
   let ownerToken = '';
   let otherOwnerToken = '';
@@ -43,12 +49,11 @@ describe('Staging E2E • Property marketplace', () => {
     const missing = Object.entries(required).filter(([, value]) => !value).map(([key]) => key);
     if (missing.length) throw new Error(`Missing staging E2E configuration: ${missing.join(', ')}`);
 
-    [ownerToken, otherOwnerToken, tenantToken, adminToken] = await Promise.all([
-      login(ownerEmail!, ownerPassword!).then((v) => v.token),
-      login(otherOwnerEmail!, otherOwnerPassword!).then((v) => v.token),
-      login(tenantEmail!, tenantPassword!).then((v) => v.token),
-      login(adminEmail!, adminPassword!).then((v) => v.token),
-    ]);
+    // Authenticate serially to avoid bursting the production login rate limiter.
+    ownerToken = (await login(ownerEmail!, ownerPassword!)).token;
+    otherOwnerToken = (await login(otherOwnerEmail!, otherOwnerPassword!)).token;
+    tenantToken = (await login(tenantEmail!, tenantPassword!)).token;
+    adminToken = (await login(adminEmail!, adminPassword!)).token;
   });
 
   async function createAndApprove(type: 'SALE' | 'LEASE' | 'SITE_SALE'): Promise<string | null> {
@@ -107,7 +112,14 @@ describe('Staging E2E • Property marketplace', () => {
     return property.id as string;
   }
 
-  it.each(['SALE', 'LEASE', 'SITE_SALE'] as const)('creates and browses a %s listing', async (type) => {
+  it.each(['SALE', 'LEASE', 'SITE_SALE'] as const)('browses %s listings', async (type) => {
+    if (marketplaceReadOnly) {
+      const browse = await request(apiUrl()).get('/properties').query({ transactionType: type });
+      statusOk(browse);
+      const results = unwrapArray(browse.body);
+      expect(Array.isArray(results)).toBe(true);
+      return;
+    }
     const id = await createAndApprove(type);
     const browse = await request(apiUrl()).get('/properties').query({ transactionType: type, search: e2eMarker() });
     statusOk(browse);
@@ -125,9 +137,12 @@ describe('Staging E2E • Property marketplace', () => {
     expect((extractData(detail.body)?.property ?? extractData(detail.body))?.transactionType).toBe(type);
   });
 
-  it(expectMarketplaceEnabled
-    ? 'routes enquiries to the sender and listing owner, and permits owner status updates'
-    : 'keeps marketplace enquiry flow inactive while the feature flag is off', async () => {
+  it(marketplaceReadOnly
+    ? 'keeps production marketplace enquiry coverage read-only'
+    : expectMarketplaceEnabled
+      ? 'routes enquiries to the sender and listing owner, and permits owner status updates'
+      : 'keeps marketplace enquiry flow inactive while the feature flag is off', async () => {
+    if (marketplaceReadOnly) return;
     if (!expectMarketplaceEnabled) {
       expect(createdListings).toHaveLength(0);
       return;
@@ -169,6 +184,9 @@ describe('Staging E2E • Property marketplace', () => {
   });
 
   it('does not allow rental listings to receive marketplace enquiries', async () => {
+    // Production RC1 must remain read-only. Exercise this mutating guard only in isolated staging.
+    if (marketplaceReadOnly) return;
+
     const rental = await request(apiUrl()).post('/properties').set(auth(ownerToken)).send({
       title: `${e2eMarker()} Marketplace RENT guard ${Date.now()}`,
       description: 'Rental listing used to verify marketplace enquiry separation.',

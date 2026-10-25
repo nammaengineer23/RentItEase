@@ -58,22 +58,35 @@ export function extractToken(body: any): string {
 }
 
 export async function login(loginValue: string, password: string) {
-  const response = await request(apiUrl())
-    .post('/auth/login')
-    .send({ login: loginValue, password })
-    .expect((res) => {
-      if (res.status !== 200 && res.status !== 201) {
-        throw new Error(
-          `Login failed with ${res.status}: ${JSON.stringify(res.body)}`,
-        );
-      }
-    });
+  // Rate limits may outlast a single short retry window on the shared release API.
+  // Tests run in-band; this bounded backoff prevents login bursts and avoids continuing unauthenticated.
+  const maxRateLimitRetries = 6;
+  for (let attempt = 0; ; attempt += 1) {
+    const response = await request(apiUrl())
+      .post('/auth/login')
+      .send({ login: loginValue, password });
 
-  return {
-    token: extractToken(response.body),
-    body: response.body,
-    data: extractData(response.body),
-  };
+    if (response.status === 429 && attempt < maxRateLimitRetries) {
+      const retryAfter = Number(response.headers['retry-after']);
+      const delayMs = Number.isFinite(retryAfter) && retryAfter > 0
+        ? Math.min(retryAfter * 1000, 30_000)
+        : Math.min(2_000 * (2 ** attempt), 30_000);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      continue;
+    }
+
+    if (response.status !== 200 && response.status !== 201) {
+      throw new Error(
+        `Login failed with ${response.status}: ${JSON.stringify(response.body)}`,
+      );
+    }
+
+    return {
+      token: extractToken(response.body),
+      body: response.body,
+      data: extractData(response.body),
+    };
+  }
 }
 
 export function auth(token: string) {
