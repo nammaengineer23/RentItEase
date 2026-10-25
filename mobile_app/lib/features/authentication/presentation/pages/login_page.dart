@@ -29,7 +29,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _useOtp = false;
   bool _rememberedEmailApplied = false;
 
   @override
@@ -41,11 +40,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-
-    if (_useOtp) {
-      await _loginWithOtp();
-      return;
-    }
 
     final provider = ref.read(authenticationProvider);
     final success = await provider.login(
@@ -61,42 +55,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
 
     _showError(provider.errorMessage ?? context.tr('loginFailed'));
-  }
-
-  Future<void> _loginWithOtp() async {
-    final provider = ref.read(authenticationProvider);
-    final identifier = _emailController.text.trim();
-    final digits = identifier.replaceAll(RegExp(r'\D'), '');
-    if (identifier.contains('@') || digits.length != 10) {
-      _showError('OTP login requires a valid 10-digit mobile number.');
-      return;
-    }
-
-    bool success;
-    try {
-      final idToken = await FirebasePhoneOtpService().verifyPhone(
-        phoneNumber: '+91$digits',
-        requestCode: () => showOtpCodeDialog(
-          context,
-          title: context.tr('phoneOtpLogin'),
-          destination: '+91 $digits',
-        ),
-      );
-      success = await provider.loginWithPhoneOtp(idToken);
-    } catch (error) {
-      if (mounted) {
-        _showError(userFriendlyError(error));
-      }
-      return;
-    }
-
-    if (!mounted) return;
-    if (success) {
-      _openAuthenticatedHome(provider);
-      return;
-    }
-
-    _showError(provider.errorMessage ?? context.tr('otpLoginFailed'));
   }
 
   void _openAuthenticatedHome(AuthenticationProvider provider) {
@@ -225,103 +183,62 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     subtitle: context.tr('loginSubtitle'),
                   ),
                   const SizedBox(height: 12),
-                  if (enablePhoneOtp)
-                    SegmentedButton<bool>(
-                      segments: [
-                        ButtonSegment(
-                          value: false,
-                          icon: const Icon(Icons.password),
-                          label: Text(context.tr('password')),
-                        ),
-                        ButtonSegment(
-                          value: true,
-                          icon: const Icon(Icons.sms_outlined),
-                          label: Text(context.tr('otp')),
-                        ),
-                      ],
-                      selected: {_useOtp},
-                      onSelectionChanged: (selection) {
-                        setState(() {
-                          _useOtp = selection.first;
-                          _emailController.clear();
-                        });
-                      },
-                    ),
-                  const SizedBox(height: 12),
-                  CustomTextField(
-                    controller: _emailController,
-                    hintText: _useOtp
-                        ? '10-digit mobile number'
-                        : context.tr('emailOrMobile'),
-                    prefixIcon: _useOtp
-                        ? Icons.phone_outlined
-                        : Icons.email_outlined,
-                    keyboardType: _useOtp
-                        ? TextInputType.phone
-                        : TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    autofillHints: _useOtp
-                        ? const [AutofillHints.telephoneNumber]
-                        : const [AutofillHints.username, AutofillHints.email],
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return _useOtp
-                            ? 'Enter your 10-digit mobile number.'
-                            : context.tr('enterEmail');
-                      }
-                      if (_useOtp &&
-                          !RegExp(r'^\d{10}$').hasMatch(value.trim())) {
-                        return 'Enter a valid 10-digit mobile number.';
-                      }
-                      return null;
-                    },
-                  ),
-                  if (!_useOtp) ...[
-                    const SizedBox(height: 10),
-                    CustomTextField(
-                      controller: _passwordController,
-                      hintText: context.tr('password'),
-                      prefixIcon: Icons.lock_outline,
-                      obscureText: provider.obscurePassword,
-                      textInputAction: TextInputAction.done,
-                      autofillHints: const [AutofillHints.password],
-                      onFieldSubmitted: (_) => _login(),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          provider.obscurePassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          ref
-                              .read(authenticationProvider)
-                              .togglePasswordVisibility();
-                        },
-                      ),
-                      validator: (value) {
-                        if (!_useOtp && (value == null || value.isEmpty)) {
-                          return context.tr('enterPassword');
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 6),
-                    RememberMe(
-                      onForgotPassword: () => context.push('/forgot-password'),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  CustomButton(
-                    text: _useOtp ? context.tr('sendOtp') : context.tr('login'),
-                    isLoading: provider.isLoading,
-                    onPressed: _login,
-                  ),
-                  const SizedBox(height: 12),
                   if (enableGoogleSignIn)
                     SocialLoginButton(
                       isLoading: provider.isLoading,
                       onPressed: _googleLogin,
                     ),
+                  const SizedBox(height: 20),
+                  CustomTextField(
+                    controller: _emailController,
+                    hintText: context.tr('emailAddress'),
+                    prefixIcon: Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.username, AutofillHints.email],
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return context.tr('enterEmail');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  CustomTextField(
+                    controller: _passwordController,
+                    hintText: context.tr('password'),
+                    prefixIcon: Icons.lock_outline,
+                    obscureText: provider.obscurePassword,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.password],
+                    onFieldSubmitted: (_) => _login(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        provider.obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        ref.read(authenticationProvider).togglePasswordVisibility();
+                      },
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return context.tr('enterPassword');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 6),
+                  RememberMe(
+                    onForgotPassword: () => context.push('/forgot-password'),
+                  ),
+                  const SizedBox(height: 12),
+                  CustomButton(
+                    text: context.tr('login'),
+                    isLoading: provider.isLoading,
+                    onPressed: _login,
+                  ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
