@@ -47,7 +47,8 @@ describe('Property Visits E2E', () => {
   const adminEmail = process.env.E2E_ADMIN_EMAIL;
   const adminPassword = process.env.E2E_ADMIN_PASSWORD;
 
-  let propertyId = '';
+  // Reuse the CI-created fixture when supplied; local runs can create their own.
+  let propertyId = process.env.E2E_PROPERTY_ID ?? '';
 
   // ============================================================
   // Runtime state
@@ -331,12 +332,14 @@ describe('Property Visits E2E', () => {
   });
 
   it('2a. Admin approves an isolated visit property', async () => {
-    const created = await request(apiUrl)
-      .post('/properties')
-      .set('Authorization', `Bearer ${ownerToken}`)
-      .send({ title: `Release Visits ${Date.now()}`, description: 'Isolated visit E2E property.', price: 25000, address: '123 Visit Test Road', locality: 'HSR Layout', city: 'Bangalore', state: 'Karnataka', country: 'India', pincode: '560102', bedrooms: 2, bathrooms: 2, area: 1200, propertyType: 'APARTMENT', furnishing: 'SEMI_FURNISHED', parking: true, petFriendly: true, securityDeposit: 50000 });
-    const property = extractData(created.body)?.property ?? extractData(created.body);
-    propertyId = property?.id ?? '';
+    if (!propertyId) {
+      const created = await request(apiUrl)
+        .post('/properties')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ title: `Release Visits ${Date.now()}`, description: 'Isolated visit E2E property.', price: 25000, address: '123 Visit Test Road', locality: 'HSR Layout', city: 'Bangalore', state: 'Karnataka', country: 'India', pincode: '560102', bedrooms: 2, bathrooms: 2, area: 1200, propertyType: 'APARTMENT', furnishing: 'SEMI_FURNISHED', parking: true, petFriendly: true, securityDeposit: 50000 });
+      const property = extractData(created.body)?.property ?? extractData(created.body);
+      propertyId = property?.id ?? '';
+    }
     expect(propertyId).toBeTruthy();
     await request(apiUrl)
       .patch(`/admin/properties/${propertyId}/approve`)
