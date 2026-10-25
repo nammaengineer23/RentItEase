@@ -340,6 +340,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton.icon(
+                  key: const ValueKey('book-visit-submit'),
                   onPressed:
                       loading ? null : bookVisit,
                   icon: loading
