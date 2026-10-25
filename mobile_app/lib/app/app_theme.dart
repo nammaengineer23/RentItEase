@@ -372,6 +372,10 @@ class _RentItEasePageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+      return child;
+    }
+
     final curved = CurvedAnimation(
       parent: animation,
       curve: Curves.easeOutCubic,
