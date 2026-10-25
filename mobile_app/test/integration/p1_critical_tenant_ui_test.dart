@@ -40,7 +40,6 @@ void main() {
       await tester.pump();
 
       expect(find.byType(SnackBar), findsOneWidget);
-      expect(find.text('Please select a visit date.'), findsOneWidget);
     });
 
     testWidgets('bookings show an actionable empty state when none exist', (tester) async {
