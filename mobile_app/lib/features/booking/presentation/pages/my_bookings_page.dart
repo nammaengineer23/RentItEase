@@ -73,7 +73,14 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('My Bookings'), centerTitle: true),
-      body: Column(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(tenantBookingsProvider);
+          await ref.read(tenantBookingsProvider.future);
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -108,8 +115,7 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
               },
             ),
           ),
-          Expanded(
-            child: bookingsAsync.when(
+          bookingsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stackTrace) => _ErrorView(
                 error: error,
@@ -147,12 +153,9 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
                   );
                 }
 
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    ref.invalidate(tenantBookingsProvider);
-                    await ref.read(tenantBookingsProvider.future);
-                  },
-                  child: ListView.builder(
+                return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     key: ValueKey('bookings-${_selectedStatus.toLowerCase()}'),
                     padding: const EdgeInsets.only(top: 12, bottom: 24),
                     itemCount: visibleBookings.length,
@@ -179,12 +182,12 @@ class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
                             : null,
                       );
                     },
-                  ),
-                );
+                  );
               },
-            ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }
