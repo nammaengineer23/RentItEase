@@ -1,12 +1,12 @@
 class Environment {
   static const String appName = 'RentItEase';
 
-  /// Override with `--dart-define=API_BASE_URL=https://your-host/api/v1`.
-  /// The Android emulator reaches a backend on the development machine through
-  /// 10.0.2.2; physical devices and release builds must supply their API URL.
+  /// Override for local development or isolated staging with
+  /// `--dart-define=API_BASE_URL=https://<staging-host>/api/v1`.
+  /// Never point automated mutating E2E tests at production.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:3000/api/v1',
+    defaultValue: 'https://api.rentitease.com/api/v1',
   );
 }
 

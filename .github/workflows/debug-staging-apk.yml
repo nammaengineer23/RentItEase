@@ -1,0 +1,84 @@
+name: RentItEase - Downloadable Debug APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or commit to build
+        required: true
+        default: main
+        type: string
+      api_base_url:
+        description: HTTPS base URL for a dedicated staging API, including /api/v1 (never production)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rentitease-debug-apk
+  cancel-in-progress: false
+
+jobs:
+  build-debug-apk:
+    name: Build and publish debug APK artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: mobile_app
+    steps:
+      - name: Checkout requested ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Validate staging API target
+        env:
+          API_BASE_URL: ${{ inputs.api_base_url }}
+        shell: bash
+        run: |
+          node <<'NODE'
+          const raw = process.env.API_BASE_URL;
+          let url;
+          try { url = new URL(raw); } catch { throw new Error('api_base_url must be a valid absolute URL.'); }
+          if (url.protocol !== 'https:') throw new Error('Debug APK must use an HTTPS staging API.');
+          const host = url.hostname.toLowerCase();
+          if (['api.rentitease.com', 'rentitease.com', 'www.rentitease.com'].includes(host)) {
+            throw new Error('Refusing to build a staging APK pointed at the production API.');
+          }
+          if (!/(staging|stage|test|e2e)/i.test(host)) {
+            throw new Error('Staging API hostname must contain staging, stage, test, or e2e.');
+          }
+          if (!url.pathname.endsWith('/api/v1') || url.username || url.password || url.search || url.hash) {
+            throw new Error('Use a clean staging URL ending in /api/v1; do not include credentials, query, or fragment.');
+          }
+          console.log('Staging API URL validated; URL is not printed.');
+          NODE
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.4
+          channel: stable
+          cache: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Build debug APK for staging
+        env:
+          API_BASE_URL: ${{ inputs.api_base_url }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: |
+          flutter build apk --debug \
+            --dart-define=API_BASE_URL="$API_BASE_URL"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rentitease-debug-staging-apk
+          path: mobile_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

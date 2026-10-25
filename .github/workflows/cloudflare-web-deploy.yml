@@ -1,0 +1,75 @@
+name: RentItEase Cloudflare Web Deploy
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile_app/**"
+      - "worker.js"
+      - "wrangler.jsonc"
+      - ".github/workflows/cloudflare-web-deploy.yml"
+  push:
+    branches: [main]
+    paths:
+      - "mobile_app/**"
+      - "worker.js"
+      - "wrangler.jsonc"
+      - ".github/workflows/cloudflare-web-deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rentitease-cloudflare-web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-verify:
+    name: Build Flutter web and verify assets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.4"
+          channel: stable
+          cache: true
+
+      - name: Install Flutter dependencies
+        working-directory: mobile_app
+        run: flutter pub get
+
+      - name: Build Flutter web
+        working-directory: mobile_app
+        run: flutter build web --release
+
+      - name: Verify Wrangler assets directory
+        shell: bash
+        run: |
+          test -f mobile_app/build/web/index.html
+          test -f mobile_app/build/web/flutter_bootstrap.js
+          echo "Verified mobile_app/build/web is present."
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify Wrangler configuration
+        run: npx --yes wrangler@4.152.0 deploy --dry-run
+
+      - name: Deploy Worker to Cloudflare
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in GitHub Actions secrets before deploying."
+            exit 1
+          fi
+          npx --yes wrangler@4.152.0 deploy
