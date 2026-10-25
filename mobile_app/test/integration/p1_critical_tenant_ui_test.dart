@@ -30,13 +30,10 @@ void main() {
       expect(find.text('Sample apartment'), findsOneWidget);
       expect(find.text('Book Visit'), findsOneWidget);
 
-      // Invoke the rendered callback directly so the validation test is
-      // independent of viewport size and scroll physics on CI runners.
       final bookVisitButton = find.byType(ElevatedButton);
       expect(bookVisitButton, findsOneWidget);
-      final button = tester.widget<ElevatedButton>(bookVisitButton);
-      expect(button.onPressed, isNotNull);
-      button.onPressed!();
+      await tester.ensureVisible(bookVisitButton);
+      await tester.tap(bookVisitButton);
       await tester.pump();
 
       expect(find.byKey(const ValueKey('visit-date-validation-error')), findsOneWidget);
