@@ -206,7 +206,9 @@ class _PropertyMarketplacePageState
 
     return Scaffold(
       appBar: AppBar(title: const Text('Property Marketplace')),
-      body: Column(
+      body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -255,10 +257,11 @@ class _PropertyMarketplacePageState
                 TextButton(onPressed: _load, child: const Text('Retry')),
               ]),
             ),
-          Expanded(
-            child: _properties.isEmpty && !_loading
+          _properties.isEmpty && !_loading
                 ? const Center(child: Text('No listings found for this category.'))
                 : ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(16),
                     itemCount: _properties.length,
                     separatorBuilder: (_, index) => const SizedBox(height: 12),
@@ -305,8 +308,8 @@ class _PropertyMarketplacePageState
                       );
                     },
                   ),
-          ),
         ],
+        ),
       ),
     );
   }
