@@ -46,6 +46,8 @@ describe('Release E2E • Booking', () => {
       ['admin', adminToken],
     ] as const) {
       if (!token) throw new Error(`Authentication did not produce a valid ${role} token.`);
+      const verified = await request(apiUrl()).get('/auth/me').set(auth(token));
+      statusOk(verified, [200]);
     }
   });
 
