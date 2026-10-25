@@ -38,6 +38,8 @@ void main() {
       expect(button.onPressed, isNotNull);
       button.onPressed!();
       await tester.pump();
+      // ScaffoldMessenger inserts and animates the SnackBar on subsequent frames.
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(SnackBar), findsOneWidget);
     });
