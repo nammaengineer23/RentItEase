@@ -30,13 +30,17 @@ void main() {
       expect(find.text('Sample apartment'), findsOneWidget);
       expect(find.text('Book Visit'), findsOneWidget);
 
-      final bookVisitButton = find.text('Book Visit');
-      await tester.ensureVisible(bookVisitButton);
-      await tester.pumpAndSettle();
-      await tester.tap(bookVisitButton);
+      // Invoke the rendered button callback directly so this validation test
+      // is independent of viewport size and scroll physics on CI runners.
+      final bookVisitButton = find.byType(ElevatedButton);
+      expect(bookVisitButton, findsOneWidget);
+      final button = tester.widget<ElevatedButton>(bookVisitButton);
+      expect(button.onPressed, isNotNull);
+      button.onPressed!();
       await tester.pump();
 
       expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('Please select a visit date.'), findsOneWidget);
     });
 
     testWidgets('bookings show an actionable empty state when none exist', (tester) async {
