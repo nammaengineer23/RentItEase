@@ -181,3 +181,99 @@ button[disabled] { cursor: not-allowed; }
 @media (max-width: 680px) {
   .pagination { justify-content: center; }
 }
+
+
+/* Shared motion polish: short, restrained transitions across the admin UI. */
+:root {
+  --motion-fast: 140ms;
+  --motion-standard: 220ms;
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+button,
+.nav-link,
+.stat-card,
+.content-card,
+.module-list > div,
+.table-button,
+.admin-global-search-results,
+.login-card,
+input,
+.filter-select {
+  transition:
+    color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-standard) var(--motion-ease),
+    transform var(--motion-standard) var(--motion-ease);
+}
+
+button:not(:disabled):active,
+.table-button:not(:disabled):active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.primary-button:not(:disabled):hover,
+.secondary-button:not(:disabled):hover {
+  box-shadow: 0 7px 18px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
+}
+
+.stat-card:hover,
+.module-list > div:hover {
+  border-color: #c7d2fe;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
+  transform: translateY(-2px);
+}
+
+.nav-link {
+  transition:
+    color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease);
+}
+
+.nav-link:hover {
+  transform: translateX(2px);
+}
+
+.login-card {
+  animation: admin-enter 360ms var(--motion-ease) both;
+}
+
+.main-content > * {
+  animation: admin-enter 280ms var(--motion-ease) both;
+}
+
+.main-content > *:nth-child(2) { animation-delay: 25ms; }
+.main-content > *:nth-child(3) { animation-delay: 50ms; }
+
+@keyframes admin-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(79, 70, 229, 0.42);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
