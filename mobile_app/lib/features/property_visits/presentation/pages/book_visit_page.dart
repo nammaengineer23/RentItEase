@@ -64,16 +64,25 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
     }
   }
 
-  Future<void> bookVisit() async {
-    final selectedVisitDate = visitDate;
-
+  void onBookVisitPressed() {
     if (widget.propertyId.trim().isEmpty) {
       _showMessage(context.tr('propertyMissing'));
       return;
     }
 
-    if (selectedVisitDate == null) {
+    if (visitDate == null) {
       setState(() => showVisitDateValidation = true);
+      return;
+    }
+
+    // Keep the no-date validation synchronous with the button press. The
+    // async booking flow only starts after a date has been selected.
+    bookVisit();
+  }
+
+  Future<void> bookVisit() async {
+    final selectedVisitDate = visitDate;
+    if (selectedVisitDate == null) {
       return;
     }
 
@@ -342,7 +351,7 @@ class _BookVisitPageState extends ConsumerState<BookVisitPage> {
                 child: ElevatedButton.icon(
                   key: const ValueKey('book-visit-submit'),
                   onPressed:
-                      loading ? null : bookVisit,
+                      loading ? null : onBookVisitPressed,
                   icon: loading
                       ? const SizedBox(
                           width: 22,
