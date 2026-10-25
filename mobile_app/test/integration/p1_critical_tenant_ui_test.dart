@@ -30,7 +30,10 @@ void main() {
       expect(find.text('Sample apartment'), findsOneWidget);
       expect(find.text('Book Visit'), findsOneWidget);
 
-      await tester.tap(find.text('Book Visit'));
+      final bookVisitButton = find.text('Book Visit');
+      await tester.ensureVisible(bookVisitButton);
+      await tester.pumpAndSettle();
+      await tester.tap(bookVisitButton);
       await tester.pump();
 
       expect(find.byType(SnackBar), findsOneWidget);
