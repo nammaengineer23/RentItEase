@@ -99,64 +99,6 @@ describe('Property Visits E2E', () => {
   }
 
   // ============================================================
-  // JWT extraction
-  // ============================================================
-
-  function extractToken(body: any): string {
-    /*
-     * Supports all of these possible response structures:
-     *
-     * {
-     *   accessToken: "..."
-     * }
-     *
-     * {
-     *   data: {
-     *     accessToken: "..."
-     *   }
-     * }
-     *
-     * {
-     *   data: {
-     *     data: {
-     *       accessToken: "..."
-     *     }
-     *   }
-     * }
-     */
-
-    const possibleTokens = [
-      body?.accessToken,
-      body?.access_token,
-      body?.token,
-
-      body?.data?.accessToken,
-      body?.data?.access_token,
-      body?.data?.token,
-
-      body?.data?.data?.accessToken,
-      body?.data?.data?.access_token,
-      body?.data?.data?.token,
-    ];
-
-    const token = possibleTokens.find(
-      (value) => typeof value === 'string' && value.length > 0,
-    );
-
-    if (!token) {
-      throw new Error(
-        [
-          'Unable to extract JWT token from login response.',
-          '',
-          JSON.stringify(body, null, 2),
-        ].join('\n'),
-      );
-    }
-
-    return token;
-  }
-
-  // ============================================================
   // Generic response unwrapping
   // ============================================================
 
