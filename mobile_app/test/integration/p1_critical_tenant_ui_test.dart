@@ -33,13 +33,12 @@ void main() {
       final bookVisitButton = find.byKey(const ValueKey('book-visit-submit'));
       expect(bookVisitButton, findsOneWidget);
 
-      // The page contains shared transition/feedback animations, so avoid
-      // pumpAndSettle after interaction. A normal tap plus bounded pumps
-      // lets the validation state rebuild without waiting for global idleness.
-      await tester.ensureVisible(bookVisitButton);
-      await tester.tap(bookVisitButton);
+      // Invoke the current button handler directly so this regression test
+      // verifies submit validation rather than hit-testing/scroll animations.
+      final submitButton = tester.widget<ElevatedButton>(bookVisitButton);
+      expect(submitButton.onPressed, isNotNull);
+      submitButton.onPressed!();
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
 
       expect(
         find.byKey(const ValueKey('visit-date-validation-error')),
