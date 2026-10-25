@@ -163,27 +163,6 @@ class AuthenticationProvider extends ChangeNotifier {
     finally { _setLoading(false); }
   }
 
-  Future<bool> requestLoginEmailOtp(String email) async {
-    _setLoading(true);
-    try { _errorMessage = null; await _repository.requestLoginEmailOtp(email); return true; }
-    catch (error) { _errorMessage = error.toString(); return false; }
-    finally { _setLoading(false); }
-  }
-
-  Future<bool> loginWithEmailOtp(String email, String otp) async {
-    _setLoading(true);
-    try { _errorMessage = null; final response = await _repository.loginWithEmailOtp(email, otp); _authResponse = response; await _saveSession(response); await _rememberSuccessfulLogin(email); return true; }
-    catch (error) { _errorMessage = error.toString(); return false; }
-    finally { _setLoading(false); }
-  }
-
-  Future<bool> loginWithPhoneOtp(String idToken) async {
-    _setLoading(true);
-    try { _errorMessage = null; final response = await _repository.loginWithPhoneOtp(idToken); _authResponse = response; await _saveSession(response); return true; }
-    catch (error) { _errorMessage = error.toString(); return false; }
-    finally { _setLoading(false); }
-  }
-
   Future<bool> signInWithGoogle() async {
     _setLoading(true); var stage = 'Google account selection';
     try {
