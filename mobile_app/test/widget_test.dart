@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_app/app.dart';
 import 'package:mobile_app/features/admin/presentation/pages/admin_dashboard_page.dart';
 import 'package:mobile_app/features/authentication/presentation/pages/authentication_page.dart';
+import 'package:mobile_app/features/authentication/presentation/widgets/social_login_button.dart';
+import 'package:mobile_app/shared/widgets/custom_text_field.dart';
 
 void main() {
   group('RentItEase Widget Tests', () {
@@ -36,18 +38,23 @@ void main() {
 
       expect(find.byType(AuthenticationPage), findsOneWidget);
     });
-    testWidgets('Login supports switching from password to OTP', (
+    testWidgets('Login shows Google sign-in above email/password form and no OTP login', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
         const ProviderScope(child: MaterialApp(home: AuthenticationPage())),
       );
-
-      await tester.tap(find.text('OTP'));
       await tester.pump();
 
-      expect(find.text('Send OTP'), findsOneWidget);
-      expect(find.text('10-digit mobile number'), findsOneWidget);
+      expect(find.byType(SocialLoginButton), findsOneWidget);
+      expect(find.byType(CustomTextField), findsNWidgets(2));
+      expect(find.text('OTP'), findsNothing);
+      expect(find.text('Send OTP'), findsNothing);
+      expect(find.text('10-digit mobile number'), findsNothing);
+      expect(
+        tester.getTopLeft(find.byType(SocialLoginButton)).dy,
+        lessThan(tester.getTopLeft(find.byType(CustomTextField).first).dy),
+      );
     });
     testWidgets('Mobile admin console exposes all navigation sections', (
       WidgetTester tester,
