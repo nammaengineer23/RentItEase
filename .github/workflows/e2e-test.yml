@@ -95,8 +95,10 @@ jobs:
       E2E_RAZORPAY_KEY_SECRET: ${{ secrets.E2E_RAZORPAY_KEY_SECRET }}
       E2E_RAZORPAY_WEBHOOK_SECRET: ${{ secrets.RAZORPAY_WEBHOOK_SECRET }}
 
-      # Production keeps marketplace gated; the E2E suite verifies rejection and rental-only discovery.
-      E2E_EXPECT_MARKETPLACE_ENABLED: "false"
+      # Production marketplace is enabled. Keep this suite read-only for marketplace listings;
+      # full SALE/LEASE/SITE_SALE create/approve/enquiry mutations run only in isolated staging.
+      E2E_EXPECT_MARKETPLACE_ENABLED: "true"
+      E2E_MARKETPLACE_READ_ONLY: "true"
 
       # Strict release configuration validation
       E2E_STRICT: "true"
