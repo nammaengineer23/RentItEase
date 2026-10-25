@@ -58,7 +58,9 @@ export function extractToken(body: any): string {
 }
 
 export async function login(loginValue: string, password: string) {
-  const maxRateLimitRetries = 4;
+  // Rate limits may outlast a single short retry window on the shared release API.
+  // Tests run in-band; this bounded backoff prevents login bursts and avoids continuing unauthenticated.
+  const maxRateLimitRetries = 6;
   for (let attempt = 0; ; attempt += 1) {
     const response = await request(apiUrl())
       .post('/auth/login')
@@ -68,7 +70,7 @@ export async function login(loginValue: string, password: string) {
       const retryAfter = Number(response.headers['retry-after']);
       const delayMs = Number.isFinite(retryAfter) && retryAfter > 0
         ? Math.min(retryAfter * 1000, 30_000)
-        : 1000 * (2 ** attempt);
+        : Math.min(2_000 * (2 ** attempt), 30_000);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
       continue;
     }
