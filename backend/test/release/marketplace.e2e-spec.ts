@@ -179,6 +179,9 @@ describe('Staging E2E • Property marketplace', () => {
   });
 
   it('does not allow rental listings to receive marketplace enquiries', async () => {
+    // Production RC1 must remain read-only. Exercise this mutating guard only in isolated staging.
+    if (marketplaceReadOnly) return;
+
     const rental = await request(apiUrl()).post('/properties').set(auth(ownerToken)).send({
       title: `${e2eMarker()} Marketplace RENT guard ${Date.now()}`,
       description: 'Rental listing used to verify marketplace enquiry separation.',
