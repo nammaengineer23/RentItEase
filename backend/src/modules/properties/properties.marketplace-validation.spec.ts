@@ -23,6 +23,9 @@ describe('PropertiesService marketplace category validation', () => {
     ['SITE_SALE', { askingPrice: 0, landArea: 100, landAreaUnit: 'SQ_FT' }],
     ['SITE_SALE', { askingPrice: 100000, landArea: 0, landAreaUnit: 'SQ_FT' }],
     ['SITE_SALE', { askingPrice: 100000, landArea: 100 }],
+    ['SITE_RENT', { landArea: 0, landAreaUnit: 'SQ_FT' }],
+    ['SITE_LEASE', { leaseTermMonths: 12, landArea: 100 }],
+    ['SITE_LEASE', { leaseTermMonths: 0, landArea: 100, landAreaUnit: 'SQ_FT' }],
     ['LEASE', { leaseTermMonths: 0 }],
     ['LEASE', { leaseTermMonths: -12 }],
     ['RENT', { askingPrice: 100000 }],
@@ -40,12 +43,14 @@ describe('PropertiesService marketplace category validation', () => {
     expect(prisma.property.create).not.toHaveBeenCalled();
   });
 
-  it('rejects non-rental categories when the server feature flag is off', async () => {
+  it('allows owners to create unpublished marketplace drafts while public discovery is disabled', async () => {
     process.env.PROPERTY_MARKETPLACE_ENABLED = 'false';
-    await expect(
-      service.create({ transactionType: PropertyTransactionType.SALE, askingPrice: 100000 } as any, owner),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(prisma.property.create).not.toHaveBeenCalled();
+    prisma.property.create.mockResolvedValue({ id: 'property-draft' });
+    await service.create({
+      transactionType: PropertyTransactionType.SALE,
+      askingPrice: 100000,
+    } as any, owner);
+    expect(prisma.property.create).toHaveBeenCalled();
   });
 
   it('does not apply marketplace gating to existing RENT category', async () => {
