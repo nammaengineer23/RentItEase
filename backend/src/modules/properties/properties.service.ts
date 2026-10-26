@@ -971,6 +971,9 @@ export class PropertiesService {
     const categoryChanged = nextTransactionType !== property.transactionType;
     this.validateMarketplaceListing({
       transactionType: nextTransactionType,
+      price: categoryChanged
+        ? updatePropertyDto.price
+        : updatePropertyDto.price ?? Number(property.price),
       // When changing category, validate the new category's submitted fields,
       // not stale fields from the previous category. Required fields must be
       // supplied again and the write below clears fields that no longer apply.
