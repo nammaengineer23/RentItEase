@@ -72,6 +72,8 @@ class _AddMarketplaceListingPageState
       _category = value['transactionType']?.toString() ?? 'SALE';
       _propertyType = value['propertyType']?.toString() ?? 'HOUSE';
       _askingPrice.text = value['askingPrice']?.toString() ?? '';
+      // Site rent/lease use the property's regular price field, not askingPrice.
+      _rent.text = value['price']?.toString() ?? '';
       _leaseMonths.text = value['leaseTermMonths']?.toString() ?? '12';
       _landArea.text = value['landArea']?.toString() ?? value['area']?.toString() ?? '';
       _landUnit.text = value['landAreaUnit']?.toString() ?? 'sq_ft';
