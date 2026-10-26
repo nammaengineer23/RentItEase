@@ -67,9 +67,20 @@ export class PropertiesService {
     if (type === PropertyTransactionType.SITE_SALE && hasLeaseFields) {
       throw new BadRequestException('Site-sale listings cannot include lease-specific fields.');
     }
-    if ([PropertyTransactionType.SITE_RENT, PropertyTransactionType.SITE_LEASE, PropertyTransactionType.SITE_SALE].includes(type) &&
-        (!(Number(data.landArea) > 0) || !data.landAreaUnit)) {
-      throw new BadRequestException('Site listings require a positive landArea and landAreaUnit.');
+    if (
+      type === PropertyTransactionType.SITE_RENT ||
+      type === PropertyTransactionType.SITE_LEASE ||
+      type === PropertyTransactionType.SITE_SALE
+    ) {
+      if (!(Number(data.landArea) > 0) || !data.landAreaUnit) {
+        throw new BadRequestException('Site listings require a positive landArea and landAreaUnit.');
+      }
+    }
+    if (
+      (type === PropertyTransactionType.SITE_RENT || type === PropertyTransactionType.SITE_LEASE) &&
+      !(Number(data.price) > 0)
+    ) {
+      throw new BadRequestException('A positive rent price is required for site rental and lease listings.');
     }
   }
 
@@ -983,7 +994,11 @@ export class PropertiesService {
           ? { leaseTermMonths: null, leaseRenewalTerms: null, landArea: null, landAreaUnit: null }
           : nextTransactionType === PropertyTransactionType.LEASE
             ? { askingPrice: null, priceNegotiable: false, landArea: null, landAreaUnit: null }
-            : { leaseTermMonths: null, leaseRenewalTerms: null }
+            : nextTransactionType === PropertyTransactionType.SITE_RENT
+              ? { askingPrice: null, priceNegotiable: false, leaseTermMonths: null, leaseRenewalTerms: null }
+              : nextTransactionType === PropertyTransactionType.SITE_LEASE
+                ? { askingPrice: null, priceNegotiable: false }
+                : { leaseTermMonths: null, leaseRenewalTerms: null }
       : {};
 
     // Owners may not make an unverified property publicly available. Admin
