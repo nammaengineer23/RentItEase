@@ -98,7 +98,7 @@ jobs:
             "${E2E_BASE_URL%/}${E2E_API_PREFIX}/health" >/dev/null
           echo "Staging health check passed."
 
-      - name: Marketplace E2E (SALE, LEASE, SITE_SALE, enquiries, IDOR)
+      - name: Marketplace E2E (SALE, LEASE, SITE_SALE, SITE_RENT, SITE_LEASE, enquiries, IDOR)
         run: npx jest --config test/jest-release-e2e.json --runInBand --verbose test/release/marketplace.e2e-spec.ts
 
       - name: Rental property regression

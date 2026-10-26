@@ -56,7 +56,7 @@ describe('Staging E2E • Property marketplace', () => {
     adminToken = (await login(adminEmail!, adminPassword!)).token;
   });
 
-  async function createAndApprove(type: 'SALE' | 'LEASE' | 'SITE_SALE'): Promise<string | null> {
+  async function createAndApprove(type: 'SALE' | 'LEASE' | 'SITE_SALE' | 'SITE_RENT' | 'SITE_LEASE'): Promise<string | null> {
     const title = `${e2eMarker()} Marketplace ${type} ${Date.now()}`;
     const payload: Record<string, unknown> = {
       title,
@@ -71,7 +71,7 @@ describe('Staging E2E • Property marketplace', () => {
       bedrooms: 2,
       bathrooms: 2,
       area: 1200,
-      propertyType: 'APARTMENT',
+      propertyType: type.startsWith('SITE_') ? 'LAND' : 'APARTMENT',
       furnishing: 'SEMI_FURNISHED',
       parking: true,
       petFriendly: true,
@@ -84,27 +84,34 @@ describe('Staging E2E • Property marketplace', () => {
       payload.leaseTermMonths = 36;
       payload.leaseRenewalTerms = 'Renewal by mutual written agreement';
     }
-    if (type === 'SITE_SALE') {
-      payload.askingPrice = 4200000;
+    if (type === 'SITE_RENT' || type === 'SITE_LEASE' || type === 'SITE_SALE') {
       payload.landArea = 1200;
       payload.landAreaUnit = 'sq_ft';
+    }
+    if (type === 'SITE_RENT' || type === 'SITE_LEASE') {
+      payload.price = 25000;
+    }
+    if (type === 'SITE_LEASE') {
+      payload.leaseTermMonths = 36;
+      payload.leaseRenewalTerms = 'Renewal by mutual written agreement';
+    }
+    if (type === 'SITE_SALE') {
+      payload.askingPrice = 4200000;
       payload.siteFrontage = 30;
       payload.siteFacing = 'NORTH';
       payload.roadAccess = true;
     }
 
     const created = await request(apiUrl()).post('/properties').set(auth(ownerToken)).send(payload);
-    if (!expectMarketplaceEnabled) {
-      expect(created.status).toBe(400);
-      expect(JSON.stringify(created.body)).toContain('Sales and long-term lease listings are not enabled yet.');
-      return null;
-    }
     statusOk(created);
     const property = extractData(created.body)?.property ?? extractData(created.body);
     expect(property?.id).toBeTruthy();
     expect(property?.transactionType).toBe(type);
+    expect(property?.propertyType).toBe(type.startsWith('SITE_') ? 'LAND' : 'APARTMENT');
     expect(property?.isVerified).toBe(false);
     expect(property?.isAvailable).toBe(false);
+
+    if (!expectMarketplaceEnabled) return property.id as string;
 
     const approval = await request(apiUrl()).patch(`/admin/properties/${property.id}/approve`).set(auth(adminToken));
     statusOk(approval);
@@ -112,7 +119,7 @@ describe('Staging E2E • Property marketplace', () => {
     return property.id as string;
   }
 
-  it.each(['SALE', 'LEASE', 'SITE_SALE'] as const)('browses %s listings', async (type) => {
+  it.each(['SALE', 'LEASE', 'SITE_SALE', 'SITE_RENT', 'SITE_LEASE'] as const)('browses %s listings', async (type) => {
     if (marketplaceReadOnly) {
       const browse = await request(apiUrl()).get('/properties').query({ transactionType: type });
       statusOk(browse);
@@ -126,8 +133,8 @@ describe('Staging E2E • Property marketplace', () => {
     const results = unwrapArray(browse.body);
     if (!expectMarketplaceEnabled) {
       expect(results.every((item: any) => item.transactionType === 'RENT')).toBe(true);
-      expect(results.some((item: any) => item.transactionType === type)).toBe(false);
-      expect(id).toBeNull();
+      expect(results.some((item: any) => item.id === id || item.transactionType === type)).toBe(false);
+      expect(id).toBeTruthy();
       return;
     }
     expect(results.some((item: any) => item.id === id && item.transactionType === type)).toBe(true);

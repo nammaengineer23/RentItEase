@@ -4,14 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/dio_provider.dart';
 
-const bool _marketplaceEnabled = bool.fromEnvironment(
-  'PROPERTY_MARKETPLACE_ENABLED',
-  defaultValue: false,
-);
-
 class AddMarketplaceListingPage extends ConsumerStatefulWidget {
-  const AddMarketplaceListingPage({super.key, this.propertyId});
+  const AddMarketplaceListingPage({super.key, this.propertyId, this.initialCategory = 'SALE', this.initialPropertyType = 'HOUSE'});
   final String? propertyId;
+  final String initialCategory;
+  final String initialPropertyType;
 
   @override
   ConsumerState<AddMarketplaceListingPage> createState() =>
@@ -29,13 +26,14 @@ class _AddMarketplaceListingPageState
   final _state = TextEditingController();
   final _pincode = TextEditingController();
   final _askingPrice = TextEditingController();
+  final _rent = TextEditingController();
   final _leaseMonths = TextEditingController(text: '12');
   final _landArea = TextEditingController();
   final _landUnit = TextEditingController(text: 'sq_ft');
   final _bedrooms = TextEditingController(text: '0');
   final _bathrooms = TextEditingController(text: '0');
-  String _category = 'SALE';
-  String _propertyType = 'HOUSE';
+  late String _category;
+  late String _propertyType;
   bool _negotiable = false;
   bool _roadAccess = false;
   bool _saving = false;
@@ -45,7 +43,9 @@ class _AddMarketplaceListingPageState
   @override
   void initState() {
     super.initState();
-    if (widget.propertyId != null && _marketplaceEnabled) {
+    _category = widget.initialCategory;
+    _propertyType = widget.initialPropertyType;
+    if (widget.propertyId != null) {
       _loadExisting();
     }
   }
@@ -72,6 +72,8 @@ class _AddMarketplaceListingPageState
       _category = value['transactionType']?.toString() ?? 'SALE';
       _propertyType = value['propertyType']?.toString() ?? 'HOUSE';
       _askingPrice.text = value['askingPrice']?.toString() ?? '';
+      // Site rent/lease use the property's regular price field, not askingPrice.
+      _rent.text = value['price']?.toString() ?? '';
       _leaseMonths.text = value['leaseTermMonths']?.toString() ?? '12';
       _landArea.text = value['landArea']?.toString() ?? value['area']?.toString() ?? '';
       _landUnit.text = value['landAreaUnit']?.toString() ?? 'sq_ft';
@@ -90,7 +92,7 @@ class _AddMarketplaceListingPageState
   void dispose() {
     for (final controller in [
       _title, _description, _address, _locality, _city, _state, _pincode,
-      _askingPrice, _leaseMonths, _landArea, _landUnit, _bedrooms, _bathrooms,
+      _askingPrice, _rent, _leaseMonths, _landArea, _landUnit, _bedrooms, _bathrooms,
     ]) {
       controller.dispose();
     }
@@ -106,19 +108,23 @@ class _AddMarketplaceListingPageState
   }
 
   Future<void> _submit() async {
-    if (!_marketplaceEnabled || _saving) return;
+    if (_saving) return;
     if (!_formKey.currentState!.validate()) return;
-    if (_category == 'LEASE' && (int.tryParse(_leaseMonths.text) ?? 0) <= 0) {
+    if (['LEASE', 'SITE_LEASE'].contains(_category) && (int.tryParse(_leaseMonths.text) ?? 0) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Enter a valid lease duration in months.')),
       );
       return;
     }
-    if (_category == 'SITE_SALE' &&
+    if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE'].contains(_category) &&
         (double.tryParse(_landArea.text) ?? 0) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Enter the site area.')),
       );
+      return;
+    }
+    if (['LEASE', 'SITE_RENT', 'SITE_LEASE'].contains(_category) && (_rent.text.trim().isEmpty || (double.tryParse(_rent.text.trim()) ?? 0) <= 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a positive lease or rent amount.')));
       return;
     }
     setState(() => _saving = true);
@@ -126,7 +132,7 @@ class _AddMarketplaceListingPageState
       final payload = <String, dynamic>{
         'title': _title.text.trim(),
         'description': _description.text.trim(),
-        'price': 0,
+        'price': ['LEASE', 'SITE_RENT', 'SITE_LEASE'].contains(_category) ? double.parse(_rent.text.trim()) : 0,
         'address': _address.text.trim(),
         'locality': _locality.text.trim(),
         'city': _city.text.trim(),
@@ -142,12 +148,12 @@ class _AddMarketplaceListingPageState
         'petFriendly': false,
         'securityDeposit': 0,
         'transactionType': _category,
-        if (_category != 'LEASE')
+        if (['SALE', 'SITE_SALE'].contains(_category))
           'askingPrice': double.parse(_askingPrice.text.trim()),
-        if (_category != 'LEASE') 'priceNegotiable': _negotiable,
-        if (_category == 'LEASE')
+        if (['SALE', 'SITE_SALE'].contains(_category)) 'priceNegotiable': _negotiable,
+        if (['LEASE', 'SITE_LEASE'].contains(_category))
           'leaseTermMonths': int.parse(_leaseMonths.text.trim()),
-        if (_category == 'SITE_SALE') ...{
+        if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE'].contains(_category)) ...{
           'landArea': double.parse(_landArea.text.trim()),
           'landAreaUnit': _landUnit.text.trim().isEmpty
               ? 'sq_ft'
@@ -186,18 +192,8 @@ class _AddMarketplaceListingPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.propertyId == null ? 'Add sale or lease listing' : 'Edit sale or lease listing')),
-      body: !_marketplaceEnabled
-          ? const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'Marketplace listing creation is disabled in this build.',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            )
-          : _loadingExisting
+      appBar: AppBar(title: Text(widget.propertyId == null ? 'Add property listing' : 'Edit property listing')),
+      body: _loadingExisting
               ? const Center(child: CircularProgressIndicator())
               : _loadError != null
                   ? Center(
@@ -218,22 +214,30 @@ class _AddMarketplaceListingPageState
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  DropdownButtonFormField<String>(
-                    initialValue: _category,
-                    decoration: const InputDecoration(
-                      labelText: 'Listing category',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'SALE', child: Text('Property for sale')),
-                      DropdownMenuItem(value: 'LEASE', child: Text('Long-term lease')),
-                      DropdownMenuItem(value: 'SITE_SALE', child: Text('Vacant site for sale')),
-                    ],
-                    onChanged: _saving
-                        ? null
-                        : (value) => setState(() => _category = value ?? 'SALE'),
+                  Text(
+                    switch (_category) {
+                      'SALE' => 'House Sale',
+                      'LEASE' => 'House Lease',
+                      'SITE_RENT' => 'Site Rent',
+                      'SITE_LEASE' => 'Site Lease',
+                      'SITE_SALE' => 'Site Sale',
+                      _ => 'Property listing',
+                    },
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 12),
+                  if (['LEASE', 'SITE_RENT', 'SITE_LEASE'].contains(_category))
+                    TextFormField(
+                      controller: _rent,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: _category == 'LEASE' ? 'Lease amount (INR)' : 'Rent amount (INR)',
+                        border: const OutlineInputBorder(),
+                      ),
+                      validator: _positiveNumber,
+                    ),
+                  if (['LEASE', 'SITE_RENT', 'SITE_LEASE'].contains(_category))
+                    const SizedBox(height: 12),
                   TextFormField(
                     controller: _title,
                     decoration: const InputDecoration(labelText: 'Listing title', border: OutlineInputBorder()),
@@ -247,7 +251,7 @@ class _AddMarketplaceListingPageState
                     validator: _required,
                   ),
                   const SizedBox(height: 12),
-                  if (_category != 'LEASE') ...[
+                  if (['SALE', 'SITE_SALE'].contains(_category)) ...[
                     TextFormField(
                       controller: _askingPrice,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -261,7 +265,7 @@ class _AddMarketplaceListingPageState
                       onChanged: _saving ? null : (value) => setState(() => _negotiable = value),
                     ),
                   ],
-                  if (_category == 'LEASE')
+                  if (['LEASE', 'SITE_LEASE'].contains(_category))
                     TextFormField(
                       controller: _leaseMonths,
                       keyboardType: TextInputType.number,
@@ -273,7 +277,7 @@ class _AddMarketplaceListingPageState
                             : null;
                       },
                     ),
-                  if (_category == 'SITE_SALE') ...[
+                  if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE'].contains(_category)) ...[
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _landArea,
@@ -305,16 +309,9 @@ class _AddMarketplaceListingPageState
                   const SizedBox(height: 12),
                   TextFormField(controller: _pincode, decoration: const InputDecoration(labelText: 'PIN code', border: OutlineInputBorder()), validator: _required),
                   const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _propertyType,
+                  InputDecorator(
                     decoration: const InputDecoration(labelText: 'Property type', border: OutlineInputBorder()),
-                    items: const [
-                      DropdownMenuItem(value: 'HOUSE', child: Text('House')),
-                      DropdownMenuItem(value: 'APARTMENT', child: Text('Apartment')),
-                      DropdownMenuItem(value: 'VILLA', child: Text('Villa')),
-                      
-                    ],
-                    onChanged: _saving ? null : (value) => setState(() => _propertyType = value ?? 'HOUSE'),
+                    child: Text(_propertyType == 'LAND' ? 'Site / Land' : 'House'),
                   ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
