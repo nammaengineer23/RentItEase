@@ -76,6 +76,7 @@ class OwnerRepositoryImpl implements OwnerRepository {
       'title': property.title,
       'description': property.description,
       'price': property.rent,
+      'transactionType': property.transactionType,
       'address': property.address,
       'locality': property.locality,
       'landmark': landmark,
