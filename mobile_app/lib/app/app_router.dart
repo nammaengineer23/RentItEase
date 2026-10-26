@@ -35,6 +35,7 @@ import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/owner/data/models/owner_property_model.dart';
 import '../features/owner/providers/owner_provider.dart';
 import '../features/owner/presentation/pages/add_property_page.dart';
+import '../features/owner/presentation/pages/add_property_type_page.dart';
 import '../features/owner/presentation/pages/add_marketplace_listing_page.dart';
 import '../features/owner/presentation/pages/edit_property_page.dart';
 import '../features/owner/presentation/pages/my_properties_page.dart';
@@ -524,14 +525,24 @@ class AppRouter {
             name: 'owner-add-marketplace-listing',
             builder: (context, state) => AddMarketplaceListingPage(
               propertyId: state.uri.queryParameters['propertyId'],
+              initialCategory: state.uri.queryParameters['category'] ?? 'SALE',
+              initialPropertyType: state.uri.queryParameters['propertyType'] ?? 'HOUSE',
             ),
           ),
 
-          // Add Property
+          // Add Property: choose a transaction and property type first.
           GoRoute(
             path: '/owner/add-property',
             name: 'owner-add-property',
-            builder: (context, state) => const AddPropertyPage(),
+            builder: (context, state) => const AddPropertyTypePage(),
+          ),
+          GoRoute(
+            path: '/owner/add-property-form',
+            name: 'owner-add-property-form',
+            builder: (context, state) => AddPropertyPage(
+              propertyType: state.uri.queryParameters['propertyType'] ?? 'HOUSE',
+              transactionType: state.uri.queryParameters['transactionType'] ?? 'RENT',
+            ),
           ),
 
           // Owner Analytics
