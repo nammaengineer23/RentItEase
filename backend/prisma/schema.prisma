@@ -784,6 +784,8 @@ enum PropertyTransactionType {
   RENT
   LEASE
   SALE
+  SITE_RENT
+  SITE_LEASE
   SITE_SALE
 }
 
@@ -798,6 +800,7 @@ enum PropertyDocumentReviewStatus {
 enum PropertyType {
   APARTMENT
   HOUSE
+  LAND
   VILLA
   STUDIO
   ROOM
