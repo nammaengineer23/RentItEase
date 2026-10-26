@@ -123,7 +123,7 @@ class _AddMarketplaceListingPageState
       );
       return;
     }
-    if (['SITE_RENT', 'SITE_LEASE'].contains(_category) && (_rent.text.trim().isEmpty || (double.tryParse(_rent.text.trim()) ?? 0) <= 0)) {
+    if (['LEASE', 'SITE_RENT', 'SITE_LEASE'].contains(_category) && (_rent.text.trim().isEmpty || (double.tryParse(_rent.text.trim()) ?? 0) <= 0)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a positive rent amount.')));
       return;
     }
@@ -226,14 +226,17 @@ class _AddMarketplaceListingPageState
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 12),
-                  if (['SITE_RENT', 'SITE_LEASE'].contains(_category))
+                  if (['LEASE', 'SITE_RENT', 'SITE_LEASE'].contains(_category))
                     TextFormField(
                       controller: _rent,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(labelText: 'Rent amount (INR)', border: OutlineInputBorder()),
+                      decoration: InputDecoration(
+                        labelText: _category == 'LEASE' ? 'Lease amount (INR)' : 'Rent amount (INR)',
+                        border: const OutlineInputBorder(),
+                      ),
                       validator: _positiveNumber,
                     ),
-                  if (['SITE_RENT', 'SITE_LEASE'].contains(_category))
+                  if (['LEASE', 'SITE_RENT', 'SITE_LEASE'].contains(_category))
                     const SizedBox(height: 12),
                   TextFormField(
                     controller: _title,
