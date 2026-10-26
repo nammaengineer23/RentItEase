@@ -124,7 +124,7 @@ class _AddMarketplaceListingPageState
       return;
     }
     if (['LEASE', 'SITE_RENT', 'SITE_LEASE'].contains(_category) && (_rent.text.trim().isEmpty || (double.tryParse(_rent.text.trim()) ?? 0) <= 0)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a positive rent amount.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a positive lease or rent amount.')));
       return;
     }
     setState(() => _saving = true);
@@ -132,7 +132,7 @@ class _AddMarketplaceListingPageState
       final payload = <String, dynamic>{
         'title': _title.text.trim(),
         'description': _description.text.trim(),
-        'price': ['SITE_RENT', 'SITE_LEASE'].contains(_category) ? double.parse(_rent.text.trim()) : 0,
+        'price': ['LEASE', 'SITE_RENT', 'SITE_LEASE'].contains(_category) ? double.parse(_rent.text.trim()) : 0,
         'address': _address.text.trim(),
         'locality': _locality.text.trim(),
         'city': _city.text.trim(),
