@@ -304,17 +304,9 @@ class _AddMarketplaceListingPageState
                   const SizedBox(height: 12),
                   TextFormField(controller: _pincode, decoration: const InputDecoration(labelText: 'PIN code', border: OutlineInputBorder()), validator: _required),
                   const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _propertyType,
+                  InputDecorator(
                     decoration: const InputDecoration(labelText: 'Property type', border: OutlineInputBorder()),
-                    items: const [
-                      DropdownMenuItem(value: 'HOUSE', child: Text('House')),
-                    DropdownMenuItem(value: 'LAND', child: Text('Site / Land')),
-                      DropdownMenuItem(value: 'APARTMENT', child: Text('Apartment')),
-                      DropdownMenuItem(value: 'VILLA', child: Text('Villa')),
-                      
-                    ],
-                    onChanged: _saving ? null : (value) => setState(() => _propertyType = value ?? 'HOUSE'),
+                    child: Text(_propertyType == 'LAND' ? 'Site / Land' : 'House'),
                   ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
