@@ -104,12 +104,19 @@ export class NotificationOutboxWorker implements OnModuleInit, OnModuleDestroy {
           status: { in: ['PENDING', 'RETRY', 'PROCESSING'] },
           nextAttemptAt: { lte: new Date() },
         },
-        include: { device: { select: { id: true, token: true } } },
+        include: { device: { select: { id: true, token: true, userId: true } } },
         orderBy: { createdAt: 'asc' },
       });
       const fcmData = this.toFcmData(event.data);
 
       for (const delivery of deliveries) {
+        if (delivery.device.userId !== event.userId) {
+          await this.prisma.notificationOutboxDelivery.update({
+            where: { id: delivery.id },
+            data: { status: 'SKIPPED', lastError: 'Device is no longer registered to the event recipient' },
+          });
+          continue;
+        }
         if (!(await this.heartbeat(event))) return;
         const claimed = await this.prisma.notificationOutboxDelivery.updateMany({
           where: { id: delivery.id, status: { in: ['PENDING', 'RETRY', 'PROCESSING'] } },
