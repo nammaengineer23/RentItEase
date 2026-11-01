@@ -405,38 +405,31 @@ export class PropertyImagesService {
       throw new NotFoundException('Image not found for this property.');
     }
 
-    // Remove the DB reference before deleting the object. If storage cleanup
-    // fails, the object becomes an unreferenced reconciliation candidate;
-    // the reverse order could leave a live DB row pointing to a missing file.
-    await this.prisma.propertyImage.delete({
-      where: {
-        id: imageId,
-      },
-    });
-
-    // If deleted image was primary, assign the first remaining image.
-    if (image.isPrimary) {
-      const nextImage = await this.prisma.propertyImage.findFirst({
-        where: {
-          propertyId,
-        },
-        orderBy: {
-          displayOrder: 'asc',
-        },
+    // Delete the row and promote a replacement primary in one transaction.
+    // If the transaction fails, keep the object and its metadata intact.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.propertyImage.delete({
+        where: { id: imageId },
       });
 
-      if (nextImage) {
-        await this.prisma.propertyImage.update({
-          where: {
-            id: nextImage.id,
-          },
-          data: {
-            isPrimary: true,
-          },
+      if (image.isPrimary) {
+        const nextImage = await tx.propertyImage.findFirst({
+          where: { propertyId },
+          orderBy: { displayOrder: 'asc' },
         });
-      }
-    }
 
+        if (nextImage) {
+          await tx.propertyImage.update({
+            where: { id: nextImage.id },
+            data: { isPrimary: true },
+          });
+        }
+      }
+    });
+
+    // Storage cleanup happens only after the DB transaction commits. A failed
+    // delete leaves an unreferenced object for guarded reconciliation rather
+    // than a database row pointing at an object that no longer exists.
     if (image.publicId) {
       await this.storageService.deleteImage(image.publicId).catch(() => {
         // Orphan cleanup is handled by the guarded storage reconciliation job.
