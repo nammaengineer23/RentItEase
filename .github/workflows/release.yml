@@ -126,13 +126,14 @@ jobs:
           test -n "$API_BASE_URL"
           test -n "$MAPS_API_KEY"
           flutter build apk \
+            --flavor production \
             --release \
             --build-number="$BUILD_NUMBER" \
             --dart-define=API_BASE_URL="$API_BASE_URL" \
             --dart-define=ENABLE_GOOGLE_SIGN_IN=true \
             --dart-define=ENABLE_PHONE_OTP=false
 
-          cp build/app/outputs/flutter-apk/app-release.apk \
+          cp build/app/outputs/flutter-apk/app-production-release.apk \
             build/app/outputs/flutter-apk/RentItEase-release.apk
 
       - name: Verify release APK signing certificate
