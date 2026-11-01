@@ -45,6 +45,7 @@ model User {
   memberships             Membership[]
   sentMessages            Message[]                @relation("MessageSender")
   notifications           Notification[]
+  notificationOutboxEvents NotificationOutbox[]
   otpCodes                OtpCode[]
   passwordResetTokens     PasswordResetToken[]
   premiumListings         PremiumListing[]
@@ -136,8 +137,54 @@ model UserDevice {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outboxDeliveries NotificationOutboxDelivery[]
 
   @@index([userId])
+}
+
+model NotificationOutbox {
+  id             String   @id @default(cuid())
+  userId         String
+  notificationId String?  @unique
+  idempotencyKey String   @unique
+  title          String
+  body           String
+  data           Json?
+  status         String   @default("PENDING")
+  attemptCount   Int      @default(0)
+  maxAttempts    Int      @default(8)
+  availableAt    DateTime @default(now())
+  lockedAt       DateTime?
+  lockToken      String?
+  lastError      String?
+  completedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification   Notification? @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  deliveries     NotificationOutboxDelivery[]
+
+  @@index([status, availableAt, createdAt])
+  @@index([lockedAt])
+  @@index([userId, createdAt])
+}
+
+model NotificationOutboxDelivery {
+  id            String   @id @default(cuid())
+  eventId       String
+  deviceId      String
+  status        String   @default("PENDING")
+  attemptCount  Int      @default(0)
+  nextAttemptAt DateTime @default(now())
+  lastError     String?
+  sentAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  event         NotificationOutbox @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  device        UserDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, deviceId])
+  @@index([eventId, status, nextAttemptAt])
 }
 
 model Property {
@@ -576,6 +623,7 @@ model Notification {
   type      NotificationType @default(GENERAL)
   relatedId String?
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outboxEvent NotificationOutbox?
 
   @@index([userId])
   @@index([relatedId])

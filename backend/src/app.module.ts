@@ -154,6 +154,10 @@ import { AppCheckGuard } from './firebase/app-check.guard';
           .valid('disabled', 'monitor', 'enforce')
           .default('monitor'),
 
+        PUSH_OUTBOX_WORKER_ENABLED: Joi.boolean().default(true),
+        PUSH_OUTBOX_POLL_INTERVAL_MS: Joi.number().integer().min(1000).max(60000).default(5000),
+        PUSH_OUTBOX_BATCH_SIZE: Joi.number().integer().min(1).max(100).default(10),
+
         ALLOWED_HOSTS: Joi.string().default('api.rentitease.com'),
 
         TRUST_PROXY: Joi.alternatives().try(Joi.boolean(), Joi.number().integer().min(0)).optional(),
