@@ -137,6 +137,7 @@ jobs:
           BUILD_NAME: ${{ inputs.build_name }}
         run: |
           flutter build appbundle \
+            --flavor production \
             --release \
             --build-name="$BUILD_NAME" \
             --build-number="$BUILD_NUMBER" \
@@ -146,15 +147,15 @@ jobs:
 
       - name: Verify AAB exists
         run: |
-          test -f build/app/outputs/bundle/release/app-release.aab
-          ls -lh build/app/outputs/bundle/release/app-release.aab
+          test -f build/app/outputs/bundle/productionRelease/app-production-release.aab
+          ls -lh build/app/outputs/bundle/productionRelease/app-production-release.aab
 
       - name: Upload AAB to Google Play Closed Testing
         uses: joutvhu/publish-android@v2
         with:
           serviceAccountJson: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.rentitease.app
-          releaseFile: mobile_app/build/app/outputs/bundle/release/app-release.aab
+          releaseFile: mobile_app/build/app/outputs/bundle/productionRelease/app-production-release.aab
           track: alpha
           status: ${{ inputs.release_status }}
           releaseName: "RentItEase ${{ inputs.build_name }} (${{ inputs.build_number }})"
