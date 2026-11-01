@@ -151,3 +151,90 @@ describe('PropertyImagesService video tours', () => {
   });
 
 });
+
+describe('PropertyImagesService image deletion consistency', () => {
+  const property = { findUnique: jest.fn() };
+  const propertyImage = {
+    findFirst: jest.fn(),
+    delete: jest.fn(),
+    update: jest.fn(),
+  };
+  const tx = { propertyImage };
+  const prisma = {
+    property,
+    propertyImage,
+    $transaction: jest.fn(async (callback: (client: typeof tx) => unknown) => callback(tx)),
+  } as any;
+  const storage = { deleteImage: jest.fn() } as any;
+  let service: PropertyImagesService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new PropertyImagesService(prisma, storage);
+    property.findUnique.mockResolvedValue({ id: 'property-1', ownerId: 'owner-1' });
+    storage.deleteImage.mockResolvedValue(true);
+  });
+
+  it('deletes a primary image and promotes its replacement atomically before storage cleanup', async () => {
+    propertyImage.findFirst
+      .mockResolvedValueOnce({
+        id: 'image-1',
+        propertyId: 'property-1',
+        publicId: 'properties/image-1.jpg',
+        isPrimary: true,
+      })
+      .mockResolvedValueOnce({ id: 'image-2' });
+
+    await expect(service.deleteImage(
+      'property-1',
+      'image-1',
+      { id: 'owner-1', role: 'OWNER' },
+    )).resolves.toMatchObject({ success: true });
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(propertyImage.delete).toHaveBeenCalledWith({ where: { id: 'image-1' } });
+    expect(propertyImage.update).toHaveBeenCalledWith({
+      where: { id: 'image-2' },
+      data: { isPrimary: true },
+    });
+    expect(prisma.$transaction.mock.invocationCallOrder[0])
+      .toBeLessThan(storage.deleteImage.mock.invocationCallOrder[0]);
+  });
+
+  it('keeps the storage object when the database transaction fails', async () => {
+    propertyImage.findFirst.mockResolvedValue({
+      id: 'image-1',
+      propertyId: 'property-1',
+      publicId: 'properties/image-1.jpg',
+      isPrimary: false,
+    });
+    prisma.$transaction.mockRejectedValueOnce(new Error('database unavailable'));
+
+    await expect(service.deleteImage(
+      'property-1',
+      'image-1',
+      { id: 'owner-1', role: 'OWNER' },
+    )).rejects.toThrow('database unavailable');
+
+    expect(storage.deleteImage).not.toHaveBeenCalled();
+  });
+
+  it('does not fail the completed database deletion when object cleanup fails', async () => {
+    propertyImage.findFirst.mockResolvedValue({
+      id: 'image-1',
+      propertyId: 'property-1',
+      publicId: 'properties/image-1.jpg',
+      isPrimary: false,
+    });
+    storage.deleteImage.mockRejectedValue(new Error('temporary storage outage'));
+
+    await expect(service.deleteImage(
+      'property-1',
+      'image-1',
+      { id: 'owner-1', role: 'OWNER' },
+    )).resolves.toMatchObject({ success: true });
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(storage.deleteImage).toHaveBeenCalledWith('properties/image-1.jpg');
+  });
+});
