@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
@@ -132,10 +132,16 @@ export class FirebaseService {
   }
 
   async verifyToken(idToken: string) {
-    return this.withTimeout(
-      this.getAuth().verifyIdToken(idToken),
-      15_000,
-    );
+    try {
+      // checkRevoked=true also rejects revoked sessions and disabled Firebase users.
+      // Firebase Admin validates the token against the configured project's audience.
+      return await this.withTimeout(
+        this.getAuth().verifyIdToken(idToken, true),
+        15_000,
+      );
+    } catch {
+      throw new UnauthorizedException('Invalid, expired, revoked, or disabled Firebase session.');
+    }
   }
 
   // =====================================

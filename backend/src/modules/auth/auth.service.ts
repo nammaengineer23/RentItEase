@@ -277,39 +277,118 @@ export class AuthService {
 
   async firebaseLogin(idToken: string, createAccount = false) {
     const decoded = await this.firebaseService.verifyToken(idToken);
-    const phone = decoded.phone_number?.trim();
+    const uid = decoded.sub;
     const email = decoded.email?.trim().toLowerCase();
+    const firebaseClaims = decoded.firebase as
+      | { sign_in_provider?: string }
+      | undefined;
 
-    if (!phone && !email) {
-      throw new UnauthorizedException('Phone number or verified email not found in Firebase token.');
+    // This endpoint is the Google sign-in exchange. Do not allow phone or
+    // another Firebase provider to claim a RentItEase account through it.
+    if (firebaseClaims?.sign_in_provider !== 'google.com') {
+      throw new UnauthorizedException('Sign in with Google to continue.');
     }
 
-    let user = phone ? await this.prisma.user.findUnique({ where: { phone } }) : null;
-    if (!user && email) user = await this.prisma.user.findUnique({ where: { email } });
+    if (!uid || !email || decoded.email_verified !== true) {
+      throw new UnauthorizedException('A verified Google identity is required.');
+    }
+
+    // The immutable Firebase UID is the primary identity key. Email is used
+    // only for a one-time, verified account link when no UID mapping exists.
+    let user = await this.prisma.user.findUnique({
+      where: { firebaseUid: uid },
+    });
 
     if (!user) {
-      if (!createAccount) {
-        throw new UnauthorizedException(
-          'No RentItEase account exists for this Google account. Complete phone verification to create one.',
+      const emailMatches = await this.prisma.user.findMany({
+        where: { email: { equals: email, mode: 'insensitive' } },
+        take: 2,
+      });
+
+      if (emailMatches.length > 1) {
+        throw new ConflictException(
+          'Multiple RentItEase accounts use this email. Contact support before linking Google sign-in.',
         );
       }
 
-      if (!email || decoded.email_verified !== true) {
-        throw new UnauthorizedException('A verified Google email is required to create an account.');
-      }
+      if (emailMatches.length === 1) {
+        const existing = emailMatches[0];
 
-      user = await this.prisma.user.create({
-        data: {
-          fullName: decoded.name ?? 'RentItEase User',
-          phone: null,
-          email,
-          passwordHash: '',
-          photoUrl: decoded.picture,
-        },
-      });
+        if (!existing.isActive || existing.deletedAt) {
+          throw new UnauthorizedException('Your account has been deactivated.');
+        }
+
+        if (existing.firebaseUid && existing.firebaseUid !== uid) {
+          throw new ConflictException(
+            'This RentItEase account is already linked to another Google identity.',
+          );
+        }
+
+        // Conditional update prevents two different Firebase UIDs from
+        // concurrently claiming the same legacy account.
+        const linked = await this.prisma.user.updateMany({
+          where: { id: existing.id, firebaseUid: null },
+          data: { firebaseUid: uid },
+        });
+
+        if (linked.count === 1) {
+          user = await this.prisma.user.findUnique({
+            where: { id: existing.id },
+          });
+        } else {
+          // A concurrent request may have linked this same UID first.
+          const uidOwner = await this.prisma.user.findUnique({
+            where: { firebaseUid: uid },
+          });
+          if (!uidOwner || uidOwner.id !== existing.id) {
+            throw new ConflictException(
+              'This RentItEase account could not be safely linked to the Google identity.',
+            );
+          }
+          user = uidOwner;
+        }
+      } else {
+        if (!createAccount) {
+          throw new UnauthorizedException(
+            'No RentItEase account exists for this Google account. Create an account to continue.',
+          );
+        }
+
+        try {
+          user = await this.prisma.user.create({
+            data: {
+              fullName: decoded.name ?? 'RentItEase User',
+              email,
+              phone: null,
+              passwordHash: '',
+              photoUrl: decoded.picture,
+              firebaseUid: uid,
+            },
+          });
+        } catch (error: unknown) {
+          // Handle concurrent first sign-ins without creating duplicate users.
+          if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2002'
+          ) {
+            user = await this.prisma.user.findUnique({
+              where: { firebaseUid: uid },
+            });
+            if (!user) {
+              throw new ConflictException(
+                'A RentItEase account with this email already exists. Sign in to that account before linking Google.',
+              );
+            }
+          } else {
+            throw error;
+          }
+        }
+      }
     }
 
-    if (!user.isActive) throw new UnauthorizedException('Your account has been deactivated.');
+    if (!user || !user.isActive || user.deletedAt) {
+      throw new UnauthorizedException('Your account has been deactivated.');
+    }
 
     const tokens = await this.generateTokens(user.id, user.email);
     await this.saveRefreshToken(user.id, tokens.refreshToken);
