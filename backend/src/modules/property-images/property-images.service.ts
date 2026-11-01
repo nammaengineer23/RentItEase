@@ -15,6 +15,7 @@ import { PropertyImageSection, UserRole } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
 import { StorageService } from '../../storage/storage.service';
+import { ImageFileValidator } from '../../common/validators/image-file.validator';
 import { ReorderImagesDto } from './dto/reorder-images.dto';
 
 const execFileAsync = promisify(execFile);
@@ -107,7 +108,15 @@ export class PropertyImagesService {
       });
     }
 
+    const validator = new ImageFileValidator();
+    for (const file of files) {
+      if (!validator.isValid(file) || !(await validator.hasValidContent(file))) {
+        throw new BadRequestException(validator.buildErrorMessage());
+      }
+    }
+
     const images = [];
+    const uploadedObjectKeys: string[] = [];
 
     // ==========================================
     // Upload files
@@ -116,12 +125,12 @@ export class PropertyImagesService {
     for (let index = 0; index < files.length; index++) {
       const file = files[index];
 
-      const uploadResult = await this.storageService.uploadImage(
-        file,
-        'properties',
-      );
+      const uploadResult = await this.storageService.uploadImage(file, 'properties');
+      uploadedObjectKeys.push(uploadResult.publicId);
 
-      const image = await this.prisma.propertyImage.create({
+      let image;
+      try {
+        image = await this.prisma.propertyImage.create({
         data: {
           propertyId,
           imageUrl: uploadResult.imageUrl,
@@ -130,7 +139,11 @@ export class PropertyImagesService {
           section,
           isPrimary: isPrimary && index === 0,
         },
-      });
+        });
+      } catch (error) {
+        await this.storageService.deleteImage(uploadResult.publicId).catch(() => undefined);
+        throw error;
+      }
 
       images.push(image);
     }
