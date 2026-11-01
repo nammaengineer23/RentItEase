@@ -20,6 +20,7 @@ export class NotificationsService {
           idempotencyKey: `notification:${created.id}`,
           title,
           body: message,
+          availableAt: new Date(Date.now() + 5000),
           data: {
             type,
             notificationId: created.id,
