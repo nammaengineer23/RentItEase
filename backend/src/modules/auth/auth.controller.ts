@@ -83,7 +83,9 @@ export class AuthController {
 
   @Post('firebase-login')
   @ApiOperation({
-    summary: 'Login using Firebase Phone Authentication',
+    summary: 'Exchange a verified Firebase Google ID token for a RentItEase session',
+    description:
+      'Firebase verifies the Google identity. RentItEase resolves the Firebase UID to a PostgreSQL user and returns the existing RentItEase access and refresh tokens.',
   })
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   firebaseLogin(@Body() dto: FirebaseLoginDto) {
