@@ -75,11 +75,11 @@ describe('PropertyImagesService video tours', () => {
       id: 'property-1',
       ownerId: 'owner-1',
       videoUrl: 'https://media.example/old.mp4',
-      videoPublicId: 'r2:old.mp4',
+      videoPublicId: 'property-videos/old.mp4',
     });
     storage.uploadVideo.mockResolvedValue({
       imageUrl: 'https://media.example/new.mp4',
-      publicId: 'r2:new.mp4',
+      publicId: 'property-videos/new.mp4',
     });
     property.update.mockResolvedValue({
       id: 'property-1',
@@ -101,10 +101,28 @@ describe('PropertyImagesService video tours', () => {
       expect.objectContaining({
         data: {
           videoUrl: 'https://media.example/new.mp4',
-          videoPublicId: 'r2:new.mp4',
+          videoPublicId: 'property-videos/new.mp4',
         },
       }),
     );
-    expect(storage.deleteImage).toHaveBeenCalledWith('r2:old.mp4');
+    expect(storage.deleteImage).toHaveBeenCalledWith('property-videos/old.mp4');
   });
+  it('blocks replacing a video with a legacy non-Firebase storage key', async () => {
+    property.findUnique.mockResolvedValue({
+      id: 'property-1',
+      ownerId: 'owner-1',
+      videoUrl: 'https://legacy.example/old.mp4',
+      videoPublicId: 'r2:old.mp4',
+    });
+
+    await expect(service.uploadVideo(
+      'property-1',
+      videoFile(30),
+      { id: 'owner-1', role: 'OWNER' },
+    )).rejects.toThrow('legacy storage key');
+
+    expect(storage.uploadVideo).not.toHaveBeenCalled();
+    expect(property.update).not.toHaveBeenCalled();
+  });
+
 });
