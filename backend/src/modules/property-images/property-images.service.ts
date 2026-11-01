@@ -38,75 +38,13 @@ export class PropertyImagesService {
     section: PropertyImageSection,
     user: any,
   ) {
-    const property = await this.prisma.property.findUnique({
-      where: {
-        id: propertyId,
-      },
-    });
-
-    if (!property) {
-      throw new NotFoundException('Property not found.');
-    }
-
+    const property = await this.prisma.property.findUnique({ where: { id: propertyId } });
+    if (!property) throw new NotFoundException('Property not found.');
     if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('You are not allowed to upload images.');
     }
-
-    if (!files || files.length === 0) {
-      throw new BadRequestException('No images uploaded.');
-    }
-
-    if (files.length > 2) {
-      throw new BadRequestException(
-        'Maximum 2 images can be uploaded at a time.',
-      );
-    }
-
-    // ==========================================
-    // Maximum 2 images per section
-    // ==========================================
-
-    const currentSectionCount = await this.prisma.propertyImage.count({
-      where: {
-        propertyId,
-        section,
-      },
-    });
-
-    if (currentSectionCount + files.length > 2) {
-      throw new BadRequestException(
-        `${section} can have a maximum of 2 images. ` +
-          `Currently ${currentSectionCount} image(s) exist.`,
-      );
-    }
-
-    // ==========================================
-    // Current total image count
-    // ==========================================
-
-    const currentCount = await this.prisma.propertyImage.count({
-      where: {
-        propertyId,
-      },
-    });
-
-    // ==========================================
-    // Primary image handling
-    // ==========================================
-
-    // If this upload is marked primary, make sure
-    // the property has only one primary image.
-    if (isPrimary) {
-      await this.prisma.propertyImage.updateMany({
-        where: {
-          propertyId,
-          isPrimary: true,
-        },
-        data: {
-          isPrimary: false,
-        },
-      });
-    }
+    if (!files?.length) throw new BadRequestException('No images uploaded.');
+    if (files.length > 2) throw new BadRequestException('Maximum 2 images can be uploaded at a time.');
 
     const validator = new ImageFileValidator();
     for (const file of files) {
@@ -115,45 +53,51 @@ export class PropertyImagesService {
       }
     }
 
-    const images = [];
-    const uploadedObjectKeys: string[] = [];
-
-    // ==========================================
-    // Upload files
-    // ==========================================
-
-    for (let index = 0; index < files.length; index++) {
-      const file = files[index];
-
-      const uploadResult = await this.storageService.uploadImage(file, 'properties');
-      uploadedObjectKeys.push(uploadResult.publicId);
-
-      let image;
-      try {
-        image = await this.prisma.propertyImage.create({
-        data: {
-          propertyId,
-          imageUrl: uploadResult.imageUrl,
-          publicId: uploadResult.publicId,
-          displayOrder: currentCount + index,
-          section,
-          isPrimary: isPrimary && index === 0,
-        },
-        });
-      } catch (error) {
-        await this.storageService.deleteImage(uploadResult.publicId).catch(() => undefined);
-        throw error;
-      }
-
-      images.push(image);
+    const [currentSectionCount, currentCount] = await Promise.all([
+      this.prisma.propertyImage.count({ where: { propertyId, section } }),
+      this.prisma.propertyImage.count({ where: { propertyId } }),
+    ]);
+    if (currentSectionCount + files.length > 2) {
+      throw new BadRequestException(`${section} can have a maximum of 2 images. Currently ${currentSectionCount} image(s) exist.`);
     }
 
-    return {
-      success: true,
-      message: 'Images uploaded successfully.',
-      section,
-      images,
-    };
+    const uploaded: Array<{ publicId: string; imageUrl: string }> = [];
+    try {
+      // Upload objects first; only then atomically update the primary flag and metadata.
+      for (const file of files) {
+        uploaded.push(await this.storageService.uploadImage(file, 'properties'));
+      }
+
+      const images = await this.prisma.$transaction(async (tx) => {
+        if (isPrimary) {
+          await tx.propertyImage.updateMany({
+            where: { propertyId, isPrimary: true },
+            data: { isPrimary: false },
+          });
+        }
+        const created = [];
+        for (let index = 0; index < uploaded.length; index++) {
+          created.push(await tx.propertyImage.create({
+            data: {
+              propertyId,
+              imageUrl: uploaded[index].imageUrl,
+              publicId: uploaded[index].publicId,
+              displayOrder: currentCount + index,
+              section,
+              isPrimary: isPrimary && index === 0,
+            },
+          }));
+        }
+        return created;
+      });
+
+      return { success: true, message: 'Images uploaded successfully.', section, images };
+    } catch (error) {
+      await Promise.all(uploaded.map((item) =>
+        this.storageService.deleteImage(item.publicId).catch(() => undefined),
+      ));
+      throw error;
+    }
   }
 
   // =====================================
