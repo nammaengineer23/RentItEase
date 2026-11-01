@@ -116,9 +116,18 @@ export class UploadsService {
     }
 
     const expectedPrefix = `chat/${conversationId}/`;
-    if (!filename.startsWith(expectedPrefix) || filename.includes('..')) {
+    if (!filename.startsWith(expectedPrefix) || filename.includes('..') || filename.includes('\\\\')) {
       throw new ForbiddenException('Invalid chat attachment.');
     }
+
+    // A participant may only retrieve an attachment that is actually linked
+    // to a non-deleted message in this conversation, not merely any guessed
+    // object key under the conversation prefix.
+    const messageAttachment = await this.prisma.message.findFirst({
+      where: { conversationId, attachmentPublicId: filename, deletedAt: null },
+      select: { id: true },
+    });
+    if (!messageAttachment) throw new NotFoundException('Chat attachment not found.');
 
     const fileUrl = await this.storageService.getPrivateDownloadUrl(filename);
     return { success: true, fileUrl, filename, conversationId };
