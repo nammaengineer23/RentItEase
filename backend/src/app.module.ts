@@ -40,6 +40,7 @@ import { AdminBillingModule } from "./modules/admin-billing/admin-billing.module
 import { SocialMediaModule } from './modules/social-media/social-media.module';
 import { AppFeedbackModule } from './modules/app-feedback/app-feedback.module';
 import { StorageModule } from './storage/storage.module';
+import { AppCheckGuard } from './firebase/app-check.guard';
 
 
 
@@ -149,6 +150,10 @@ import { StorageModule } from './storage/storage.module';
 
         CORS_ORIGINS: Joi.string().optional(),
 
+        APP_CHECK_MODE: Joi.string()
+          .valid('disabled', 'monitor', 'enforce')
+          .default('monitor'),
+
         ALLOWED_HOSTS: Joi.string().default('api.rentitease.com'),
 
         TRUST_PROXY: Joi.alternatives().try(Joi.boolean(), Joi.number().integer().min(0)).optional(),
@@ -231,6 +236,10 @@ import { StorageModule } from './storage/storage.module';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: AppCheckGuard,
     },
   ],
 })

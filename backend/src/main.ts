@@ -125,7 +125,7 @@ async function bootstrap() {
     origin: getCorsOrigins(),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-Id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-Id', 'X-Firebase-AppCheck'],
     optionsSuccessStatus: 204,
   });
 
