@@ -1,3 +1,39 @@
 {
-  "_replace_me": "Replace this placeholder with the google-services.json downloaded from Firebase project rentitease-staging. Do not use production Firebase configuration here."
+  "project_info": {
+    "project_number": "722173159384",
+    "project_id": "rentitease-staging",
+    "storage_bucket": "rentitease-staging.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:722173159384:android:95ccdb38ca278b379eb4ad",
+        "android_client_info": {
+          "package_name": "com.rentitease.app.staging"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "722173159384-9nca9bgho4a6uad24dsqasclu34fpsv4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDTG_mhU1sdt7eRjaC9OvSKYccCcuJZtbw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "722173159384-9nca9bgho4a6uad24dsqasclu34fpsv4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
 }
