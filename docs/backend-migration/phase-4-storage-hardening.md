@@ -25,7 +25,7 @@
 - Keep legacy Firebase object keys under the approved prefixes addressable for deletion; reject keys outside those prefixes so a legacy R2 key cannot accidentally be deleted from Firebase.
 - Upload property image objects before changing database primary-image state; persist image metadata and primary-image changes in one Prisma transaction. Best-effort cleanup removes newly uploaded objects if persistence fails.
 - Delete property video objects before clearing PostgreSQL references, so a storage failure leaves the existing reference available for retry. Video replacement is blocked for non-Firebase legacy keys pending controlled migration.
-- Change storage:reconcile to dry-run by default. Deletion requires both --apply and STORAGE_RECONCILE_ALLOW_DELETE=true; production deletion also requires STORAGE_RECONCILE_ALLOW_PRODUCTION=true. The script inventories property images, property videos, chat attachments and social-video URL references; it only considers allowlisted prefixes and retains objects without a valid creation timestamp.
+- Change storage:reconcile and the separate social-video orphan cleanup to dry-run by default. Deletion requires both --apply and STORAGE_RECONCILE_ALLOW_DELETE=true; production deletion also requires STORAGE_RECONCILE_ALLOW_PRODUCTION=true. The reconciliation script inventories property images, property videos, chat attachments and social-video URL references; the social-video cleanup independently checks its PostgreSQL URL references. it only considers allowlisted prefixes and retains objects without a valid creation timestamp.
 
 ## 3. Migration safeguards
 
@@ -49,7 +49,7 @@ Before any object migration:
 - Chat upload only for conversation participants; unrelated user denied.
 - Chat download denied for non-participants, guessed object keys, keys not referenced by a live message, deleted messages and path traversal attempts.
 - Signed chat URL is short-lived; direct public URL/token access to private objects is not available.
-- Reconciliation dry-run reports only; default invocation deletes zero objects. Apply mode requires explicit gates and must be tested only against disposable staging storage.
+- Reconciliation and social-video cleanup dry-runs report candidates only; default invocation deletes zero objects. Apply mode requires explicit gates and must be tested only against disposable staging storage.
 - Legacy local /uploads and social-video public delivery remain unchanged.
 
 All integration tests that need PostgreSQL or Firebase must use disposable isolated staging resources. Never run mutation, seed, cleanup or reconciliation apply commands against production as part of this phase.
