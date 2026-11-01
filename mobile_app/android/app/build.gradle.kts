@@ -78,8 +78,7 @@ android {
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
-    // ============================================================
-    // Release signing
+    // Separate application identities keep staging isolated from Play production.\n    flavorDimensions += "environment"\n    productFlavors {\n        create("production") {\n            dimension = "environment"\n        }\n        create("staging") {\n            dimension = "environment"\n            applicationIdSuffix = ".staging"\n            versionNameSuffix = "-staging"\n        }\n    }\n\n    // ============================================================\n    // Release signing
     // ============================================================
 
     signingConfigs {
