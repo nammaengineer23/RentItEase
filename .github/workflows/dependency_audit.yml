@@ -29,7 +29,7 @@ jobs:
       - run: npm ci
       - name: Apply non-breaking security updates to PR lockfile
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        run: npm audit fix
+        run: npm audit fix --audit-level=high
       - name: Production dependency audit
         run: npm audit --omit=dev --audit-level=high
       - name: Full audit report
