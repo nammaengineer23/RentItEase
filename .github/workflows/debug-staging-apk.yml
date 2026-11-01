@@ -73,7 +73,8 @@ jobs:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: |
           flutter build apk --debug \
-            --dart-define=API_BASE_URL="$API_BASE_URL" \\\n            --dart-define=STAGING=true
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=STAGING=true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
