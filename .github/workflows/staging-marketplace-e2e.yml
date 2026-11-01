@@ -25,9 +25,9 @@ jobs:
       run:
         working-directory: backend
     env:
-      DATABASE_URL: ${{ secrets.STAGING_E2E_DATABASE_URL }}
-      E2E_DATABASE_URL: ${{ secrets.STAGING_E2E_DATABASE_URL }}
-      E2E_ALLOWED_DATABASE_HOST: ${{ secrets.STAGING_E2E_ALLOWED_DATABASE_HOST }}
+      DATABASE_URL: ${{ secrets.STAGING_E2E_DIRECT_DATABASE_URL }}
+      E2E_DATABASE_URL: ${{ secrets.STAGING_E2E_DIRECT_DATABASE_URL }}
+      E2E_ALLOWED_DATABASE_HOST: ${{ secrets.STAGING_E2E_ALLOWED_DIRECT_DATABASE_HOST }}
       E2E_CONFIRMED_NEON_BRANCH: rentitease-e2e-fresh
       E2E_BASE_URL: http://127.0.0.1:3000
       E2E_API_PREFIX: /api/v1
