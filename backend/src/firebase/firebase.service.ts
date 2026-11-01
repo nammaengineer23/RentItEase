@@ -125,7 +125,7 @@ export class FirebaseService {
     publicId: string,
     expiresInMs = 15 * 60 * 1000,
   ): Promise<string> {
-    if (!/^chat\/[A-Za-z0-9_-]{1,128}\/[A-Za-z0-9-]+\.(pdf|doc|docx|txt|m4a|aac|mp3|wav|ogg|bin)$/.test(publicId)) {
+    if (!/^chat\/[A-Za-z0-9_-]{1,128}\/[^/\\?#]+$/.test(publicId) || publicId.includes('..')) {
       throw new BadRequestException('Invalid private storage object key.');
     }
     const bucket = this.getStorage().bucket();
@@ -140,7 +140,7 @@ export class FirebaseService {
   }
 
   async deleteImage(publicId: string) {
-    if (!/^(properties|property-videos)\/[A-Za-z0-9-]+\.(jpg|png|webp|mp4|mov|m4v|bin)$/.test(publicId)) {
+    if (!/^(properties|property-videos)\/[^/\\?#]+$/.test(publicId) || publicId.includes('..')) {
       throw new BadRequestException('Unsupported storage object key; legacy provider objects require a controlled migration.');
     }
     const bucket = this.getStorage().bucket();
