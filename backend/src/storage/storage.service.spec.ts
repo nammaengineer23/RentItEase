@@ -20,9 +20,9 @@ describe('StorageService', () => {
   it('uses Firebase as the sole authoritative upload provider', async () => {
     const service = new StorageService(firebaseService);
 
-    await service.uploadImage(file, 'profiles');
+    await service.uploadImage(file, 'properties');
 
-    expect(firebaseService.uploadImage).toHaveBeenCalledWith(file, 'profiles');
+    expect(firebaseService.uploadImage).toHaveBeenCalledWith(file, 'properties');
   });
 
   it('uses Firebase for deletion', async () => {
