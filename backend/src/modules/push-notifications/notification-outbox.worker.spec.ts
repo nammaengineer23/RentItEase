@@ -72,4 +72,35 @@ describe('NotificationOutboxWorker', () => {
       data: expect.objectContaining({ status: 'PENDING' }),
     }));
   });
+
+  it('does not send an event to a device reassigned to another account', async () => {
+    const delivery = {
+      id: 'delivery-1',
+      attemptCount: 0,
+      nextAttemptAt: new Date(),
+      device: { id: 'device-1', token: 'fcm-token', userId: 'different-user' },
+    };
+    const prisma = {
+      userSettings: { findUnique: jest.fn().mockResolvedValue({ pushNotifications: true }) },
+      userDevice: { findMany: jest.fn().mockResolvedValue([{ id: 'device-1', token: 'fcm-token' }]) },
+      notificationOutboxDelivery: {
+        createMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findMany: jest.fn().mockResolvedValueOnce([delivery]).mockResolvedValueOnce([]),
+        update: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        count: jest.fn().mockResolvedValue(0),
+      },
+      notificationOutbox: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+    };
+    const firebase = { sendToDevice: jest.fn() };
+    const worker = new NotificationOutboxWorker(prisma as any, firebase as any, {} as any);
+
+    await (worker as any).processEvent(event);
+
+    expect(firebase.sendToDevice).not.toHaveBeenCalled();
+    expect(prisma.notificationOutboxDelivery.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: 'SKIPPED' }),
+    }));
+  });
+
 });
