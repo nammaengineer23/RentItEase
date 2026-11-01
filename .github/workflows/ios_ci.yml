@@ -32,5 +32,10 @@ jobs:
         run: flutter analyze lib test
       - name: Tests
         run: flutter test
+      # GitHub-hosted macOS runners can retain broken SwiftPM repository cache
+      # entries. Clear only the runner-local cache before resolving CocoaPods/SPM.
+      - name: Clear Swift Package Manager repository cache
+        run: rm -rf "$HOME/Library/Caches/org.swift.swiftpm"
+
       - name: iOS build without signing
-        run: flutter build ios --release --no-codesign --dart-define=API_BASE_URL=https://api.rentitease.com/api/v1
+        run: flutter build ios --release --no-codesign --dart-define=API_BASE_URL=https://staging.invalid/api/v1
