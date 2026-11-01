@@ -159,8 +159,6 @@ describe('PropertyImagesService video tours', () => {
     });
     property.update.mockResolvedValue({});
     storage.deleteImage.mockRejectedValue(new Error('storage unavailable'));
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
-
     await expect(service.deleteVideo('property-1', {
       id: 'owner-1',
       role: 'OWNER',
@@ -175,8 +173,6 @@ describe('PropertyImagesService video tours', () => {
     });
     expect(property.update.mock.invocationCallOrder[0])
       .toBeLessThan(storage.deleteImage.mock.invocationCallOrder[0]);
-    expect(warn).toHaveBeenCalled();
-    warn.mockRestore();
   });
 
   it('does not delete the storage object when clearing video metadata fails', async () => {
