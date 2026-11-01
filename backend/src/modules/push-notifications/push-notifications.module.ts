@@ -5,6 +5,7 @@ import { FirebaseModule } from '../../firebase/firebase.module';
 
 import { PushNotificationsController } from './push-notifications.controller';
 import { PushNotificationsService } from './push-notifications.service';
+import { NotificationOutboxWorker } from './notification-outbox.worker';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { PushNotificationsService } from './push-notifications.service';
     FirebaseModule,
   ],
   controllers: [PushNotificationsController],
-  providers: [PushNotificationsService],
+  providers: [PushNotificationsService, NotificationOutboxWorker],
   exports: [PushNotificationsService],
 })
 export class PushNotificationsModule {}
