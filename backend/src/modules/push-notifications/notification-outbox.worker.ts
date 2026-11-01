@@ -117,7 +117,7 @@ export class NotificationOutboxWorker implements OnModuleInit, OnModuleDestroy {
         if (claimed.count !== 1) continue;
 
         const attempt = delivery.attemptCount + 1;
-        if (attempt > 8) {
+        if (attempt > event.maxAttempts) {
           await this.prisma.notificationOutboxDelivery.update({
             where: { id: delivery.id },
             data: { status: 'FAILED', lastError: 'Maximum delivery attempts exceeded' },
@@ -137,7 +137,7 @@ export class NotificationOutboxWorker implements OnModuleInit, OnModuleDestroy {
             await this.prisma.userDevice.deleteMany({ where: { id: delivery.device.id } });
             continue;
           }
-          const terminal = attempt >= 8;
+          const terminal = attempt >= event.maxAttempts;
           const delayMs = Math.min(60 * 60 * 1000, 1000 * 2 ** Math.min(attempt - 1, 12));
           await this.prisma.notificationOutboxDelivery.update({
             where: { id: delivery.id },
@@ -201,6 +201,6 @@ export class NotificationOutboxWorker implements OnModuleInit, OnModuleDestroy {
 
   private safeError(error: unknown): string {
     const message = error instanceof Error ? error.message : 'Unknown FCM delivery error';
-    return message.replace(/token[=: ]+[^\\s,]+/gi, 'token=[redacted]').slice(0, 400);
+    return message.replace(/token[=: ]+[^\s,]+/gi, 'token=[redacted]').slice(0, 400);
   }
 }
