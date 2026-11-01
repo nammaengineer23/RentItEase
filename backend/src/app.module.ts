@@ -100,37 +100,8 @@ import { AppCheckGuard } from './firebase/app-check.guard';
           otherwise: Joi.optional(),
         }),
 
-        STORAGE_DRIVER: Joi.string().valid('firebase', 'r2').default('firebase'),
-
-        R2_ACCOUNT_ID: Joi.string().when('STORAGE_DRIVER', {
-          is: 'r2',
-          then: Joi.required(),
-          otherwise: Joi.optional(),
-        }),
-
-        R2_ACCESS_KEY_ID: Joi.string().when('STORAGE_DRIVER', {
-          is: 'r2',
-          then: Joi.required(),
-          otherwise: Joi.optional(),
-        }),
-
-        R2_SECRET_ACCESS_KEY: Joi.string().when('STORAGE_DRIVER', {
-          is: 'r2',
-          then: Joi.required(),
-          otherwise: Joi.optional(),
-        }),
-
-        R2_BUCKET_NAME: Joi.string().when('STORAGE_DRIVER', {
-          is: 'r2',
-          then: Joi.required(),
-          otherwise: Joi.optional(),
-        }),
-
-        R2_PUBLIC_BASE_URL: Joi.string().uri().when('STORAGE_DRIVER', {
-          is: 'r2',
-          then: Joi.required(),
-          otherwise: Joi.optional(),
-        }),
+        // Firebase is the only implemented storage adapter. Reject stale R2 config rather than silently writing to Firebase.
+        STORAGE_DRIVER: Joi.string().valid('firebase').default('firebase'),
 
         SOCIAL_AUTOMATION_MODE: Joi.string()
           .valid('DISABLED', 'GENERATE_ONLY')
