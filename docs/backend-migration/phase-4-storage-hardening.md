@@ -24,7 +24,7 @@
 - Validate chat attachment signatures for the supported PDF, Office, text and audio formats.
 - Keep legacy Firebase object keys under the approved prefixes addressable for deletion; reject keys outside those prefixes so a legacy R2 key cannot accidentally be deleted from Firebase.
 - Upload property image objects before changing database primary-image state; persist image metadata and primary-image changes in one Prisma transaction. Best-effort cleanup removes newly uploaded objects if persistence fails.
-- Delete property video objects before clearing PostgreSQL references, so a storage failure leaves the existing reference available for retry. Video replacement is blocked for non-Firebase legacy keys pending controlled migration.
+- Clear property image/video database references before best-effort object deletion. If storage cleanup fails, the object is an unreferenced candidate for the guarded dry-run reconciliation workflow; the database does not retain a broken reference to a deleted object. Video replacement is blocked for non-Firebase legacy keys pending controlled migration.
 - Change storage:reconcile and the separate social-video orphan cleanup to dry-run by default. Deletion requires both --apply and STORAGE_RECONCILE_ALLOW_DELETE=true; production deletion also requires STORAGE_RECONCILE_ALLOW_PRODUCTION=true. The reconciliation script inventories property images, property videos, chat attachments and social-video URL references; the social-video cleanup independently checks its PostgreSQL URL references. it only considers allowlisted prefixes and retains objects without a valid creation timestamp.
 
 ## 3. Migration safeguards
