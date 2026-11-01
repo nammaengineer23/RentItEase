@@ -144,12 +144,12 @@ export class PropertyImagesService {
         'The property video must not exceed 100 MB.',
       );
     }
-    // Verify the actual media container rather than trusting the client MIME type.
-    await this.readVideoDurationSeconds(file);
-
     if (property.videoPublicId && !property.videoPublicId.startsWith('property-videos/')) {
       throw new ConflictException('This video uses a legacy storage key. Complete the controlled storage migration before replacing it.');
     }
+
+    // Verify the actual media container rather than trusting the client MIME type.
+    await this.readVideoDurationSeconds(file);
 
     const uploaded = await this.storageService.uploadVideo(
       file,
