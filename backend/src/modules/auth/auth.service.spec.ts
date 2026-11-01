@@ -40,7 +40,7 @@ describe('AuthService Firebase Google identity', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     service = new AuthService(
       prisma,
       jwtService,
