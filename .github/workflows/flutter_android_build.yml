@@ -76,9 +76,9 @@ jobs:
         run: |
           APKSIGNER="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -x "$APKSIGNER"
-          "$APKSIGNER" sign --ks android/app/upload-keystore.jks --ks-key-alias "$ANDROID_KEY_ALIAS" --ks-pass env:ANDROID_STORE_PASSWORD --key-pass env:ANDROID_KEY_PASSWORD --out build/app/outputs/flutter-apk/app-debug-stable.apk build/app/outputs/flutter-apk/app-debug.apk
-          mv build/app/outputs/flutter-apk/app-debug-stable.apk build/app/outputs/flutter-apk/app-debug.apk
-          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-debug.apk
+          "$APKSIGNER" sign --ks android/app/upload-keystore.jks --ks-key-alias "$ANDROID_KEY_ALIAS" --ks-pass env:ANDROID_STORE_PASSWORD --key-pass env:ANDROID_KEY_PASSWORD --out build/app/outputs/flutter-apk/app-debug-stable.apk build/app/outputs/flutter-apk/app-production-debug.apk
+          mv build/app/outputs/flutter-apk/app-debug-stable.apk build/app/outputs/flutter-apk/app-production-debug.apk
+          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-production-debug.apk
       - name: Scan Android artifacts for protected secrets
         env:
           JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET }}
@@ -101,7 +101,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: RentItEase-debug-apk
-          path: mobile_app/build/app/outputs/flutter-apk/app-debug.apk
+          path: mobile_app/build/app/outputs/flutter-apk/app-production-debug.apk
       - name: Build Release APK
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
@@ -112,7 +112,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: RentItEase-release-apk
-          path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
+          path: mobile_app/build/app/outputs/flutter-apk/app-production-release.apk
       - name: Build Release AAB
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
@@ -123,4 +123,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: RentItEase-release-aab
-          path: mobile_app/build/app/outputs/bundle/release/app-release.aab
+          path: mobile_app/build/app/outputs/bundle/productionRelease/app-production-release.aab
