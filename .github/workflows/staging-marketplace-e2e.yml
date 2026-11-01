@@ -84,9 +84,6 @@ jobs:
           const url = new URL(process.env.DATABASE_URL);
           if (!['postgres:', 'postgresql:'].includes(url.protocol)) throw new Error('E2E database URL must use PostgreSQL.');
           if (!url.hostname.toLowerCase().endsWith('.neon.tech')) throw new Error('Refusing non-Neon database host.');
-          if (!url.hostname.toLowerCase().startsWith('ep-rapid-moon-ay4k0w06.')) {
-            throw new Error('Refusing database endpoint: only the known rentitease-e2e-fresh Neon endpoint is allowed.');
-          }
           if (url.hostname.toLowerCase() !== process.env.E2E_ALLOWED_DATABASE_HOST.toLowerCase()) {
             throw new Error('Refusing database host that does not match STAGING_E2E_ALLOWED_DIRECT_DATABASE_HOST.');
           }
