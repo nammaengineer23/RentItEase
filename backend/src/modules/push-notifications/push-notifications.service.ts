@@ -26,11 +26,19 @@ export class PushNotificationsService {
       select: { id: true },
     });
     if (recent) {
-      const updated = await this.prisma.notificationOutbox.updateMany({
-        where: { notificationId: recent.id, status: 'PENDING' },
-        data: { title, body, ...(data ? { data: data as Prisma.InputJsonValue } : {}) },
+      const existing = await this.prisma.notificationOutbox.findUnique({
+        where: { notificationId: recent.id },
+        select: { id: true, status: true },
       });
-      if (updated.count > 0) return { queued: true, deduplicated: true };
+      if (existing) {
+        if (existing.status === 'PENDING') {
+          await this.prisma.notificationOutbox.update({
+            where: { id: existing.id },
+            data: { title, body, ...(data ? { data: data as Prisma.InputJsonValue } : {}) },
+          });
+        }
+        return { queued: true, deduplicated: true };
+      }
     }
     await this.prisma.notificationOutbox.create({
       data: {
