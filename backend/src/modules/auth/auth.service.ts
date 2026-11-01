@@ -314,6 +314,10 @@ export class AuthService {
       if (emailMatches.length === 1) {
         const existing = emailMatches[0];
 
+        if (!existing.isActive || existing.deletedAt) {
+          throw new UnauthorizedException('Your account has been deactivated.');
+        }
+
         if (existing.firebaseUid && existing.firebaseUid !== uid) {
           throw new ConflictException(
             'This RentItEase account is already linked to another Google identity.',
