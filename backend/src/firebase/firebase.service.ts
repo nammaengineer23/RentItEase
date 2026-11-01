@@ -6,7 +6,6 @@ import { cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
 import { getStorage, getDownloadURL } from 'firebase-admin/storage';
 
 import { getAuth } from 'firebase-admin/auth';
-import { getAppCheck } from 'firebase-admin/app-check';
 import { getMessaging } from 'firebase-admin/messaging';
 
 @Injectable()
@@ -145,9 +144,17 @@ export class FirebaseService {
     }
   }
 
+  private async getAppCheck() {
+    // Lazy-load App Check Admin: its verifier pulls an ESM-only jose dependency,
+    // which must not be loaded during unrelated CommonJS Jest test suites.
+    const { getAppCheck } = await import('firebase-admin/app-check');
+    return getAppCheck();
+  }
+
   async verifyAppCheckToken(token: string): Promise<boolean> {
     try {
-      await this.withTimeout(getAppCheck().verifyToken(token), 10_000);
+      const appCheck = await this.getAppCheck();
+      await this.withTimeout(appCheck.verifyToken(token), 10_000);
       return true;
     } catch {
       return false;
