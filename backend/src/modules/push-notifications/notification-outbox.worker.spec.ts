@@ -23,7 +23,7 @@ describe('NotificationOutboxWorker', () => {
   });
 
   it('sends per device and records successful delivery', async () => {
-    const delivery = { id: 'delivery-1', attemptCount: 0, nextAttemptAt: new Date(), device: { id: 'device-1', token: 'fcm-token' } };
+    const delivery = { id: 'delivery-1', attemptCount: 0, nextAttemptAt: new Date(), device: { id: 'device-1', token: 'fcm-token', userId: 'user-1' } };
     const prisma = {
       userSettings: { findUnique: jest.fn().mockResolvedValue({ pushNotifications: true }) },
       userDevice: { findMany: jest.fn().mockResolvedValue([{ id: 'device-1', token: 'fcm-token' }]) },
@@ -49,7 +49,7 @@ describe('NotificationOutboxWorker', () => {
   });
 
   it('retries transient FCM failures with a scheduled delay', async () => {
-    const delivery = { id: 'delivery-1', attemptCount: 0, nextAttemptAt: new Date(), device: { id: 'device-1', token: 'fcm-token' } };
+    const delivery = { id: 'delivery-1', attemptCount: 0, nextAttemptAt: new Date(), device: { id: 'device-1', token: 'fcm-token', userId: 'user-1' } };
     const prisma = {
       userSettings: { findUnique: jest.fn().mockResolvedValue({ pushNotifications: true }) },
       userDevice: { findMany: jest.fn().mockResolvedValue([{ id: 'device-1', token: 'fcm-token' }]) },
