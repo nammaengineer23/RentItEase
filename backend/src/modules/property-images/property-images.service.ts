@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
@@ -144,6 +145,10 @@ export class PropertyImagesService {
       );
     }
 
+    if (property.videoPublicId && !property.videoPublicId.startsWith('property-videos/')) {
+      throw new ConflictException('This video uses a legacy storage key. Complete the controlled storage migration before replacing it.');
+    }
+
     const uploaded = await this.storageService.uploadVideo(
       file,
       'property-videos',
@@ -199,17 +204,16 @@ export class PropertyImagesService {
       );
     }
 
-    await this.prisma.property.update({
-      where: { id: propertyId },
-      data: {
-        videoUrl: null,
-        videoPublicId: null,
-      },
-    });
-
+    // Remove the object before clearing its database reference. A storage
+    // failure must leave the metadata intact so deletion can be retried.
     if (property.videoPublicId) {
       await this.storageService.deleteImage(property.videoPublicId);
     }
+
+    await this.prisma.property.update({
+      where: { id: propertyId },
+      data: { videoUrl: null, videoPublicId: null },
+    });
 
     return {
       success: true,
