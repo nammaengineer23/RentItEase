@@ -206,16 +206,19 @@ export class PropertyImagesService {
       );
     }
 
-    // Remove the object before clearing its database reference. A storage
-    // failure must leave the metadata intact so deletion can be retried.
-    if (property.videoPublicId) {
-      await this.storageService.deleteImage(property.videoPublicId);
-    }
-
+    // Clear the database reference first. If object deletion subsequently
+    // fails, reconciliation can identify the now-unreferenced object; keeping
+    // a DB reference to an already-deleted object would break media reads.
     await this.prisma.property.update({
       where: { id: propertyId },
       data: { videoUrl: null, videoPublicId: null },
     });
+
+    if (property.videoPublicId) {
+      await this.storageService.deleteImage(property.videoPublicId).catch(() => {
+        // Orphan cleanup is handled by the guarded storage reconciliation job.
+      });
+    }
 
     return {
       success: true,
@@ -402,20 +405,16 @@ export class PropertyImagesService {
       throw new NotFoundException('Image not found for this property.');
     }
 
-    // Delete the object from R2 or legacy Firebase Storage.
-    if (image.publicId) {
-      await this.storageService.deleteImage(image.publicId);
-    }
-
-    // Delete image from database.
+    // Remove the DB reference before deleting the object. If storage cleanup
+    // fails, the object becomes an unreferenced reconciliation candidate;
+    // the reverse order could leave a live DB row pointing to a missing file.
     await this.prisma.propertyImage.delete({
       where: {
         id: imageId,
       },
     });
 
-    // If deleted image was primary,
-    // assign the first remaining image.
+    // If deleted image was primary, assign the first remaining image.
     if (image.isPrimary) {
       const nextImage = await this.prisma.propertyImage.findFirst({
         where: {
@@ -436,6 +435,12 @@ export class PropertyImagesService {
           },
         });
       }
+    }
+
+    if (image.publicId) {
+      await this.storageService.deleteImage(image.publicId).catch(() => {
+        // Orphan cleanup is handled by the guarded storage reconciliation job.
+      });
     }
 
     return {
