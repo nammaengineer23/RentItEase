@@ -133,8 +133,8 @@ jobs:
           export JWT_ACCESS_SECRET="$(openssl rand -hex 32)"
           export JWT_REFRESH_SECRET="$(openssl rand -hex 32)"
           npm run build
-          printf '%s=%s\\n' "JWT_ACCESS""_SECRET" "$JWT_ACCESS_SECRET" >> "$GITHUB_ENV"
-          printf '%s=%s\\n' "JWT_REFRESH""_SECRET" "$JWT_REFRESH_SECRET" >> "$GITHUB_ENV"
+          printf '%s=%s\n' "JWT_ACCESS""_SECRET" "$JWT_ACCESS_SECRET" >> "$GITHUB_ENV"
+          printf '%s=%s\n' "JWT_REFRESH""_SECRET" "$JWT_REFRESH_SECRET" >> "$GITHUB_ENV"
 
       - name: Start temporary API on the GitHub runner
         shell: bash
