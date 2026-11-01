@@ -77,6 +77,7 @@ describe('PropertyImagesService video tours', () => {
       videoUrl: 'https://media.example/old.mp4',
       videoPublicId: 'property-videos/old.mp4',
     });
+    jest.spyOn(service as any, 'readVideoDurationSeconds').mockResolvedValue(45);
     storage.uploadVideo.mockResolvedValue({
       imageUrl: 'https://media.example/new.mp4',
       publicId: 'property-videos/new.mp4',
