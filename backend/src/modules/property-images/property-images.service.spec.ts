@@ -108,6 +108,30 @@ describe('PropertyImagesService video tours', () => {
     );
     expect(storage.deleteImage).toHaveBeenCalledWith('property-videos/old.mp4');
   });
+  it('clears the video reference and tolerates object cleanup failure', async () => {
+    property.findUnique.mockResolvedValue({
+      id: 'property-1',
+      ownerId: 'owner-1',
+      videoUrl: 'https://media.example/old.mp4',
+      videoPublicId: 'property-videos/old.mp4',
+    });
+    property.update.mockResolvedValue({});
+    storage.deleteImage.mockRejectedValue(new Error('temporary storage outage'));
+
+    await expect(service.deleteVideo(
+      'property-1',
+      { id: 'owner-1', role: 'OWNER' },
+    )).resolves.toMatchObject({ success: true });
+
+    expect(property.update).toHaveBeenCalledWith({
+      where: { id: 'property-1' },
+      data: { videoUrl: null, videoPublicId: null },
+    });
+    expect(storage.deleteImage).toHaveBeenCalledWith('property-videos/old.mp4');
+    expect(property.update.mock.invocationCallOrder[0])
+      .toBeLessThan(storage.deleteImage.mock.invocationCallOrder[0]);
+  });
+
   it('blocks replacing a video with a legacy non-Firebase storage key', async () => {
     property.findUnique.mockResolvedValue({
       id: 'property-1',
