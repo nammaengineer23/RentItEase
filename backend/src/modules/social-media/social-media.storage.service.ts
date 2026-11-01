@@ -143,7 +143,13 @@ export class SocialMediaStorageService {
   }
 
   /** Delete unreferenced social-video objects older than the configured retention window. */
-  async cleanupUnreferencedVideos(retentionDays = 30) {
+  async cleanupUnreferencedVideos(retentionDays = 30, apply = false) {
+    if (apply && process.env.STORAGE_RECONCILE_ALLOW_DELETE !== 'true') {
+      throw new Error('Social-video deletion is disabled without STORAGE_RECONCILE_ALLOW_DELETE=true.');
+    }
+    if (apply && process.env.NODE_ENV === 'production' && process.env.STORAGE_RECONCILE_ALLOW_PRODUCTION !== 'true') {
+      throw new Error('Production social-video deletion requires STORAGE_RECONCILE_ALLOW_PRODUCTION=true.');
+    }
     const days = Math.max(1, Math.min(3650, retentionDays));
     this.ensureFirebase();
     const bucket = getStorage().bucket();
@@ -159,15 +165,18 @@ export class SocialMediaStorageService {
     );
     const [files] = await bucket.getFiles({ prefix: 'social-videos/' });
     let deleted = 0;
+    let candidates = 0;
     for (const file of files) {
       const metadata = await file.getMetadata().then(([value]) => value);
       const createdAt = metadata.timeCreated ? Date.parse(metadata.timeCreated) : NaN;
       if (!Number.isFinite(createdAt) || createdAt >= cutoff) continue;
       if (referenced.has(file.name)) continue;
+      candidates += 1;
+      if (!apply) continue;
       await file.delete({ ignoreNotFound: true });
       deleted += 1;
     }
-    return { scanned: files.length, deleted, retentionDays: days };
+    return { scanned: files.length, candidates, deleted, dryRun: !apply, retentionDays: days };
   }
 
   async uploadVideo(filePath: string, propertyId: string): Promise<string> {
