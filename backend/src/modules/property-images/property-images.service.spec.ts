@@ -150,6 +150,52 @@ describe('PropertyImagesService video tours', () => {
     expect(property.update).not.toHaveBeenCalled();
   });
 
+  it('clears the database reference before attempting video object cleanup', async () => {
+    property.findUnique.mockResolvedValue({
+      id: 'property-1',
+      ownerId: 'owner-1',
+      videoUrl: 'https://media.example/old.mp4',
+      videoPublicId: 'property-videos/old.mp4',
+    });
+    property.update.mockResolvedValue({});
+    storage.deleteImage.mockRejectedValue(new Error('storage unavailable'));
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    await expect(service.deleteVideo('property-1', {
+      id: 'owner-1',
+      role: 'OWNER',
+    })).resolves.toEqual({
+      success: true,
+      message: 'Property video deleted successfully.',
+    });
+
+    expect(property.update).toHaveBeenCalledWith({
+      where: { id: 'property-1' },
+      data: { videoUrl: null, videoPublicId: null },
+    });
+    expect(property.update.mock.invocationCallOrder[0])
+      .toBeLessThan(storage.deleteImage.mock.invocationCallOrder[0]);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('does not delete the storage object when clearing video metadata fails', async () => {
+    property.findUnique.mockResolvedValue({
+      id: 'property-1',
+      ownerId: 'owner-1',
+      videoUrl: 'https://media.example/old.mp4',
+      videoPublicId: 'property-videos/old.mp4',
+    });
+    property.update.mockRejectedValue(new Error('database unavailable'));
+
+    await expect(service.deleteVideo('property-1', {
+      id: 'owner-1',
+      role: 'OWNER',
+    })).rejects.toThrow('database unavailable');
+
+    expect(storage.deleteImage).not.toHaveBeenCalled();
+  });
+
 });
 
 describe('PropertyImagesService image deletion consistency', () => {
