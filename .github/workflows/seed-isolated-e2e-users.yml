@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: feat/property-sales-lease-sites
+          ref: feat/add-property-type-selection
       - uses: actions/setup-node@v4
         with:
           node-version: 24

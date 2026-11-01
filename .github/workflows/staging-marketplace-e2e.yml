@@ -1,12 +1,12 @@
-name: RentItEase - Isolated Staging E2E
+name: RentItEase - Isolated E2E (GitHub-hosted)
 
 on:
   workflow_dispatch:
     inputs:
       ref:
-        description: Branch or commit to test (must contain the staging workflow and marketplace tests)
+        description: Branch or commit to test (must contain this workflow and E2E tests)
         required: false
-        default: main
+        default: feat/add-property-type-selection
         type: string
 
 permissions:
@@ -18,14 +18,18 @@ concurrency:
 
 jobs:
   staging-e2e:
-    name: Marketplace + Rental Regression (staging only)
+    name: Isolated Neon E2E (temporary API on GitHub runner)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: backend
     env:
-      E2E_BASE_URL: ${{ secrets.STAGING_E2E_BASE_URL }}
+      DATABASE_URL: ${{ secrets.STAGING_E2E_DIRECT_DATABASE_URL }}
+      E2E_DATABASE_URL: ${{ secrets.STAGING_E2E_DIRECT_DATABASE_URL }}
+      E2E_ALLOWED_DATABASE_HOST: ${{ secrets.STAGING_E2E_ALLOWED_DIRECT_DATABASE_HOST }}
+      E2E_CONFIRMED_NEON_BRANCH: rentitease-e2e-fresh
+      E2E_BASE_URL: http://127.0.0.1:3000
       E2E_API_PREFIX: /api/v1
       E2E_TENANT_EMAIL: ${{ secrets.E2E_TENANT_EMAIL }}
       E2E_TENANT_PASSWORD: ${{ secrets.E2E_TENANT_PASSWORD }}
@@ -35,48 +39,76 @@ jobs:
       E2E_OTHER_OWNER_PASSWORD: ${{ secrets.E2E_OTHER_OWNER_PASSWORD }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
-      E2E_RAZORPAY_KEY_SECRET: ${{ secrets.STAGING_E2E_RAZORPAY_KEY_SECRET }}
       E2E_RAZORPAY_WEBHOOK_SECRET: ${{ secrets.STAGING_E2E_RAZORPAY_WEBHOOK_SECRET }}
       E2E_STRICT: "true"
       E2E_EXPECT_MARKETPLACE_ENABLED: "true"
+      PROPERTY_MARKETPLACE_ENABLED: "true"
+      E2E_MARKETPLACE_READ_ONLY: "false"
       E2E_RUN_ID: ${{ github.run_id }}
+      NODE_ENV: test
+      PORT: "3000"
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+      FIREBASE_STORAGE_BUCKET: rentitease-65e49.firebasestorage.app
+      RAZORPAY_KEY_ID: ${{ secrets.STAGING_E2E_RAZORPAY_KEY_ID }}
+      RAZORPAY_KEY_SECRET: ${{ secrets.STAGING_E2E_RAZORPAY_KEY_SECRET }}
+      RAZORPAY_WEBHOOK_SECRET: ${{ secrets.STAGING_E2E_RAZORPAY_WEBHOOK_SECRET }}
+      SOCIAL_AUTOMATION_MODE: DISABLED
+      SOCIAL_SCHEDULER_ENABLED: "false"
 
     steps:
       - name: Checkout PR branch under test
         uses: actions/checkout@v4
         with:
-          # The staging API must be a dedicated non-production deployment with the flag enabled.
-          ref: ${{ inputs.ref || 'main' }}
+          ref: ${{ inputs.ref || 'feat/add-property-type-selection' }}
 
-      - name: Verify staging target and required secrets
+      - name: Validate isolated Neon target and required secrets
         shell: bash
         run: |
           node <<'NODE'
-          const raw = process.env.E2E_BASE_URL;
-          if (!raw) throw new Error('Missing secret STAGING_E2E_BASE_URL.');
-          let url;
-          try { url = new URL(raw); } catch { throw new Error('STAGING_E2E_BASE_URL must be a valid absolute URL.'); }
-          if (url.protocol !== 'https:') throw new Error('Staging E2E target must use HTTPS.');
-          const hostname = url.hostname.toLowerCase();
-          if (['api.rentitease.com', 'rentitease.com', 'www.rentitease.com'].includes(hostname)) {
-            throw new Error('Refusing to run mutating E2E tests against a production RentItEase host.');
-          }
-          if (!/(staging|stage|test|e2e)/i.test(hostname)) {
-            throw new Error('Staging hostname must visibly contain staging, stage, test, or e2e; use a dedicated non-production host.');
-          }
-          if (url.pathname !== '/' || url.username || url.password || url.search || url.hash) {
-            throw new Error('STAGING_E2E_BASE_URL must not contain credentials, query parameters, or fragments.');
-          }
           const required = [
+            'DATABASE_URL', 'E2E_ALLOWED_DATABASE_HOST',
             'E2E_TENANT_EMAIL', 'E2E_TENANT_PASSWORD',
             'E2E_OWNER_EMAIL', 'E2E_OWNER_PASSWORD',
             'E2E_OTHER_OWNER_EMAIL', 'E2E_OTHER_OWNER_PASSWORD',
             'E2E_ADMIN_EMAIL', 'E2E_ADMIN_PASSWORD',
-            'E2E_RAZORPAY_KEY_SECRET', 'E2E_RAZORPAY_WEBHOOK_SECRET',
+            'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'FIREBASE_STORAGE_BUCKET',
+            'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET',
           ];
           const missing = required.filter((key) => !process.env[key]);
-          if (missing.length) throw new Error('Missing required staging secrets: ' + missing.join(', '));
-          console.log('Staging target validated; URL and account identifiers are intentionally not logged.');
+          if (missing.length) throw new Error('Missing required GitHub Actions secrets: ' + missing.join(', '));
+
+          if (process.env.PROPERTY_MARKETPLACE_ENABLED !== 'true') {
+            throw new Error('Marketplace E2E requires PROPERTY_MARKETPLACE_ENABLED=true.');
+          }
+          if (process.env.E2E_CONFIRMED_NEON_BRANCH !== 'rentitease-e2e-fresh') {
+            throw new Error('Refusing to continue: confirmed Neon branch must be rentitease-e2e-fresh.');
+          }
+          const url = new URL(process.env.DATABASE_URL);
+          if (!['postgres:', 'postgresql:'].includes(url.protocol)) throw new Error('E2E database URL must use PostgreSQL.');
+          if (!url.hostname.toLowerCase().endsWith('.neon.tech')) throw new Error('Refusing non-Neon database host.');
+          if (url.hostname.toLowerCase() !== process.env.E2E_ALLOWED_DATABASE_HOST.toLowerCase()) {
+            throw new Error('Refusing database host that does not match STAGING_E2E_ALLOWED_DIRECT_DATABASE_HOST.');
+          }
+          if (url.pathname.replace(/^\//, '') !== 'neondb') throw new Error('Refusing database other than neondb.');
+          if (['api.rentitease.com', 'rentitease.com', 'www.rentitease.com'].includes(url.hostname.toLowerCase())) {
+            throw new Error('Refusing production database host.');
+          }
+          if (!process.env.RAZORPAY_KEY_ID.startsWith('rzp_test_')) {
+            throw new Error('Only a Razorpay TEST key (rzp_test_...) is allowed in isolated E2E.');
+          }
+
+          const expected = {
+            E2E_TENANT_EMAIL: 'tenent.test@rentitease.com',
+            E2E_OWNER_EMAIL: 'owner.test@rentitease.com',
+            E2E_OTHER_OWNER_EMAIL: 'testother.owner@rentitease.com',
+            E2E_ADMIN_EMAIL: 'admin@rentitease.com',
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (process.env[key].toLowerCase() !== value) throw new Error(key + ' does not match the approved isolated E2E account.');
+          }
+          console.log('PASS: database host, database name, Neon branch confirmation, account identities and Razorpay TEST key validated. No credential values were logged.');
           NODE
 
       - name: Setup Node
@@ -86,19 +118,53 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
 
-      - name: Install dependencies and generate Prisma client
-        run: |
-          npm ci
-          npx prisma generate
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Confirm staging API health
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Apply migrations to the allowlisted isolated Neon database
+        run: |
+          npx prisma migrate deploy
+          npx prisma migrate status
+
+      - name: Verify the four isolated E2E accounts
+        run: npx ts-node scripts/seed-isolated-e2e-users.ts
+
+      - name: Build temporary API
+        run: |
+          export JWT_ACCESS_SECRET="$(openssl rand -hex 32)"
+          export JWT_REFRESH_SECRET="$(openssl rand -hex 32)"
+          npm run build
+          node <<'NODE'
+          const fs = require('node:fs');
+          const envFile = process.env.GITHUB_ENV;
+          fs.appendFileSync(envFile, `JWT_ACCESS_SECRET=${process.env.JWT_ACCESS_SECRET}\nJWT_REFRESH_SECRET=${process.env.JWT_REFRESH_SECRET}\n`, { mode: 0o600 });
+          NODE
+
+      - name: Start temporary API on the GitHub runner
         shell: bash
         run: |
-          curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors \
-            "${E2E_BASE_URL%/}${E2E_API_PREFIX}/health" >/dev/null
-          echo "Staging health check passed."
+          nohup node dist/main > /tmp/rentitease-e2e-api.log 2>&1 &
+          echo $! > /tmp/rentitease-e2e-api.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/api/v1/health >/dev/null; then
+              echo "Temporary API health check passed."
+              exit 0
+            fi
+            if ! kill -0 "$(cat /tmp/rentitease-e2e-api.pid)" 2>/dev/null; then
+              echo "Temporary API process exited unexpectedly."
+              tail -n 100 /tmp/rentitease-e2e-api.log
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "Temporary API did not become healthy."
+          tail -n 100 /tmp/rentitease-e2e-api.log
+          exit 1
 
-      - name: Marketplace E2E (SALE, LEASE, SITE_SALE, enquiries, IDOR)
+      - name: Marketplace E2E (SALE, LEASE, SITE_SALE, SITE_RENT, SITE_LEASE, enquiries, IDOR)
         run: npx jest --config test/jest-release-e2e.json --runInBand --verbose test/release/marketplace.e2e-spec.ts
 
       - name: Rental property regression
@@ -107,8 +173,19 @@ jobs:
       - name: Booking regression
         run: npx jest --config test/jest-release-e2e.json --runInBand --verbose test/release/booking.e2e-spec.ts
 
-      - name: Payment regression (staging test gateway only)
+      - name: Payment regression (Razorpay TEST credentials + signed webhook simulation)
         run: npx jest --config test/jest-release-e2e.json --runInBand --verbose test/release/payment.e2e-spec.ts
 
       - name: Lease lifecycle regression
         run: npx jest --config test/jest-release-e2e.json --runInBand --verbose test/release/lease-lifecycle.e2e-spec.ts
+
+      - name: Stop temporary API
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/rentitease-e2e-api.pid ]; then
+            kill "$(cat /tmp/rentitease-e2e-api.pid)" 2>/dev/null || true
+          fi
+          if [ -f /tmp/rentitease-e2e-api.log ]; then
+            tail -n 80 /tmp/rentitease-e2e-api.log
+          fi

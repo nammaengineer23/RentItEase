@@ -20,7 +20,9 @@ import '../../providers/owner_provider.dart';
 import '../widgets/sectioned_property_image_picker.dart';
 
 class AddPropertyPage extends ConsumerStatefulWidget {
-  const AddPropertyPage({super.key});
+  const AddPropertyPage({super.key, this.propertyType = 'HOUSE', this.transactionType = 'RENT'});
+  final String propertyType;
+  final String transactionType;
   @override
   ConsumerState<AddPropertyPage> createState() => _AddPropertyPageState();
 }
@@ -46,7 +48,8 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   final totalFloorsController = TextEditingController(text: '0');
   final areaController = TextEditingController(text: '1000');
 
-  String propertyType = 'House';
+  late String propertyType;
+  late final String transactionType;
   String furnishing = 'Semi Furnished';
   bool parking = false, petFriendly = false, dailyRentEnabled = false;
   bool socialMarketingConsent = false, termsAccepted = false, aiSuggesting = false, loading = false;
@@ -65,6 +68,8 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   @override
   void initState() {
     super.initState();
+    propertyType = widget.propertyType == 'HOUSE' ? 'House' : widget.propertyType;
+    transactionType = widget.transactionType;
     WidgetsBinding.instance.addPostFrameCallback((_) { _loadCurrentLocation(); _loadAmenities(); });
   }
 
@@ -230,7 +235,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     selectedLocation = selectedLocation!.copyWith(latitude: manualLatitude, longitude: manualLongitude);
     setState(() => loading = true);
     try {
-      final property = OwnerPropertyEntity(id: '', title: titleController.text.trim(), description: descriptionController.text.trim(), address: addressController.text.trim(), city: cityController.text.trim(), stateName: stateController.text.trim(), country: countryController.text.trim(), pincode: pincodeController.text.trim(), locality: localityController.text.trim(), landmark: landmarkController.text.trim(), latitude: selectedLocation!.latitude, longitude: selectedLocation!.longitude, rent: rent, securityDeposit: deposit, bedrooms: bedrooms, bathrooms: bathrooms, area: area, propertyType: propertyType, furnishing: furnishing, parking: parking, petFriendly: petFriendly, imageUrl: '', isAvailable: false, isVerified: false, totalViews: 0, pendingVisits: 0, createdAt: DateTime.now(), views: 0, favorites: 0, visitRequests: 0);
+      final property = OwnerPropertyEntity(id: '', transactionType: transactionType, title: titleController.text.trim(), description: descriptionController.text.trim(), address: addressController.text.trim(), city: cityController.text.trim(), stateName: stateController.text.trim(), country: countryController.text.trim(), pincode: pincodeController.text.trim(), locality: localityController.text.trim(), landmark: landmarkController.text.trim(), latitude: selectedLocation!.latitude, longitude: selectedLocation!.longitude, rent: rent, securityDeposit: deposit, bedrooms: bedrooms, bathrooms: bathrooms, area: area, propertyType: propertyType, furnishing: furnishing, parking: parking, petFriendly: petFriendly, imageUrl: '', isAvailable: false, isVerified: false, totalViews: 0, pendingVisits: 0, createdAt: DateTime.now(), views: 0, favorites: 0, visitRequests: 0);
       final created = await ref.read(ownerProvider.notifier).addProperty(property, area: area, bathrooms: bathrooms, bedrooms: bedrooms, balconies: balconies, floor: floor, totalFloors: totalFloors, country: countryController.text.trim(), furnishing: furnishing, landmark: landmarkController.text.trim().isEmpty ? null : landmarkController.text.trim(), latitude: selectedLocation!.latitude, longitude: selectedLocation!.longitude, parking: parking, petFriendly: petFriendly, pincode: pincodeController.text.trim(), securityDeposit: deposit, stateName: stateController.text.trim(), dailyRentEnabled: dailyRentEnabled, dailyRent: dailyRent, amenityIds: _selectedAmenityIds.toList());
       final warnings = <String>[];
       // Persist consent immediately after the property exists. Optional media
