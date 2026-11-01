@@ -42,6 +42,7 @@ jobs:
       E2E_RAZORPAY_WEBHOOK_SECRET: ${{ secrets.STAGING_E2E_RAZORPAY_WEBHOOK_SECRET }}
       E2E_STRICT: "true"
       E2E_EXPECT_MARKETPLACE_ENABLED: "true"
+      PROPERTY_MARKETPLACE_ENABLED: "true"
       E2E_MARKETPLACE_READ_ONLY: "false"
       E2E_RUN_ID: ${{ github.run_id }}
       NODE_ENV: test
@@ -78,6 +79,9 @@ jobs:
           const missing = required.filter((key) => !process.env[key]);
           if (missing.length) throw new Error('Missing required GitHub Actions secrets: ' + missing.join(', '));
 
+          if (process.env.PROPERTY_MARKETPLACE_ENABLED !== 'true') {
+            throw new Error('Marketplace E2E requires PROPERTY_MARKETPLACE_ENABLED=true.');
+          }
           if (process.env.E2E_CONFIRMED_NEON_BRANCH !== 'rentitease-e2e-fresh') {
             throw new Error('Refusing to continue: confirmed Neon branch must be rentitease-e2e-fresh.');
           }
