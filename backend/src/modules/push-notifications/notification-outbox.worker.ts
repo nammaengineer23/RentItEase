@@ -38,7 +38,7 @@ export class NotificationOutboxWorker implements OnModuleInit, OnModuleDestroy {
     try {
       const batchSize = this.config.get<number>('PUSH_OUTBOX_BATCH_SIZE', 10);
       const events = await this.claimBatch(batchSize);
-      for (const event of events) await this.processEvent(event);
+      await Promise.all(events.map((event) => this.processEvent(event)));
     } catch (error) {
       this.logger.error(`Push outbox poll failed: ${this.safeError(error)}`);
     } finally {
@@ -110,6 +110,7 @@ export class NotificationOutboxWorker implements OnModuleInit, OnModuleDestroy {
       const fcmData = this.toFcmData(event.data);
 
       for (const delivery of deliveries) {
+        if (!(await this.heartbeat(event))) return;
         const claimed = await this.prisma.notificationOutboxDelivery.updateMany({
           where: { id: delivery.id, status: { in: ['PENDING', 'RETRY', 'PROCESSING'] } },
           data: { status: 'PROCESSING', attemptCount: { increment: 1 } },
@@ -170,6 +171,14 @@ export class NotificationOutboxWorker implements OnModuleInit, OnModuleDestroy {
       this.logger.error(`Push outbox event ${event.id} failed: ${this.safeError(error)}`);
       await this.releaseForRetry(event, new Date(Date.now() + 30_000));
     }
+  }
+
+  private async heartbeat(event: NotificationOutbox): Promise<boolean> {
+    const refreshed = await this.prisma.notificationOutbox.updateMany({
+      where: { id: event.id, lockToken: event.lockToken, status: 'PROCESSING' },
+      data: { lockedAt: new Date() },
+    });
+    return refreshed.count === 1;
   }
 
   private async releaseForRetry(event: NotificationOutbox, availableAt: Date): Promise<void> {
