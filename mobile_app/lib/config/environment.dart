@@ -1,5 +1,5 @@
 class Environment {
-  static const String appName = 'RentItEase';
+  static const String appName = 'RentItEase';\n\n  /// True only for explicitly selected isolated staging builds.\n  static const bool isStaging = bool.fromEnvironment(\n    'STAGING',\n    defaultValue: false,\n  );
 
   /// Override for local development or isolated staging with
   /// `--dart-define=API_BASE_URL=https://<staging-host>/api/v1`.
