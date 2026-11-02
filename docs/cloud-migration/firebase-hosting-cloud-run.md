@@ -1,0 +1,95 @@
+# RentItEase Firebase Hosting + Cloud Run migration
+
+## Target architecture
+
+- Flutter Web static build: Firebase Hosting.
+- NestJS REST API: Google Cloud Run, built from `backend/Dockerfile`.
+- PostgreSQL: retain the existing Neon database; do not move or recreate it as part of this hosting migration.
+- Authentication and object storage: retain the existing Firebase Auth and Firebase Storage integrations.
+- DNS: move the web custom domain to Firebase Hosting and route the existing API hostname to Cloud Run using a supported HTTPS front door (Cloud Run domain mapping where available, otherwise an external Application Load Balancer/serverless NEG).
+
+The Android app currently defaults to `https://api.rentitease.com/api/v1`. Preserve that hostname during migration. Do not change the default mobile API URL unless a separately reviewed compatibility plan is approved.
+
+## Safety properties
+
+- Both deployment workflows are manual (`workflow_dispatch`); no deploy is triggered by a push or PR.
+- The selected GitHub Environment must provide the environment-specific project/service configuration.
+- Cloud Run container startup runs `node dist/main.js` directly. It does **not** run Prisma migrations.
+- The runtime image includes `ffprobe` (from the FFmpeg package) because property video validation invokes it.
+- Cloud Run's writable filesystem is temporary. Persisted user uploads and media must use Firebase Storage; use `/tmp` only for transient processing files.
+- Do not attach the production Neon database to staging.
+- Do not copy production secrets, user data, Firebase objects, or database records into staging.
+- Keep Railway and the existing production DNS records unchanged until staging acceptance and a production cutover plan are approved.
+
+## One-time Google Cloud setup per environment
+
+1. Create/choose a Google Cloud project and enable Cloud Run, Cloud Build, Artifact Registry, IAM Credentials and Secret Manager APIs.
+2. Create an Artifact Registry Docker repository in the selected Cloud Run region.
+3. Configure Workload Identity Federation for this GitHub repository and grant the deployment service account only the required build, Artifact Registry and Cloud Run deployment permissions. Do not store a long-lived service-account JSON key in GitHub.
+4. Create a Cloud Run runtime service account. Grant it Secret Manager Secret Accessor on each bound secret; Firebase Admin access in the staging Firebase project; Storage Object Admin on the staging bucket only; and Service Account Token Creator on itself only if Firebase Storage V4 signed-URL generation requires IAM `signBlob`. Do not create or upload a service-account JSON key for Cloud Run.
+5. Create the Cloud Run service with the required application environment variables and Secret Manager bindings before its first workflow deployment. Set `NODE_ENV=production` for the optimized runtime and `APP_ENV=staging` or `APP_ENV=production` for the deployment tier. Use a dedicated isolated staging Neon database and staging Firebase project for staging.
+6. Configure the Cloud Run service to listen on the injected `PORT` (the application already does this) and allow public invocation; application endpoints continue to enforce Firebase/JWT authorization.
+7. Verify `/api/v1/health` and database connectivity before any staging integration tests.
+
+## GitHub Environment configuration
+
+Create GitHub Environments named exactly `staging` and `production`. Add the following environment-scoped values:
+
+### Secrets
+
+- `GCP_WORKLOAD_IDENTITY_PROVIDER`: full Workload Identity Provider resource name.
+- `GCP_DEPLOY_SERVICE_ACCOUNT`: deployment service-account email.
+- `GCP_PROJECT_ID`: Google Cloud project ID (Cloud Run workflow).
+- `FIREBASE_PROJECT_ID`: Firebase project ID (Hosting workflow).
+
+### Variables
+
+- `CLOUD_RUN_REGION`: Cloud Run and Artifact Registry region, e.g. `asia-south1`.
+- `CLOUD_RUN_SERVICE`: environment-specific Cloud Run service name.
+- `ARTIFACT_REGISTRY_REPOSITORY`: existing Artifact Registry repository name.
+- `API_BASE_URL`: full environment-specific API base URL ending in `/api/v1`; staging must use its Cloud Run staging URL or staging API hostname, production must preserve `https://api.rentitease.com/api/v1`.
+- `ALLOWED_HOSTS`: exact comma-separated API host allowlist for that environment (for example, the Cloud Run `run.app` hostname during staging, and `api.rentitease.com` for production).
+- `CORS_ORIGINS`: exact comma-separated browser origins allowed to call that environment's API.
+- `CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT`: environment-specific runtime service-account email attached to Cloud Run.
+- `FIREBASE_STORAGE_BUCKET`: exact bucket name copied from that Firebase project's Storage settings; do not infer it.
+- `MAIL_HOST`: staging mail provider SMTP hostname.
+
+Set required reviewers on the production GitHub Environment so a production workflow run cannot deploy without approval.
+
+## Firebase Hosting setup
+
+1. Enable Firebase Hosting in each environment's Firebase project.
+2. Attach `rentitease.com` and `www.rentitease.com` to the production Hosting site. Keep the existing Cloudflare DNS records until Firebase verifies domain ownership and provides the exact records to apply.
+3. Use the staging project's default Hosting domain for staging acceptance.
+4. The root `firebase.json` serves `mobile_app/build/web`, disables caching for the Flutter entry point/service worker/version file, and falls back to `index.html` for Flutter routes.
+5. Do not remove Cloudflare DNS/proxy configuration or disable the current web deployment until the Firebase-hosted site passes acceptance and the DNS cutover is approved.
+
+## API hostname and cutover
+
+The API hostname must continue to resolve to the Cloud Run service over HTTPS. Prefer a Cloud Run custom domain mapping if it is supported for the selected project/region and meets the required TLS behavior. Otherwise use an external HTTPS Application Load Balancer with a serverless NEG targeting Cloud Run. Do not point `api.rentitease.com` at the Flutter Hosting site: its SPA fallback is for the web application, not the API.
+
+The backend currently enforces the production host allowlist and HTTPS behavior in `backend/src/main.ts`. The deployment workflow sets `NODE_ENV=production`, `APP_ENV` to the selected GitHub Environment, `TRUST_PROXY=true`, and the environment-scoped `ALLOWED_HOSTS` and `CORS_ORIGINS` values. Staging must have its own host allowlist and CORS origins; do not broaden production CORS to arbitrary origins.
+
+The Cloud Run workflow binds these Secret Manager secrets (create them in the selected Google Cloud project with the exact names shown): `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `MAIL_USER`, `MAIL_PASSWORD`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `SOCIAL_ACCOUNT_ENCRYPTION_KEY`. The runtime service account must have Secret Manager Secret Accessor on each of these secrets. Supply the isolated staging Neon URL, new staging JWT secrets, staging mail credentials, Razorpay **test-mode** credentials, and a fresh 64-character hexadecimal social encryption key. Do not use production values in staging.
+
+Set `FIREBASE_PROJECT_ID` to the selected project ID and `FIREBASE_STORAGE_BUCKET` to the exact staging bucket name as Cloud Run environment variables. On Cloud Run, Firebase Admin uses Application Default Credentials from the attached runtime service account; `FIREBASE_CLIENT_EMAIL` and `FIREBASE_PRIVATE_KEY` are not needed and no service-account key should be created. For local development only, the app still accepts the email/private-key pair together. Grant the runtime identity the Firebase permissions needed for Authentication, App Check and Cloud Messaging within the staging project, plus Storage Object Admin on the staging bucket only. If signed URL generation returns an IAM signing-permission error, grant the runtime service account Service Account Token Creator on itself. Never put secret values in GitHub workflow variables, source files, build arguments, or container images.
+
+## Staging acceptance checklist
+
+- [ ] Staging Cloud Run service starts and reports the expected staging environment.
+- [ ] Staging API health endpoint succeeds.
+- [ ] Staging service connects only to the isolated staging Neon database.
+- [ ] Firebase ID-token login and protected API requests work.
+- [ ] Firebase Storage upload, read, authorization and deletion tests pass using staging objects only.
+- [ ] Property image/video and private chat attachment authorization tests pass.
+- [ ] Flutter Web staging site loads, deep links work, and API requests target staging.
+- [ ] Android test build can reach the staging API without changing the production default.
+- [ ] Logs, error reporting, Cloud Run scaling and Secret Manager access are verified.
+
+## Database migrations
+
+Do not use the container startup command or deployment workflow to run Prisma migrations. Migration execution is a separate controlled operation using a dedicated migration identity and an explicitly selected isolated database. Validate the migration against staging first, review the SQL and backup/restore plan, and obtain explicit approval before any production migration.
+
+## Production cutover and rollback
+
+Production cutover is a separate approval. Before changing DNS, confirm staging acceptance, configure production secrets and service identity, verify the production Neon connection without running migrations, and confirm the API hostname/TLS routing. Deploy the API first, verify it through its final hostname, deploy Flutter Web, then change only the DNS records Firebase instructs you to change. Keep the previous Cloudflare/Railway configuration available for rollback until the new deployment has been stable and accepted.

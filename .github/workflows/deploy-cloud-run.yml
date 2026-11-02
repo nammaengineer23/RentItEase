@@ -1,0 +1,137 @@
+name: Deploy RentItEase API to Cloud Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target deployment environment
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: cloud-run-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy API (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud using Workload Identity Federation
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Validate deployment configuration
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: ${{ vars.CLOUD_RUN_REGION }}
+          SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+          AR_REPOSITORY: ${{ vars.ARTIFACT_REGISTRY_REPOSITORY }}
+          CORS_ORIGINS: ${{ vars.CORS_ORIGINS }}
+          RUNTIME_SERVICE_ACCOUNT: ${{ vars.CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT }}
+          FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET }}
+          MAIL_HOST: ${{ vars.MAIL_HOST }}
+        run: |
+          set -euo pipefail
+          : "${PROJECT_ID:?Set GCP_PROJECT_ID in the selected GitHub environment}"
+          : "${REGION:?Set CLOUD_RUN_REGION in the selected GitHub environment}"
+          : "${SERVICE:?Set CLOUD_RUN_SERVICE in the selected GitHub environment}"
+          : "${AR_REPOSITORY:?Set ARTIFACT_REGISTRY_REPOSITORY in the selected GitHub environment}"
+          : "${CORS_ORIGINS:?Set CORS_ORIGINS in the selected GitHub environment}"
+          : "${RUNTIME_SERVICE_ACCOUNT:?Set CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT in the selected GitHub environment}"
+          : "${FIREBASE_STORAGE_BUCKET:?Set FIREBASE_STORAGE_BUCKET in the selected GitHub environment}"
+          : "${MAIL_HOST:?Set MAIL_HOST in the selected GitHub environment}"
+
+      - name: Build and publish container
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: ${{ vars.CLOUD_RUN_REGION }}
+          SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+          AR_REPOSITORY: ${{ vars.ARTIFACT_REGISTRY_REPOSITORY }}
+        run: |
+          set -euo pipefail
+          IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${AR_REPOSITORY}/${SERVICE}:${GITHUB_SHA}"
+          gcloud builds submit backend \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --tag "${IMAGE}"
+          echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
+
+      - name: Deploy image to Cloud Run
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: ${{ vars.CLOUD_RUN_REGION }}
+          SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+          APP_ENV: ${{ inputs.environment }}
+          CORS_ORIGINS: ${{ vars.CORS_ORIGINS }}
+          RUNTIME_SERVICE_ACCOUNT: ${{ vars.CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT }}
+          FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET }}
+          MAIL_HOST: ${{ vars.MAIL_HOST }}
+        run: |
+          set -euo pipefail
+          gcloud run deploy "${SERVICE}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --platform managed \
+            --image "${IMAGE}" \
+            --service-account "${RUNTIME_SERVICE_ACCOUNT}" \
+            --allow-unauthenticated \
+            --update-env-vars "^~^NODE_ENV=production~APP_ENV=${APP_ENV}~TRUST_PROXY=true~CORS_ORIGINS=${CORS_ORIGINS}~FIREBASE_PROJECT_ID=${PROJECT_ID}~FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET}~MAIL_HOST=${MAIL_HOST}~STORAGE_DRIVER=firebase~SOCIAL_AUTOMATION_MODE=GENERATE_ONLY~SOCIAL_SCHEDULER_ENABLED=false" \
+            --set-secrets "^~^DATABASE_URL=DATABASE_URL:latest~JWT_ACCESS_SECRET=JWT_ACCESS_SECRET:latest~JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest~MAIL_USER=MAIL_USER:latest~MAIL_PASSWORD=MAIL_PASSWORD:latest~RAZORPAY_KEY_ID=RAZORPAY_KEY_ID:latest~RAZORPAY_KEY_SECRET=RAZORPAY_KEY_SECRET:latest~SOCIAL_ACCOUNT_ENCRYPTION_KEY=SOCIAL_ACCOUNT_ENCRYPTION_KEY:latest" \
+            --quiet
+
+      - name: Set Cloud Run hostname allowlist
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: ${{ vars.CLOUD_RUN_REGION }}
+          SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+          ADDITIONAL_ALLOWED_HOSTS: ${{ vars.ALLOWED_HOSTS }}
+        run: |
+          set -euo pipefail
+          URL="$(gcloud run services describe "${SERVICE}" \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --format='value(status.url)')"
+          test -n "$URL"
+          SERVICE_HOST="${URL#https://}"
+          ALLOWED_HOSTS="$SERVICE_HOST"
+          if [[ -n "${ADDITIONAL_ALLOWED_HOSTS}" ]]; then
+            ALLOWED_HOSTS="$ALLOWED_HOSTS,${ADDITIONAL_ALLOWED_HOSTS}"
+          fi
+          gcloud run services update "${SERVICE}" \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --update-env-vars "^~^ALLOWED_HOSTS=${ALLOWED_HOSTS}" \
+            --quiet
+
+      - name: Verify Cloud Run health endpoint
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: ${{ vars.CLOUD_RUN_REGION }}
+          SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+          APP_ENV: ${{ inputs.environment }}
+        run: |
+          set -euo pipefail
+          URL="$(gcloud run services describe "${SERVICE}" \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --format='value(status.url)')"
+          test -n "$URL"
+          echo "Cloud Run service URL: $URL"
+          RESPONSE="$(curl --fail --show-error --silent --retry 8 --retry-delay 5 \
+            "${URL}/api/v1/health")"
+          python -c 'import json, os, sys; payload=json.loads(sys.argv[1]); data=payload.get("data", payload); expected=os.environ["APP_ENV"]; actual=data.get("environment"); assert actual == expected, f"Expected environment {expected}, received {actual}"' "$RESPONSE"
+          echo "Health check passed for ${APP_ENV}."

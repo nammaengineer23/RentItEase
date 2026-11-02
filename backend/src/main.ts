@@ -22,6 +22,11 @@ const PRODUCTION_ORIGINS = [
   'https://www.rentitease.com',
 ];
 
+const STAGING_ORIGINS = [
+  'https://rentitease-staging.web.app',
+  'https://rentitease-staging.firebaseapp.com',
+];
+
 function getCorsOrigins(): string[] {
   const configured = (process.env.CORS_ORIGINS || '')
     .split(',')
@@ -29,13 +34,16 @@ function getCorsOrigins(): string[] {
     .filter(Boolean);
 
   if (process.env.NODE_ENV === 'production') {
-    // Production CORS is an exact allowlist. Never accept arbitrary HTTPS origins.
-    return [...new Set(configured.length > 0 ? configured : PRODUCTION_ORIGINS)].filter(
-      (origin) => PRODUCTION_ORIGINS.includes(origin),
+    // Keep production and staging on separate exact origin allowlists.
+    const allowedOrigins =
+      process.env.APP_ENV === 'staging' ? STAGING_ORIGINS : PRODUCTION_ORIGINS;
+
+    return [...new Set(configured.length > 0 ? configured : allowedOrigins)].filter(
+      (origin) => allowedOrigins.includes(origin),
     );
   }
 
-  return [...new Set([...PRODUCTION_ORIGINS, ...configured, 'http://localhost:3000', 'http://localhost:5173', 'http://localhost:8080', 'http://localhost:8081'])];
+  return [...new Set([...PRODUCTION_ORIGINS, ...STAGING_ORIGINS, ...configured, 'http://localhost:3000', 'http://localhost:5173', 'http://localhost:8080', 'http://localhost:8081'])];
 }
 
 function getTrustProxy(): boolean | number {
@@ -44,7 +52,7 @@ function getTrustProxy(): boolean | number {
     return process.env.NODE_ENV === 'production';
   }
 
-  if (/^\d+$/.test(value)) {
+  if (/^\\d+$/.test(value)) {
     return Number(value);
   }
 
@@ -99,9 +107,8 @@ async function bootstrap() {
 
   if (isProduction) {
     app.use((req: Request, res: Response, next: NextFunction) => {
-      // Railway probes the configured healthcheck from inside its infrastructure.
-      // Do not subject that probe to the public host/HTTPS policy; all application
-      // routes remain protected by the exact production host allowlist.
+      // Cloud Run health probes use this endpoint; all application routes
+      // remain protected by the exact configured host allowlist.
       if (req.path === '/api/v1/health' && (req.method === 'GET' || req.method === 'HEAD')) {
         next();
         return;
