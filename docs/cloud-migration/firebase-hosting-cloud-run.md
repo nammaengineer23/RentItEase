@@ -50,6 +50,9 @@ Create GitHub Environments named exactly `staging` and `production`. Add the fol
 - `API_BASE_URL`: full environment-specific API base URL ending in `/api/v1`; staging must use its Cloud Run staging URL or staging API hostname, production must preserve `https://api.rentitease.com/api/v1`.
 - `ALLOWED_HOSTS`: exact comma-separated API host allowlist for that environment (for example, the Cloud Run `run.app` hostname during staging, and `api.rentitease.com` for production).
 - `CORS_ORIGINS`: exact comma-separated browser origins allowed to call that environment's API.
+- `CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT`: environment-specific runtime service-account email attached to Cloud Run.
+- `FIREBASE_STORAGE_BUCKET`: exact bucket name copied from that Firebase project's Storage settings; do not infer it.
+- `MAIL_HOST`: staging mail provider SMTP hostname.
 
 Set required reviewers on the production GitHub Environment so a production workflow run cannot deploy without approval.
 
@@ -67,7 +70,9 @@ The API hostname must continue to resolve to the Cloud Run service over HTTPS. P
 
 The backend currently enforces the production host allowlist and HTTPS behavior in `backend/src/main.ts`. The deployment workflow sets `NODE_ENV=production`, `APP_ENV` to the selected GitHub Environment, `TRUST_PROXY=true`, and the environment-scoped `ALLOWED_HOSTS` and `CORS_ORIGINS` values. Staging must have its own host allowlist and CORS origins; do not broaden production CORS to arbitrary origins.
 
-Configure the following application values as Cloud Run environment variables or Secret Manager bindings before deploying: `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_STORAGE_BUCKET`, `MAIL_HOST`, `MAIL_USER`, `MAIL_PASSWORD`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `SOCIAL_ACCOUNT_ENCRYPTION_KEY`. Use separate values and Firebase projects for staging and production. Never place these values in GitHub workflow variables, source files, build arguments, or container images.
+The Cloud Run workflow binds these Secret Manager secrets (create them in the selected Google Cloud project with the exact names shown): `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `MAIL_USER`, `MAIL_PASSWORD`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `SOCIAL_ACCOUNT_ENCRYPTION_KEY`. The runtime service account must have Secret Manager Secret Accessor on each of these secrets. Supply the isolated staging Neon URL, new staging JWT secrets, staging mail credentials, Razorpay **test-mode** credentials, and a fresh 64-character hexadecimal social encryption key. Do not use production values in staging.
+
+Set `FIREBASE_PROJECT_ID` to the selected project ID and `FIREBASE_STORAGE_BUCKET` to the exact staging bucket name as Cloud Run environment variables. On Cloud Run, Firebase Admin uses Application Default Credentials from the attached runtime service account; `FIREBASE_CLIENT_EMAIL` and `FIREBASE_PRIVATE_KEY` are not needed and no service-account key should be created. For local development only, the app still accepts the email/private-key pair together. Grant the runtime identity the Firebase permissions needed for Authentication, App Check and Cloud Messaging within the staging project, plus Storage Object Admin on the staging bucket only. If signed URL generation returns an IAM signing-permission error, grant the runtime service account Service Account Token Creator on itself. Never put secret values in GitHub workflow variables, source files, build arguments, or container images.
 
 ## Staging acceptance checklist
 
