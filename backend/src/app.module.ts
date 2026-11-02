@@ -141,6 +141,10 @@ import { AppCheckGuard } from './firebase/app-check.guard';
           .valid('development', 'production', 'test')
           .default('development'),
 
+        APP_ENV: Joi.string()
+          .valid('development', 'staging', 'production')
+          .default('development'),
+
         OPENAI_API_KEY: Joi.string().min(20).optional(),
 
         OPENAI_LISTING_MODEL: Joi.string()
