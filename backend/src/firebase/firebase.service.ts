@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { randomUUID } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 
-import { cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
+import { applicationDefault, cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
 
 import { getStorage, getDownloadURL } from 'firebase-admin/storage';
 
@@ -13,18 +13,23 @@ import { getMessaging } from 'firebase-admin/messaging';
 export class FirebaseService {
   constructor(private readonly configService: ConfigService) {
     if (!getApps().length) {
-      initializeApp({
-        credential: cert({
-          projectId: this.configService.get<string>('FIREBASE_PROJECT_ID'),
-          clientEmail: this.configService.get<string>('FIREBASE_CLIENT_EMAIL'),
-          privateKey: this.configService
-            .get<string>('FIREBASE_PRIVATE_KEY')
-            ?.replace(/\\n/g, '\n'),
-        }),
+      const projectId = this.configService.get<string>('FIREBASE_PROJECT_ID');
+      const clientEmail = this.configService.get<string>('FIREBASE_CLIENT_EMAIL');
+      const privateKey = this.configService
+        .get<string>('FIREBASE_PRIVATE_KEY')
+        ?.replace(/\\n/g, '\n');
 
-        storageBucket: this.configService.get<string>(
-          'FIREBASE_STORAGE_BUCKET',
-        ),
+      // Cloud Run uses its attached runtime service account through ADC.
+      // Local development may continue to use an explicitly supplied key pair.
+      const credential =
+        clientEmail && privateKey
+          ? cert({ projectId, clientEmail, privateKey })
+          : applicationDefault();
+
+      initializeApp({
+        credential,
+        projectId,
+        storageBucket: this.configService.get<string>('FIREBASE_STORAGE_BUCKET'),
       });
 
       console.log('✅ Firebase Admin initialized');
