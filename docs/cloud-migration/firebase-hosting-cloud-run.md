@@ -25,7 +25,7 @@ The Android app currently defaults to `https://api.rentitease.com/api/v1`. Prese
 2. Create an Artifact Registry Docker repository in the selected Cloud Run region.
 3. Configure Workload Identity Federation for this GitHub repository and grant the deployment service account only the required build, Artifact Registry and Cloud Run deployment permissions. Do not store a long-lived service-account JSON key in GitHub.
 4. Create a Cloud Run runtime service account. Grant it only the access needed by the application, including Secret Manager secret accessor on the specific secrets it consumes.
-5. Create the Cloud Run service with the required application environment variables and Secret Manager bindings before its first workflow deployment. Use a dedicated isolated staging Neon database and staging Firebase project for staging.
+5. Create the Cloud Run service with the required application environment variables and Secret Manager bindings before its first workflow deployment. Set `NODE_ENV=production` for the optimized runtime and `APP_ENV=staging` or `APP_ENV=production` for the deployment tier. Use a dedicated isolated staging Neon database and staging Firebase project for staging.
 6. Configure the Cloud Run service to listen on the injected `PORT` (the application already does this) and allow public invocation; application endpoints continue to enforce Firebase/JWT authorization.
 7. Verify `/api/v1/health` and database connectivity before any staging integration tests.
 
@@ -46,6 +46,8 @@ Create GitHub Environments named exactly `staging` and `production`. Add the fol
 - `CLOUD_RUN_SERVICE`: environment-specific Cloud Run service name.
 - `ARTIFACT_REGISTRY_REPOSITORY`: existing Artifact Registry repository name.
 - `API_BASE_URL`: full environment-specific API base URL ending in `/api/v1`; staging must use its Cloud Run staging URL or staging API hostname, production must preserve `https://api.rentitease.com/api/v1`.
+- `ALLOWED_HOSTS`: exact comma-separated API host allowlist for that environment (for example, the Cloud Run `run.app` hostname during staging, and `api.rentitease.com` for production).
+- `CORS_ORIGINS`: exact comma-separated browser origins allowed to call that environment's API.
 
 Set required reviewers on the production GitHub Environment so a production workflow run cannot deploy without approval.
 
@@ -61,7 +63,9 @@ Set required reviewers on the production GitHub Environment so a production work
 
 The API hostname must continue to resolve to the Cloud Run service over HTTPS. Prefer a Cloud Run custom domain mapping if it is supported for the selected project/region and meets the required TLS behavior. Otherwise use an external HTTPS Application Load Balancer with a serverless NEG targeting Cloud Run. Do not point `api.rentitease.com` at the Flutter Hosting site: its SPA fallback is for the web application, not the API.
 
-The backend currently enforces the production host allowlist and HTTPS behavior in `backend/src/main.ts`. Configure `ALLOWED_HOSTS=api.rentitease.com`, `TRUST_PROXY=true`, and the exact production CORS origins when provisioning the production service. Staging must have its own host allowlist and CORS origins; do not broaden production CORS to arbitrary origins.
+The backend currently enforces the production host allowlist and HTTPS behavior in `backend/src/main.ts`. The deployment workflow sets `NODE_ENV=production`, `APP_ENV` to the selected GitHub Environment, `TRUST_PROXY=true`, and the environment-scoped `ALLOWED_HOSTS` and `CORS_ORIGINS` values. Staging must have its own host allowlist and CORS origins; do not broaden production CORS to arbitrary origins.
+
+Configure the following application values as Cloud Run environment variables or Secret Manager bindings before deploying: `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_STORAGE_BUCKET`, `MAIL_HOST`, `MAIL_USER`, `MAIL_PASSWORD`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `SOCIAL_ACCOUNT_ENCRYPTION_KEY`. Use separate values and Firebase projects for staging and production. Never place these values in GitHub workflow variables, source files, build arguments, or container images.
 
 ## Staging acceptance checklist
 
