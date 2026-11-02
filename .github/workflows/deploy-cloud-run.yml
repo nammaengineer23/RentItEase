@@ -45,6 +45,9 @@ jobs:
           AR_REPOSITORY: ${{ vars.ARTIFACT_REGISTRY_REPOSITORY }}
           ALLOWED_HOSTS: ${{ vars.ALLOWED_HOSTS }}
           CORS_ORIGINS: ${{ vars.CORS_ORIGINS }}
+          RUNTIME_SERVICE_ACCOUNT: ${{ vars.CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT }}
+          FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET }}
+          MAIL_HOST: ${{ vars.MAIL_HOST }}
         run: |
           set -euo pipefail
           : "${PROJECT_ID:?Set GCP_PROJECT_ID in the selected GitHub environment}"
@@ -53,6 +56,9 @@ jobs:
           : "${AR_REPOSITORY:?Set ARTIFACT_REGISTRY_REPOSITORY in the selected GitHub environment}"
           : "${ALLOWED_HOSTS:?Set ALLOWED_HOSTS in the selected GitHub environment}"
           : "${CORS_ORIGINS:?Set CORS_ORIGINS in the selected GitHub environment}"
+          : "${RUNTIME_SERVICE_ACCOUNT:?Set CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT in the selected GitHub environment}"
+          : "${FIREBASE_STORAGE_BUCKET:?Set FIREBASE_STORAGE_BUCKET in the selected GitHub environment}"
+          : "${MAIL_HOST:?Set MAIL_HOST in the selected GitHub environment}"
 
       - name: Build and publish container
         env:
@@ -77,6 +83,9 @@ jobs:
           APP_ENV: ${{ inputs.environment }}
           ALLOWED_HOSTS: ${{ vars.ALLOWED_HOSTS }}
           CORS_ORIGINS: ${{ vars.CORS_ORIGINS }}
+          RUNTIME_SERVICE_ACCOUNT: ${{ vars.CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT }}
+          FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET }}
+          MAIL_HOST: ${{ vars.MAIL_HOST }}
         run: |
           set -euo pipefail
           gcloud run deploy "${SERVICE}" \
@@ -84,8 +93,10 @@ jobs:
             --region "${REGION}" \
             --platform managed \
             --image "${IMAGE}" \
+            --service-account "${RUNTIME_SERVICE_ACCOUNT}" \
             --allow-unauthenticated \
-            --update-env-vars "^~^NODE_ENV=production~APP_ENV=${APP_ENV}~TRUST_PROXY=true~ALLOWED_HOSTS=${ALLOWED_HOSTS}~CORS_ORIGINS=${CORS_ORIGINS}" \
+            --update-env-vars "^~^NODE_ENV=production~APP_ENV=${APP_ENV}~TRUST_PROXY=true~ALLOWED_HOSTS=${ALLOWED_HOSTS}~CORS_ORIGINS=${CORS_ORIGINS}~FIREBASE_PROJECT_ID=${PROJECT_ID}~FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET}~MAIL_HOST=${MAIL_HOST}~STORAGE_DRIVER=firebase~SOCIAL_AUTOMATION_MODE=GENERATE_ONLY~SOCIAL_SCHEDULER_ENABLED=false" \
+            --set-secrets "^~^DATABASE_URL=DATABASE_URL:latest~JWT_ACCESS_SECRET=JWT_ACCESS_SECRET:latest~JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest~MAIL_USER=MAIL_USER:latest~MAIL_PASSWORD=MAIL_PASSWORD:latest~RAZORPAY_KEY_ID=RAZORPAY_KEY_ID:latest~RAZORPAY_KEY_SECRET=RAZORPAY_KEY_SECRET:latest~SOCIAL_ACCOUNT_ENCRYPTION_KEY=SOCIAL_ACCOUNT_ENCRYPTION_KEY:latest" \
             --quiet
 
       - name: Verify Cloud Run health endpoint
