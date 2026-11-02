@@ -59,9 +59,11 @@ import { AppCheckGuard } from './firebase/app-check.guard';
 
         FIREBASE_PROJECT_ID: Joi.string().required(),
 
-        FIREBASE_CLIENT_EMAIL: Joi.string().email().required(),
+        // Optional for Cloud Run, which authenticates with its attached runtime service account (ADC).
+        // If supplied for local development, both values must be present.
+        FIREBASE_CLIENT_EMAIL: Joi.string().email().optional(),
 
-        FIREBASE_PRIVATE_KEY: Joi.string().required(),
+        FIREBASE_PRIVATE_KEY: Joi.string().optional(),
 
         FIREBASE_STORAGE_BUCKET: Joi.string().when('NODE_ENV', {
           is: 'production',
@@ -154,7 +156,7 @@ import { AppCheckGuard } from './firebase/app-check.guard';
         OPENAI_BASE_URL: Joi.string()
           .uri({ scheme: ['https'] })
           .default('https://api.openai.com/v1'),
-      }),
+      }).and('FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'),
     }),
 
     ThrottlerModule.forRoot([
