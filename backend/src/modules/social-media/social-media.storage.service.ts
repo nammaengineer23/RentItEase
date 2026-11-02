@@ -147,8 +147,10 @@ export class SocialMediaStorageService {
     if (apply && process.env.STORAGE_RECONCILE_ALLOW_DELETE !== 'true') {
       throw new Error('Social-video deletion is disabled without STORAGE_RECONCILE_ALLOW_DELETE=true.');
     }
-    const runtimeEnvironment = process.env.APP_ENV?.trim() || process.env.NODE_ENV?.trim();
-    if (apply && runtimeEnvironment === 'production' && process.env.STORAGE_RECONCILE_ALLOW_PRODUCTION !== 'true') {
+    const appEnvironment = process.env.APP_ENV?.trim().toLowerCase();
+    const isProduction = appEnvironment === 'production' ||
+      (process.env.NODE_ENV?.trim().toLowerCase() === 'production' && appEnvironment !== 'staging');
+    if (apply && isProduction && process.env.STORAGE_RECONCILE_ALLOW_PRODUCTION !== 'true') {
       throw new Error('Production social-video deletion requires STORAGE_RECONCILE_ALLOW_PRODUCTION=true.');
     }
     const days = Math.max(1, Math.min(3650, retentionDays));
