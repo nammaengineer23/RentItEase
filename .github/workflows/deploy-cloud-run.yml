@@ -1,0 +1,96 @@
+name: Deploy RentItEase API to Cloud Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target deployment environment
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: cloud-run-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy API (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud using Workload Identity Federation
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Validate deployment configuration
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: ${{ vars.CLOUD_RUN_REGION }}
+          SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+          AR_REPOSITORY: ${{ vars.ARTIFACT_REGISTRY_REPOSITORY }}
+        run: |
+          set -euo pipefail
+          : "${PROJECT_ID:?Set GCP_PROJECT_ID in the selected GitHub environment}"
+          : "${REGION:?Set CLOUD_RUN_REGION in the selected GitHub environment}"
+          : "${SERVICE:?Set CLOUD_RUN_SERVICE in the selected GitHub environment}"
+          : "${AR_REPOSITORY:?Set ARTIFACT_REGISTRY_REPOSITORY in the selected GitHub environment}"
+
+      - name: Build and publish container
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: ${{ vars.CLOUD_RUN_REGION }}
+          SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+          AR_REPOSITORY: ${{ vars.ARTIFACT_REGISTRY_REPOSITORY }}
+        run: |
+          set -euo pipefail
+          IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${AR_REPOSITORY}/${SERVICE}:${GITHUB_SHA}"
+          gcloud builds submit backend \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --tag "${IMAGE}"
+          echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
+
+      - name: Deploy image to Cloud Run
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: ${{ vars.CLOUD_RUN_REGION }}
+          SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+        run: |
+          set -euo pipefail
+          gcloud run deploy "${SERVICE}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --platform managed \
+            --image "${IMAGE}" \
+            --allow-unauthenticated \
+            --quiet
+
+      - name: Verify Cloud Run health endpoint
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: ${{ vars.CLOUD_RUN_REGION }}
+          SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+        run: |
+          set -euo pipefail
+          URL="$(gcloud run services describe "${SERVICE}" \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --format='value(status.url)')"
+          test -n "$URL"
+          echo "Cloud Run service URL: $URL"
+          curl --fail --show-error --silent --retry 8 --retry-delay 5 \
+            "${URL}/api/v1/health"
