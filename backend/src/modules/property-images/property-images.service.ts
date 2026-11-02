@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
@@ -15,6 +16,7 @@ import { PropertyImageSection, UserRole } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
 import { StorageService } from '../../storage/storage.service';
+import { ImageFileValidator } from '../../common/validators/image-file.validator';
 import { ReorderImagesDto } from './dto/reorder-images.dto';
 
 const execFileAsync = promisify(execFile);
@@ -37,110 +39,66 @@ export class PropertyImagesService {
     section: PropertyImageSection,
     user: any,
   ) {
-    const property = await this.prisma.property.findUnique({
-      where: {
-        id: propertyId,
-      },
-    });
-
-    if (!property) {
-      throw new NotFoundException('Property not found.');
-    }
-
+    const property = await this.prisma.property.findUnique({ where: { id: propertyId } });
+    if (!property) throw new NotFoundException('Property not found.');
     if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('You are not allowed to upload images.');
     }
+    if (!files?.length) throw new BadRequestException('No images uploaded.');
+    if (files.length > 2) throw new BadRequestException('Maximum 2 images can be uploaded at a time.');
 
-    if (!files || files.length === 0) {
-      throw new BadRequestException('No images uploaded.');
+    const validator = new ImageFileValidator();
+    for (const file of files) {
+      if (!validator.isValid(file) || !(await validator.hasValidContent(file))) {
+        throw new BadRequestException(validator.buildErrorMessage());
+      }
     }
 
-    if (files.length > 2) {
-      throw new BadRequestException(
-        'Maximum 2 images can be uploaded at a time.',
-      );
-    }
-
-    // ==========================================
-    // Maximum 2 images per section
-    // ==========================================
-
-    const currentSectionCount = await this.prisma.propertyImage.count({
-      where: {
-        propertyId,
-        section,
-      },
-    });
-
+    const [currentSectionCount, currentCount] = await Promise.all([
+      this.prisma.propertyImage.count({ where: { propertyId, section } }),
+      this.prisma.propertyImage.count({ where: { propertyId } }),
+    ]);
     if (currentSectionCount + files.length > 2) {
-      throw new BadRequestException(
-        `${section} can have a maximum of 2 images. ` +
-          `Currently ${currentSectionCount} image(s) exist.`,
-      );
+      throw new BadRequestException(`${section} can have a maximum of 2 images. Currently ${currentSectionCount} image(s) exist.`);
     }
 
-    // ==========================================
-    // Current total image count
-    // ==========================================
+    const uploaded: Array<{ publicId: string; imageUrl: string }> = [];
+    try {
+      // Upload objects first; only then atomically update the primary flag and metadata.
+      for (const file of files) {
+        uploaded.push(await this.storageService.uploadImage(file, 'properties'));
+      }
 
-    const currentCount = await this.prisma.propertyImage.count({
-      where: {
-        propertyId,
-      },
-    });
-
-    // ==========================================
-    // Primary image handling
-    // ==========================================
-
-    // If this upload is marked primary, make sure
-    // the property has only one primary image.
-    if (isPrimary) {
-      await this.prisma.propertyImage.updateMany({
-        where: {
-          propertyId,
-          isPrimary: true,
-        },
-        data: {
-          isPrimary: false,
-        },
-      });
-    }
-
-    const images = [];
-
-    // ==========================================
-    // Upload files
-    // ==========================================
-
-    for (let index = 0; index < files.length; index++) {
-      const file = files[index];
-
-      const uploadResult = await this.storageService.uploadImage(
-        file,
-        'properties',
-      );
-
-      const image = await this.prisma.propertyImage.create({
-        data: {
-          propertyId,
-          imageUrl: uploadResult.imageUrl,
-          publicId: uploadResult.publicId,
-          displayOrder: currentCount + index,
-          section,
-          isPrimary: isPrimary && index === 0,
-        },
+      const images = await this.prisma.$transaction(async (tx) => {
+        if (isPrimary) {
+          await tx.propertyImage.updateMany({
+            where: { propertyId, isPrimary: true },
+            data: { isPrimary: false },
+          });
+        }
+        const created = [];
+        for (let index = 0; index < uploaded.length; index++) {
+          created.push(await tx.propertyImage.create({
+            data: {
+              propertyId,
+              imageUrl: uploaded[index].imageUrl,
+              publicId: uploaded[index].publicId,
+              displayOrder: currentCount + index,
+              section,
+              isPrimary: isPrimary && index === 0,
+            },
+          }));
+        }
+        return created;
       });
 
-      images.push(image);
+      return { success: true, message: 'Images uploaded successfully.', section, images };
+    } catch (error) {
+      await Promise.all(uploaded.map((item) =>
+        this.storageService.deleteImage(item.publicId).catch(() => undefined),
+      ));
+      throw error;
     }
-
-    return {
-      success: true,
-      message: 'Images uploaded successfully.',
-      section,
-      images,
-    };
   }
 
   // =====================================
@@ -186,6 +144,12 @@ export class PropertyImagesService {
         'The property video must not exceed 100 MB.',
       );
     }
+    if (property.videoPublicId && !property.videoPublicId.startsWith('property-videos/')) {
+      throw new ConflictException('This video uses a legacy storage key. Complete the controlled storage migration before replacing it.');
+    }
+
+    // Verify the actual media container rather than trusting the client MIME type.
+    await this.readVideoDurationSeconds(file);
 
     const uploaded = await this.storageService.uploadVideo(
       file,
@@ -242,16 +206,18 @@ export class PropertyImagesService {
       );
     }
 
+    // Clear the database reference first. If object deletion subsequently
+    // fails, reconciliation can identify the now-unreferenced object; keeping
+    // a DB reference to an already-deleted object would break media reads.
     await this.prisma.property.update({
       where: { id: propertyId },
-      data: {
-        videoUrl: null,
-        videoPublicId: null,
-      },
+      data: { videoUrl: null, videoPublicId: null },
     });
 
     if (property.videoPublicId) {
-      await this.storageService.deleteImage(property.videoPublicId);
+      await this.storageService.deleteImage(property.videoPublicId).catch(() => {
+        // Orphan cleanup is handled by the guarded storage reconciliation job.
+      });
     }
 
     return {
@@ -439,40 +405,35 @@ export class PropertyImagesService {
       throw new NotFoundException('Image not found for this property.');
     }
 
-    // Delete the object from R2 or legacy Firebase Storage.
-    if (image.publicId) {
-      await this.storageService.deleteImage(image.publicId);
-    }
-
-    // Delete image from database.
-    await this.prisma.propertyImage.delete({
-      where: {
-        id: imageId,
-      },
-    });
-
-    // If deleted image was primary,
-    // assign the first remaining image.
-    if (image.isPrimary) {
-      const nextImage = await this.prisma.propertyImage.findFirst({
-        where: {
-          propertyId,
-        },
-        orderBy: {
-          displayOrder: 'asc',
-        },
+    // Delete the row and promote a replacement primary in one transaction.
+    // If the transaction fails, keep the object and its metadata intact.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.propertyImage.delete({
+        where: { id: imageId },
       });
 
-      if (nextImage) {
-        await this.prisma.propertyImage.update({
-          where: {
-            id: nextImage.id,
-          },
-          data: {
-            isPrimary: true,
-          },
+      if (image.isPrimary) {
+        const nextImage = await tx.propertyImage.findFirst({
+          where: { propertyId },
+          orderBy: { displayOrder: 'asc' },
         });
+
+        if (nextImage) {
+          await tx.propertyImage.update({
+            where: { id: nextImage.id },
+            data: { isPrimary: true },
+          });
+        }
       }
+    });
+
+    // Storage cleanup happens only after the DB transaction commits. A failed
+    // delete leaves an unreferenced object for guarded reconciliation rather
+    // than a database row pointing at an object that no longer exists.
+    if (image.publicId) {
+      await this.storageService.deleteImage(image.publicId).catch(() => {
+        // Orphan cleanup is handled by the guarded storage reconciliation job.
+      });
     }
 
     return {

@@ -6,7 +6,7 @@ on:
       ref:
         description: Branch or commit to build
         required: true
-        default: main
+        default: feat/phase-4-storage-hardening
         type: string
       api_base_url:
         description: HTTPS base URL for a dedicated staging API, including /api/v1 (never production)
@@ -72,13 +72,14 @@ jobs:
           API_BASE_URL: ${{ inputs.api_base_url }}
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: |
-          flutter build apk --debug \
-            --dart-define=API_BASE_URL="$API_BASE_URL"
+          flutter build apk --flavor staging --debug \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=STAGING=true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: rentitease-debug-staging-apk
-          path: mobile_app/build/app/outputs/flutter-apk/app-debug.apk
+          path: mobile_app/build/app/outputs/flutter-apk/app-staging-debug.apk
           if-no-files-found: error
           retention-days: 14

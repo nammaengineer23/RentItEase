@@ -1,4 +1,5 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 
 import { cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
@@ -38,10 +39,23 @@ export class FirebaseService {
     return getStorage(getApp());
   }
 
+  private buildStorageObjectName(file: Express.Multer.File, folder: string): string {
+    const allowedFolders = new Set(['properties', 'property-videos']);
+    if (!allowedFolders.has(folder)) {
+      throw new BadRequestException('Unsupported public storage folder.');
+    }
+    const extensionByMime: Record<string, string> = {
+      'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp',
+      'video/mp4': '.mp4', 'video/quicktime': '.mov', 'video/x-m4v': '.m4v',
+    };
+    const extension = extensionByMime[file.mimetype] ?? '.bin';
+    return `${folder}/${randomUUID()}${extension}`;
+  }
+
   async uploadImage(file: Express.Multer.File, folder = 'properties') {
     const bucket = this.getStorage().bucket();
 
-    const fileName = `${folder}/${Date.now()}-${file.originalname}`;
+    const fileName = this.buildStorageObjectName(file, folder);
 
     const firebaseFile = bucket.file(fileName);
 
@@ -51,6 +65,7 @@ export class FirebaseService {
           firebaseFile.save(file.buffer, {
             metadata: {
               contentType: file.mimetype,
+              cacheControl: 'public, max-age=3600',
             },
           }),
           15_000,
@@ -72,14 +87,20 @@ export class FirebaseService {
     folder: string,
   ): Promise<{ publicId: string }> {
     const bucket = this.getStorage().bucket();
-    const fileName = `${folder}/${Date.now()}-${file.originalname}`;
+    if (!/^chat\/[A-Za-z0-9_-]{1,128}$/.test(folder)) {
+      throw new BadRequestException('Invalid private storage folder.');
+    }
+    const fileName = `${folder}/${randomUUID()}${this.safePrivateExtension(file.mimetype)}`;
     const firebaseFile = bucket.file(fileName);
 
     await this.withRetry(
       () =>
         this.withTimeout(
           firebaseFile.save(file.buffer, {
-            metadata: { contentType: file.mimetype },
+            metadata: {
+              contentType: file.mimetype,
+              cacheControl: 'private, no-store, max-age=0',
+            },
           }),
           15_000,
         ),
@@ -90,10 +111,23 @@ export class FirebaseService {
     return { publicId: fileName };
   }
 
+  private safePrivateExtension(mimeType: string): string {
+    const extensions: Record<string, string> = {
+      'application/pdf': '.pdf', 'application/msword': '.doc',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+      'text/plain': '.txt', 'audio/mp4': '.m4a', 'audio/aac': '.aac',
+      'audio/mpeg': '.mp3', 'audio/wav': '.wav', 'audio/ogg': '.ogg',
+    };
+    return extensions[mimeType] ?? '.bin';
+  }
+
   async getPrivateDownloadUrl(
     publicId: string,
     expiresInMs = 15 * 60 * 1000,
   ): Promise<string> {
+    if (!/^chat\/[A-Za-z0-9_-]{1,128}\/[^/\\?#]+$/.test(publicId) || publicId.includes('..')) {
+      throw new BadRequestException('Invalid private storage object key.');
+    }
     const bucket = this.getStorage().bucket();
     const [url] = await this.withTimeout(
       bucket.file(publicId).getSignedUrl({
@@ -106,6 +140,9 @@ export class FirebaseService {
   }
 
   async deleteImage(publicId: string) {
+    if (!/^(properties|property-videos)\/[^/\\?#]+$/.test(publicId) || publicId.includes('..')) {
+      throw new BadRequestException('Unsupported storage object key; legacy provider objects require a controlled migration.');
+    }
     const bucket = this.getStorage().bucket();
 
     const file = bucket.file(publicId);

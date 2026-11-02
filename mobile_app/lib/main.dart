@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'config/environment.dart';
 import 'firebase_options.dart';
 
 const _appCheckWebSiteKey = String.fromEnvironment(
@@ -17,7 +18,20 @@ const _appCheckWebSiteKey = String.fromEnvironment(
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  final useNativeStagingFirebase =
+      Environment.isStaging &&
+      !kIsWeb &&
+      defaultTargetPlatform == TargetPlatform.android;
+
+  if (useNativeStagingFirebase) {
+    // Android Gradle selects android/app/src/staging/google-services.json.
+    await Firebase.initializeApp();
+  } else {
+    // Preserve the existing production Firebase configuration everywhere else.
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
 
   runApp(const ProviderScope(child: RentItEaseApp()));
 

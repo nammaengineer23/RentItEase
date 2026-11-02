@@ -1,3 +1,5 @@
+import sharp from 'sharp';
+
 import {
   FileValidator,
 } from '@nestjs/common';
@@ -18,7 +20,6 @@ export class ImageFileValidator extends FileValidator {
       'image/jpeg',
       'image/png',
       'image/webp',
-      'image/gif',
     ];
 
     return (
@@ -27,6 +28,20 @@ export class ImageFileValidator extends FileValidator {
     );
   }
 
+  async hasValidContent(file?: Express.Multer.File): Promise<boolean> {
+    if (!file?.buffer?.length) return false;
+    try {
+      const metadata = await sharp(file.buffer, { failOn: 'error' }).metadata();
+      const expectedMime: Record<string, string> = {
+        jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp',
+      };
+      return Boolean(metadata.format && expectedMime[metadata.format] === file.mimetype);
+    } catch {
+      return false;
+    }
+  }
+
   buildErrorMessage(): string {
-return 'Invalid image file. Only JPG, JPEG, PNG, WEBP and GIF files under 5MB are allowed.';  }
+return 'Invalid image file. Only genuine JPG, JPEG, PNG and WEBP files under 5MB are allowed.';
+  }
 }
