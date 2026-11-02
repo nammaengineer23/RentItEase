@@ -115,7 +115,7 @@ jobs:
           fi
           gcloud run services update "${SERVICE}" \
             --project "${PROJECT_ID}" --region "${REGION}" \
-            --update-env-vars "ALLOWED_HOSTS=${ALLOWED_HOSTS}" \
+            --update-env-vars "^~^ALLOWED_HOSTS=${ALLOWED_HOSTS}" \
             --quiet
 
       - name: Verify Cloud Run health endpoint
