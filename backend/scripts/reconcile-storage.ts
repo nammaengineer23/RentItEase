@@ -39,7 +39,8 @@ async function main() {
   if (apply && process.env.STORAGE_RECONCILE_ALLOW_DELETE !== 'true') {
     throw new Error('Deletion is disabled. Set STORAGE_RECONCILE_ALLOW_DELETE=true and pass --apply after reviewing a dry run.');
   }
-  if (apply && process.env.NODE_ENV === 'production' && process.env.STORAGE_RECONCILE_ALLOW_PRODUCTION !== 'true') {
+  const runtimeEnvironment = process.env.APP_ENV?.trim() || process.env.NODE_ENV?.trim();
+    if (apply && runtimeEnvironment === 'production' && process.env.STORAGE_RECONCILE_ALLOW_PRODUCTION !== 'true') {
     throw new Error('Production deletion requires STORAGE_RECONCILE_ALLOW_PRODUCTION=true in addition to the explicit apply gate.');
   }
 
