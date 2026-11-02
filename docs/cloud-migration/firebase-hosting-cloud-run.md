@@ -15,6 +15,8 @@ The Android app currently defaults to `https://api.rentitease.com/api/v1`. Prese
 - Both deployment workflows are manual (`workflow_dispatch`); no deploy is triggered by a push or PR.
 - The selected GitHub Environment must provide the environment-specific project/service configuration.
 - Cloud Run container startup runs `node dist/main.js` directly. It does **not** run Prisma migrations.
+- The runtime image includes `ffprobe` (from the FFmpeg package) because property video validation invokes it.
+- Cloud Run's writable filesystem is temporary. Persisted user uploads and media must use Firebase Storage; use `/tmp` only for transient processing files.
 - Do not attach the production Neon database to staging.
 - Do not copy production secrets, user data, Firebase objects, or database records into staging.
 - Keep Railway and the existing production DNS records unchanged until staging acceptance and a production cutover plan are approved.
