@@ -66,7 +66,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "sharp": "^0.35.5",
-    "uuid": "^14.0.1"
+    "uuid": "^14.0.1",
+    "prisma": "^6.19.3"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.24",
@@ -86,7 +87,6 @@
     "eslint-plugin-prettier": "^5.5.4",
     "jest": "^30.0.5",
     "prettier": "^3.6.2",
-    "prisma": "^6.19.3",
     "source-map-support": "^0.5.21",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.1",
