@@ -70,6 +70,7 @@ jobs:
           gcloud builds submit backend \
             --project "${PROJECT_ID}" \
             --region "${REGION}" \
+            --gcs-source-staging-dir "gs://${PROJECT_ID}-cloudbuild-source/source" \
             --tag "${IMAGE}"
           echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
 
