@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: rentitease-isolated-staging-e2e
@@ -19,6 +20,7 @@ concurrency:
 jobs:
   staging-e2e:
     name: Isolated Neon E2E (temporary API on GitHub runner)
+    environment: staging
     runs-on: ubuntu-latest
     timeout-minutes: 60
     defaults:
@@ -48,8 +50,6 @@ jobs:
       NODE_ENV: test
       PORT: "3000"
       FIREBASE_PROJECT_ID: rentitease-staging
-      FIREBASE_CLIENT_EMAIL: ${{ secrets.STAGING_FIREBASE_CLIENT_EMAIL }}
-      FIREBASE_PRIVATE_KEY: ${{ secrets.STAGING_FIREBASE_PRIVATE_KEY }}
       FIREBASE_STORAGE_BUCKET: rentitease-staging.firebasestorage.app
       RAZORPAY_KEY_ID: ${{ secrets.STAGING_E2E_RAZORPAY_KEY_ID }}
       RAZORPAY_KEY_SECRET: ${{ secrets.STAGING_E2E_RAZORPAY_KEY_SECRET }}
@@ -63,6 +63,14 @@ jobs:
         with:
           ref: ${{ inputs.ref || 'main' }}
 
+      - name: Authenticate to staging Google Cloud with Workload Identity Federation
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/722173159384/locations/global/workloadIdentityPools/rentitease-github/providers/rentitease-github-actions
+          service_account: rentitease-staging-e2e@rentitease-staging.iam.gserviceaccount.com
+          create_credentials_file: true
+          export_environment_variables: true
+
       - name: Validate isolated Neon target and required secrets
         shell: bash
         run: |
@@ -73,7 +81,7 @@ jobs:
             'E2E_OWNER_EMAIL', 'E2E_OWNER_PASSWORD',
             'E2E_OTHER_OWNER_EMAIL', 'E2E_OTHER_OWNER_PASSWORD',
             'E2E_ADMIN_EMAIL', 'E2E_ADMIN_PASSWORD',
-            'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'FIREBASE_STORAGE_BUCKET',
+            'FIREBASE_PROJECT_ID', 'FIREBASE_STORAGE_BUCKET',
             'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET',
           ];
           const missing = required.filter((key) => !process.env[key]);
