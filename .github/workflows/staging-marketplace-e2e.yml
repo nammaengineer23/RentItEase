@@ -6,7 +6,7 @@ on:
       ref:
         description: Branch or commit to test (must contain this workflow and E2E tests)
         required: false
-        default: feat/add-property-type-selection
+        default: main
         type: string
 
 permissions:
@@ -47,10 +47,10 @@ jobs:
       E2E_RUN_ID: ${{ github.run_id }}
       NODE_ENV: test
       PORT: "3000"
-      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
-      FIREBASE_STORAGE_BUCKET: rentitease-65e49.firebasestorage.app
+      FIREBASE_PROJECT_ID: rentitease-staging
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.STAGING_FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.STAGING_FIREBASE_PRIVATE_KEY }}
+      FIREBASE_STORAGE_BUCKET: rentitease-staging.firebasestorage.app
       RAZORPAY_KEY_ID: ${{ secrets.STAGING_E2E_RAZORPAY_KEY_ID }}
       RAZORPAY_KEY_SECRET: ${{ secrets.STAGING_E2E_RAZORPAY_KEY_SECRET }}
       RAZORPAY_WEBHOOK_SECRET: ${{ secrets.STAGING_E2E_RAZORPAY_WEBHOOK_SECRET }}
@@ -61,7 +61,7 @@ jobs:
       - name: Checkout PR branch under test
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref || 'feat/add-property-type-selection' }}
+          ref: ${{ inputs.ref || 'main' }}
 
       - name: Validate isolated Neon target and required secrets
         shell: bash
@@ -79,6 +79,12 @@ jobs:
           const missing = required.filter((key) => !process.env[key]);
           if (missing.length) throw new Error('Missing required GitHub Actions secrets: ' + missing.join(', '));
 
+          if (process.env.FIREBASE_PROJECT_ID !== 'rentitease-staging') {
+            throw new Error('Refusing Firebase project other than rentitease-staging.');
+          }
+          if (process.env.FIREBASE_STORAGE_BUCKET !== 'rentitease-staging.firebasestorage.app') {
+            throw new Error('Refusing Firebase Storage bucket other than the staging bucket.');
+          }
           if (process.env.PROPERTY_MARKETPLACE_ENABLED !== 'true') {
             throw new Error('Marketplace E2E requires PROPERTY_MARKETPLACE_ENABLED=true.');
           }
@@ -100,7 +106,7 @@ jobs:
           }
 
           const expected = {
-            E2E_TENANT_EMAIL: 'tenent.test@rentitease.com',
+            E2E_TENANT_EMAIL: 'tenant.test@rentitease.com',
             E2E_OWNER_EMAIL: 'owner.test@rentitease.com',
             E2E_OTHER_OWNER_EMAIL: 'testother.owner@rentitease.com',
             E2E_ADMIN_EMAIL: 'admin@rentitease.com',
