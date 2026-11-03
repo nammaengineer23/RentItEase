@@ -1,5 +1,8 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Cloud Run uses Debian Bookworm with OpenSSL 3.
+  // Keep native for local/CI generation and include the runtime engine explicitly.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
