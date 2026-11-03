@@ -116,21 +116,21 @@ jobs:
         run: |
           set -euo pipefail
           MIGRATION_JOB="${SERVICE}-migrate"
-          gcloud run jobs deploy "${MIGRATION_JOB}" \\
-            --project "${PROJECT_ID}" \\
-            --region "${REGION}" \\
-            --image "${IMAGE}" \\
-            --service-account "${RUNTIME_SERVICE_ACCOUNT}" \\
-            --command "npx" \\
-            --args "prisma,migrate,deploy" \\
-            --set-secrets "DATABASE_URL=DATABASE_URL:latest" \\
-            --set-env-vars "NODE_ENV=production" \\
-            --max-retries 0 \\
-            --task-timeout 900 \\
+          gcloud run jobs deploy "${MIGRATION_JOB}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --image "${IMAGE}" \
+            --service-account "${RUNTIME_SERVICE_ACCOUNT}" \
+            --command "npx" \
+            --args "prisma,migrate,deploy" \
+            --set-secrets "DATABASE_URL=DATABASE_URL:latest" \
+            --set-env-vars "NODE_ENV=production" \
+            --max-retries 0 \
+            --task-timeout 900 \
             --quiet
-          gcloud run jobs execute "${MIGRATION_JOB}" \\
-            --project "${PROJECT_ID}" \\
-            --region "${REGION}" \\
+          gcloud run jobs execute "${MIGRATION_JOB}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
             --wait
           echo "Staging Prisma migrations completed successfully."
 
