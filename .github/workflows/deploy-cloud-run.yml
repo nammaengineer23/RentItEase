@@ -104,6 +104,36 @@ jobs:
           done
           echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
 
+      # Staging migrations run once as a Cloud Run Job before changing API traffic.
+      # Production behavior is intentionally unchanged; production migrations remain a separately controlled operation.
+      - name: Apply staging Prisma migrations
+        if: inputs.environment == 'staging'
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: ${{ vars.CLOUD_RUN_REGION }}
+          SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+          RUNTIME_SERVICE_ACCOUNT: ${{ vars.CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          MIGRATION_JOB="${SERVICE}-migrate"
+          gcloud run jobs deploy "${MIGRATION_JOB}" \\
+            --project "${PROJECT_ID}" \\
+            --region "${REGION}" \\
+            --image "${IMAGE}" \\
+            --service-account "${RUNTIME_SERVICE_ACCOUNT}" \\
+            --command "npx" \\
+            --args "prisma,migrate,deploy" \\
+            --set-secrets "DATABASE_URL=DATABASE_URL:latest" \\
+            --set-env-vars "NODE_ENV=production" \\
+            --max-retries 0 \\
+            --task-timeout 900 \\
+            --quiet
+          gcloud run jobs execute "${MIGRATION_JOB}" \\
+            --project "${PROJECT_ID}" \\
+            --region "${REGION}" \\
+            --wait
+          echo "Staging Prisma migrations completed successfully."
+
       - name: Deploy image to Cloud Run
         env:
           PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
