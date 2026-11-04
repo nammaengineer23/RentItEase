@@ -1,0 +1,39 @@
+name: RentItEase - Staging WIF Smoke Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  wif-smoke:
+    name: Verify staging WIF impersonation (no database access)
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 10
+    steps:
+      - name: Authenticate as dedicated staging E2E service account
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/722173159384/locations/global/workloadIdentityPools/rentitease-github/providers/rentitease-github-actions
+          service_account: rentitease-staging-e2e@rentitease-staging.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/cloud-platform
+          access_token_lifetime: 600s
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Verify short-lived token was issued
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "${GOOGLE_APPLICATION_CREDENTIALS}"
+          test -n "${ACCESS_TOKEN}"
+          echo "PASS: GitHub OIDC exchanged for a short-lived access token."
+          echo "PASS: Dedicated staging E2E service account impersonation succeeded."
+          echo "No database, Firebase data, Storage objects, or production resources were accessed or modified."
