@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import type { Express } from 'express';
 import { FirebaseService } from '../src/firebase/firebase.service';
 
 const EXPECTED_PROJECT = 'rentitease-staging';
