@@ -37,7 +37,7 @@ async function main() {
     mimetype: 'application/pdf',
     originalname: 'staging-private-acceptance.pdf',
     size: pdf.length,
-  } as Express.Multer.File;
+  } as Parameters<FirebaseService['uploadPrivateFile']>[0];
 
   let imagePublicId: string | undefined;
   let privatePublicId: string | undefined;
