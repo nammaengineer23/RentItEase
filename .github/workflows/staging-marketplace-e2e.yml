@@ -114,7 +114,7 @@ jobs:
           }
 
           const expected = {
-            E2E_TENANT_EMAIL: 'tenant.test@rentitease.com',
+            E2E_TENANT_EMAIL: 'tenent.test@rentitease.com',
             E2E_OWNER_EMAIL: 'owner.test@rentitease.com',
             E2E_OTHER_OWNER_EMAIL: 'testother.owner@rentitease.com',
             E2E_ADMIN_EMAIL: 'admin@rentitease.com',
