@@ -71,6 +71,8 @@ export class FirebaseService {
             metadata: {
               contentType: file.mimetype,
               cacheControl: 'public, max-age=3600',
+              // Firebase download URLs require a token in object metadata.
+              firebaseStorageDownloadTokens: randomUUID(),
             },
           }),
           15_000,
