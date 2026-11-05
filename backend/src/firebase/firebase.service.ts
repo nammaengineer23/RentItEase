@@ -81,7 +81,26 @@ export class FirebaseService {
       'Firebase Storage upload',
     );
 
-    const imageUrl = await this.withTimeout(getDownloadURL(firebaseFile), 15_000);
+    // Keep the GCS write and Firebase token-URL lookup as separate diagnostic stages.
+    console.log(`Firebase Storage object upload succeeded: ${fileName}`);
+
+    const [savedMetadata] = await this.withTimeout(firebaseFile.getMetadata(), 15_000);
+    const downloadTokenPresent = Boolean(savedMetadata.metadata?.firebaseStorageDownloadTokens);
+    console.log(
+      `Firebase Storage object metadata verified: ${fileName}, downloadTokenPresent=${downloadTokenPresent}`,
+    );
+
+    let imageUrl: string;
+    try {
+      imageUrl = await this.withTimeout(getDownloadURL(firebaseFile), 15_000);
+      console.log(`Firebase Storage download URL generated: ${fileName}`);
+    } catch (error) {
+      console.error(
+        `Firebase Storage download URL generation failed: ${fileName}`,
+        error,
+      );
+      throw error;
+    }
 
     return {
       publicId: fileName,
