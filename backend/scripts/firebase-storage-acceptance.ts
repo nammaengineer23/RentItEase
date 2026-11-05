@@ -75,17 +75,16 @@ async function main() {
       `Private attachment was unexpectedly readable without a signed URL (HTTP ${unsignedResponse.status}).`);
     console.log('PASS: private chat object is not anonymously readable without its signed URL.');
   } finally {
-    if (imagePublicId) {
-      await firebase.deleteImage(imagePublicId).catch((error) => {
-        console.error('Failed to clean up staging property test object:', error);
-        throw error;
-      });
-    }
-    if (privatePublicId) {
-      await bucket.file(privatePublicId).delete({ ignoreNotFound: true }).catch((error) => {
-        console.error('Failed to clean up staging private test object:', error);
-        throw error;
-      });
+    const cleanup = await Promise.allSettled([
+      ...(imagePublicId ? [firebase.deleteImage(imagePublicId)] : []),
+      ...(privatePublicId
+        ? [bucket.file(privatePublicId).delete({ ignoreNotFound: true })]
+        : []),
+    ]);
+    const failures = cleanup.filter((result) => result.status === 'rejected');
+    if (failures.length) {
+      console.error('One or more staging acceptance objects could not be cleaned up:', failures);
+      throw new Error('Staging Firebase Storage cleanup failed.');
     }
   }
 
