@@ -1,5 +1,4 @@
 import { ConfigService } from '@nestjs/config';
-import type { Express } from 'express';
 import { FirebaseService } from '../src/firebase/firebase.service';
 
 const EXPECTED_PROJECT = 'rentitease-staging';
@@ -32,7 +31,7 @@ async function main() {
     mimetype: 'image/png',
     originalname: 'staging-storage-acceptance.png',
     size: png.length,
-  } as Express.Multer.File;
+  } as Parameters<FirebaseService['uploadImage']>[0];
   const privateFile = {
     buffer: pdf,
     mimetype: 'application/pdf',
