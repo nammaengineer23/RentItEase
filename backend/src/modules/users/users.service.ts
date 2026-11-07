@@ -2,12 +2,14 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { OwnerRequestStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { AdminAuditContext, AdminAuditService } from '../admin/admin-audit.service';
+import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
+    private readonly pushNotifications: PushNotificationsService,
   ) {}
 
   async requestOwnerRole(userId: string) {
@@ -20,15 +22,28 @@ export class UsersService {
       throw new BadRequestException('Owner request is already pending.');
     }
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
         ownerRequestStatus: OwnerRequestStatus.PENDING,
         ownerRequestedAt: new Date(),
         ownerReviewedAt: null,
       },
-      select: { id: true, role: true, ownerRequestStatus: true, ownerRequestedAt: true },
+      select: { id: true, fullName: true, email: true, role: true, ownerRequestStatus: true, ownerRequestedAt: true },
     });
+
+    try {
+      await this.pushNotifications.sendToAdmins(
+        `owner-request:${updated.id}:${updated.ownerRequestedAt?.toISOString() ?? 'pending'}`,
+        'Owner access approval required',
+        `${updated.fullName} (${updated.email}) requested Owner access.`,
+        { screen: 'admin_users', userId: updated.id, event: 'OWNER_REQUEST' },
+      );
+    } catch (error) {
+      // The owner request is already saved; a push outage must not make the request appear to fail.
+      console.error('Unable to queue admin owner-request notification:', error);
+    }
+    return updated;
   }
 
   getOwnerRequests() {
