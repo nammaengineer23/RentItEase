@@ -580,7 +580,7 @@ export class PropertiesService {
       },
     });
 
-    const data = properties.map((property) => {
+    const data = await Promise.all(properties.map(async (property) => {
       const totalRating = property.reviews.reduce(
         (sum, review) => sum + review.rating,
         0,
@@ -592,11 +592,11 @@ export class PropertiesService {
           : 0;
 
       return {
-        ...serializePrisma(property),
+        ...await this.serializePublicProperty(property),
         averageRating,
         totalReviews: property.reviews.length,
       };
-    });
+    }));
 
     return {
       success: true,
@@ -663,8 +663,8 @@ export class PropertiesService {
       },
     });
 
-    const nearby = properties
-      .map((property) => {
+    const nearby = (await Promise.all(properties
+      .map(async (property) => {
         const lat = Number(property.latitude);
         const lng = Number(property.longitude);
         const distance = this.calculateDistance(
@@ -675,7 +675,7 @@ export class PropertiesService {
         );
 
         return {
-          ...serializePrisma(property),
+          ...await this.serializePublicProperty(property),
           distance: Number(distance.toFixed(2)),
           averageRating:
             property.reviews.length === 0
@@ -690,7 +690,7 @@ export class PropertiesService {
                 ),
           totalReviews: property.reviews.length,
         };
-      })
+      })))
       .filter((property) => property.distance <= radius)
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 100);
@@ -1082,7 +1082,7 @@ export class PropertiesService {
     return {
       success: true,
       message: 'Property updated successfully.',
-      property: serializePrisma(updatedProperty),
+      property: await this.serializePublicProperty(updatedProperty),
     };
   }
 
