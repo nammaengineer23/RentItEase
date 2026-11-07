@@ -30,7 +30,7 @@ export class SocialMediaService {
     const generated = await this.remotionVideo.generate(dto.propertyId);
     // Keep the completed self-hosted Remotion render in our
     // Firebase storage before presenting it to the admin for review/publish.
-    const videoUrl = await this.storage.importRemoteVideo(
+    const videoRef = await this.storage.importRemoteVideo(
       generated.videoUrl,
       dto.propertyId,
     );
@@ -38,13 +38,13 @@ export class SocialMediaService {
     await this.prisma.socialMarketingConsent.update({
       where: { propertyId: dto.propertyId },
       data: {
-        preparedVideoUrl: videoUrl,
+        preparedVideoUrl: videoRef,
         preparedCaption: generated.caption,
         preparedTitle: generated.videoTitle,
         preparedAt: new Date(),
       },
     });
-    return { ...generated, videoUrl };
+    return { ...generated, videoUrl: await this.storage.getVideoDownloadUrl(videoRef) };
   }
 
   async usePropertyVideo(propertyId: string, actorId: string, body: { title?: string; caption?: string }) {
@@ -60,7 +60,7 @@ export class SocialMediaService {
     // the same branded Remotion pipeline so the primary photo is the opening
     // cover and the property video receives the RentItEase text overlays.
     const generated = await this.remotionVideo.generate(propertyId);
-    const videoUrl = await this.storage.importRemoteVideo(
+    const videoRef = await this.storage.importRemoteVideo(
       generated.videoUrl,
       propertyId,
     );
@@ -73,7 +73,7 @@ export class SocialMediaService {
     await this.prisma.socialMarketingConsent.update({
       where: { propertyId },
       data: {
-        preparedVideoUrl: videoUrl,
+        preparedVideoUrl: videoRef,
         preparedTitle: title,
         preparedCaption: caption,
         preparedAt: new Date(),
@@ -81,12 +81,12 @@ export class SocialMediaService {
     });
     await this.audit(propertyId, actorId, 'PROPERTY_VIDEO_REEL_GENERATED', undefined, {
       sourceVideoUrl: property.videoUrl,
-      preparedVideoUrl: videoUrl,
+      preparedVideoUrl: videoRef,
       renderId: generated.renderId,
     });
     return {
       ...generated,
-      videoUrl,
+      videoUrl: await this.storage.getVideoDownloadUrl(videoRef),
       videoTitle: title,
       caption,
       source: 'REMOTION_PROPERTY_VIDEO',
@@ -99,7 +99,7 @@ export class SocialMediaService {
     if (file.size > 100 * 1024 * 1024) throw new BadRequestException('Reel must be 100 MB or smaller.');
     const property = await this.prisma.property.findUnique({ where: { id: propertyId }, select: { title: true } });
     if (!property) throw new NotFoundException('Property not found.');
-    const videoUrl = await this.storage.uploadBuffer(file.buffer, propertyId, file.mimetype || 'video/mp4');
+    const videoRef = await this.storage.uploadBuffer(file.buffer, propertyId, file.mimetype || 'video/mp4');
     const title = body.title?.trim() || property.title || 'RentItEase property tour';
     const caption = body.caption?.trim() || '';
     this.validatePlatformContent(SocialPlatform.INSTAGRAM, title, caption);
@@ -107,10 +107,10 @@ export class SocialMediaService {
     await this.storage.deleteStoredVideo(previousPreparedVideo?.preparedVideoUrl);
     await this.prisma.socialMarketingConsent.update({
       where: { propertyId },
-      data: { preparedVideoUrl: videoUrl, preparedTitle: title, preparedCaption: caption, preparedAt: new Date() },
+      data: { preparedVideoUrl: videoRef, preparedTitle: title, preparedCaption: caption, preparedAt: new Date() },
     });
-    await this.audit(propertyId, actorId, 'PREPARED_REEL_UPLOADED', undefined, { videoUrl, bytes: file.size });
-    return { videoUrl, videoTitle: title, caption, source: 'UPLOADED_REEL' };
+    await this.audit(propertyId, actorId, 'PREPARED_REEL_UPLOADED', undefined, { videoRef, bytes: file.size });
+    return { videoUrl: await this.storage.getVideoDownloadUrl(videoRef), videoTitle: title, caption, source: 'UPLOADED_REEL' };
   }
 
   async publish(dto: PublishPostDto & { propertyId: string; actorId: string }) {
@@ -150,9 +150,14 @@ export class SocialMediaService {
         'Property not found or does not belong to the authenticated owner.',
       );
 
-    return this.prisma.socialMarketingConsent.findUnique({
+    const consent = await this.prisma.socialMarketingConsent.findUnique({
       where: { propertyId },
     });
+    if (!consent?.preparedVideoUrl) return consent;
+    return {
+      ...consent,
+      preparedVideoUrl: await this.storage.getVideoDownloadUrl(consent.preparedVideoUrl),
+    };
   }
 
   async onPropertyApproved(propertyId: string) {
@@ -167,21 +172,21 @@ export class SocialMediaService {
     }
 
     const generated = await this.remotionVideo.generate(propertyId);
-    const videoUrl = await this.storage.importRemoteVideo(
+    const videoRef = await this.storage.importRemoteVideo(
       generated.videoUrl,
       propertyId,
     );
     await this.prisma.socialMarketingConsent.update({
       where: { propertyId },
       data: {
-        preparedVideoUrl: videoUrl,
+        preparedVideoUrl: videoRef,
         preparedCaption: generated.caption,
         preparedTitle: generated.videoTitle,
         preparedAt: new Date(),
       },
     });
     await this.audit(propertyId, 'system', 'REEL_AUTO_GENERATED', undefined, {
-      videoUrl,
+      videoRef,
       durationSeconds: generated.durationSeconds,
       source: 'REMOTION_PROPERTY_APPROVAL',
     });
@@ -189,7 +194,7 @@ export class SocialMediaService {
       skipped: false,
       reviewRequired: true,
       propertyId,
-      videoUrl,
+      videoUrl: await this.storage.getVideoDownloadUrl(videoRef),
       caption: generated.caption,
       videoTitle: generated.videoTitle,
       durationSeconds: generated.durationSeconds,
@@ -241,7 +246,18 @@ export class SocialMediaService {
       }),
       this.prisma.property.count({ where: { socialMarketingConsent: { approved: true } } }),
     ]);
-    return { data, pagination: { page: safePage, limit: safeLimit, total, totalPages: Math.ceil(total / safeLimit) } };
+    const resolvedData = await Promise.all(data.map(async (property) => ({
+      ...property,
+      socialMarketingConsent: property.socialMarketingConsent
+        ? {
+            ...property.socialMarketingConsent,
+            preparedVideoUrl: property.socialMarketingConsent.preparedVideoUrl
+              ? await this.storage.getVideoDownloadUrl(property.socialMarketingConsent.preparedVideoUrl)
+              : null,
+          }
+        : property.socialMarketingConsent,
+    })));
+    return { data: resolvedData, pagination: { page: safePage, limit: safeLimit, total, totalPages: Math.ceil(total / safeLimit) } };
   }
 
   async analytics() {
@@ -431,6 +447,14 @@ export class SocialMediaService {
     return post;
   }
 
+  private async withResolvedPostVideoUrl(post: any) {
+    if (!post?.videoUrl) return post;
+    return {
+      ...post,
+      videoUrl: await this.storage.getVideoDownloadUrl(post.videoUrl),
+    };
+  }
+
   private async publishPost(postId: string, actorId: string) {
     const now = new Date();
     const processingToken = randomUUID();
@@ -444,7 +468,7 @@ export class SocialMediaService {
     });
     if (claimed.count !== 1) {
       const current = await this.prisma.socialMediaPost.findUnique({ where: { id: postId } });
-      if (current?.status === SocialPostStatus.PUBLISHED) return current;
+      if (current?.status === SocialPostStatus.PUBLISHED) return this.withResolvedPostVideoUrl(current);
       throw new BadRequestException('Social post is already being processed or is not eligible for publishing.');
     }
     const post = await this.prisma.socialMediaPost.findUnique({ where: { id: postId } });
@@ -455,13 +479,19 @@ export class SocialMediaService {
       if (!consent?.approved) throw new BadRequestException('Owner marketing consent has been revoked or is missing.');
       if (!consent.preparedVideoUrl) throw new BadRequestException('No prepared reel is available. Generate and review the reel before publishing.');
       try {
-        if (post.platform === SocialPlatform.YOUTUBE) filePath = await this.storage.downloadVideo(consent.preparedVideoUrl, post.propertyId);
-        const published = await this.publishing.publish(post.platform as any, { videoUrl: consent.preparedVideoUrl, filePath, caption: post.caption || consent.preparedCaption || '', title: consent.preparedTitle || 'RentItEase property tour' });
+        let providerVideoUrl: string | undefined;
+        if (post.platform === SocialPlatform.YOUTUBE) {
+          filePath = await this.storage.downloadVideo(consent.preparedVideoUrl, post.propertyId);
+        } else {
+          // Meta fetches the video asynchronously from this temporary signed URL.
+          providerVideoUrl = await this.storage.getVideoDownloadUrl(consent.preparedVideoUrl);
+        }
+        const published = await this.publishing.publish(post.platform as any, { videoUrl: providerVideoUrl, filePath, caption: post.caption || consent.preparedCaption || '', title: consent.preparedTitle || 'RentItEase property tour' });
         const saved = await this.prisma.socialMediaPost.updateMany({ where: { id: postId, processingToken }, data: { status: SocialPostStatus.PUBLISHED, videoUrl: consent.preparedVideoUrl, externalId: published.externalId, publishedAt: new Date(), error: null, processingToken: null, processingLeaseUntil: null } });
         if (saved.count !== 1) throw new BadRequestException('Publication claim expired before completion.');
         const result = await this.prisma.socialMediaPost.findUnique({ where: { id: postId } });
         await this.audit(post.propertyId, actorId, 'POST_PUBLISHED', postId, { platform: post.platform, externalId: published.externalId });
-        return result;
+        return this.withResolvedPostVideoUrl(result);
       } finally { await this.storage.cleanupTempFile(filePath); }
     } catch (error) {
       const raw = error instanceof Error ? error.message : 'Social provider failure.';

@@ -12,6 +12,7 @@ describe('PropertyImagesService video tours', () => {
     uploadImage: jest.fn(),
     uploadVideo: jest.fn(),
     deleteImage: jest.fn(),
+    getPublicMediaDownloadUrl: jest.fn(),
   } as any;
 
   let service: PropertyImagesService;
@@ -278,5 +279,55 @@ describe('PropertyImagesService image deletion consistency', () => {
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(storage.deleteImage).toHaveBeenCalledWith('properties/image-1.jpg');
+  });
+});
+
+
+describe('PropertyImagesService signed image retrieval', () => {
+  const prisma = {
+    property: { findUnique: jest.fn() },
+    propertyImage: { findMany: jest.fn() },
+  } as any;
+  const storage = { getPublicMediaDownloadUrl: jest.fn() } as any;
+  let service: PropertyImagesService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new PropertyImagesService(prisma, storage);
+    prisma.property.findUnique.mockResolvedValue({ id: 'property-1' });
+  });
+
+  it('returns fresh signed URLs for current GCS image keys without changing image metadata', async () => {
+    prisma.propertyImage.findMany.mockResolvedValue([{
+      id: 'image-1',
+      propertyId: 'property-1',
+      publicId: 'properties/photo.jpg',
+      imageUrl: 'https://old-expired.example/photo.jpg',
+      isPrimary: true,
+    }]);
+    storage.getPublicMediaDownloadUrl.mockResolvedValue('https://signed.example/photo.jpg');
+
+    const result = await service.getImages('property-1');
+
+    expect(result.images[0]).toMatchObject({
+      id: 'image-1',
+      publicId: 'properties/photo.jpg',
+      imageUrl: 'https://signed.example/photo.jpg',
+      isPrimary: true,
+    });
+    expect(storage.getPublicMediaDownloadUrl).toHaveBeenCalledWith('properties/photo.jpg');
+  });
+
+  it('preserves legacy image URLs when no GCS object key is recorded', async () => {
+    prisma.propertyImage.findMany.mockResolvedValue([{
+      id: 'legacy-image',
+      publicId: null,
+      imageUrl: 'https://legacy.example/photo.jpg',
+    }]);
+
+    const result = await service.getImages('property-1');
+
+    expect(result.images[0].imageUrl).toBe('https://legacy.example/photo.jpg');
+    expect(storage.getPublicMediaDownloadUrl).not.toHaveBeenCalled();
   });
 });
