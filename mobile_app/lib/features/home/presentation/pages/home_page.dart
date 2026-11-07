@@ -239,7 +239,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         children: [
                           const Icon(Icons.add_home_work_outlined, size: 26),
                           const SizedBox(width: 10),
-                          Expanded(
+                          const Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
