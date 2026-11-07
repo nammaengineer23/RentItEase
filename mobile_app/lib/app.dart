@@ -59,7 +59,7 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
         await ref.read(settingsProvider.future);
         await ref.read(settingsProvider.notifier).updateSettings(darkMode: !currentDarkMode);
       } catch (_) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not save theme preference. Please try again.')));
+        // Keep the current theme if the account preference cannot be saved.
       }
       return;
     }
