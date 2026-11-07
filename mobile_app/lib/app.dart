@@ -210,7 +210,7 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
                 shape: const CircleBorder(),
                 elevation: 2,
                 child: IconButton(
-                  tooltip: darkMode ? 'Switch to light mode' : 'Switch to dark mode',
+                  tooltip: null,
                   onPressed: () => _toggleTheme(isLoggedIn: auth.isLoggedIn, currentDarkMode: darkMode),
                   icon: Icon(darkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
                 ),
