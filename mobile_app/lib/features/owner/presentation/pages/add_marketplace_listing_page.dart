@@ -231,10 +231,9 @@ class _AddMarketplaceListingPageState
       );
       return;
     }
-    if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE'].contains(_category) &&
-        (double.tryParse(_landArea.text) ?? 0) <= 0) {
+    if ((double.tryParse(_landArea.text) ?? 0) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter the site area.')),
+        const SnackBar(content: Text('Enter a valid property area.')),
       );
       return;
     }
@@ -272,11 +271,8 @@ class _AddMarketplaceListingPageState
         if (['SALE', 'SITE_SALE'].contains(_category)) 'priceNegotiable': _negotiable,
         if (['LEASE', 'SITE_LEASE'].contains(_category))
           'leaseTermMonths': int.parse(_leaseMonths.text.trim()),
-        if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE'].contains(_category)) ...{
-          'landArea': double.parse(_landArea.text.trim()),
-          'landAreaUnit': _landUnit,
-          'roadAccess': _roadAccess,
-        },
+        if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE'].contains(_category)) 'roadAccess': _roadAccess,
+
       };
       String? targetPropertyId = widget.propertyId;
       if (widget.propertyId == null) {
@@ -439,26 +435,29 @@ class _AddMarketplaceListingPageState
                       },
                     ),
                   const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _landArea,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(labelText: _propertyType == 'LAND' ? 'Site area' : 'Built-up area', border: const OutlineInputBorder()),
-                      validator: _positiveNumber,
+                  TextFormField(
+                    controller: _landArea,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: _propertyType == 'LAND' ? 'Site area' : 'Built-up area',
+                      border: const OutlineInputBorder(),
                     ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: _landUnit,
-                      decoration: const InputDecoration(labelText: 'Area unit', border: OutlineInputBorder()),
-                      items: _areaUnits.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
-                      onChanged: _saving ? null : (value) { if (value != null) setState(() => _landUnit = value); },
-                    ),
+                    validator: _positiveNumber,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: _landUnit,
+                    decoration: const InputDecoration(labelText: 'Area unit', border: OutlineInputBorder()),
+                    items: _areaUnits.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
+                    onChanged: _saving ? null : (value) { if (value != null) setState(() => _landUnit = value); },
+                  ),
+                  if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE'].contains(_category))
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Road access'),
                       value: _roadAccess,
                       onChanged: _saving ? null : (value) => setState(() => _roadAccess = value),
                     ),
-                  ],
                   const SizedBox(height: 12),
                   OutlinedButton.icon(onPressed: _saving ? null : _pickLocation, icon: const Icon(Icons.location_on_outlined), label: Text(_selectedLocation == null ? 'Use current location / Choose on map' : 'Change property location')),
                   if (_selectedLocation != null) Text('Pinned: ${_selectedLocation!.latitude.toStringAsFixed(6)}, ${_selectedLocation!.longitude.toStringAsFixed(6)}'),
