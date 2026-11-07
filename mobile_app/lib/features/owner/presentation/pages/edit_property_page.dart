@@ -46,6 +46,8 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
   late final TextEditingController floorController;
   late final TextEditingController totalFloorsController;
   late final TextEditingController areaController;
+  late String areaUnit;
+  static const areaUnits = <String, String>{'sq_ft': 'Sq. ft.', 'sq_yards': 'Sq. yards', 'sq_meters': 'Sq. metres', 'acres': 'Acres', 'cents': 'Cents'};
 
   late String propertyType;
   late String furnishing;
@@ -99,6 +101,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     floorController = TextEditingController(text: property.floor.toString());
     totalFloorsController = TextEditingController(text: property.totalFloors.toString());
     areaController = TextEditingController(text: property.area.toString());
+    areaUnit = areaUnits.containsKey(property.landAreaUnit) ? property.landAreaUnit! : 'sq_ft';
 
     propertyType = _displayPropertyType(property.propertyType);
     furnishing = _displayFurnishing(property.furnishing);
@@ -151,6 +154,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
         floorController.text = property.floor.toString();
         totalFloorsController.text = property.totalFloors.toString();
         areaController.text = property.area.toString();
+        areaUnit = areaUnits.containsKey(property.landAreaUnit) ? property.landAreaUnit! : 'sq_ft';
         propertyType = _displayPropertyType(property.propertyType);
         furnishing = _displayFurnishing(property.furnishing);
         parking = property.parking;
@@ -435,6 +439,8 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
       floor: floor,
       totalFloors: totalFloors,
       area: area,
+      landArea: area,
+      landAreaUnit: areaUnit,
       propertyType: propertyType,
       furnishing: furnishing,
       parking: parking,
@@ -454,6 +460,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
       await ref.read(ownerProvider.notifier).updateProperty(
         updated,
         area: area,
+        areaUnit: areaUnit,
         bathrooms: bathrooms,
         bedrooms: bedrooms,
         balconies: balconies,
@@ -705,6 +712,12 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
               context.tr('areaSqFt'),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: _number,
+            ),
+            DropdownButtonFormField<String>(
+              initialValue: areaUnit,
+              decoration: const InputDecoration(labelText: 'Area unit', border: OutlineInputBorder()),
+              items: areaUnits.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
+              onChanged: loading ? null : (value) { if (value != null) setState(() => areaUnit = value); },
             ),
             const SizedBox(height: 24),
             Text('Amenities', style: Theme.of(context).textTheme.titleLarge),
