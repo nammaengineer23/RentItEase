@@ -79,6 +79,70 @@ describe('AdminService', () => {
     expect(audit.recordTx).toHaveBeenCalledWith(expect.anything(), context, 'USER_ROLE_CHANGE', 'USER', 'user-1', expect.any(Object), expect.any(Object));
   });
 
+  it('promotes a tenant to Owner only when their submitted property is approved', async () => {
+    prisma.user.findUnique.mockImplementation(async ({ where }: any) =>
+      where.id === 'admin-1'
+        ? { id: 'admin-1', role: UserRole.ADMIN, isActive: true }
+        : { id: 'tenant-1', role: UserRole.USER, ownerRequestStatus: 'NONE', isActive: true, deletedAt: null },
+    );
+    prisma.property.findUnique.mockResolvedValue({
+      id: 'property-1',
+      ownerId: 'tenant-1',
+      isVerified: false,
+      isAvailable: false,
+      lifecycleStatus: 'SUBMITTED',
+    });
+    prisma.property.update.mockResolvedValue({
+      id: 'property-1',
+      ownerId: 'tenant-1',
+      isVerified: true,
+      isAvailable: true,
+      lifecycleStatus: 'PUBLISHED',
+    });
+    prisma.user.update.mockResolvedValue({
+      id: 'tenant-1',
+      role: UserRole.OWNER,
+      ownerRequestStatus: 'APPROVED',
+    });
+
+    const service = new AdminService(prisma, socialMediaService as any, audit as any);
+    await service.approveProperty('property-1', 'admin-1', context);
+
+    expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'tenant-1' },
+      data: expect.objectContaining({ role: UserRole.OWNER, ownerRequestStatus: 'APPROVED' }),
+    }));
+    expect(audit.recordTx).toHaveBeenCalledWith(
+      expect.anything(), context, 'USER_ROLE_PROMOTION', 'USER', 'tenant-1',
+      expect.any(Object), expect.any(Object),
+    );
+  });
+
+  it('does not promote a tenant when an unsubmitted draft is sent for approval', async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: 'admin-1', role: UserRole.ADMIN, isActive: true });
+    prisma.property.findUnique.mockResolvedValue({
+      id: 'property-1',
+      ownerId: 'tenant-1',
+      isVerified: false,
+      isAvailable: false,
+      lifecycleStatus: 'DRAFT',
+    });
+
+    const service = new AdminService(prisma, socialMediaService as any, audit as any);
+    await expect(service.approveProperty('property-1', 'admin-1', context))
+      .rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.property.update).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('prevents direct admin role changes from granting Owner access', async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: 'admin-1', role: UserRole.ADMIN, isActive: true });
+    const service = new AdminService(prisma, socialMediaService as any, audit as any);
+    await expect(service.updateUserRole('tenant-1', UserRole.OWNER, 'admin-1', context))
+      .rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('rejects a non-admin actor even when the target exists', async () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'user-1', role: UserRole.USER, isActive: true });
     const service = new AdminService(prisma, socialMediaService as any, audit as any);
