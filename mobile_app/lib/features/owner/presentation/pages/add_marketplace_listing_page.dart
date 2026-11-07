@@ -1,8 +1,16 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart' as fp;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:video_compress/video_compress.dart';
 
 import '../../../../core/network/dio_provider.dart';
+import '../../data/api/property_image_api.dart';
+import '../../data/api/property_video_api.dart';
+import '../widgets/sectioned_property_image_picker.dart';
 
 class AddMarketplaceListingPage extends ConsumerStatefulWidget {
   const AddMarketplaceListingPage({super.key, this.propertyId, this.initialCategory = 'SALE', this.initialPropertyType = 'HOUSE'});
@@ -37,8 +45,85 @@ class _AddMarketplaceListingPageState
   bool _negotiable = false;
   bool _roadAccess = false;
   bool _saving = false;
+  bool _videoCompressing = false;
+  double _videoCompressionProgress = 0;
+  Map<String, List<File>> _selectedImagesBySection = const {};
+  File? _selectedVideo;
   bool _loadingExisting = false;
   String? _loadError;
+
+  Future<void> _setVideo(File video) async {
+    final originalBytes = await video.length();
+    if (!mounted) return;
+    setState(() { _videoCompressing = true; _videoCompressionProgress = 0; });
+    final subscription = VideoCompress.compressProgress$.subscribe((progress) {
+      if (mounted) setState(() => _videoCompressionProgress = progress.clamp(0, 100).toDouble());
+    });
+    try {
+      final info = await VideoCompress.compressVideo(
+        video.path,
+        quality: VideoQuality.Res1280x720Quality,
+        deleteOrigin: false,
+        includeAudio: true,
+        frameRate: 30,
+      );
+      final output = info?.file;
+      if (output == null || !await output.exists()) {
+        throw const FormatException('Video compression failed.');
+      }
+      final compressedBytes = await output.length();
+      if (compressedBytes > 100 * 1024 * 1024) {
+        throw const FormatException('Compressed video is larger than 100 MB. Please choose a shorter video.');
+      }
+      if (mounted) {
+        setState(() => _selectedVideo = output);
+        final before = (originalBytes / (1024 * 1024)).toStringAsFixed(1);
+        final after = (compressedBytes / (1024 * 1024)).toStringAsFixed(1);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Video compressed: $before MB → $after MB')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        final message = error is FormatException ? error.message : 'Unable to compress video. Please choose another video.';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } finally {
+      subscription.unsubscribe();
+      if (mounted) setState(() { _videoCompressing = false; _videoCompressionProgress = 0; });
+    }
+  }
+
+  Future<void> _pickVideo() async {
+    final picked = await fp.FilePicker.pickFile(
+      type: fp.FileType.custom,
+      allowedExtensions: const ['mp4', 'mov', 'm4v'],
+    );
+    if (picked == null || !mounted) return;
+    if (picked.path == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('The selected video is not available as a local file.')),
+      );
+      return;
+    }
+    await _setVideo(File(picked.path!));
+  }
+
+  Future<void> _recordVideo() async {
+    try {
+      final recorded = await ImagePicker().pickVideo(
+        source: ImageSource.camera,
+        maxDuration: const Duration(seconds: 60),
+      );
+      if (recorded != null && mounted) await _setVideo(File(recorded.path));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to open the camera. Check camera permission and try again.')),
+        );
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -161,15 +246,56 @@ class _AddMarketplaceListingPageState
           'roadAccess': _roadAccess,
         },
       };
+      String? targetPropertyId = widget.propertyId;
       if (widget.propertyId == null) {
-        await ref.read(dioProvider).post('/properties', data: payload);
+        final response = await ref.read(dioProvider).post('/properties', data: payload);
+        final created = _unwrap(response.data);
+        if (created is Map) {
+          targetPropertyId = created['id']?.toString() ??
+              (created['property'] is Map ? created['property']['id']?.toString() : null);
+        }
       } else {
         await ref.read(dioProvider).patch('/properties/${widget.propertyId}', data: payload);
       }
+
+      final mediaWarnings = <String>[];
+      if (_selectedImagesBySection.isNotEmpty) {
+        if (targetPropertyId == null || targetPropertyId.isEmpty) {
+          mediaWarnings.add('photos (listing ID was not returned)');
+        } else {
+          try {
+            await PropertyImageApi(ref.read(dioProvider)).uploadSectionImages(
+              propertyId: targetPropertyId,
+              imagesBySection: _selectedImagesBySection,
+            );
+          } catch (_) {
+            mediaWarnings.add('photos');
+          }
+        }
+      }
+      if (_selectedVideo != null) {
+        if (targetPropertyId == null || targetPropertyId.isEmpty) {
+          mediaWarnings.add('video tour (listing ID was not returned)');
+        } else {
+          try {
+            await PropertyVideoApi(ref.read(dioProvider)).uploadVideo(
+              propertyId: targetPropertyId,
+              video: _selectedVideo!,
+            );
+          } catch (_) {
+            mediaWarnings.add('video tour');
+          }
+        }
+      }
       if (!mounted) return;
+      final successMessage = widget.propertyId == null
+          ? 'Listing created. Complete review before publication.'
+          : 'Listing updated.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(widget.propertyId == null ? 'Listing created. Complete review before publication.' : 'Listing updated.'),
+          content: Text(mediaWarnings.isEmpty
+              ? successMessage
+              : '$successMessage Could not upload ${mediaWarnings.join(' and ')}; retry from Edit Listing.'),
         ),
       );
       Navigator.of(context).pop(true);
@@ -313,6 +439,62 @@ class _AddMarketplaceListingPageState
                     decoration: const InputDecoration(labelText: 'Property type', border: OutlineInputBorder()),
                     child: Text(_propertyType == 'LAND' ? 'Site / Land' : 'House'),
                   ),
+                  const SizedBox(height: 24),
+                  Text('Property photos', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 6),
+                  Text(_propertyType == 'LAND'
+                      ? 'Add clear photos of the plot, frontage, road access and surroundings.'
+                      : 'Add clear photos of the exterior and available rooms.'),
+                  const SizedBox(height: 8),
+                  SectionedPropertyImagePicker(
+                    isLand: _propertyType == 'LAND',
+                    selectedImages: _selectedImagesBySection,
+                    onImagesChanged: (images) => _selectedImagesBySection = images,
+                  ),
+                  const SizedBox(height: 24),
+                  Text('Video tour (optional)', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 6),
+                  const Text('One MP4, MOV or M4V video • up to 60 seconds • compressed to 720p before upload.'),
+                  if (_videoCompressing) ...[
+                    const SizedBox(height: 8),
+                    Text('Compressing video… ${_videoCompressionProgress.toStringAsFixed(0)}%'),
+                    LinearProgressIndicator(
+                      value: _videoCompressionProgress > 0 ? _videoCompressionProgress / 100 : null,
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: _saving || _videoCompressing ? null : _recordVideo,
+                        icon: const Icon(Icons.videocam_outlined),
+                        label: Text(_selectedVideo == null ? 'Record video tour' : 'Retake video'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _saving || _videoCompressing ? null : _pickVideo,
+                        icon: const Icon(Icons.video_library_outlined),
+                        label: Text(_selectedVideo == null ? 'Choose existing video' : 'Choose another video'),
+                      ),
+                    ],
+                  ),
+                  if (_selectedVideo != null)
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.video_file_outlined),
+                        title: Text(
+                          _selectedVideo!.path.split(Platform.pathSeparator).last,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: const Text('Ready to upload when the listing is saved'),
+                        trailing: IconButton(
+                          onPressed: _saving ? null : () => setState(() => _selectedVideo = null),
+                          icon: const Icon(Icons.close),
+                          tooltip: 'Remove selected video',
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
                     onPressed: _saving ? null : _submit,
