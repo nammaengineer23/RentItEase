@@ -99,6 +99,7 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
   Future<OwnerPropertyEntity> addProperty(
     OwnerPropertyEntity property, {
     required double area,
+    String areaUnit = 'sq_ft',
     required int bathrooms,
     required int bedrooms,
     int balconies = 0,
@@ -124,6 +125,7 @@ class OwnerNotifier extends StateNotifier<OwnerState> {
       final createdProperty = await repository.addProperty(
         property,
         area: area,
+        areaUnit: areaUnit,
         bathrooms: bathrooms,
         bedrooms: bedrooms,
         balconies: balconies,
