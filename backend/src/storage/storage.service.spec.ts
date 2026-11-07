@@ -11,6 +11,7 @@ describe('StorageService', () => {
     uploadPrivateFile: jest.fn(),
     deleteImage: jest.fn(),
     getPrivateDownloadUrl: jest.fn(),
+    getPublicMediaDownloadUrl: jest.fn(),
   } as unknown as FirebaseService;
 
   beforeEach(() => {
@@ -32,6 +33,17 @@ describe('StorageService', () => {
 
     expect(firebaseService.deleteImage).toHaveBeenCalledWith(
       'properties/legacy.jpg',
+    );
+  });
+
+  it('exposes short-lived signed URLs for public property media objects', async () => {
+    const service = new StorageService(firebaseService);
+
+    await service.getPublicMediaDownloadUrl('properties/photo.jpg');
+
+    expect(firebaseService.getPublicMediaDownloadUrl).toHaveBeenCalledWith(
+      'properties/photo.jpg',
+      60 * 60 * 1000,
     );
   });
 
