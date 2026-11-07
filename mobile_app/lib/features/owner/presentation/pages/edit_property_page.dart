@@ -713,6 +713,12 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: _number,
             ),
+            DropdownButtonFormField<String>(
+              initialValue: areaUnit,
+              decoration: const InputDecoration(labelText: 'Area unit', border: OutlineInputBorder()),
+              items: areaUnits.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
+              onChanged: loading ? null : (value) { if (value != null) setState(() => areaUnit = value); },
+            ),
             const SizedBox(height: 24),
             Text('Amenities', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
