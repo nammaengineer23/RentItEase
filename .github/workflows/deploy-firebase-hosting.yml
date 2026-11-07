@@ -61,7 +61,7 @@ jobs:
 
       - name: Deploy to Firebase Hosting
         env:
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_PROJECT_ID: ${{ inputs.environment == 'staging' && 'rentitease-staging' || secrets.FIREBASE_PROJECT_ID }}
         run: |
           set -euo pipefail
           : "${FIREBASE_PROJECT_ID:?Set FIREBASE_PROJECT_ID in the selected GitHub environment}"
