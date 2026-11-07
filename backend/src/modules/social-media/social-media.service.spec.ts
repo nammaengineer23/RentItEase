@@ -16,7 +16,8 @@ describe('SocialMediaService social publishing security', () => {
     socialMediaAuditEvent: { create: jest.fn() },
     socialMediaSetting: { findUnique: jest.fn(), upsert: jest.fn() },
     socialAnalyticsSnapshot: { findMany: jest.fn(), create: jest.fn() },
-    property: { findFirst: jest.fn(), findUnique: jest.fn() },
+    property: { findFirst: jest.fn(), findUnique: jest.fn(), findMany: jest.fn(), count: jest.fn() },
+    $transaction: jest.fn(),
   };
 
   const storage: any = {
@@ -24,6 +25,7 @@ describe('SocialMediaService social publishing security', () => {
     downloadVideo: jest.fn(),
     importRemoteVideo: jest.fn(),
     deleteStoredVideo: jest.fn(),
+    getVideoDownloadUrl: jest.fn(async (ref: string) => 'https://signed.example/' + encodeURIComponent(ref)),
   };
 
   const publishing: any = { publish: jest.fn() };
@@ -42,6 +44,25 @@ describe('SocialMediaService social publishing security', () => {
   );
 
   beforeEach(() => jest.clearAllMocks());
+
+  it('returns a fresh preview URL for a stored private reel in the admin property list', async () => {
+    prisma.$transaction.mockResolvedValueOnce([[
+      {
+        id: 'property-1',
+        socialMarketingConsent: {
+          preparedVideoUrl: 'gcs://bucket/social-videos/property-1/reel.mp4',
+        },
+      },
+    ], 1]);
+
+    const result = await service.listProperties();
+
+    expect(result.data[0].socialMarketingConsent.preparedVideoUrl)
+      .toBe('https://signed.example/gcs%3A%2F%2Fbucket%2Fsocial-videos%2Fproperty-1%2Freel.mp4');
+    expect(storage.getVideoDownloadUrl).toHaveBeenCalledWith(
+      'gcs://bucket/social-videos/property-1/reel.mp4',
+    );
+  });
 
   it('blocks publishing when owner consent is absent', async () => {
     prisma.socialMarketingConsent.findUnique.mockResolvedValue(null);
