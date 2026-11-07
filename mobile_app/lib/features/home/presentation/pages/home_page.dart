@@ -243,9 +243,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('List your property', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                                const SizedBox(height: 2),
-                                const Text('Submit your property for admin approval.'),
+                                Text('List your property', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                                SizedBox(height: 2),
+                                Text('Submit your property for admin approval.'),
                               ],
                             ),
                           ),
