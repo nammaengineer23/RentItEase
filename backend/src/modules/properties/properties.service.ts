@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma.service';
-import { MembershipStatus, Prisma, PropertyTransactionType, UserRole } from '@prisma/client';
+import { MembershipStatus, Prisma, PropertyLifecycleStatus, PropertyTransactionType, UserRole } from '@prisma/client';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -1023,7 +1023,11 @@ export class PropertiesService {
         // Every owner edit requires a fresh admin review before the listing
         // becomes public again. Admin edits preserve the approval state.
         ...(user.role !== UserRole.ADMIN
-          ? { isVerified: false, isAvailable: false }
+          ? {
+              isVerified: false,
+              isAvailable: false,
+              lifecycleStatus: PropertyLifecycleStatus.DRAFT,
+            }
           : {}),
 
         amenities:
