@@ -110,6 +110,7 @@ class OwnerRepositoryImpl implements OwnerRepository {
   Future<void> updateProperty(
     OwnerPropertyEntity property, {
     required double area,
+    String areaUnit = 'sq_ft',
     required int bathrooms,
     required int bedrooms,
     int balconies = 0,
@@ -148,6 +149,8 @@ class OwnerRepositoryImpl implements OwnerRepository {
       'floor': floor,
       'totalFloors': totalFloors,
       'area': area,
+      'landArea': area,
+      'landAreaUnit': areaUnit,
       'propertyType': _propertyTypeToApi(property.propertyType),
       'furnishing': _furnishingToApi(furnishing),
       'parking': parking,
