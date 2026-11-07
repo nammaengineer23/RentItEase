@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
-import '../../../../core/network/dio_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../notifications/providers/notifications_provider.dart';
 import '../../../authentication/providers/authentication_provider.dart';
@@ -25,8 +24,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   String _nearbyCity = '';
   Position? _currentPosition;
   String _query = '';
-  bool _ownerRequestSubmitted = false;
-  bool _submittingOwnerRequest = false;
 
   @override
   void initState() {
@@ -81,53 +78,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     } catch (_) {}
   }
 
-  Future<void> _handleAddPropertyCta(String? currentRole) async {
-    if (currentRole == 'OWNER' || currentRole == 'ADMIN') {
-      if (mounted) context.push('/owner/properties/add');
-      return;
-    }
-    await _requestOwnerAccess();
-  }
-
-  Future<void> _requestOwnerAccess() async {
-    if (_ownerRequestSubmitted || _submittingOwnerRequest) return;
-    final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Become an Owner'),
-            content: const Text(
-              'Send a request to the RentItEase admin team? You can list and manage properties after the request is approved.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('Send request'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-    if (!confirmed || !mounted) return;
-    setState(() => _submittingOwnerRequest = true);
-    try {
-      await ref.read(dioProvider).patch('/users/request-owner');
-      if (!mounted) return;
-      setState(() => _ownerRequestSubmitted = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Owner request sent. Pending admin approval.')),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to submit request: $error')),
-      );
-    } finally {
-      if (mounted) setState(() => _submittingOwnerRequest = false);
-    }
+  void _handleAddPropertyCta() {
+    // Tenants may submit a property for review. Owner capability is granted
+    // only when an admin approves that submitted property.
+    context.push('/owner/add-property');
   }
 
   @override
@@ -289,25 +243,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Are you a House Owner?', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                                const Text('List your property', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                                 const SizedBox(height: 2),
-                                Text(
-                                  _ownerRequestSubmitted && currentRole == 'USER'
-                                      ? 'Owner request pending admin approval'
-                                      : 'List your house for rent',
-                                ),
+                                const Text('Submit your property for admin approval.'),
                               ],
                             ),
                           ),
                           const SizedBox(width: 8),
                           FilledButton.icon(
-                            onPressed: _submittingOwnerRequest || (_ownerRequestSubmitted && currentRole == 'USER')
-                                ? null
-                                : () => _handleAddPropertyCta(currentRole),
-                            icon: _submittingOwnerRequest
-                                ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                                : const Icon(Icons.add),
-                            label: Text(currentRole == 'OWNER' ? 'Add Property' : (_ownerRequestSubmitted ? 'Pending' : 'Add Property')),
+                            onPressed: _handleAddPropertyCta,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Property'),
                           ),
                         ],
                       ),
