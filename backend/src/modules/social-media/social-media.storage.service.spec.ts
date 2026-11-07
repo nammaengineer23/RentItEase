@@ -58,7 +58,7 @@ describe('SocialMediaStorageService private GCS reels', () => {
     )).rejects.toThrow('Unsupported prepared video reference.');
     await expect(service.getVideoDownloadUrl(
       'gcs://rentitease-staging.firebasestorage.app/properties/private.jpg',
-    )).rejects.toThrow('Unsupported prepared video reference.');
+    )).rejects.toThrow('Invalid social video object reference.');
     expect(getSignedUrl).not.toHaveBeenCalled();
   });
 });
