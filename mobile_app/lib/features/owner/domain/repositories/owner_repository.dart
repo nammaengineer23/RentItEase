@@ -29,6 +29,7 @@ abstract class OwnerRepository {
   Future<OwnerPropertyEntity> addProperty(
     OwnerPropertyEntity property, {
     required double area,
+    String areaUnit = 'sq_ft',
     required int bathrooms,
     required int bedrooms,
     int balconies = 0,
