@@ -438,8 +438,7 @@ class _AddMarketplaceListingPageState
                             : null;
                       },
                     ),
-                  if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE'].contains(_category)) ...[
-                    const SizedBox(height: 12),
+                  const SizedBox(height: 12),
                     TextFormField(
                       controller: _landArea,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -447,7 +446,7 @@ class _AddMarketplaceListingPageState
                       validator: _positiveNumber,
                     ),
                     const SizedBox(height: 12),
-                    TextFormField(
+                    DropdownButtonFormField<String>(
                       initialValue: _landUnit,
                       decoration: const InputDecoration(labelText: 'Area unit', border: OutlineInputBorder()),
                       items: _areaUnits.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
@@ -461,6 +460,8 @@ class _AddMarketplaceListingPageState
                     ),
                   ],
                   const SizedBox(height: 12),
+                  OutlinedButton.icon(onPressed: _saving ? null : _pickLocation, icon: const Icon(Icons.location_on_outlined), label: Text(_selectedLocation == null ? 'Use current location / Choose on map' : 'Change property location')),
+                  if (_selectedLocation != null) Text('Pinned: ${_selectedLocation!.latitude.toStringAsFixed(6)}, ${_selectedLocation!.longitude.toStringAsFixed(6)}'),
                   TextFormField(controller: _address, decoration: const InputDecoration(labelText: 'Address', border: OutlineInputBorder()), validator: _required),
                   const SizedBox(height: 12),
                   TextFormField(controller: _locality, decoration: const InputDecoration(labelText: 'Locality', border: OutlineInputBorder())),
@@ -475,6 +476,9 @@ class _AddMarketplaceListingPageState
                     decoration: const InputDecoration(labelText: 'Property type', border: OutlineInputBorder()),
                     child: Text(_propertyType == 'LAND' ? 'Site / Land' : 'House'),
                   ),
+                  const SizedBox(height: 16),
+                  CheckboxListTile(contentPadding: EdgeInsets.zero, value: _termsAccepted, onChanged: _saving ? null : (value) => setState(() => _termsAccepted = value ?? false), title: Wrap(children: [const Text('I accept the '), InkWell(onTap: () => launchUrl(Uri.parse('https://rentitease.com/terms'), mode: LaunchMode.externalApplication), child: const Text('Terms & Conditions', style: TextStyle(decoration: TextDecoration.underline))), const Text(' (required)')])),
+                  CheckboxListTile(contentPadding: EdgeInsets.zero, value: _socialMarketingConsent, onChanged: _saving ? null : (value) => setState(() => _socialMarketingConsent = value ?? false), title: const Text('I agree to promotional use of this property listing on RentItEase social channels (optional).')),
                   const SizedBox(height: 24),
                   Text('Property photos', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 6),
