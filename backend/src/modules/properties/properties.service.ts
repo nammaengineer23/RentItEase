@@ -26,10 +26,25 @@ export class PropertiesService {
     return process.env.PROPERTY_MARKETPLACE_ENABLED === 'true';
   }
 
-  private serializePublicProperty(property: any) {
+  private async serializePublicProperty(property: any) {
     const serialized = serializePrisma(property) as Record<string, any>;
     // Survey references can expose private title/document identifiers; never return them on public discovery/detail APIs.
     delete serialized.surveyReference;
+
+    // Persisted URLs are legacy-compatible metadata only. Resolve current GCS
+    // object keys into fresh URLs at response time so clients never receive an
+    // expired signed URL saved during upload.
+    if (Array.isArray(serialized.images)) {
+      serialized.images = await Promise.all(serialized.images.map(async (image: any) => ({
+        ...image,
+        imageUrl: image.publicId?.startsWith('properties/')
+          ? await this.storageService.getPublicMediaDownloadUrl(image.publicId)
+          : image.imageUrl,
+      })));
+    }
+    if (serialized.videoPublicId?.startsWith('property-videos/')) {
+      serialized.videoUrl = await this.storageService.getPublicMediaDownloadUrl(serialized.videoPublicId);
+    }
     return serialized;
   }
 
@@ -138,7 +153,7 @@ export class PropertiesService {
     return {
       success: true,
       message: 'Property created successfully.',
-      property: this.serializePublicProperty(property),
+      property: await this.serializePublicProperty(property),
     };
   }
 
@@ -328,7 +343,7 @@ export class PropertiesService {
     // Average Rating
     // -----------------------
 
-    const data = properties.map((property) => {
+    const data = await Promise.all(properties.map(async (property) => {
       const totalRating = property.reviews.reduce(
         (sum, review) => sum + review.rating,
         0,
@@ -340,11 +355,11 @@ export class PropertiesService {
           : 0;
 
       return {
-        ...this.serializePublicProperty(property),
+        ...await this.serializePublicProperty(property),
         averageRating,
         totalReviews: property.reviews.length,
       };
-    });
+    }));
 
     return {
       success: true,
@@ -476,8 +491,8 @@ export class PropertiesService {
         }),
       ]);
 
-    const topRatedProperties = topRated
-      .map((property) => {
+    const topRatedProperties = await Promise.all(topRated
+      .map(async (property) => {
         const totalRating = property.reviews.reduce(
           (sum, review) => sum + review.rating,
           0,
@@ -493,20 +508,20 @@ export class PropertiesService {
           averageRating,
           totalReviews: property.reviews.length,
         };
-      })
-      .sort((a, b) => b.averageRating - a.averageRating);
+      }));
+    topRatedProperties.sort((a, b) => b.averageRating - a.averageRating);
 
     return {
       success: true,
 
-      featured: featured.map((p) => this.serializePublicProperty(p)),
+      featured: await Promise.all(featured.map((p) => this.serializePublicProperty(p))),
 
-      latest: latest.map((p) => this.serializePublicProperty(p)),
+      latest: await Promise.all(latest.map((p) => this.serializePublicProperty(p))),
 
-      mostFavorited: mostFavorited.map((p) => ({
-        ...this.serializePublicProperty(p),
+      mostFavorited: await Promise.all(mostFavorited.map(async (p) => ({
+        ...await this.serializePublicProperty(p),
         favorites: p._count.favorites,
-      })),
+      }))),
 
       topRated: topRatedProperties,
 
@@ -764,7 +779,7 @@ export class PropertiesService {
     return {
       success: true,
       property: {
-        ...this.serializePublicProperty(property),
+        ...await this.serializePublicProperty(property),
         views: property.viewCount,
         totalViews: property.viewCount,
         averageRating,
@@ -916,7 +931,7 @@ export class PropertiesService {
       },
     });
 
-    const data = similar.map((property) => {
+    const data = await Promise.all(similar.map(async (property) => {
       const totalRating = property.reviews.reduce(
         (sum, review) => sum + review.rating,
         0,
@@ -933,7 +948,7 @@ export class PropertiesService {
         totalReviews: property.reviews.length,
         totalFavorites: property.favorites.length,
       };
-    });
+    }));
 
     return {
       success: true,
