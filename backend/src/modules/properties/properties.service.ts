@@ -1104,7 +1104,7 @@ export class PropertiesService {
       await this.pushNotifications.sendToAdmins(
         `property-submission:${updatedProperty.id}:${updatedProperty.updatedAt.toISOString()}`,
         'Property approval required',
-        `\"${updatedProperty.title}\" was submitted for verification (${updatedProperty.transactionType.replace(/_/g, ' ')}).`,
+        `"${updatedProperty.title}" was submitted for verification (${updatedProperty.transactionType.replace(/_/g, ' ')}).`,
         {
           screen: 'admin_properties',
           propertyId: updatedProperty.id,
