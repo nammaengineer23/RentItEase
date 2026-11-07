@@ -30,16 +30,24 @@ const propertyPhotoSections = <PropertyPhotoSection>[
   PropertyPhotoSection(value: 'OTHER', label: 'Other', icon: Icons.photo_outlined),
 ];
 
+const sitePhotoSections = <PropertyPhotoSection>[
+  PropertyPhotoSection(value: 'EXTERIOR', label: 'Plot / Site View', icon: Icons.landscape_outlined),
+  PropertyPhotoSection(value: 'PARKING', label: 'Road Access', icon: Icons.add_road_outlined),
+  PropertyPhotoSection(value: 'OTHER', label: 'Boundary & Surroundings', icon: Icons.fence_outlined),
+];
+
 class SectionedPropertyImagePicker extends StatefulWidget {
   const SectionedPropertyImagePicker({
     super.key,
     required this.onImagesChanged,
+    this.isLand = false,
     this.initialImages = const {},
     this.onDeleteExisting,
     this.selectedImages = const {},
   });
 
   final ValueChanged<Map<String, List<File>>> onImagesChanged;
+  final bool isLand;
   final Map<String, List<PropertyImageRecord>> initialImages;
   final Future<void> Function(PropertyImageRecord image)? onDeleteExisting;
   final Map<String, List<File>> selectedImages;
@@ -193,7 +201,7 @@ class _SectionedPropertyImagePickerState
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 8),
-        ...propertyPhotoSections.map((section) {
+        ...(widget.isLand ? sitePhotoSections : propertyPhotoSections).map((section) {
           final existing = _existingBySection[section.value] ?? const [];
           final added = _newImagesBySection[section.value] ?? const [];
           final remaining = existing.length >= 2 ? 0 : 2 - existing.length;
