@@ -144,8 +144,11 @@ class _AddMarketplaceListingPageState
     super.initState();
     _category = widget.initialCategory;
     _propertyType = widget.initialPropertyType;
+    _loadAmenities();
     if (widget.propertyId != null) {
       _loadExisting();
+    } else {
+      _loadCurrentLocation();
     }
   }
 
