@@ -143,7 +143,22 @@ class _AddMarketplaceListingPageState
     }
   }
 
-  void _applyLocation(LocationModel location) {\n    setState(() { _selectedLocation = location; _address.text = location.address; _locality.text = location.locality; _city.text = location.city; _state.text = location.state; _pincode.text = location.postalCode; });\n  }\n\n  Future<void> _loadCurrentLocation() async {\n    final maps = ref.read(mapsProvider);\n    await maps.fetchCurrentLocation();\n    if (mounted && maps.selectedLocation != null) _applyLocation(maps.selectedLocation!);\n  }\n\n  Future<void> _pickLocation() async {\n    final location = await Navigator.of(context).push<LocationModel>(MaterialPageRoute(builder: (_) => const MapPickerPage()));\n    if (location != null && mounted) _applyLocation(location);\n  }\n\n  dynamic _unwrap(dynamic value) {
+  void _applyLocation(LocationModel location) {
+    setState(() { _selectedLocation = location; _address.text = location.address; _locality.text = location.locality; _city.text = location.city; _state.text = location.state; _pincode.text = location.postalCode; });
+  }
+
+  Future<void> _loadCurrentLocation() async {
+    final maps = ref.read(mapsProvider);
+    await maps.fetchCurrentLocation();
+    if (mounted && maps.selectedLocation != null) _applyLocation(maps.selectedLocation!);
+  }
+
+  Future<void> _pickLocation() async {
+    final location = await Navigator.of(context).push<LocationModel>(MaterialPageRoute(builder: (_) => const MapPickerPage()));
+    if (location != null && mounted) _applyLocation(location);
+  }
+
+  dynamic _unwrap(dynamic value) {
     while (value is Map && value.containsKey('data')) value = value['data'];
     if (value is Map && value['property'] is Map) value = value['property'];
     return value;
@@ -173,7 +188,12 @@ class _AddMarketplaceListingPageState
       _bedrooms.text = value['bedrooms']?.toString() ?? '0';
       _bathrooms.text = value['bathrooms']?.toString() ?? '0';
       _negotiable = value['priceNegotiable'] == true;
-      _roadAccess = value['roadAccess'] == true;\n      final lat = double.tryParse(value['latitude']?.toString() ?? '');\n      final lng = double.tryParse(value['longitude']?.toString() ?? '');\n      if (lat != null && lng != null) {\n        _selectedLocation = LocationModel(latitude: lat, longitude: lng, address: _address.text, locality: _locality.text, city: _city.text, state: _state.text, country: 'India', postalCode: _pincode.text);\n      }
+      _roadAccess = value['roadAccess'] == true;
+      final lat = double.tryParse(value['latitude']?.toString() ?? '');
+      final lng = double.tryParse(value['longitude']?.toString() ?? '');
+      if (lat != null && lng != null) {
+        _selectedLocation = LocationModel(latitude: lat, longitude: lng, address: _address.text, locality: _locality.text, city: _city.text, state: _state.text, country: 'India', postalCode: _pincode.text);
+      }
     } catch (_) {
       if (mounted) setState(() => _loadError = 'Could not load this listing for editing.');
     } finally {
@@ -202,7 +222,9 @@ class _AddMarketplaceListingPageState
 
   Future<void> _submit() async {
     if (_saving) return;
-    if (!_termsAccepted) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please accept the Terms & Conditions.'))); return; }\n    if (!_formKey.currentState!.validate()) return;\n    if (_selectedLocation == null) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select the property location on the map before submitting.'))); return; }
+    if (!_termsAccepted) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please accept the Terms & Conditions.'))); return; }
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedLocation == null) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select the property location on the map before submitting.'))); return; }
     if (['LEASE', 'SITE_LEASE'].contains(_category) && (int.tryParse(_leaseMonths.text) ?? 0) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Enter a valid lease duration in months.')),
@@ -231,10 +253,14 @@ class _AddMarketplaceListingPageState
         'city': _city.text.trim(),
         'state': _state.text.trim(),
         'country': 'India',
-        'pincode': _pincode.text.trim(),\n        'latitude': _selectedLocation!.latitude,\n        'longitude': _selectedLocation!.longitude,
+        'pincode': _pincode.text.trim(),
+        'latitude': _selectedLocation!.latitude,
+        'longitude': _selectedLocation!.longitude,
         'bedrooms': int.tryParse(_bedrooms.text) ?? 0,
         'bathrooms': int.tryParse(_bathrooms.text) ?? 0,
-        'area': double.parse(_landArea.text.trim()),\n        'landArea': double.parse(_landArea.text.trim()),\n        'landAreaUnit': _landUnit,
+        'area': double.parse(_landArea.text.trim()),
+        'landArea': double.parse(_landArea.text.trim()),
+        'landAreaUnit': _landUnit,
         'propertyType': _propertyType,
         'furnishing': 'UNFURNISHED',
         'parking': false,
@@ -248,9 +274,7 @@ class _AddMarketplaceListingPageState
           'leaseTermMonths': int.parse(_leaseMonths.text.trim()),
         if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE'].contains(_category)) ...{
           'landArea': double.parse(_landArea.text.trim()),
-          'landAreaUnit': _landUnit.text.trim().isEmpty
-              ? 'sq_ft'
-              : _landUnit.text.trim(),
+          'landAreaUnit': _landUnit,
           'roadAccess': _roadAccess,
         },
       };
@@ -266,7 +290,10 @@ class _AddMarketplaceListingPageState
         await ref.read(dioProvider).patch('/properties/${widget.propertyId}', data: payload);
       }
 
-      final mediaWarnings = <String>[];\n      if (_socialMarketingConsent && targetPropertyId != null) {\n        try { await ref.read(dioProvider).post('/social-media/owner/consent', data: {'propertyId': targetPropertyId, 'approved': true, 'consentVersion': '1.0'}); } catch (_) { mediaWarnings.add('promotional consent'); }\n      }
+      final mediaWarnings = <String>[];
+      if (_socialMarketingConsent && targetPropertyId != null) {
+        try { await ref.read(dioProvider).post('/social-media/owner/consent', data: {'propertyId': targetPropertyId, 'approved': true, 'consentVersion': '1.0'}); } catch (_) { mediaWarnings.add('promotional consent'); }
+      }
       if (_selectedImagesBySection.isNotEmpty) {
         if (targetPropertyId == null || targetPropertyId.isEmpty) {
           mediaWarnings.add('photos (listing ID was not returned)');
@@ -421,9 +448,10 @@ class _AddMarketplaceListingPageState
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
-                      controller: _landUnit,
-                      decoration: const InputDecoration(labelText: 'Area unit (e.g. sq_ft, sq_yards)', border: OutlineInputBorder()),
-                      validator: _required,
+                      initialValue: _landUnit,
+                      decoration: const InputDecoration(labelText: 'Area unit', border: OutlineInputBorder()),
+                      items: _areaUnits.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
+                      onChanged: _saving ? null : (value) { if (value != null) setState(() => _landUnit = value); },
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
