@@ -150,9 +150,14 @@ export class SocialMediaService {
         'Property not found or does not belong to the authenticated owner.',
       );
 
-    return this.prisma.socialMarketingConsent.findUnique({
+    const consent = await this.prisma.socialMarketingConsent.findUnique({
       where: { propertyId },
     });
+    if (!consent?.preparedVideoUrl) return consent;
+    return {
+      ...consent,
+      preparedVideoUrl: await this.storage.getVideoDownloadUrl(consent.preparedVideoUrl),
+    };
   }
 
   async onPropertyApproved(propertyId: string) {
