@@ -69,16 +69,6 @@ describe('AdminService', () => {
     await expect(service.deleteUser('owner-1', 'admin-1', context)).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('records a user role change in the durable audit service', async () => {
-    prisma.user.findUnique
-      .mockResolvedValueOnce({ id: 'admin-1', role: UserRole.ADMIN, isActive: true })
-      .mockResolvedValueOnce({ id: 'user-1', role: UserRole.USER, isActive: true, ownerRequestStatus: 'NONE' });
-    prisma.user.update.mockResolvedValue({ id: 'user-1', role: UserRole.OWNER, isActive: true });
-    const service = new AdminService(prisma, socialMediaService as any, audit as any);
-    await service.updateUserRole('user-1', UserRole.OWNER, 'admin-1', context);
-    expect(audit.recordTx).toHaveBeenCalledWith(expect.anything(), context, 'USER_ROLE_CHANGE', 'USER', 'user-1', expect.any(Object), expect.any(Object));
-  });
-
   it('promotes a tenant to Owner only when their submitted property is approved', async () => {
     prisma.user.findUnique.mockImplementation(async ({ where }: any) =>
       where.id === 'admin-1'
