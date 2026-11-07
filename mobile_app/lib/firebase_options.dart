@@ -56,6 +56,16 @@ class DefaultFirebaseOptions {
     measurementId: 'G-QSDWLB9JX8',
   );
 
+  static const FirebaseOptions stagingWeb = FirebaseOptions(
+    apiKey: 'AIzaSyDIYIqNZh_fcRyPUdzd3xqbn2xoW3VPqcs',
+    appId: '1:722173159384:web:f1ebbc027f7318b49eb4ad',
+    messagingSenderId: '722173159384',
+    projectId: 'rentitease-staging',
+    authDomain: 'rentitease-staging.firebaseapp.com',
+    storageBucket: 'rentitease-staging.firebasestorage.app',
+    measurementId: 'G-0VE8GK49BG',
+  );
+
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyD0GI1ew-EyBzea-wLwvQUiCPsJXW6Ls8k',
     appId: '1:276976121047:android:72bf8e94f2676aea152c92',
