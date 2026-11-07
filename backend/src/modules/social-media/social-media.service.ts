@@ -241,7 +241,18 @@ export class SocialMediaService {
       }),
       this.prisma.property.count({ where: { socialMarketingConsent: { approved: true } } }),
     ]);
-    return { data, pagination: { page: safePage, limit: safeLimit, total, totalPages: Math.ceil(total / safeLimit) } };
+    const resolvedData = await Promise.all(data.map(async (property) => ({
+      ...property,
+      socialMarketingConsent: property.socialMarketingConsent
+        ? {
+            ...property.socialMarketingConsent,
+            preparedVideoUrl: property.socialMarketingConsent.preparedVideoUrl
+              ? await this.storage.getVideoDownloadUrl(property.socialMarketingConsent.preparedVideoUrl)
+              : null,
+          }
+        : property.socialMarketingConsent,
+    })));
+    return { data: resolvedData, pagination: { page: safePage, limit: safeLimit, total, totalPages: Math.ceil(total / safeLimit) } };
   }
 
   async analytics() {
@@ -455,8 +466,14 @@ export class SocialMediaService {
       if (!consent?.approved) throw new BadRequestException('Owner marketing consent has been revoked or is missing.');
       if (!consent.preparedVideoUrl) throw new BadRequestException('No prepared reel is available. Generate and review the reel before publishing.');
       try {
-        if (post.platform === SocialPlatform.YOUTUBE) filePath = await this.storage.downloadVideo(consent.preparedVideoUrl, post.propertyId);
-        const published = await this.publishing.publish(post.platform as any, { videoUrl: consent.preparedVideoUrl, filePath, caption: post.caption || consent.preparedCaption || '', title: consent.preparedTitle || 'RentItEase property tour' });
+        let providerVideoUrl: string | undefined;
+        if (post.platform === SocialPlatform.YOUTUBE) {
+          filePath = await this.storage.downloadVideo(consent.preparedVideoUrl, post.propertyId);
+        } else {
+          // Meta fetches the video asynchronously from this temporary signed URL.
+          providerVideoUrl = await this.storage.getVideoDownloadUrl(consent.preparedVideoUrl);
+        }
+        const published = await this.publishing.publish(post.platform as any, { videoUrl: providerVideoUrl, filePath, caption: post.caption || consent.preparedCaption || '', title: consent.preparedTitle || 'RentItEase property tour' });
         const saved = await this.prisma.socialMediaPost.updateMany({ where: { id: postId, processingToken }, data: { status: SocialPostStatus.PUBLISHED, videoUrl: consent.preparedVideoUrl, externalId: published.externalId, publishedAt: new Date(), error: null, processingToken: null, processingLeaseUntil: null } });
         if (saved.count !== 1) throw new BadRequestException('Publication claim expired before completion.');
         const result = await this.prisma.socialMediaPost.findUnique({ where: { id: postId } });
