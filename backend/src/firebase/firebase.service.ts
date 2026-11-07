@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { applicationDefault, cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
 
-import { getStorage, getDownloadURL } from 'firebase-admin/storage';
+import { getStorage } from 'firebase-admin/storage';
 
 import { getAuth } from 'firebase-admin/auth';
 import { getMessaging } from 'firebase-admin/messaging';
@@ -70,7 +70,7 @@ export class FirebaseService {
           firebaseFile.save(file.buffer, {
             metadata: {
               contentType: file.mimetype,
-              cacheControl: 'public, max-age=3600',
+              cacheControl: 'private, max-age=0, no-store',
             },
           }),
           15_000,
@@ -79,7 +79,7 @@ export class FirebaseService {
       'Firebase Storage upload',
     );
 
-    const imageUrl = await this.withTimeout(getDownloadURL(firebaseFile), 15_000);
+    const imageUrl = await this.getPublicMediaDownloadUrl(fileName);
 
     return {
       publicId: fileName,
@@ -124,6 +124,25 @@ export class FirebaseService {
       'audio/mpeg': '.mp3', 'audio/wav': '.wav', 'audio/ogg': '.ogg',
     };
     return extensions[mimeType] ?? '.bin';
+  }
+
+  async getPublicMediaDownloadUrl(
+    publicId: string,
+    expiresInMs = 60 * 60 * 1000,
+  ): Promise<string> {
+    if (!/^(properties|property-videos)\/[A-Za-z0-9._-]{1,255}$/.test(publicId) || publicId.includes('..')) {
+      throw new BadRequestException('Invalid public media storage object key.');
+    }
+    const bucket = this.getStorage().bucket();
+    const [url] = await this.withTimeout(
+      bucket.file(publicId).getSignedUrl({
+        version: 'v4',
+        action: 'read',
+        expires: Date.now() + expiresInMs,
+      }),
+      15_000,
+    );
+    return url;
   }
 
   async getPrivateDownloadUrl(
