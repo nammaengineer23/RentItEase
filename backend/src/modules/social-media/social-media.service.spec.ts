@@ -97,6 +97,20 @@ describe('SocialMediaService social publishing security', () => {
     );
   });
 
+  it('returns a signed preview URL from the owner consent endpoint', async () => {
+    prisma.property.findFirst.mockResolvedValue({ id: 'property-1' });
+    prisma.socialMarketingConsent.findUnique.mockResolvedValue({
+      id: 'consent-1',
+      approved: true,
+      preparedVideoUrl: 'gcs://bucket/social-videos/property-1/reel.mp4',
+    });
+    storage.getVideoDownloadUrl.mockResolvedValue('https://signed.example/reel.mp4');
+
+    const result = await service.getOwnerConsent('property-1', 'owner-1');
+
+    expect(result.preparedVideoUrl).toBe('https://signed.example/reel.mp4');
+  });
+
   it('blocks publishing when owner consent is absent', async () => {
     prisma.socialMarketingConsent.findUnique.mockResolvedValue(null);
 
