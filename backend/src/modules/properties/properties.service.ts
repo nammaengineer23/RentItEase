@@ -943,7 +943,7 @@ export class PropertiesService {
           : 0;
 
       return {
-        ...this.serializePublicProperty(property),
+        ...await this.serializePublicProperty(property),
         averageRating,
         totalReviews: property.reviews.length,
         totalFavorites: property.favorites.length,
