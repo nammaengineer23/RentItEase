@@ -14,12 +14,14 @@ import { FilterPropertiesDto } from './dto/filter-property.dto';
 import { UpdatePropertyAmenitiesDto } from './dto/update-property-amenities.dto';
 import { NearbyPropertiesDto } from './dto/nearby-properties.dto';
 import { StorageService } from '../../storage/storage.service';
+import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 
 @Injectable()
 export class PropertiesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
+    private readonly pushNotifications: PushNotificationsService,
   ) {}
 
   private marketplaceEnabled(): boolean {
@@ -1093,6 +1095,23 @@ export class PropertiesService {
         isAvailable: false,
       },
     });
+
+    try {
+      await this.pushNotifications.sendToAdmins(
+        `property-submission:${updatedProperty.id}:${updatedProperty.updatedAt.toISOString()}`,
+        'Property approval required',
+        `\"${updatedProperty.title}\" was submitted for verification (${updatedProperty.transactionType.replace(/_/g, ' ')}).`,
+        {
+          screen: 'admin_properties',
+          propertyId: updatedProperty.id,
+          ownerId: updatedProperty.ownerId,
+          event: 'PROPERTY_SUBMITTED',
+        },
+      );
+    } catch (error) {
+      // Submission is already saved; notification delivery must not block the owner workflow.
+      console.error('Unable to queue admin property-submission notification:', error);
+    }
 
     return {
       success: true,
