@@ -53,6 +53,7 @@ class _AddMarketplaceListingPageState
   String _furnishing = 'UNFURNISHED';
   List<Map<String, dynamic>> _amenities = const [];
   final Set<String> _selectedAmenityIds = {};
+  final Set<String> _existingAmenityNames = {};
   bool _termsAccepted = false;
   bool _socialMarketingConsent = false;
   LocationModel? _selectedLocation;
@@ -158,7 +159,10 @@ class _AddMarketplaceListingPageState
       dynamic value = response.data;
       while (value is Map && value.containsKey('data')) value = value['data'];
       if (value is Map && value['amenities'] is List) value = value['amenities'];
-      if (value is List && mounted) setState(() => _amenities = value.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).where((item) => item['id'] != null).toList());
+      if (value is List && mounted) setState(() {
+        _amenities = value.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).where((item) => item['id'] != null).toList();
+        _selectedAmenityIds.addAll(_amenities.where((item) => _existingAmenityNames.contains(item['name']?.toString().toLowerCase())).map((item) => item['id'].toString()));
+      });
     } catch (_) { /* Amenities are optional; core listing creation remains available. */ }
   }
 
@@ -209,8 +213,8 @@ class _AddMarketplaceListingPageState
       _furnishing = value['furnishing']?.toString() ?? 'UNFURNISHED';
       final existingAmenities = value['amenities'];
       if (existingAmenities is List) {
-        final names = existingAmenities.map((item) => item is Map ? item['name']?.toString().toLowerCase() : item.toString().toLowerCase()).whereType<String>().toSet();
-        _selectedAmenityIds.addAll(_amenities.where((item) => names.contains(item['name']?.toString().toLowerCase())).map((item) => item['id'].toString()));
+        _existingAmenityNames.addAll(existingAmenities.map((item) => item is Map ? item['name']?.toString().toLowerCase() : item.toString().toLowerCase()).whereType<String>());
+        _selectedAmenityIds.addAll(_amenities.where((item) => _existingAmenityNames.contains(item['name']?.toString().toLowerCase())).map((item) => item['id'].toString()));
       }
       final lat = double.tryParse(value['latitude']?.toString() ?? '');
       final lng = double.tryParse(value['longitude']?.toString() ?? '');
