@@ -1,8 +1,8 @@
 import { UsersController } from './users.controller';
 
 describe('UsersController', () => {
-  it('constructs with its service dependency', () => {
-    const controller = new UsersController({} as any);
+  it('constructs without an Owner request service', () => {
+    const controller = new UsersController();
     expect(controller).toBeDefined();
   });
 });

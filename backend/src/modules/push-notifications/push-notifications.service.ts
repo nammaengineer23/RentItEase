@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { NotificationType, Prisma, UserRole } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
 import { RegisterDeviceDto } from './dto/register-device.dto';
@@ -50,6 +50,49 @@ export class PushNotificationsService {
       },
     });
     return { queued: true, deduplicated: false };
+  }
+
+  // Notify every active admin and persist both the in-app item and FCM outbox event.
+  // eventKey is stable for the business action so retries cannot create duplicate alerts.
+  async sendToAdmins(
+    eventKey: string,
+    title: string,
+    body: string,
+    data: Record<string, string>,
+  ) {
+    const admins = await this.prisma.user.findMany({
+      where: { role: UserRole.ADMIN, isActive: true, deletedAt: null },
+      select: { id: true },
+    });
+
+    for (const admin of admins) {
+      await this.prisma.$transaction(async (tx) => {
+        const notification = await tx.notification.create({
+          data: {
+            userId: admin.id,
+            title,
+            message: body,
+            type: NotificationType.GENERAL,
+            relatedId: data.relatedId,
+          },
+        });
+        await tx.notificationOutbox.create({
+          data: {
+            userId: admin.id,
+            notificationId: notification.id,
+            idempotencyKey: `admin-approval:${eventKey}:${admin.id}`,
+            title,
+            body,
+            availableAt: new Date(Date.now() + 5000),
+            data: {
+              ...data,
+              notificationId: notification.id,
+            } as Prisma.InputJsonValue,
+          },
+        });
+      });
+    }
+    return { queuedForAdmins: admins.length };
   }
 
   async unregisterDevice(userId: string, token: string) {

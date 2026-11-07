@@ -220,6 +220,9 @@ visits: {
   async updateUserRole(id: string, role: UserRole, actorId: string, context: AdminAuditContext) {
     await this.assertAdminActor(actorId);
     if (!Object.values(UserRole).includes(role)) throw new BadRequestException('Invalid user role.');
+    if (role === UserRole.OWNER) {
+      throw new BadRequestException('Owner access is granted only after an admin approves the user’s submitted property.');
+    }
     if (id === actorId) throw new BadRequestException('Admins cannot change their own role.');
 
     const result = await this.prisma.$transaction(
@@ -238,11 +241,7 @@ visits: {
           where: { id },
           data: {
             role,
-            ...(role === UserRole.OWNER
-              ? { ownerRequestStatus: 'APPROVED', ownerReviewedAt: new Date() }
-              : role === UserRole.USER
-                ? { ownerReviewedAt: null }
-                : {}),
+            ...(role === UserRole.USER ? { ownerReviewedAt: null } : {}),
           },
           select: { id: true, fullName: true, email: true, phone: true, role: true, isActive: true, createdAt: true, updatedAt: true },
         });
@@ -494,12 +493,30 @@ async getProperty(id: string) {
 
   async approveProperty(id: string, actorId: string, context: AdminAuditContext) {
     await this.assertAdminActor(actorId);
-    const property = await this.prisma.property.findUnique({ where: { id } });
-    if (!property) throw new NotFoundException('Property not found.');
-    if (property.isVerified) throw new BadRequestException('Property is already approved.');
 
     const approved = await this.prisma.$transaction(
       async (tx) => {
+        const property = await tx.property.findUnique({ where: { id } });
+        if (!property) throw new NotFoundException('Property not found.');
+        if (property.isVerified) throw new BadRequestException('Property is already approved.');
+        if (property.lifecycleStatus !== PropertyLifecycleStatus.SUBMITTED) {
+          throw new BadRequestException('Only a submitted property can be approved.');
+        }
+
+        const ownerBefore = await tx.user.findUnique({
+          where: { id: property.ownerId },
+          select: {
+            id: true,
+            role: true,
+            ownerRequestStatus: true,
+            isActive: true,
+            deletedAt: true,
+          },
+        });
+        if (!ownerBefore || !ownerBefore.isActive || ownerBefore.deletedAt) {
+          throw new BadRequestException('The property owner account is not active.');
+        }
+
         const updated = await tx.property.update({
           where: { id },
           data: {
@@ -508,36 +525,44 @@ async getProperty(id: string) {
             lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
           },
         });
-        const ownerBefore = await tx.user.findUnique({
-          where: { id: property.ownerId },
-          select: { id: true, role: true, ownerRequestStatus: true },
-        });
-        const ownerAfter = await tx.user.update({
-          where: { id: property.ownerId },
-          data: {
-            role: UserRole.OWNER,
-            ownerRequestStatus: 'APPROVED',
-            ownerReviewedAt: new Date(),
-          },
-          select: { id: true, role: true, ownerRequestStatus: true },
-        });
+
+        // Preserve administrator accounts. Tenant accounts gain Owner capability
+        // only in this same transaction that approves their submitted property.
+        if (ownerBefore.role !== UserRole.ADMIN) {
+          const ownerAfter = await tx.user.update({
+            where: { id: property.ownerId },
+            data: {
+              role: UserRole.OWNER,
+              ownerRequestStatus: 'APPROVED',
+              ownerReviewedAt: new Date(),
+            },
+            select: { id: true, role: true, ownerRequestStatus: true },
+          });
+
+          if (
+            ownerBefore.role !== ownerAfter.role ||
+            ownerBefore.ownerRequestStatus !== ownerAfter.ownerRequestStatus
+          ) {
+            await this.audit.recordTx(
+              tx,
+              context,
+              'USER_ROLE_PROMOTION',
+              'USER',
+              property.ownerId,
+              ownerBefore,
+              ownerAfter,
+            );
+          }
+        }
+
         await this.audit.recordTx(
           tx,
           context,
           'PROPERTY_APPROVE',
           'PROPERTY',
           id,
-          { isVerified: property.isVerified, isAvailable: property.isAvailable },
-          { isVerified: updated.isVerified, isAvailable: updated.isAvailable },
-        );
-        await this.audit.recordTx(
-          tx,
-          context,
-          'USER_ROLE_PROMOTION',
-          'USER',
-          property.ownerId,
-          ownerBefore,
-          ownerAfter,
+          { isVerified: property.isVerified, isAvailable: property.isAvailable, lifecycleStatus: property.lifecycleStatus },
+          { isVerified: updated.isVerified, isAvailable: updated.isAvailable, lifecycleStatus: updated.lifecycleStatus },
         );
         return updated;
       },

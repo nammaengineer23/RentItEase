@@ -22,15 +22,15 @@ export class PropertiesController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.USER, UserRole.OWNER)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create Property' })
+  @ApiOperation({ summary: 'Create a property draft as a tenant or owner' })
   create(@Body() dto: CreatePropertyDto, @Request() req: any) { return this.propertiesService.create(dto, req.user); }
 
   @Post('ai-suggestion')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(JwtAuthGuard, AiSuggestionRateLimitGuard, RolesGuard)
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.USER, UserRole.OWNER)
   @ApiBearerAuth()
   suggestListing(@Body() dto: AiSuggestionDto) {
     const payloadBytes = Buffer.byteLength(JSON.stringify(dto), 'utf8');
@@ -47,9 +47,9 @@ export class PropertiesController {
 
   @Post(':id/submit')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.USER, UserRole.OWNER)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Submit property for admin verification' })
+  @ApiOperation({ summary: 'Submit property for admin verification; Owner access is granted only after approval' })
   submit(@Param('id') id: string, @Request() req: any) {
     return this.propertiesService.submit(id, req.user);
   }

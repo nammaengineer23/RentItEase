@@ -16,6 +16,7 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
   const membership = {
     findFirst: jest.fn(),
   };
+  const pushNotifications = { sendToAdmins: jest.fn() };
   const prisma = {
     property,
     membership,
@@ -25,7 +26,7 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new PropertiesService(prisma, {} as any);
+    service = new PropertiesService(prisma, {} as any, pushNotifications as any);
   });
 
   it('rejects non-rental listing creation while the marketplace flag is off', async () => {
