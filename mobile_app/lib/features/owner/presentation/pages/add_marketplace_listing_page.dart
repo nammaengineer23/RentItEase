@@ -8,6 +8,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:video_compress/video_compress.dart';
 
 import '../../../../core/network/dio_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../maps/models/location_model.dart';
+import '../../../maps/presentation/pages/map_picker_page.dart';
+import '../../../maps/providers/maps_provider.dart';
 import '../../data/api/property_image_api.dart';
 import '../../data/api/property_video_api.dart';
 import '../widgets/sectioned_property_image_picker.dart';
@@ -37,13 +41,17 @@ class _AddMarketplaceListingPageState
   final _rent = TextEditingController();
   final _leaseMonths = TextEditingController(text: '12');
   final _landArea = TextEditingController();
-  final _landUnit = TextEditingController(text: 'sq_ft');
+  String _landUnit = 'sq_ft';
   final _bedrooms = TextEditingController(text: '0');
   final _bathrooms = TextEditingController(text: '0');
   late String _category;
   late String _propertyType;
   bool _negotiable = false;
   bool _roadAccess = false;
+  bool _termsAccepted = false;
+  bool _socialMarketingConsent = false;
+  LocationModel? _selectedLocation;
+  static const _areaUnits = <String, String>{'sq_ft': 'Sq. ft.', 'sq_yards': 'Sq. yards', 'sq_meters': 'Sq. metres', 'acres': 'Acres', 'cents': 'Cents'};
   bool _saving = false;
   bool _videoCompressing = false;
   double _videoCompressionProgress = 0;
@@ -135,7 +143,7 @@ class _AddMarketplaceListingPageState
     }
   }
 
-  dynamic _unwrap(dynamic value) {
+  void _applyLocation(LocationModel location) {\n    setState(() { _selectedLocation = location; _address.text = location.address; _locality.text = location.locality; _city.text = location.city; _state.text = location.state; _pincode.text = location.postalCode; });\n  }\n\n  Future<void> _loadCurrentLocation() async {\n    final maps = ref.read(mapsProvider);\n    await maps.fetchCurrentLocation();\n    if (mounted && maps.selectedLocation != null) _applyLocation(maps.selectedLocation!);\n  }\n\n  Future<void> _pickLocation() async {\n    final location = await Navigator.of(context).push<LocationModel>(MaterialPageRoute(builder: (_) => const MapPickerPage()));\n    if (location != null && mounted) _applyLocation(location);\n  }\n\n  dynamic _unwrap(dynamic value) {
     while (value is Map && value.containsKey('data')) value = value['data'];
     if (value is Map && value['property'] is Map) value = value['property'];
     return value;
@@ -161,11 +169,11 @@ class _AddMarketplaceListingPageState
       _rent.text = value['price']?.toString() ?? '';
       _leaseMonths.text = value['leaseTermMonths']?.toString() ?? '12';
       _landArea.text = value['landArea']?.toString() ?? value['area']?.toString() ?? '';
-      _landUnit.text = value['landAreaUnit']?.toString() ?? 'sq_ft';
+      _landUnit = _areaUnits.containsKey(value['landAreaUnit']?.toString()) ? value['landAreaUnit'].toString() : 'sq_ft';
       _bedrooms.text = value['bedrooms']?.toString() ?? '0';
       _bathrooms.text = value['bathrooms']?.toString() ?? '0';
       _negotiable = value['priceNegotiable'] == true;
-      _roadAccess = value['roadAccess'] == true;
+      _roadAccess = value['roadAccess'] == true;\n      final lat = double.tryParse(value['latitude']?.toString() ?? '');\n      final lng = double.tryParse(value['longitude']?.toString() ?? '');\n      if (lat != null && lng != null) {\n        _selectedLocation = LocationModel(latitude: lat, longitude: lng, address: _address.text, locality: _locality.text, city: _city.text, state: _state.text, country: 'India', postalCode: _pincode.text);\n      }
     } catch (_) {
       if (mounted) setState(() => _loadError = 'Could not load this listing for editing.');
     } finally {
@@ -177,7 +185,7 @@ class _AddMarketplaceListingPageState
   void dispose() {
     for (final controller in [
       _title, _description, _address, _locality, _city, _state, _pincode,
-      _askingPrice, _rent, _leaseMonths, _landArea, _landUnit, _bedrooms, _bathrooms,
+      _askingPrice, _rent, _leaseMonths, _landArea, _bedrooms, _bathrooms,
     ]) {
       controller.dispose();
     }
@@ -194,7 +202,7 @@ class _AddMarketplaceListingPageState
 
   Future<void> _submit() async {
     if (_saving) return;
-    if (!_formKey.currentState!.validate()) return;
+    if (!_termsAccepted) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please accept the Terms & Conditions.'))); return; }\n    if (!_formKey.currentState!.validate()) return;\n    if (_selectedLocation == null) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select the property location on the map before submitting.'))); return; }
     if (['LEASE', 'SITE_LEASE'].contains(_category) && (int.tryParse(_leaseMonths.text) ?? 0) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Enter a valid lease duration in months.')),
@@ -223,10 +231,10 @@ class _AddMarketplaceListingPageState
         'city': _city.text.trim(),
         'state': _state.text.trim(),
         'country': 'India',
-        'pincode': _pincode.text.trim(),
+        'pincode': _pincode.text.trim(),\n        'latitude': _selectedLocation!.latitude,\n        'longitude': _selectedLocation!.longitude,
         'bedrooms': int.tryParse(_bedrooms.text) ?? 0,
         'bathrooms': int.tryParse(_bathrooms.text) ?? 0,
-        'area': double.tryParse(_landArea.text) ?? 0,
+        'area': double.parse(_landArea.text.trim()),\n        'landArea': double.parse(_landArea.text.trim()),\n        'landAreaUnit': _landUnit,
         'propertyType': _propertyType,
         'furnishing': 'UNFURNISHED',
         'parking': false,
@@ -258,7 +266,7 @@ class _AddMarketplaceListingPageState
         await ref.read(dioProvider).patch('/properties/${widget.propertyId}', data: payload);
       }
 
-      final mediaWarnings = <String>[];
+      final mediaWarnings = <String>[];\n      if (_socialMarketingConsent && targetPropertyId != null) {\n        try { await ref.read(dioProvider).post('/social-media/owner/consent', data: {'propertyId': targetPropertyId, 'approved': true, 'consentVersion': '1.0'}); } catch (_) { mediaWarnings.add('promotional consent'); }\n      }
       if (_selectedImagesBySection.isNotEmpty) {
         if (targetPropertyId == null || targetPropertyId.isEmpty) {
           mediaWarnings.add('photos (listing ID was not returned)');
@@ -408,7 +416,7 @@ class _AddMarketplaceListingPageState
                     TextFormField(
                       controller: _landArea,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(labelText: 'Site area', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: _propertyType == 'LAND' ? 'Site area' : 'Built-up area', border: const OutlineInputBorder()),
                       validator: _positiveNumber,
                     ),
                     const SizedBox(height: 12),
