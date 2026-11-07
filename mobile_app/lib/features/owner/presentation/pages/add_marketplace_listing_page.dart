@@ -48,6 +48,11 @@ class _AddMarketplaceListingPageState
   late String _propertyType;
   bool _negotiable = false;
   bool _roadAccess = false;
+  bool _parking = false;
+  bool _petFriendly = false;
+  String _furnishing = 'UNFURNISHED';
+  List<Map<String, dynamic>> _amenities = const [];
+  final Set<String> _selectedAmenityIds = {};
   bool _termsAccepted = false;
   bool _socialMarketingConsent = false;
   LocationModel? _selectedLocation;
@@ -147,6 +152,16 @@ class _AddMarketplaceListingPageState
     setState(() { _selectedLocation = location; _address.text = location.address; _locality.text = location.locality; _city.text = location.city; _state.text = location.state; _pincode.text = location.postalCode; });
   }
 
+  Future<void> _loadAmenities() async {
+    try {
+      final response = await ref.read(dioProvider).get('/amenities');
+      dynamic value = response.data;
+      while (value is Map && value.containsKey('data')) value = value['data'];
+      if (value is Map && value['amenities'] is List) value = value['amenities'];
+      if (value is List && mounted) setState(() => _amenities = value.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).where((item) => item['id'] != null).toList());
+    } catch (_) { /* Amenities are optional; core listing creation remains available. */ }
+  }
+
   Future<void> _loadCurrentLocation() async {
     final maps = ref.read(mapsProvider);
     await maps.fetchCurrentLocation();
@@ -189,6 +204,14 @@ class _AddMarketplaceListingPageState
       _bathrooms.text = value['bathrooms']?.toString() ?? '0';
       _negotiable = value['priceNegotiable'] == true;
       _roadAccess = value['roadAccess'] == true;
+      _parking = value['parking'] == true;
+      _petFriendly = value['petFriendly'] == true;
+      _furnishing = value['furnishing']?.toString() ?? 'UNFURNISHED';
+      final existingAmenities = value['amenities'];
+      if (existingAmenities is List) {
+        final names = existingAmenities.map((item) => item is Map ? item['name']?.toString().toLowerCase() : item.toString().toLowerCase()).whereType<String>().toSet();
+        _selectedAmenityIds.addAll(_amenities.where((item) => names.contains(item['name']?.toString().toLowerCase())).map((item) => item['id'].toString()));
+      }
       final lat = double.tryParse(value['latitude']?.toString() ?? '');
       final lng = double.tryParse(value['longitude']?.toString() ?? '');
       if (lat != null && lng != null) {
@@ -261,9 +284,10 @@ class _AddMarketplaceListingPageState
         'landArea': double.parse(_landArea.text.trim()),
         'landAreaUnit': _landUnit,
         'propertyType': _propertyType,
-        'furnishing': 'UNFURNISHED',
-        'parking': false,
-        'petFriendly': false,
+        'furnishing': _furnishing,
+        'parking': _parking,
+        'petFriendly': _petFriendly,
+        'amenityIds': _selectedAmenityIds.toList(),
         'securityDeposit': 0,
         'transactionType': _category,
         if (['SALE', 'SITE_SALE'].contains(_category))
@@ -421,6 +445,34 @@ class _AddMarketplaceListingPageState
                       value: _negotiable,
                       onChanged: _saving ? null : (value) => setState(() => _negotiable = value),
                     ),
+                  ],
+                  if (_propertyType == 'HOUSE') ...[
+                    const SizedBox(height: 12),
+                    Row(children: [
+                      Expanded(child: TextFormField(controller: _bedrooms, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Bedrooms', border: OutlineInputBorder()), validator: (value) { final n = int.tryParse(value?.trim() ?? ''); return n == null || n < 0 ? 'Enter valid bedrooms' : null; })),
+                      const SizedBox(width: 12),
+                      Expanded(child: TextFormField(controller: _bathrooms, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Bathrooms', border: OutlineInputBorder()), validator: (value) { final n = int.tryParse(value?.trim() ?? ''); return n == null || n < 0 ? 'Enter valid bathrooms' : null; })),
+                    ]),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: _furnishing,
+                      decoration: const InputDecoration(labelText: 'Furnishing', border: OutlineInputBorder()),
+                      items: const [
+                        DropdownMenuItem(value: 'UNFURNISHED', child: Text('Unfurnished')),
+                        DropdownMenuItem(value: 'SEMI_FURNISHED', child: Text('Semi furnished')),
+                        DropdownMenuItem(value: 'FULLY_FURNISHED', child: Text('Fully furnished')),
+                      ],
+                      onChanged: _saving ? null : (value) { if (value != null) setState(() => _furnishing = value); },
+                    ),
+                    SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Parking available'), value: _parking, onChanged: _saving ? null : (value) => setState(() => _parking = value)),
+                    SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Pet friendly'), value: _petFriendly, onChanged: _saving ? null : (value) => setState(() => _petFriendly = value)),
+                    if (_amenities.isNotEmpty) ...[
+                      const Text('Amenities', style: TextStyle(fontWeight: FontWeight.w600)),
+                      ..._amenities.map((item) {
+                        final id = item['id'].toString();
+                        return CheckboxListTile(contentPadding: EdgeInsets.zero, value: _selectedAmenityIds.contains(id), title: Text(item['name']?.toString() ?? 'Amenity'), onChanged: _saving ? null : (checked) => setState(() { if (checked == true) { _selectedAmenityIds.add(id); } else { _selectedAmenityIds.remove(id); } }));
+                      }),
+                    ],
                   ],
                   if (['LEASE', 'SITE_LEASE'].contains(_category))
                     TextFormField(
