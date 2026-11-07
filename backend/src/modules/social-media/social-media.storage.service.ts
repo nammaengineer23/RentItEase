@@ -75,7 +75,20 @@ export class SocialMediaStorageService {
   }
 
   async downloadVideo(videoUrl: string, propertyId: string): Promise<string> {
-    const { buffer } = await this.fetchRemoteVideo(videoUrl);
+    let buffer: Buffer;
+    this.ensureFirebase();
+    const bucket = getStorage().bucket();
+    const prefix = 'gcs://' + bucket.name + '/';
+    if (videoUrl.startsWith(prefix)) {
+      const objectPath = videoUrl.slice(prefix.length);
+      if (!/^social-videos\/[A-Za-z0-9_-]{1,128}\/[A-Za-z0-9._-]+$/.test(objectPath) || objectPath.includes('..')) {
+        throw new Error('Invalid social video object reference.');
+      }
+      [buffer] = await bucket.file(objectPath).download();
+      if (buffer.length > MAX_VIDEO_BYTES) throw new Error('Stored video exceeds the 100 MB limit.');
+    } else {
+      ({ buffer } = await this.fetchRemoteVideo(videoUrl));
+    }
     const filePath = join(tmpdir(), 'rentitease-social-' + propertyId + '-' + Date.now() + '.mp4');
     await import('node:fs/promises').then((fs) => fs.writeFile(filePath, buffer));
     return filePath;
