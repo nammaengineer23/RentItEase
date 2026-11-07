@@ -53,6 +53,7 @@ abstract class OwnerRepository {
   Future<void> updateProperty(
     OwnerPropertyEntity property, {
     required double area,
+    String areaUnit = 'sq_ft',
     required int bathrooms,
     required int bedrooms,
     int balconies = 0,
