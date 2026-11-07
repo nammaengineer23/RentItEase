@@ -64,6 +64,39 @@ describe('SocialMediaService social publishing security', () => {
     );
   });
 
+  it('gives Meta a fresh signed URL while keeping the stable GCS reference in the post record', async () => {
+    const stableRef = 'gcs://bucket/social-videos/property-1/reel.mp4';
+    prisma.socialMediaPost.updateMany
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 1 });
+    prisma.socialMediaPost.findUnique
+      .mockResolvedValueOnce({
+        id: 'post-1', propertyId: 'property-1', platform: 'INSTAGRAM',
+        status: 'PENDING', attemptCount: 0, maxAttempts: 3,
+      })
+      .mockResolvedValueOnce({ id: 'post-1', videoUrl: stableRef, status: 'PUBLISHED' });
+    prisma.socialMarketingConsent.findUnique.mockResolvedValue({
+      approved: true,
+      preparedVideoUrl: stableRef,
+      preparedCaption: 'caption',
+      preparedTitle: 'title',
+    });
+    storage.getVideoDownloadUrl.mockResolvedValue('https://signed.example/reel.mp4');
+    publishing.publish.mockResolvedValue({ externalId: 'meta-123' });
+    prisma.socialMediaAuditEvent.create.mockResolvedValue({});
+
+    await (service as any).publishPost('post-1', 'admin-1');
+
+    expect(publishing.publish).toHaveBeenCalledWith('INSTAGRAM', expect.objectContaining({
+      videoUrl: 'https://signed.example/reel.mp4',
+    }));
+    expect(prisma.socialMediaPost.updateMany).toHaveBeenNthCalledWith(2,
+      expect.objectContaining({
+        data: expect.objectContaining({ videoUrl: stableRef, status: 'PUBLISHED' }),
+      }),
+    );
+  });
+
   it('blocks publishing when owner consent is absent', async () => {
     prisma.socialMarketingConsent.findUnique.mockResolvedValue(null);
 
