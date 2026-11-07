@@ -241,11 +241,7 @@ visits: {
           where: { id },
           data: {
             role,
-            ...(role === UserRole.OWNER
-              ? { ownerRequestStatus: 'APPROVED', ownerReviewedAt: new Date() }
-              : role === UserRole.USER
-                ? { ownerReviewedAt: null }
-                : {}),
+            ...(role === UserRole.USER ? { ownerReviewedAt: null } : {}),
           },
           select: { id: true, fullName: true, email: true, phone: true, role: true, isActive: true, createdAt: true, updatedAt: true },
         });
