@@ -447,6 +447,14 @@ export class SocialMediaService {
     return post;
   }
 
+  private async withResolvedPostVideoUrl(post: any) {
+    if (!post?.videoUrl) return post;
+    return {
+      ...post,
+      videoUrl: await this.storage.getVideoDownloadUrl(post.videoUrl),
+    };
+  }
+
   private async publishPost(postId: string, actorId: string) {
     const now = new Date();
     const processingToken = randomUUID();
@@ -460,7 +468,7 @@ export class SocialMediaService {
     });
     if (claimed.count !== 1) {
       const current = await this.prisma.socialMediaPost.findUnique({ where: { id: postId } });
-      if (current?.status === SocialPostStatus.PUBLISHED) return current;
+      if (current?.status === SocialPostStatus.PUBLISHED) return this.withResolvedPostVideoUrl(current);
       throw new BadRequestException('Social post is already being processed or is not eligible for publishing.');
     }
     const post = await this.prisma.socialMediaPost.findUnique({ where: { id: postId } });
@@ -483,7 +491,7 @@ export class SocialMediaService {
         if (saved.count !== 1) throw new BadRequestException('Publication claim expired before completion.');
         const result = await this.prisma.socialMediaPost.findUnique({ where: { id: postId } });
         await this.audit(post.propertyId, actorId, 'POST_PUBLISHED', postId, { platform: post.platform, externalId: published.externalId });
-        return result;
+        return this.withResolvedPostVideoUrl(result);
       } finally { await this.storage.cleanupTempFile(filePath); }
     } catch (error) {
       const raw = error instanceof Error ? error.message : 'Social provider failure.';
