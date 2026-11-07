@@ -257,10 +257,16 @@ export class PropertyImagesService {
         },
       ],
     });
+    const imagesWithFreshUrls = await Promise.all(images.map(async (image) => ({
+      ...image,
+      imageUrl: image.publicId?.startsWith('properties/')
+        ? await this.storageService.getPublicMediaDownloadUrl(image.publicId)
+        : image.imageUrl,
+    })));
 
     return {
       success: true,
-      images,
+      images: imagesWithFreshUrls,
     };
   }
 
