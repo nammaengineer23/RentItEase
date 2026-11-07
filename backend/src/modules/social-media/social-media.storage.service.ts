@@ -99,9 +99,8 @@ export class SocialMediaStorageService {
       try {
         const destination = 'social-videos/' + propertyId + '/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.mp4';
         const file = bucket.file(destination);
-        await file.save(buffer, { contentType, metadata: { cacheControl: 'public,max-age=3600' } });
-        await file.makePublic();
-        return 'https://storage.googleapis.com/' + bucket.name + '/' + encodeURIComponent(destination).replace(/%2F/g, '/');
+        await file.save(buffer, { contentType, metadata: { cacheControl: 'private,no-store,max-age=0' } });
+        return 'gcs://' + bucket.name + '/' + destination;
       } catch {
         if (attempt === 3) throw new Error('Video storage operation failed.');
         await new Promise((resolve) => setTimeout(resolve, attempt * 500));
@@ -110,15 +109,37 @@ export class SocialMediaStorageService {
     throw new Error('Video storage operation failed.');
   }
 
+  async getVideoDownloadUrl(videoRef: string, expiresInMs = 24 * 60 * 60 * 1000): Promise<string> {
+    this.ensureFirebase();
+    const bucket = getStorage().bucket();
+    const prefix = 'gcs://' + bucket.name + '/';
+    if (videoRef.startsWith(prefix)) {
+      const objectPath = videoRef.slice(prefix.length);
+      if (!/^social-videos\/[A-Za-z0-9_-]{1,128}\/[A-Za-z0-9._-]+$/.test(objectPath) || objectPath.includes('..')) {
+        throw new Error('Invalid social video object reference.');
+      }
+      const [url] = await bucket.file(objectPath).getSignedUrl({
+        version: 'v4',
+        action: 'read',
+        expires: Date.now() + expiresInMs,
+      });
+      return url;
+    }
+    // Preserve already-public legacy URLs while old prepared reels are retired.
+    const legacyPath = this.storageObjectPathFromUrl(videoRef, bucket.name);
+    if (legacyPath?.startsWith('social-videos/')) return videoRef;
+    throw new Error('Unsupported prepared video reference.');
+  }
+
   async deleteStoredVideo(videoUrl: string | null | undefined) {
     if (!videoUrl) return;
     try {
-      const bucketName = getStorage().bucket().name;
-      const prefix = 'https://storage.googleapis.com/' + bucketName + '/';
-      if (!videoUrl.startsWith(prefix)) return;
-      const objectPath = decodeURIComponent(videoUrl.slice(prefix.length));
-      if (!objectPath.startsWith('social-videos/')) return;
-      await getStorage().bucket().file(objectPath).delete({ ignoreNotFound: true });
+      this.ensureFirebase();
+      const bucket = getStorage().bucket();
+      const objectPath = this.storageObjectPathFromUrl(videoUrl, bucket.name) ??
+        (videoUrl.startsWith('gcs://' + bucket.name + '/') ? videoUrl.slice(('gcs://' + bucket.name + '/').length) : null);
+      if (!objectPath?.startsWith('social-videos/') || objectPath.includes('..')) return;
+      await bucket.file(objectPath).delete({ ignoreNotFound: true });
     } catch {
       // Cleanup is best-effort and must never block a successful replacement.
     }
@@ -127,6 +148,10 @@ export class SocialMediaStorageService {
   private storageObjectPathFromUrl(raw: string | null | undefined, bucketName: string): string | null {
     if (!raw) return null;
     try {
+      if (raw.startsWith('gcs://' + bucketName + '/')) {
+        const objectPath = raw.slice(('gcs://' + bucketName + '/').length);
+        return objectPath.includes('..') ? null : objectPath;
+      }
       const url = new URL(raw);
       const host = url.hostname.toLowerCase();
       if (host === 'storage.googleapis.com') {
