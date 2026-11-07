@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app_router.dart';
 import 'app/app_theme.dart';
@@ -28,11 +29,15 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
   bool _resumeRefreshInProgress = false;
   int _webSurfaceGeneration = 0;
   VoidCallback? _removeWebVisibilityListener;
+  bool _publicDarkMode = false;
+
+  static const _publicThemePreferenceKey = 'rentitease_public_dark_mode';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    unawaited(_loadPublicThemePreference());
     Future.microtask(_restoreSessionAndRoute);
     if (kIsWeb) {
       _removeWebVisibilityListener = listenForWebVisibilityChanges(
@@ -40,6 +45,28 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
         onVisible: () => unawaited(_refreshAfterResume()),
       );
     }
+  }
+
+  Future<void> _loadPublicThemePreference() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() => _publicDarkMode = preferences.getBool(_publicThemePreferenceKey) ?? false);
+  }
+
+  Future<void> _toggleTheme({required bool isLoggedIn, required bool currentDarkMode}) async {
+    if (isLoggedIn) {
+      try {
+        await ref.read(settingsProvider.future);
+        await ref.read(settingsProvider.notifier).updateSettings(darkMode: !currentDarkMode);
+      } catch (_) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not save theme preference. Please try again.')));
+      }
+      return;
+    }
+    final next = !_publicDarkMode;
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(_publicThemePreferenceKey, next);
+    if (mounted) setState(() => _publicDarkMode = next);
   }
 
   Future<void> _restoreSessionAndRoute() async {
@@ -151,7 +178,7 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
     final userSettings = auth.isLoggedIn
         ? ref.watch(settingsProvider).valueOrNull
         : null;
-    final darkMode = userSettings?.darkMode ?? false;
+    final darkMode = auth.isLoggedIn ? (userSettings?.darkMode ?? false) : _publicDarkMode;
     final language = userSettings?.language ?? 'en';
 
     return MaterialApp.router(
@@ -171,6 +198,27 @@ class _RentItEaseAppState extends ConsumerState<RentItEaseApp>
         GlobalCupertinoLocalizations.delegate,
       ],
       routerConfig: AppRouter.router,
+      builder: (context, child) => Stack(
+        children: [
+          child ?? const SizedBox.shrink(),
+          Positioned(
+            top: 4,
+            right: 8,
+            child: SafeArea(
+              child: Material(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                shape: const CircleBorder(),
+                elevation: 2,
+                child: IconButton(
+                  tooltip: darkMode ? 'Switch to light mode' : 'Switch to dark mode',
+                  onPressed: () => _toggleTheme(isLoggedIn: auth.isLoggedIn, currentDarkMode: darkMode),
+                  icon: Icon(darkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
