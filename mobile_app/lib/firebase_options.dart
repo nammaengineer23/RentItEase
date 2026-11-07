@@ -4,48 +4,24 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
-/// Default [FirebaseOptions] for use with your Firebase apps.
-///
-/// Example:
-/// ```dart
-/// import 'firebase_options.dart';
-/// // ...
-/// await Firebase.initializeApp(
-///   options: DefaultFirebaseOptions.currentPlatform,
-/// );
-/// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
-    if (kIsWeb) {
-      return web;
-    }
+    if (kIsWeb) return web;
     switch (defaultTargetPlatform) {
-      case TargetPlatform.android:
-        return android;
-      case TargetPlatform.iOS:
-        return ios;
+      case TargetPlatform.android: return android;
+      case TargetPlatform.iOS: return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        throw UnsupportedError('Firebase options are not configured for macOS.');
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        throw UnsupportedError('Firebase options are not configured for Windows.');
       case TargetPlatform.linux:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        throw UnsupportedError('Firebase options are not configured for Linux.');
       default:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions are not supported for this platform.',
-        );
+        throw UnsupportedError('Firebase options are not supported for this platform.');
     }
   }
 
+  // Production web configuration. Keep unchanged for production builds.
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyB86O34pIA5mjp1_qPR7PTQVWpCRRpxffQ',
     appId: '1:276976121047:web:0407eed33ae718e2152c92',
@@ -54,6 +30,17 @@ class DefaultFirebaseOptions {
     authDomain: 'rentitease-65e49.firebaseapp.com',
     storageBucket: 'rentitease-65e49.firebasestorage.app',
     measurementId: 'G-QSDWLB9JX8',
+  );
+
+  // Isolated Firebase Web app for staging Hosting and authentication.
+  static const FirebaseOptions stagingWeb = FirebaseOptions(
+    apiKey: 'AIzaSyDIYIqNZh_fcRyPUdzd3xqbn2xoW3VPqcs',
+    appId: '1:722173159384:web:f1ebbc027f7318b49eb4ad',
+    messagingSenderId: '722173159384',
+    projectId: 'rentitease-staging',
+    authDomain: 'rentitease-staging.firebaseapp.com',
+    storageBucket: 'rentitease-staging.firebasestorage.app',
+    measurementId: 'G-0VE8GK49BG',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
