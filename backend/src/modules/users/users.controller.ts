@@ -1,9 +1,6 @@
 import {
   Controller,
   Get,
-  Patch,
-  Param,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -24,46 +21,6 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  private auditContext(request: any, reason?: string) {
-    return {
-      adminId: request.user.id,
-      ipAddress: request.ip ?? request.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ?? null,
-      device: request.headers?.['user-agent'] ?? null,
-      reason: reason?.trim() || null,
-    };
-  }
-
-  @Patch('request-owner')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Request admin approval to become an owner' })
-  requestOwner(@Req() request: { user: { id: string } }) {
-    return this.usersService.requestOwnerRole(request.user.id);
-  }
-
-  @Get('owner-requests')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
-  getOwnerRequests() {
-    return this.usersService.getOwnerRequests();
-  }
-
-  @Patch(':id/owner-request/approve')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
-  approveOwner(@Param('id') id: string, @Req() request: any) {
-    return this.usersService.reviewOwnerRequest(id, true, this.auditContext(request, 'Owner access approved'));
-  }
-
-  @Patch(':id/owner-request/reject')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
-  rejectOwner(@Param('id') id: string, @Req() request: any) {
-    return this.usersService.reviewOwnerRequest(id, false, this.auditContext(request, 'Owner access rejected'));
-  }
   @Get('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
