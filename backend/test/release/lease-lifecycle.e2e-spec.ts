@@ -446,4 +446,98 @@ describe('Release E2E • Lease Lifecycle', () => {
 
     console.log(`Second completion correctly rejected with HTTP ${res.status}`);
   });
+
+  // ============================================================
+  // 17. TENANT SUBMISSION → ADMIN APPROVAL → OWNER CAPABILITY
+  // This runs last in the isolated workflow because the tenant account
+  // is temporarily promoted, then restored for the next clean run.
+  // ============================================================
+
+  it('17. tenant remains USER while pending and becomes OWNER only after admin approval', async () => {
+    const tenantEmail = process.env.E2E_TENANT_EMAIL!;
+    const tenantPassword = process.env.E2E_TENANT_PASSWORD!;
+    const tenant = await login(tenantEmail, tenantPassword);
+    expect(tenant.data?.user?.role ?? tenant.body?.user?.role).toBe('USER');
+
+    let submittedPropertyId = '';
+    let lifecycleError: unknown;
+
+    try {
+      const created = await request(apiUrl())
+        .post('/properties')
+        .set(auth(tenant.token))
+        .send({
+          title: `[E2E:${process.env.E2E_RUN_ID ?? Date.now()}] Tenant approval lifecycle`,
+          description: 'Isolated E2E tenant property submission and approval.',
+          price: 25000,
+          address: '123 Staging Test Road',
+          locality: 'HSR Layout',
+          city: 'Bangalore',
+          state: 'Karnataka',
+          country: 'India',
+          pincode: '560102',
+          bedrooms: 2,
+          bathrooms: 2,
+          area: 1200,
+          propertyType: 'APARTMENT',
+          furnishing: 'SEMI_FURNISHED',
+          parking: true,
+          petFriendly: true,
+          securityDeposit: 50000,
+        });
+      statusOk(created);
+      const property = extractData(created.body)?.property ?? extractData(created.body);
+      submittedPropertyId = property?.id ?? '';
+      expect(submittedPropertyId).toBeTruthy();
+      expect(property?.lifecycleStatus).toBe('DRAFT');
+      expect(property?.isVerified).toBe(false);
+
+      const submit = await request(apiUrl())
+        .post(`/properties/${submittedPropertyId}/submit`)
+        .set(auth(tenant.token));
+      statusOk(submit);
+      const submitted = extractData(submit.body)?.property ?? extractData(submit.body);
+      expect(submitted?.lifecycleStatus).toBe('SUBMITTED');
+      expect(submitted?.isVerified).toBe(false);
+      expect(submitted?.isAvailable).toBe(false);
+
+      const pendingLogin = await login(tenantEmail, tenantPassword);
+      expect(pendingLogin.data?.user?.role ?? pendingLogin.body?.user?.role).toBe('USER');
+
+      const approval = await request(apiUrl())
+        .patch(`/admin/properties/${submittedPropertyId}/approve`)
+        .set(auth(adminToken));
+      statusOk(approval);
+      const approved = extractData(approval.body);
+      expect(approved?.lifecycleStatus).toBe('PUBLISHED');
+      expect(approved?.isVerified).toBe(true);
+      expect(approved?.isAvailable).toBe(true);
+
+      const approvedLogin = await login(tenantEmail, tenantPassword);
+      expect(approvedLogin.data?.user?.role ?? approvedLogin.body?.user?.role).toBe('OWNER');
+    } catch (error) {
+      lifecycleError = error;
+      throw error;
+    } finally {
+      // Restore the dedicated tenant fixture so the seed guard passes on the
+      // next isolated run. Never leave a seeded account promoted by test data.
+      const restore = await request(apiUrl())
+        .patch(`/admin/users/${(await login(tenantEmail, tenantPassword)).data?.user?.id ?? (await login(tenantEmail, tenantPassword)).body?.user?.id}/role`)
+        .set(auth(adminToken))
+        .send({ role: 'USER', reason: 'Restore isolated E2E tenant fixture after approval lifecycle test' });
+      if (![200, 201].includes(restore.status)) {
+        throw new Error(`Failed to restore isolated E2E tenant role: HTTP ${restore.status} ${JSON.stringify(restore.body)}`);
+      }
+
+      if (submittedPropertyId) {
+        const cleanup = await request(apiUrl())
+          .delete(`/admin/properties/${submittedPropertyId}`)
+          .set(auth(adminToken));
+        if (![200, 201, 204, 404].includes(cleanup.status)) {
+          throw new Error(`Failed to clean up tenant lifecycle property: HTTP ${cleanup.status} ${JSON.stringify(cleanup.body)}`);
+        }
+      }
+      if (lifecycleError) console.error('Tenant approval lifecycle test failed; fixture restoration was attempted.');
+    }
+  });
 });
