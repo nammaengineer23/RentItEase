@@ -66,7 +66,29 @@
       window.addEventListener('error',()=>{const message=document.getElementById('app-loading-message');const retry=document.getElementById('app-loading-retry');if(message)message.textContent='RentItEase could not finish loading. Please try again.';if(retry){retry.hidden=false;retry.onclick=()=>window.location.reload();}},{once:true});
     })();
   </script>
-  <!-- Google Maps JS is intentionally not loaded here. The Flutter Google Maps web plugin loads the Maps API when a map is used; blocking the initial page on Maps made cold starts slower. -->
+  <script>
+    // Load Google Maps only when a location lookup is requested, avoiding a Maps
+    // download on public pages and ensuring the Geocoder exists before Dart uses it.
+    window.rentiteaseLoadGoogleMaps = (apiKey) => new Promise((resolve, reject) => {
+      if (window.google?.maps?.Geocoder) { resolve(true); return; }
+      const existing = document.querySelector('script[data-rentitease-maps]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(true), { once: true });
+        existing.addEventListener('error', () => reject(new Error('Google Maps failed to load.')), { once: true });
+        return;
+      }
+      const script = document.createElement('script');
+      script.dataset.rentiteaseMaps = 'true';
+      script.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(apiKey) + '&loading=async';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => window.google?.maps?.Geocoder
+        ? resolve(true)
+        : reject(new Error('Google Maps Geocoder is unavailable.'));
+      script.onerror = () => reject(new Error('Google Maps failed to load.'));
+      document.head.appendChild(script);
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
