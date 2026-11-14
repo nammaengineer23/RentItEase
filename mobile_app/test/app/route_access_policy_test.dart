@@ -64,6 +64,48 @@ void main() {
       );
     });
 
+    test('tenant can open the property category picker', () {
+      expect(
+        routeAccessRedirect(
+          location: '/owner/add-property',
+          isWeb: false,
+          isLoggedIn: true,
+          isSessionRestored: true,
+          role: 'USER',
+        ),
+        isNull,
+      );
+    });
+
+    test('tenant can open property creation forms but not owner management', () {
+      for (final location in [
+        '/owner/add-property-form',
+        '/owner/add-marketplace-listing',
+      ]) {
+        expect(
+          routeAccessRedirect(
+            location: location,
+            isWeb: false,
+            isLoggedIn: true,
+            isSessionRestored: true,
+            role: 'USER',
+          ),
+          isNull,
+          reason: '$location should allow tenant property submission',
+        );
+      }
+      expect(
+        routeAccessRedirect(
+          location: '/owner/properties',
+          isWeb: false,
+          isLoggedIn: true,
+          isSessionRestored: true,
+          role: 'USER',
+        ),
+        '/home',
+      );
+    });
+
     test('owner cannot open tenant-only visit history', () {
       expect(
         routeAccessRedirect(

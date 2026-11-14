@@ -154,6 +154,17 @@ export async function createApprovedE2EProperty(
   if (property.isVerified !== false || property.isAvailable !== false) {
     throw new Error(`New property must remain pending before approval: ${JSON.stringify(property)}`);
   }
+  // Approval is restricted to submitted listings. Drive the fixture through
+  // the same DRAFT -> SUBMITTED -> APPROVED lifecycle as the owner UI.
+  const submit = await request(apiUrl())
+    .post(`/properties/${id}/submit`)
+    .set(auth(ownerToken));
+  statusOk(submit);
+  const submitted = extractData(submit.body)?.property ?? extractData(submit.body);
+  if (submitted?.lifecycleStatus !== 'SUBMITTED') {
+    throw new Error(`Property fixture was not submitted before approval: ${JSON.stringify(submitted)}`);
+  }
+
   const approve = await request(apiUrl()).patch(`/admin/properties/${id}/approve`).set(auth(adminToken));
   statusOk(approve);
   const approved = extractData(approve.body);
