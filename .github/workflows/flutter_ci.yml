@@ -20,6 +20,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      # Pin a supported JDK. The hosted runner's default JDK 25 reports
+      # java.version=25.0.5, which the Kotlin compiler bundled with this
+      # Android build cannot parse.
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
