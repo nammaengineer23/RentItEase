@@ -457,10 +457,11 @@ describe('Release E2E • Lease Lifecycle', () => {
     const tenantEmail = process.env.E2E_TENANT_EMAIL!;
     const tenantPassword = process.env.E2E_TENANT_PASSWORD!;
     const tenant = await login(tenantEmail, tenantPassword);
-    expect(tenant.data?.user?.role ?? tenant.body?.user?.role).toBe('USER');
+    const tenantUser = tenant.data?.user ?? tenant.body?.user;
+    expect(tenantUser?.id).toBeTruthy();
+    expect(tenantUser?.role).toBe('USER');
 
     let submittedPropertyId = '';
-    let lifecycleError: unknown;
 
     try {
       const created = await request(apiUrl())
@@ -515,14 +516,11 @@ describe('Release E2E • Lease Lifecycle', () => {
 
       const approvedLogin = await login(tenantEmail, tenantPassword);
       expect(approvedLogin.data?.user?.role ?? approvedLogin.body?.user?.role).toBe('OWNER');
-    } catch (error) {
-      lifecycleError = error;
-      throw error;
     } finally {
       // Restore the dedicated tenant fixture so the seed guard passes on the
       // next isolated run. Never leave a seeded account promoted by test data.
       const restore = await request(apiUrl())
-        .patch(`/admin/users/${(await login(tenantEmail, tenantPassword)).data?.user?.id ?? (await login(tenantEmail, tenantPassword)).body?.user?.id}/role`)
+        .patch(`/admin/users/${tenantUser.id}/role`)
         .set(auth(adminToken))
         .send({ role: 'USER', reason: 'Restore isolated E2E tenant fixture after approval lifecycle test' });
       if (![200, 201].includes(restore.status)) {
@@ -537,7 +535,6 @@ describe('Release E2E • Lease Lifecycle', () => {
           throw new Error(`Failed to clean up tenant lifecycle property: HTTP ${cleanup.status} ${JSON.stringify(cleanup.body)}`);
         }
       }
-      if (lifecycleError) console.error('Tenant approval lifecycle test failed; fixture restoration was attempted.');
     }
   });
 });
