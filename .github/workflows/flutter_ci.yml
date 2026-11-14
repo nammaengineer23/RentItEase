@@ -37,7 +37,7 @@ jobs:
       # google-services.json selection, and staging package identity are checked.
       - name: Build staging Android debug APK
         run: |
-          flutter build apk --flavor staging --debug \
+          flutter build apk --flavor staging --debug --verbose \
             --dart-define=STAGING=true \
-            --dart-define=API_BASE_URL=https://rentitease-staging-api-production.up.railway.app/api/v1
+            --dart-define=API_BASE_URL=https://rentitease-staging-api-h2jjodsmtq-el.a.run.app/api/v1
           test -f build/app/outputs/flutter-apk/app-staging-debug.apk
