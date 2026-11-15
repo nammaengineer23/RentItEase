@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:mime/mime.dart';
 
 import '../../../../core/utils/app_image_url.dart';
 
@@ -73,18 +74,26 @@ class PropertyImageApi {
 
       final files = <MultipartFile>[];
       for (final image in images) {
+        // Do not trust the temporary camera/blob path for the multipart
+        // filename. Some camera providers omit the extension entirely.
+        final bytes = await image.readAsBytes();
+        final mimeType = lookupMimeType(
+          image.path,
+          headerBytes: bytes.take(32).toList(),
+        );
+        final extension = switch (mimeType) {
+          'image/jpeg' => 'jpg',
+          'image/png' => 'png',
+          'image/webp' => 'webp',
+          _ => throw const FormatException(
+              'Only JPG, PNG and WEBP images can be uploaded.',
+            ),
+        };
         files.add(
-          kIsWeb
-              ? MultipartFile.fromBytes(
-                  await image.readAsBytes(),
-                  filename: image.uri.pathSegments.isEmpty
-                      ? 'property-image.jpg'
-                      : image.uri.pathSegments.last,
-                )
-              : await MultipartFile.fromFile(
-                  image.path,
-                  filename: image.uri.pathSegments.last,
-                ),
+          MultipartFile.fromBytes(
+            bytes,
+            filename: 'property-image.$extension',
+          ),
         );
       }
 
