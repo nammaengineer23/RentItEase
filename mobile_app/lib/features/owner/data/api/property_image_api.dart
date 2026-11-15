@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:mime/mime.dart';
 
 import '../../../../core/utils/app_image_url.dart';
