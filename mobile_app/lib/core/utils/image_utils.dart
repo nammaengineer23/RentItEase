@@ -21,8 +21,13 @@ class ImageUtils {
   // Validate Image Type
   // =============================================
 
-  static bool isValidImage(File file) {
-    final mime = lookupMimeType(file.path);
+  static bool isValidImage(File file, {List<int>? headerBytes}) {
+    // Camera providers may return a valid image with no extension (or a
+    // temporary/blob path). Prefer the actual file signature over the path.
+    final mime = lookupMimeType(
+      file.path,
+      headerBytes: headerBytes,
+    );
 
     return allowedMimeTypes.contains(mime);
   }
@@ -71,21 +76,27 @@ class ImageUtils {
   // Validate + Compress
   // =============================================
 
-  static Future<File> prepareImage(File file) async {
-    if (!isValidImage(file)) {
+  static Future<File> prepareImage(
+    File file, {
+    List<int>? bytes,
+  }) async {
+    final sourceBytes = bytes ?? await file.readAsBytes();
+    final headerBytes = sourceBytes.take(32).toList();
+
+    if (!isValidImage(file, headerBytes: headerBytes)) {
       throw Exception('Only JPG, PNG and WEBP images are allowed.');
     }
 
-    if (!await isValidSize(file)) {
+    if (sourceBytes.length > maxFileSize) {
       throw Exception('Image size should be less than 5 MB.');
     }
 
     final compressed = await compressImage(file);
 
     if (kDebugMode) {
-      final original = await file.length();
+      final original = sourceBytes.length;
 
-      final reduced = await compressed.length();
+      final reduced = kIsWeb ? sourceBytes.length : await compressed.length();
 
       debugPrint('Original: ${(original / 1024).toStringAsFixed(1)} KB');
 
