@@ -69,7 +69,11 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
 
       for (final file in files) {
         try {
-          final image = await ImageUtils.prepareImage(File(file.path));
+          final bytes = await file.readAsBytes();
+          final image = await ImageUtils.prepareImage(
+            File(file.path),
+            bytes: bytes,
+          );
 
           _images.add(image);
         } catch (e) {
@@ -107,7 +111,11 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
     });
 
     try {
-      final image = await ImageUtils.prepareImage(File(file.path));
+      final bytes = await file.readAsBytes();
+      final image = await ImageUtils.prepareImage(
+        File(file.path),
+        bytes: bytes,
+      );
 
       _images.add(image);
 
