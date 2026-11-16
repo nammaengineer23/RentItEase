@@ -49,3 +49,39 @@ describe('FirebaseService.verifyAppCheckToken', () => {
     await expect(service.verifyAppCheckToken('invalid-app-check-token')).resolves.toBe(false);
   });
 });
+
+
+describe('FirebaseService.buildFirebaseDownloadUrl', () => {
+  const createService = () => Object.create(FirebaseService.prototype) as FirebaseService;
+
+  it('encodes the object path and token using the configured bucket', () => {
+    const service = createService();
+
+    const url = (service as any).buildFirebaseDownloadUrl(
+      'rentitease-staging.firebasestorage.app',
+      'properties/front door #1.png',
+      'token/value+with=special',
+    );
+
+    expect(url).toBe(
+      'https://firebasestorage.googleapis.com/v0/b/rentitease-staging.firebasestorage.app/o/properties%2Ffront%20door%20%231.png?alt=media&token=token%2Fvalue%2Bwith%3Dspecial',
+    );
+  });
+
+  it('rejects a missing bucket name', () => {
+    const service = createService();
+
+    expect(() => (service as any).buildFirebaseDownloadUrl('', 'properties/test.png', 'token'))
+      .toThrow('Firebase Storage bucket name is missing.');
+  });
+
+  it('rejects a missing download token', () => {
+    const service = createService();
+
+    expect(() => (service as any).buildFirebaseDownloadUrl(
+      'rentitease-staging.firebasestorage.app',
+      'properties/test.png',
+      ' ',
+    )).toThrow('Firebase Storage download token is missing.');
+  });
+});
