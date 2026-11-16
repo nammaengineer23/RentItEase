@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { applicationDefault, cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
 
-import { getStorage, getDownloadURL } from 'firebase-admin/storage';
+import { getStorage } from 'firebase-admin/storage';
 
 import { getAuth } from 'firebase-admin/auth';
 import { getMessaging } from 'firebase-admin/messaging';
@@ -71,6 +71,10 @@ export class FirebaseService {
             metadata: {
               contentType: file.mimetype,
               cacheControl: 'public, max-age=3600',
+              // Firebase download URLs require this value in GCS custom metadata.
+              metadata: {
+                firebaseStorageDownloadTokens: randomUUID(),
+              },
             },
           }),
           15_000,
@@ -79,12 +83,42 @@ export class FirebaseService {
       'Firebase Storage upload',
     );
 
-    const imageUrl = await this.withTimeout(getDownloadURL(firebaseFile), 15_000);
+    // Keep the GCS write and Firebase token-URL lookup as separate diagnostic stages.
+    console.log(`Firebase Storage object upload succeeded: ${fileName}`);
+
+    const [savedMetadata] = await this.withTimeout(firebaseFile.getMetadata(), 15_000);
+    const downloadToken = savedMetadata.metadata?.firebaseStorageDownloadTokens;
+    const downloadTokenPresent =
+      typeof downloadToken === 'string' && downloadToken.trim().length > 0;
+    console.log(
+      `Firebase Storage object metadata verified: ${fileName}, downloadTokenPresent=${downloadTokenPresent}`,
+    );
+
+    if (!downloadTokenPresent) {
+      throw new Error('Firebase Storage download token was not saved with the object.');
+    }
+
+    const imageUrl = this.buildFirebaseDownloadUrl(bucket.name, fileName, downloadToken);
 
     return {
       publicId: fileName,
       imageUrl,
     };
+  }
+
+  private buildFirebaseDownloadUrl(
+    bucketName: string,
+    objectName: string,
+    downloadToken: string,
+  ): string {
+    if (!bucketName.trim()) {
+      throw new Error('Firebase Storage bucket name is missing.');
+    }
+    if (!downloadToken.trim()) {
+      throw new Error('Firebase Storage download token is missing.');
+    }
+
+    return `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodeURIComponent(objectName)}?alt=media&token=${encodeURIComponent(downloadToken)}`;
   }
 
   async uploadPrivateFile(

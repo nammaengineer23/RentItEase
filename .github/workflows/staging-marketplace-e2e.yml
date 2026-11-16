@@ -138,6 +138,9 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
+      - name: Verify Firebase Storage access using staging WIF
+        run: npx ts-node scripts/firebase-storage-acceptance.ts
+
       - name: Apply migrations to the allowlisted isolated Neon database
         run: |
           npx prisma migrate deploy
