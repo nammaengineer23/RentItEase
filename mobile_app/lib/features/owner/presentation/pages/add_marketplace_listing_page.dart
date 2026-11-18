@@ -144,7 +144,9 @@ class _AddMarketplaceListingPageState
   void initState() {
     super.initState();
     _category = widget.initialCategory;
-    _propertyType = widget.initialPropertyType;
+    _propertyType = _category.startsWith('SITE_')
+        ? 'LAND'
+        : widget.initialPropertyType;
     _loadAmenities();
     if (widget.propertyId != null) {
       _loadExisting();
@@ -202,7 +204,8 @@ class _AddMarketplaceListingPageState
       _pincode.text = value['pincode']?.toString() ?? '';
       _category = value['transactionType']?.toString() ?? 'SALE';
       _lifecycleStatus = value['lifecycleStatus']?.toString() ?? 'DRAFT';
-      _propertyType = value['propertyType']?.toString() ?? 'HOUSE';
+      _propertyType = value['propertyType']?.toString() ??
+          (_category.startsWith('SITE_') ? 'LAND' : 'HOUSE');
       _askingPrice.text = value['askingPrice']?.toString() ?? '';
       // Site rent/lease use the property's regular price field, not askingPrice.
       _rent.text = value['price']?.toString() ?? '';
