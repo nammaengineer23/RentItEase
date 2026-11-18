@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/uploaded_image_model.dart';
 import 'upload_api.dart';
@@ -12,7 +12,7 @@ class UploadRepository {
   // Upload Single Image
   // ==========================================
 
-  Future<UploadedImageModel> uploadImage(File image) async {
+  Future<UploadedImageModel> uploadImage(XFile image) async {
     return await api.uploadImage(image);
   }
 
@@ -20,7 +20,7 @@ class UploadRepository {
   // Upload Multiple Images
   // ==========================================
 
-  Future<List<UploadedImageModel>> uploadImages(List<File> images) async {
+  Future<List<UploadedImageModel>> uploadImages(List<XFile> images) async {
     return await api.uploadImages(images);
   }
 
