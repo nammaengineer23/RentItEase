@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,7 +13,7 @@ class UploadImagesPage extends ConsumerStatefulWidget {
 }
 
 class _UploadImagesPageState extends ConsumerState<UploadImagesPage> {
-  List<File> _selectedImages = [];
+  List<XFile> _selectedImages = [];
 
   Future<void> _uploadImages() async {
     if (_selectedImages.isEmpty) {
