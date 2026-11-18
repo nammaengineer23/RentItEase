@@ -62,7 +62,7 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   LocationModel? selectedLocation;
   final latitudeController = TextEditingController();
   final longitudeController = TextEditingController();
-  Map<String, List<File>> selectedImagesBySection = const {};
+  Map<String, List<XFile>> selectedImagesBySection = const {};
   File? selectedVideo;
   List<Map<String, dynamic>> _amenities = const [];
   final Set<String> _selectedAmenityIds = {};
