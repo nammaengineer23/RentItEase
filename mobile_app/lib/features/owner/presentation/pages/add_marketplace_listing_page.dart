@@ -290,8 +290,10 @@ class _AddMarketplaceListingPageState
         'bedrooms': int.tryParse(_bedrooms.text) ?? 0,
         'bathrooms': int.tryParse(_bathrooms.text) ?? 0,
         'area': double.parse(_landArea.text.trim()),
-        'landArea': double.parse(_landArea.text.trim()),
-        'landAreaUnit': _landUnit,
+        if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE'].contains(_category))
+          'landArea': double.parse(_landArea.text.trim()),
+        if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE'].contains(_category))
+          'landAreaUnit': _landUnit,
         'propertyType': _propertyType,
         'furnishing': _furnishing,
         'parking': _parking,
