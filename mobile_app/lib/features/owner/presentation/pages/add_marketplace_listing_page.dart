@@ -64,7 +64,6 @@ class _AddMarketplaceListingPageState
   Map<String, List<XFile>> _selectedImagesBySection = const {};
   File? _selectedVideo;
   bool _loadingExisting = false;
-  String _lifecycleStatus = 'DRAFT';
   String? _loadError;
 
   Future<void> _setVideo(File video) async {
@@ -203,7 +202,6 @@ class _AddMarketplaceListingPageState
       _state.text = value['state']?.toString() ?? '';
       _pincode.text = value['pincode']?.toString() ?? '';
       _category = value['transactionType']?.toString() ?? 'SALE';
-      _lifecycleStatus = value['lifecycleStatus']?.toString() ?? 'DRAFT';
       _propertyType = value['propertyType']?.toString() ??
           (_category.startsWith('SITE_') ? 'LAND' : 'HOUSE');
       _askingPrice.text = value['askingPrice']?.toString() ?? '';
@@ -356,18 +354,14 @@ class _AddMarketplaceListingPageState
           }
         }
       }
-      // New listings and edited drafts must enter the admin approval queue.
-      // Already-submitted/approved listings must not be submitted a second time.
+      // Every owner edit resets the listing to DRAFT in the API, so resubmit
+      // every edited listing for admin review, regardless of its previous state.
       if (targetPropertyId == null || targetPropertyId.isEmpty) {
         throw const FormatException('The listing was saved but its ID was not returned. Please refresh My Properties before retrying.');
       }
-      if (widget.propertyId == null || _lifecycleStatus == 'DRAFT') {
-        await ref.read(dioProvider).post('/properties/$targetPropertyId/submit');
-      }
+      await ref.read(dioProvider).post('/properties/$targetPropertyId/submit');
       if (!mounted) return;
-      final successMessage = widget.propertyId == null || _lifecycleStatus == 'DRAFT'
-          ? 'Listing submitted for admin approval. It will be published after approval.'
-          : 'Listing updated.';
+      const successMessage = 'Listing submitted for admin approval. It will be published after approval.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(mediaWarnings.isEmpty
