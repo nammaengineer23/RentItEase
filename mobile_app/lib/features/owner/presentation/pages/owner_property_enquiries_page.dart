@@ -168,7 +168,8 @@ class _OwnerPropertyEnquiriesPageState
                                   item['status']?.toString() ?? 'OPEN';
                               final sender = item['sender'];
                               final senderName = sender is Map
-                                  ? (sender['name']?.toString() ??
+                                  ? (sender['fullName']?.toString() ??
+                                      sender['name']?.toString() ??
                                       sender['email']?.toString() ??
                                       'Interested user')
                                   : 'Interested user';
