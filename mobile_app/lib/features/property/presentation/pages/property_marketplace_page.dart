@@ -162,7 +162,16 @@ class _PropertyMarketplacePageState
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Property Marketplace')),
+      appBar: AppBar(
+        title: const Text('Property Marketplace'),
+        actions: [
+          IconButton(
+            tooltip: 'My enquiries',
+            onPressed: () => context.push('/my-property-enquiries'),
+            icon: const Icon(Icons.mark_email_read_outlined),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
