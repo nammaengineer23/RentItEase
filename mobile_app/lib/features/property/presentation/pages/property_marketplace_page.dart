@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/network/dio_provider.dart';
+import '../../../../core/utils/app_image_url.dart';
 
 const bool _marketplaceEnabled = bool.fromEnvironment(
   'PROPERTY_MARKETPLACE_ENABLED',
@@ -105,7 +106,7 @@ class _PropertyMarketplacePageState
       if (image is Map) {
         final value = image['imageUrl'] ?? image['url'];
         if (value != null && value.toString().trim().isNotEmpty) {
-          return value.toString();
+          return AppImageUrl.resolve(value);
         }
       }
     }
