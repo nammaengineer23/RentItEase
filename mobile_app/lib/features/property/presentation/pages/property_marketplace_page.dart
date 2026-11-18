@@ -126,79 +126,6 @@ class _PropertyMarketplacePageState
     return '₹${number.toStringAsFixed(0)}$suffix';
   }
 
-  Future<void> _sendEnquiry(Map<String, dynamic> property) async {
-    final id = property['id']?.toString();
-    if (id == null || id.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This listing has no valid ID.')),
-      );
-      return;
-    }
-    final messageController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    final message = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Enquire about this listing'),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: messageController,
-            minLines: 3,
-            maxLines: 5,
-            maxLength: 2000,
-            decoration: const InputDecoration(
-              labelText: 'Message',
-              hintText: 'Tell the owner what you would like to know…',
-              border: OutlineInputBorder(),
-            ),
-            validator: (value) {
-              final text = value?.trim() ?? '';
-              if (text.length < 5) return 'Please enter at least 5 characters.';
-              return null;
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (formKey.currentState?.validate() ?? false) {
-                Navigator.pop(dialogContext, messageController.text.trim());
-              }
-            },
-            child: const Text('Send enquiry'),
-          ),
-        ],
-      ),
-    );
-    messageController.dispose();
-    if (message == null || !mounted) return;
-    try {
-      await ref.read(dioProvider).post('/property-enquiries', data: {
-        'propertyId': id,
-        'message': message,
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Enquiry sent to the listing owner.')),
-        );
-      }
-    } on DioException catch (error) {
-      if (!mounted) return;
-      final data = _unwrap(error.response?.data);
-      final responseMessage = data is Map ? data['message'] : null;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(responseMessage is String
-            ? responseMessage
-            : 'Unable to send enquiry. Please try again.')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (!_marketplaceEnabled) {
@@ -320,7 +247,7 @@ class _PropertyMarketplacePageState
                                     fit: BoxFit.cover,
                                     webHtmlElementStrategy:
                                         WebHtmlElementStrategy.prefer,
-                                    errorBuilder: (_, __, ___) => Container(
+                                    errorBuilder: (_, _, _) => Container(
                                       color: Theme.of(context)
                                           .colorScheme.surfaceContainerHighest,
                                       child: const Icon(Icons.broken_image_outlined),
