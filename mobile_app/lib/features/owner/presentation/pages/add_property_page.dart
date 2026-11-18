@@ -272,9 +272,12 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
           }
         });
       }
+      // Keep the established rental creation flow, but ensure the saved draft
+      // actually enters the same admin verification workflow as marketplace listings.
+      await ref.read(dioProvider).post('/properties/${created.id}/submit');
       if (!mounted) return;
       final message = warnings.isEmpty
-          ? context.tr('propertyCreated')
+          ? 'Property submitted for admin approval.'
           : 'Property created successfully. Could not save ${warnings.join(', ')}; you can retry from Edit Property.';
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       Navigator.of(context).pop(true);
