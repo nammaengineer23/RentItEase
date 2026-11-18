@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../data/api/property_image_api.dart';
 import '../../../uploads/presentation/widgets/image_picker_card.dart';
@@ -46,11 +45,11 @@ class SectionedPropertyImagePicker extends StatefulWidget {
     this.selectedImages = const {},
   });
 
-  final ValueChanged<Map<String, List<File>>> onImagesChanged;
+  final ValueChanged<Map<String, List<XFile>>> onImagesChanged;
   final bool isLand;
   final Map<String, List<PropertyImageRecord>> initialImages;
   final Future<void> Function(PropertyImageRecord image)? onDeleteExisting;
-  final Map<String, List<File>> selectedImages;
+  final Map<String, List<XFile>> selectedImages;
 
   @override
   State<SectionedPropertyImagePicker> createState() =>
@@ -59,7 +58,7 @@ class SectionedPropertyImagePicker extends StatefulWidget {
 
 class _SectionedPropertyImagePickerState
     extends State<SectionedPropertyImagePicker> {
-  final Map<String, List<File>> _newImagesBySection = {};
+  final Map<String, List<XFile>> _newImagesBySection = {};
   late final Map<String, List<PropertyImageRecord>> _existingBySection;
   final Set<String> _deletingImageIds = {};
 
@@ -67,7 +66,7 @@ class _SectionedPropertyImagePickerState
   void initState() {
     super.initState();
     _newImagesBySection.addAll(widget.selectedImages.map(
-      (section, images) => MapEntry(section, List<File>.from(images)),
+      (section, images) => MapEntry(section, List<XFile>.from(images)),
     ));
     _existingBySection = widget.initialImages.map(
       (section, images) => MapEntry(
@@ -77,19 +76,19 @@ class _SectionedPropertyImagePickerState
     );
   }
 
-  void _updateSection(String section, List<File> images) {
+  void _updateSection(String section, List<XFile> images) {
     setState(() {
       if (images.isEmpty) {
         _newImagesBySection.remove(section);
       } else {
-        _newImagesBySection[section] = List<File>.from(images);
+        _newImagesBySection[section] = List<XFile>.from(images);
       }
     });
 
     widget.onImagesChanged(
       _newImagesBySection.map(
         (section, sectionImages) =>
-            MapEntry(section, List<File>.from(sectionImages)),
+            MapEntry(section, List<XFile>.from(sectionImages)),
       ),
     );
   }

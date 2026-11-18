@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/network/dio_provider.dart';
+import '../../../../core/utils/app_image_url.dart';
 
 const bool _marketplaceEnabled = bool.fromEnvironment(
   'PROPERTY_MARKETPLACE_ENABLED',
@@ -97,92 +99,47 @@ class _PropertyMarketplacePageState
       if (city != null && city.isNotEmpty) city].join(', ');
   }
 
+  String? _previewImage(Map<String, dynamic> item) {
+    final images = item['images'];
+    if (images is! List) return null;
+    for (final image in images) {
+      if (image is Map) {
+        final value = image['imageUrl'] ?? image['url'];
+        if (value != null && value.toString().trim().isNotEmpty) {
+          return AppImageUrl.resolve(value);
+        }
+      }
+    }
+    return null;
+  }
+
   String _price(Map<String, dynamic> item) {
-    final raw = item['askingPrice'];
+    final type = item['transactionType']?.toString() ?? _category;
+    final isSale = type == 'SALE' || type == 'SITE_SALE';
+    final raw = isSale ? item['askingPrice'] : item['price'];
     if (raw == null) return 'Price available on enquiry';
     final number = raw is num ? raw : num.tryParse(raw.toString());
     if (number == null) return 'Price available on enquiry';
-    return '₹${number.toStringAsFixed(0)}${item['priceNegotiable'] == true ? ' • Negotiable' : ''}';
-  }
-
-  Future<void> _sendEnquiry(Map<String, dynamic> property) async {
-    final id = property['id']?.toString();
-    if (id == null || id.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This listing has no valid ID.')),
-      );
-      return;
-    }
-    final messageController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    final message = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Enquire about this listing'),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: messageController,
-            minLines: 3,
-            maxLines: 5,
-            maxLength: 2000,
-            decoration: const InputDecoration(
-              labelText: 'Message',
-              hintText: 'Tell the owner what you would like to know…',
-              border: OutlineInputBorder(),
-            ),
-            validator: (value) {
-              final text = value?.trim() ?? '';
-              if (text.length < 5) return 'Please enter at least 5 characters.';
-              return null;
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (formKey.currentState?.validate() ?? false) {
-                Navigator.pop(dialogContext, messageController.text.trim());
-              }
-            },
-            child: const Text('Send enquiry'),
-          ),
-        ],
-      ),
-    );
-    messageController.dispose();
-    if (message == null || !mounted) return;
-    try {
-      await ref.read(dioProvider).post('/property-enquiries', data: {
-        'propertyId': id,
-        'message': message,
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Enquiry sent to the listing owner.')),
-        );
-      }
-    } on DioException catch (error) {
-      if (!mounted) return;
-      final data = _unwrap(error.response?.data);
-      final responseMessage = data is Map ? data['message'] : null;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(responseMessage is String
-            ? responseMessage
-            : 'Unable to send enquiry. Please try again.')),
-      );
-    }
+    final suffix = isSale
+        ? (item['priceNegotiable'] == true ? ' • Negotiable' : '')
+        : ' • Rent/lease';
+    return '₹${number.toStringAsFixed(0)}$suffix';
   }
 
   @override
   Widget build(BuildContext context) {
     if (!_marketplaceEnabled) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Property Marketplace')),
+        appBar: AppBar(
+        title: const Text('Property Marketplace'),
+        actions: [
+          IconButton(
+            tooltip: 'My enquiries',
+            onPressed: () => context.push('/my-property-enquiries'),
+            icon: const Icon(Icons.mark_email_read_outlined),
+          ),
+        ],
+      ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -205,7 +162,16 @@ class _PropertyMarketplacePageState
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Property Marketplace')),
+      appBar: AppBar(
+        title: const Text('Property Marketplace'),
+        actions: [
+          IconButton(
+            tooltip: 'My enquiries',
+            onPressed: () => context.push('/my-property-enquiries'),
+            icon: const Icon(Icons.mark_email_read_outlined),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
@@ -214,17 +180,27 @@ class _PropertyMarketplacePageState
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Column(
               children: [
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'SALE', label: Text('Homes for sale')),
-                    ButtonSegment(value: 'LEASE', label: Text('Long lease')),
-                    ButtonSegment(value: 'SITE_SALE', label: Text('Sites')),
-                  ],
-                  selected: {_category},
-                  onSelectionChanged: (values) {
-                    setState(() => _category = values.first);
-                    _load();
-                  },
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: const [
+                    ('SALE', 'House Sale'),
+                    ('LEASE', 'House Lease'),
+                    ('SITE_RENT', 'Site Rent'),
+                    ('SITE_LEASE', 'Site Lease'),
+                    ('SITE_SALE', 'Site Sale'),
+                  ].map((entry) => ChoiceChip(
+                    label: Text(entry.$2),
+                    selected: _category == entry.$1,
+                    onSelected: (selected) {
+                      if (!selected) return;
+                      setState(() {
+                        _category = entry.$1;
+                        _properties = const [];
+                      });
+                      _load();
+                    },
+                  )).toList(),
                 ),
                 const SizedBox(height: 10),
                 TextField(
@@ -269,37 +245,70 @@ class _PropertyMarketplacePageState
                       final item = _properties[index];
                       final leaseMonths = item['leaseTermMonths'];
                       final area = item['landArea'];
+                      final previewImage = _previewImage(item);
+                      final propertyId = item['id']?.toString() ?? '';
                       return Card(
                         clipBehavior: Clip.antiAlias,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
+                        child: InkWell(
+                          onTap: propertyId.isEmpty
+                              ? null
+                              : () => context.push('/marketplace/$propertyId'),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(_title(item),
-                                  style: Theme.of(context).textTheme.titleMedium),
-                              const SizedBox(height: 4),
-                              Text(_location(item),
-                                  style: Theme.of(context).textTheme.bodySmall),
-                              const SizedBox(height: 8),
-                              Text(_price(item),
-                                  style: Theme.of(context).textTheme.titleLarge),
-                              if (_category == 'LEASE' && leaseMonths != null)
-                                Text('Lease term: $leaseMonths months'),
-                              if (_category == 'SITE_SALE' && area != null)
-                                Text('Site area: $area ${item['landAreaUnit'] ?? ''}'),
-                              if (item['description'] != null) ...[
-                                const SizedBox(height: 8),
-                                Text(item['description'].toString(),
-                                    maxLines: 3, overflow: TextOverflow.ellipsis),
-                              ],
-                              const SizedBox(height: 12),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: FilledButton.icon(
-                                  onPressed: () => _sendEnquiry(item),
-                                  icon: const Icon(Icons.mail_outline),
-                                  label: const Text('Enquire'),
+                              if (previewImage != null)
+                                SizedBox(
+                                  height: 190,
+                                  width: double.infinity,
+                                  child: Image.network(
+                                    previewImage,
+                                    fit: BoxFit.cover,
+                                    webHtmlElementStrategy:
+                                        WebHtmlElementStrategy.prefer,
+                                    errorBuilder: (_, _, _) => Container(
+                                      color: Theme.of(context)
+                                          .colorScheme.surfaceContainerHighest,
+                                      child: const Icon(Icons.broken_image_outlined),
+                                    ),
+                                  ),
+                                ),
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(_title(item),
+                                        style: Theme.of(context).textTheme.titleMedium),
+                                    const SizedBox(height: 4),
+                                    Text(_location(item),
+                                        style: Theme.of(context).textTheme.bodySmall),
+                                    const SizedBox(height: 8),
+                                    Text(_price(item),
+                                        style: Theme.of(context).textTheme.titleLarge),
+                                    if (['LEASE', 'SITE_LEASE'].contains(_category) &&
+                                        leaseMonths != null)
+                                      Text('Lease term: $leaseMonths months'),
+                                    if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE']
+                                            .contains(_category) &&
+                                        area != null)
+                                      Text('Site area: $area ${item['landAreaUnit'] ?? ''}'),
+                                    if (item['description'] != null) ...[
+                                      const SizedBox(height: 8),
+                                      Text(item['description'].toString(),
+                                          maxLines: 3, overflow: TextOverflow.ellipsis),
+                                    ],
+                                    const SizedBox(height: 12),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: TextButton.icon(
+                                        onPressed: propertyId.isEmpty
+                                            ? null
+                                            : () => context.push('/marketplace/$propertyId'),
+                                        icon: const Icon(Icons.arrow_forward),
+                                        label: const Text('View details'),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],

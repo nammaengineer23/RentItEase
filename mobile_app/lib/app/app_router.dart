@@ -57,6 +57,8 @@ import '../features/property/domain/entities/property_entity.dart';
 import '../features/property/presentation/pages/property_details_page.dart';
 import '../features/property/presentation/pages/property_listing_page.dart';
 import '../features/property/presentation/pages/property_marketplace_page.dart';
+import '../features/property/presentation/pages/marketplace_listing_detail_page.dart';
+import '../features/property/presentation/pages/my_property_enquiries_page.dart';
 import '../features/property/presentation/pages/property_page.dart';
 
 import '../features/property_visits/presentation/pages/book_visit_page.dart';
@@ -225,6 +227,26 @@ class AppRouter {
             path: '/marketplace',
             name: 'property-marketplace',
             builder: (context, state) => const PropertyMarketplacePage(),
+          ),
+
+          GoRoute(
+            path: '/my-property-enquiries',
+            name: 'my-property-enquiries',
+            builder: (context, state) => const MyPropertyEnquiriesPage(),
+          ),
+
+          GoRoute(
+            path: '/marketplace/:id',
+            name: 'marketplace-listing-detail',
+            builder: (context, state) {
+              final propertyId = state.pathParameters['id'] ?? '';
+              if (propertyId.isEmpty) {
+                return const _RouteErrorPage(
+                  message: 'Marketplace listing ID is missing.',
+                );
+              }
+              return MarketplaceListingDetailPage(propertyId: propertyId);
+            },
           ),
 
           GoRoute(

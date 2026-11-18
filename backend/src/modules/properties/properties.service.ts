@@ -749,7 +749,12 @@ export class PropertiesService {
       },
     });
 
-    if (!property || (!this.marketplaceEnabled() && property.transactionType !== PropertyTransactionType.RENT)) {
+    if (
+      !property ||
+      (!this.marketplaceEnabled() && property.transactionType !== PropertyTransactionType.RENT) ||
+      (property.transactionType !== PropertyTransactionType.RENT &&
+        (!property.isVerified || !property.isAvailable))
+    ) {
       throw new NotFoundException('Property not found.');
     }
 

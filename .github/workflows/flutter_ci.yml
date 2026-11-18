@@ -49,3 +49,11 @@ jobs:
             --dart-define=STAGING=true \
             --dart-define=API_BASE_URL=https://rentitease-staging-api-h2jjodsmtq-el.a.run.app/api/v1
           test -f build/app/outputs/flutter-apk/app-staging-debug.apk
+
+      # Compile the browser target too: the photo picker must remain byte-backed
+      # and the staging Firebase Web configuration must compile in CI.
+      - name: Build staging Flutter Web
+        run: |
+          flutter build web --release \
+            --dart-define=STAGING=true \
+            --dart-define=API_BASE_URL=https://rentitease-staging-api-h2jjodsmtq-el.a.run.app/api/v1

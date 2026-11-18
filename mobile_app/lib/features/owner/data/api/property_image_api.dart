@@ -1,7 +1,7 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
+import 'package:http_parser/http_parser.dart';
 
 import '../../../../core/utils/app_image_url.dart';
 
@@ -57,7 +57,7 @@ class PropertyImageApi {
 
   Future<void> uploadSectionImages({
     required String propertyId,
-    required Map<String, List<File>> imagesBySection,
+    required Map<String, List<XFile>> imagesBySection,
     bool assignFirstAsPrimary = true,
   }) async {
     var primaryAssigned = !assignFirstAsPrimary;
@@ -73,18 +73,27 @@ class PropertyImageApi {
 
       final files = <MultipartFile>[];
       for (final image in images) {
+        // Do not trust the temporary camera/blob path for the multipart
+        // filename. Some camera providers omit the extension entirely.
+        final bytes = await image.readAsBytes();
+        final mimeType = lookupMimeType(
+          image.name.isEmpty ? image.path : image.name,
+          headerBytes: bytes.take(32).toList(),
+        );
+        final extension = switch (mimeType) {
+          'image/jpeg' => 'jpg',
+          'image/png' => 'png',
+          'image/webp' => 'webp',
+          _ => throw const FormatException(
+              'Only JPG, PNG and WEBP images can be uploaded.',
+            ),
+        };
         files.add(
-          kIsWeb
-              ? MultipartFile.fromBytes(
-                  await image.readAsBytes(),
-                  filename: image.uri.pathSegments.isEmpty
-                      ? 'property-image.jpg'
-                      : image.uri.pathSegments.last,
-                )
-              : await MultipartFile.fromFile(
-                  image.path,
-                  filename: image.uri.pathSegments.last,
-                ),
+          MultipartFile.fromBytes(
+            bytes,
+            filename: 'property-image.$extension',
+            contentType: MediaType.parse(mimeType!),
+          ),
         );
       }
 

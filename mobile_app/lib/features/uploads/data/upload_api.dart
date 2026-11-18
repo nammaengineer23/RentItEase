@@ -1,6 +1,7 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
 
 import '../models/uploaded_image_model.dart';
 
@@ -9,15 +10,27 @@ class UploadApi {
 
   UploadApi(this.dio);
 
-  // ==========================================
-  // Upload Single Image
-  // ==========================================
-
-  Future<UploadedImageModel> uploadImage(File image) async {
-    final fileName = image.path.split('/').last;
+  Future<UploadedImageModel> uploadImage(XFile image) async {
+    final bytes = await image.readAsBytes();
+    final mimeType = lookupMimeType(
+      image.name.isEmpty ? image.path : image.name,
+      headerBytes: bytes.take(32).toList(),
+    );
+    final extension = switch (mimeType) {
+      'image/jpeg' => 'jpg',
+      'image/png' => 'png',
+      'image/webp' => 'webp',
+      _ => throw const FormatException(
+          'Only genuine JPG, PNG and WEBP images can be uploaded.',
+        ),
+    };
 
     final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(image.path, filename: fileName),
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: 'upload-image.$extension',
+        contentType: MediaType.parse(mimeType!),
+      ),
     });
 
     final response = await dio.post(
@@ -29,25 +42,13 @@ class UploadApi {
     return UploadedImageModel.fromJson(response.data);
   }
 
-  // ==========================================
-  // Upload Multiple Images
-  // ==========================================
-
-  Future<List<UploadedImageModel>> uploadImages(List<File> images) async {
-    final List<UploadedImageModel> uploaded = [];
-
+  Future<List<UploadedImageModel>> uploadImages(List<XFile> images) async {
+    final uploaded = <UploadedImageModel>[];
     for (final image in images) {
-      final result = await uploadImage(image);
-
-      uploaded.add(result);
+      uploaded.add(await uploadImage(image));
     }
-
     return uploaded;
   }
-
-  // ==========================================
-  // Delete Uploaded Image
-  // ==========================================
 
   Future<void> deleteImage(String imageId) async {
     await dio.delete('/uploads/image/$imageId');

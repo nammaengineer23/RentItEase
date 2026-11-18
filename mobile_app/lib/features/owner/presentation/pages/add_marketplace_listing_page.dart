@@ -61,7 +61,7 @@ class _AddMarketplaceListingPageState
   bool _saving = false;
   bool _videoCompressing = false;
   double _videoCompressionProgress = 0;
-  Map<String, List<File>> _selectedImagesBySection = const {};
+  Map<String, List<XFile>> _selectedImagesBySection = const {};
   File? _selectedVideo;
   bool _loadingExisting = false;
   String? _loadError;
@@ -143,7 +143,9 @@ class _AddMarketplaceListingPageState
   void initState() {
     super.initState();
     _category = widget.initialCategory;
-    _propertyType = widget.initialPropertyType;
+    _propertyType = _category.startsWith('SITE_')
+        ? 'LAND'
+        : widget.initialPropertyType;
     _loadAmenities();
     if (widget.propertyId != null) {
       _loadExisting();
@@ -200,7 +202,8 @@ class _AddMarketplaceListingPageState
       _state.text = value['state']?.toString() ?? '';
       _pincode.text = value['pincode']?.toString() ?? '';
       _category = value['transactionType']?.toString() ?? 'SALE';
-      _propertyType = value['propertyType']?.toString() ?? 'HOUSE';
+      _propertyType = value['propertyType']?.toString() ??
+          (_category.startsWith('SITE_') ? 'LAND' : 'HOUSE');
       _askingPrice.text = value['askingPrice']?.toString() ?? '';
       // Site rent/lease use the property's regular price field, not askingPrice.
       _rent.text = value['price']?.toString() ?? '';
@@ -288,8 +291,10 @@ class _AddMarketplaceListingPageState
         'bedrooms': int.tryParse(_bedrooms.text) ?? 0,
         'bathrooms': int.tryParse(_bathrooms.text) ?? 0,
         'area': double.parse(_landArea.text.trim()),
-        'landArea': double.parse(_landArea.text.trim()),
-        'landAreaUnit': _landUnit,
+        if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE'].contains(_category))
+          'landArea': double.parse(_landArea.text.trim()),
+        if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE'].contains(_category))
+          'landAreaUnit': _landUnit,
         'propertyType': _propertyType,
         'furnishing': _furnishing,
         'parking': _parking,
@@ -349,10 +354,14 @@ class _AddMarketplaceListingPageState
           }
         }
       }
+      // Every owner edit resets the listing to DRAFT in the API, so resubmit
+      // every edited listing for admin review, regardless of its previous state.
+      if (targetPropertyId == null || targetPropertyId.isEmpty) {
+        throw const FormatException('The listing was saved but its ID was not returned. Please refresh My Properties before retrying.');
+      }
+      await ref.read(dioProvider).post('/properties/$targetPropertyId/submit');
       if (!mounted) return;
-      final successMessage = widget.propertyId == null
-          ? 'Listing created. Complete review before publication.'
-          : 'Listing updated.';
+      const successMessage = 'Listing submitted for admin approval. It will be published after approval.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(mediaWarnings.isEmpty

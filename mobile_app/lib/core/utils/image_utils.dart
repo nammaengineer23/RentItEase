@@ -8,7 +8,6 @@ import 'package:path_provider/path_provider.dart';
 class ImageUtils {
   ImageUtils._();
 
-  /// Maximum size = 5 MB
   static const int maxFileSize = 5 * 1024 * 1024;
 
   static const List<String> allowedMimeTypes = [
@@ -17,111 +16,72 @@ class ImageUtils {
     'image/webp',
   ];
 
-  // =============================================
-  // Validate Image Type
-  // =============================================
+  /// Detect the format from the actual bytes first. The path is only a
+  /// fallback for providers that return no signature bytes.
+  static String? detectMimeType(String path, List<int> bytes) {
+    return lookupMimeType(path, headerBytes: bytes.take(32).toList());
+  }
 
-  static bool isValidImage(File file) {
-    final mime = lookupMimeType(file.path);
-
+  static bool isValidImage(String path, {List<int>? headerBytes}) {
+    final mime = lookupMimeType(path, headerBytes: headerBytes);
     return allowedMimeTypes.contains(mime);
   }
 
-  // =============================================
-  // Validate File Size
-  // =============================================
-
   static Future<bool> isValidSize(File file) async {
-    final size = await file.length();
-
-    return size <= maxFileSize;
+    return await file.length() <= maxFileSize;
   }
 
-  // =============================================
-  // Compress Image
-  // =============================================
-
-  static Future<File> compressImage(File file) async {
-    // Browser-picked files are represented by blob URLs. Native file-system
-    // compression APIs cannot read/write those paths, so keep the validated
-    // browser file unchanged and upload its bytes directly.
+  static Future<XFile> compressImage(XFile file) async {
+    // XFile.readAsBytes works with browser blob URLs. Native compression
+    // requires a real filesystem path, so only use it off the Web.
     if (kIsWeb) return file;
 
     final tempDir = await getTemporaryDirectory();
-
     final targetPath =
-        '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
-
+        '${tempDir.path}/${DateTime.now().microsecondsSinceEpoch}.jpg';
     final compressed = await FlutterImageCompress.compressAndGetFile(
-      file.absolute.path,
+      file.path,
       targetPath,
       quality: 80,
       minWidth: 1920,
       minHeight: 1080,
     );
-
-    if (compressed == null) {
-      return file;
-    }
-
-    return File(compressed.path);
+    return compressed ?? file;
   }
 
-  // =============================================
-  // Validate + Compress
-  // =============================================
+  static Future<XFile> prepareImage(XFile file) async {
+    final sourceBytes = await file.readAsBytes();
+    final mime = detectMimeType(file.name.isEmpty ? file.path : file.name, sourceBytes);
 
-  static Future<File> prepareImage(File file) async {
-    if (!isValidImage(file)) {
-      throw Exception('Only JPG, PNG and WEBP images are allowed.');
+    if (!allowedMimeTypes.contains(mime)) {
+      throw Exception('Only genuine JPG, PNG and WEBP images are allowed.');
     }
-
-    if (!await isValidSize(file)) {
-      throw Exception('Image size should be less than 5 MB.');
+    if (sourceBytes.isEmpty || sourceBytes.length > maxFileSize) {
+      throw Exception('Image size should be greater than 0 and less than 5 MB.');
     }
 
     final compressed = await compressImage(file);
-
     if (kDebugMode) {
-      final original = await file.length();
-
-      final reduced = await compressed.length();
-
-      debugPrint('Original: ${(original / 1024).toStringAsFixed(1)} KB');
-
-      debugPrint('Compressed: ${(reduced / 1024).toStringAsFixed(1)} KB');
+      final reduced = kIsWeb ? sourceBytes.length : await compressed.length();
+      debugPrint('Original: ${(sourceBytes.length / 1024).toStringAsFixed(1)} KB');
+      debugPrint('Prepared: ${(reduced / 1024).toStringAsFixed(1)} KB');
     }
-
     return compressed;
   }
 
-  // =============================================
-  // Validate Multiple Images
-  // =============================================
-
-  static Future<List<File>> prepareImages(List<File> files) async {
-    final List<File> output = [];
-
+  static Future<List<XFile>> prepareImages(List<XFile> files) async {
+    final output = <XFile>[];
     for (final file in files) {
       output.add(await prepareImage(file));
     }
-
     return output;
   }
 
-  // =============================================
-  // Human Readable Size
-  // =============================================
-
   static String readableSize(int bytes) {
-    if (bytes < 1024) {
-      return '$bytes B';
-    }
-
+    if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) {
       return '${(bytes / 1024).toStringAsFixed(1)} KB';
     }
-
     return '${(bytes / 1024 / 1024).toStringAsFixed(2)} MB';
   }
 }
