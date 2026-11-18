@@ -98,11 +98,16 @@ class _PropertyMarketplacePageState
   }
 
   String _price(Map<String, dynamic> item) {
-    final raw = item['askingPrice'];
+    final type = item['transactionType']?.toString() ?? _category;
+    final isSale = type == 'SALE' || type == 'SITE_SALE';
+    final raw = isSale ? item['askingPrice'] : item['price'];
     if (raw == null) return 'Price available on enquiry';
     final number = raw is num ? raw : num.tryParse(raw.toString());
     if (number == null) return 'Price available on enquiry';
-    return '₹${number.toStringAsFixed(0)}${item['priceNegotiable'] == true ? ' • Negotiable' : ''}';
+    final suffix = isSale
+        ? (item['priceNegotiable'] == true ? ' • Negotiable' : '')
+        : ' • Rent/lease';
+    return '₹${number.toStringAsFixed(0)}$suffix';
   }
 
   Future<void> _sendEnquiry(Map<String, dynamic> property) async {
@@ -214,17 +219,27 @@ class _PropertyMarketplacePageState
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Column(
               children: [
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'SALE', label: Text('Homes for sale')),
-                    ButtonSegment(value: 'LEASE', label: Text('Long lease')),
-                    ButtonSegment(value: 'SITE_SALE', label: Text('Sites')),
-                  ],
-                  selected: {_category},
-                  onSelectionChanged: (values) {
-                    setState(() => _category = values.first);
-                    _load();
-                  },
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: const [
+                    ('SALE', 'House Sale'),
+                    ('LEASE', 'House Lease'),
+                    ('SITE_RENT', 'Site Rent'),
+                    ('SITE_LEASE', 'Site Lease'),
+                    ('SITE_SALE', 'Site Sale'),
+                  ].map((entry) => ChoiceChip(
+                    label: Text(entry.$2),
+                    selected: _category == entry.$1,
+                    onSelected: (selected) {
+                      if (!selected) return;
+                      setState(() {
+                        _category = entry.$1;
+                        _properties = const [];
+                      });
+                      _load();
+                    },
+                  )).toList(),
                 ),
                 const SizedBox(height: 10),
                 TextField(
@@ -284,9 +299,12 @@ class _PropertyMarketplacePageState
                               const SizedBox(height: 8),
                               Text(_price(item),
                                   style: Theme.of(context).textTheme.titleLarge),
-                              if (_category == 'LEASE' && leaseMonths != null)
+                              if (['LEASE', 'SITE_LEASE'].contains(_category) &&
+                                  leaseMonths != null)
                                 Text('Lease term: $leaseMonths months'),
-                              if (_category == 'SITE_SALE' && area != null)
+                              if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE']
+                                      .contains(_category) &&
+                                  area != null)
                                 Text('Site area: $area ${item['landAreaUnit'] ?? ''}'),
                               if (item['description'] != null) ...[
                                 const SizedBox(height: 8),
