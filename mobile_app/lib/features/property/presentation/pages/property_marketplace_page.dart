@@ -130,7 +130,16 @@ class _PropertyMarketplacePageState
   Widget build(BuildContext context) {
     if (!_marketplaceEnabled) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Property Marketplace')),
+        appBar: AppBar(
+        title: const Text('Property Marketplace'),
+        actions: [
+          IconButton(
+            tooltip: 'My enquiries',
+            onPressed: () => context.push('/my-property-enquiries'),
+            icon: const Icon(Icons.mark_email_read_outlined),
+          ),
+        ],
+      ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
