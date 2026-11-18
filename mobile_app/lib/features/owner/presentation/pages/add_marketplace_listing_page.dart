@@ -61,7 +61,7 @@ class _AddMarketplaceListingPageState
   bool _saving = false;
   bool _videoCompressing = false;
   double _videoCompressionProgress = 0;
-  Map<String, List<File>> _selectedImagesBySection = const {};
+  Map<String, List<XFile>> _selectedImagesBySection = const {};
   Map<String, List<PropertyImageRecord>> _existingImagesBySection = const {};
   File? _selectedVideo;
   String _existingVideoUrl = '';
