@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_compress/video_compress.dart';
 
@@ -67,7 +68,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
   final Set<String> selectedAmenityIds = {};
   late String videoUrl;
   LocationModel? selectedLocation;
-  Map<String, List<File>> newImagesBySection = const {};
+  Map<String, List<XFile>> newImagesBySection = const {};
   Map<String, List<PropertyImageRecord>> existingImagesBySection = const {};
 
   @override
