@@ -47,6 +47,7 @@ jobs:
           if [[ "${APP_ENV}" == "staging" ]]; then
             flutter build web --release \
               --dart-define="STAGING=true" \
+              --dart-define="PROPERTY_MARKETPLACE_ENABLED=true" \
               --dart-define="API_BASE_URL=${API_BASE_URL}"
           else
             flutter build web --release \
