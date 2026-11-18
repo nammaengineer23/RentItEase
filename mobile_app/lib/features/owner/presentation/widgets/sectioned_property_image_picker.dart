@@ -1,6 +1,3 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -188,7 +185,7 @@ class _SectionedPropertyImagePickerState
       _newImagesBySection
         ..clear()
         ..addAll(widget.selectedImages.map(
-          (section, images) => MapEntry(section, List<File>.from(images)),
+          (section, images) => MapEntry(section, List<XFile>.from(images)),
         ));
     }
 
