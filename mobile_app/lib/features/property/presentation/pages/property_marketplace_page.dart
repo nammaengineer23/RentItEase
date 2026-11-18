@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/network/dio_provider.dart';
 
@@ -95,6 +96,20 @@ class _PropertyMarketplacePageState
     final city = item['city']?.toString();
     return [if (locality != null && locality.isNotEmpty) locality,
       if (city != null && city.isNotEmpty) city].join(', ');
+  }
+
+  String? _previewImage(Map<String, dynamic> item) {
+    final images = item['images'];
+    if (images is! List) return null;
+    for (final image in images) {
+      if (image is Map) {
+        final value = image['imageUrl'] ?? image['url'];
+        if (value != null && value.toString().trim().isNotEmpty) {
+          return value.toString();
+        }
+      }
+    }
+    return null;
   }
 
   String _price(Map<String, dynamic> item) {
@@ -284,40 +299,70 @@ class _PropertyMarketplacePageState
                       final item = _properties[index];
                       final leaseMonths = item['leaseTermMonths'];
                       final area = item['landArea'];
+                      final previewImage = _previewImage(item);
+                      final propertyId = item['id']?.toString() ?? '';
                       return Card(
                         clipBehavior: Clip.antiAlias,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
+                        child: InkWell(
+                          onTap: propertyId.isEmpty
+                              ? null
+                              : () => context.push('/marketplace/$propertyId'),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(_title(item),
-                                  style: Theme.of(context).textTheme.titleMedium),
-                              const SizedBox(height: 4),
-                              Text(_location(item),
-                                  style: Theme.of(context).textTheme.bodySmall),
-                              const SizedBox(height: 8),
-                              Text(_price(item),
-                                  style: Theme.of(context).textTheme.titleLarge),
-                              if (['LEASE', 'SITE_LEASE'].contains(_category) &&
-                                  leaseMonths != null)
-                                Text('Lease term: $leaseMonths months'),
-                              if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE']
-                                      .contains(_category) &&
-                                  area != null)
-                                Text('Site area: $area ${item['landAreaUnit'] ?? ''}'),
-                              if (item['description'] != null) ...[
-                                const SizedBox(height: 8),
-                                Text(item['description'].toString(),
-                                    maxLines: 3, overflow: TextOverflow.ellipsis),
-                              ],
-                              const SizedBox(height: 12),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: FilledButton.icon(
-                                  onPressed: () => _sendEnquiry(item),
-                                  icon: const Icon(Icons.mail_outline),
-                                  label: const Text('Enquire'),
+                              if (previewImage != null)
+                                SizedBox(
+                                  height: 190,
+                                  width: double.infinity,
+                                  child: Image.network(
+                                    previewImage,
+                                    fit: BoxFit.cover,
+                                    webHtmlElementStrategy:
+                                        WebHtmlElementStrategy.prefer,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: Theme.of(context)
+                                          .colorScheme.surfaceContainerHighest,
+                                      child: const Icon(Icons.broken_image_outlined),
+                                    ),
+                                  ),
+                                ),
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(_title(item),
+                                        style: Theme.of(context).textTheme.titleMedium),
+                                    const SizedBox(height: 4),
+                                    Text(_location(item),
+                                        style: Theme.of(context).textTheme.bodySmall),
+                                    const SizedBox(height: 8),
+                                    Text(_price(item),
+                                        style: Theme.of(context).textTheme.titleLarge),
+                                    if (['LEASE', 'SITE_LEASE'].contains(_category) &&
+                                        leaseMonths != null)
+                                      Text('Lease term: $leaseMonths months'),
+                                    if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE']
+                                            .contains(_category) &&
+                                        area != null)
+                                      Text('Site area: $area ${item['landAreaUnit'] ?? ''}'),
+                                    if (item['description'] != null) ...[
+                                      const SizedBox(height: 8),
+                                      Text(item['description'].toString(),
+                                          maxLines: 3, overflow: TextOverflow.ellipsis),
+                                    ],
+                                    const SizedBox(height: 12),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: TextButton.icon(
+                                        onPressed: propertyId.isEmpty
+                                            ? null
+                                            : () => context.push('/marketplace/$propertyId'),
+                                        icon: const Icon(Icons.arrow_forward),
+                                        label: const Text('View details'),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
