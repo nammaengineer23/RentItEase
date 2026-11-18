@@ -243,7 +243,7 @@ class _MarketplaceListingDetailPageState
                                 fit: BoxFit.cover,
                                 webHtmlElementStrategy:
                                     WebHtmlElementStrategy.prefer,
-                                errorBuilder: (_, __, ___) => Container(
+                                errorBuilder: (_, _, _) => Container(
                                   color: Theme.of(context)
                                       .colorScheme.surfaceContainerHighest,
                                   child: const Icon(Icons.broken_image_outlined,
