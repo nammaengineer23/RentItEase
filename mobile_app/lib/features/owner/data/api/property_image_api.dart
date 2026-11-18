@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
+import 'package:http_parser/http_parser.dart';
 
 import '../../../../core/utils/app_image_url.dart';
 
@@ -57,7 +59,7 @@ class PropertyImageApi {
 
   Future<void> uploadSectionImages({
     required String propertyId,
-    required Map<String, List<File>> imagesBySection,
+    required Map<String, List<XFile>> imagesBySection,
     bool assignFirstAsPrimary = true,
   }) async {
     var primaryAssigned = !assignFirstAsPrimary;
@@ -77,7 +79,7 @@ class PropertyImageApi {
         // filename. Some camera providers omit the extension entirely.
         final bytes = await image.readAsBytes();
         final mimeType = lookupMimeType(
-          image.path,
+          image.name.isEmpty ? image.path : image.name,
           headerBytes: bytes.take(32).toList(),
         );
         final extension = switch (mimeType) {
@@ -92,6 +94,7 @@ class PropertyImageApi {
           MultipartFile.fromBytes(
             bytes,
             filename: 'property-image.$extension',
+            contentType: MediaType.parse(mimeType!),
           ),
         );
       }
