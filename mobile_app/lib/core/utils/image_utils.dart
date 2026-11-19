@@ -52,22 +52,71 @@ class ImageUtils {
 
   static Future<XFile> prepareImage(XFile file) async {
     final sourceBytes = await file.readAsBytes();
-    final mime = detectMimeType(file.name.isEmpty ? file.path : file.name, sourceBytes);
-
-    if (!allowedMimeTypes.contains(mime)) {
-      throw Exception('Only genuine JPG, PNG and WEBP images are allowed.');
-    }
-    if (sourceBytes.isEmpty || sourceBytes.length > maxFileSize) {
-      throw Exception('Image size should be greater than 0 and less than 5 MB.');
+    if (sourceBytes.isEmpty) {
+      throw const FormatException('The selected photo is empty or unreadable.');
     }
 
-    final compressed = await compressImage(file);
+    final sourceName = file.name.isEmpty ? file.path : file.name;
+    final sourceMime = detectMimeType(sourceName, sourceBytes);
+    final sourceExtension = sourceName.split('.').last.toLowerCase();
+    final isHeic = sourceMime == 'image/heic' ||
+        sourceMime == 'image/heif' ||
+        sourceExtension == 'heic' ||
+        sourceExtension == 'heif';
+    final sourceIsSupported = allowedMimeTypes.contains(sourceMime);
+
+    if (!sourceIsSupported && !isHeic) {
+      throw const FormatException(
+        'Only genuine JPG, PNG and WEBP photos are supported. Please choose or capture another photo.',
+      );
+    }
+
+    // Native camera providers may return HEIC/HEIF even when the UI asks for
+    // a regular photo. Re-encode on-device to JPEG before sending it to the
+    // API, which intentionally accepts only JPEG, PNG and WEBP.
+    if (kIsWeb && isHeic) {
+      throw const FormatException(
+        'This browser returned a HEIC/HEIF photo. Please capture or convert it to JPG, PNG or WEBP.',
+      );
+    }
+
+    if (sourceBytes.length > 25 * 1024 * 1024) {
+      throw const FormatException('The selected photo is too large to process.');
+    }
+
+    XFile prepared = file;
+    if (!kIsWeb) {
+      try {
+        prepared = await compressImage(file);
+      } catch (_) {
+        throw const FormatException(
+          'Could not process this photo. Please try capturing it again.',
+        );
+      }
+    }
+
+    final preparedBytes = await prepared.readAsBytes();
+    final preparedMime = detectMimeType(
+      prepared.name.isEmpty ? prepared.path : prepared.name,
+      preparedBytes,
+    );
+    if (!allowedMimeTypes.contains(preparedMime)) {
+      throw const FormatException(
+        'Photo processing did not produce a supported JPG, PNG or WEBP image. Please try again.',
+      );
+    }
+    if (preparedBytes.isEmpty || preparedBytes.length > maxFileSize) {
+      throw const FormatException(
+        'The processed photo must be less than 5 MB. Please choose a smaller image.',
+      );
+    }
+
     if (kDebugMode) {
-      final reduced = kIsWeb ? sourceBytes.length : await compressed.length();
       debugPrint('Original: ${(sourceBytes.length / 1024).toStringAsFixed(1)} KB');
-      debugPrint('Prepared: ${(reduced / 1024).toStringAsFixed(1)} KB');
+      debugPrint('Prepared: ${(preparedBytes.length / 1024).toStringAsFixed(1)} KB');
+      debugPrint('Prepared format: $preparedMime');
     }
-    return compressed;
+    return prepared;
   }
 
   static Future<List<XFile>> prepareImages(List<XFile> files) async {
