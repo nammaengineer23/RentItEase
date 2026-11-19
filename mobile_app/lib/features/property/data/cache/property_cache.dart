@@ -15,7 +15,7 @@ class PropertyCache {
   // Property media URLs are short-lived signed URLs. Keep the offline feed
   // cache shorter than the storage URL lifetime so a cold start never treats
   // an expired signed URL as a usable image/video URL.
-  static const _maxCacheAge = Duration(hours: 20);
+  static const _maxCacheAge = Duration(minutes: 45);
 
   Future<List<PropertyEntity>> readProperties() async {
     try {
