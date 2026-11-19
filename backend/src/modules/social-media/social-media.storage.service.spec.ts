@@ -87,6 +87,19 @@ describe('SocialMediaStorageService private GCS reels', () => {
     }));
   });
 
+  it('refreshes legacy Firebase/GCS social-video URLs instead of returning expired URLs', async () => {
+    const result = await service.getVideoDownloadUrl(
+      'https://storage.googleapis.com/rentitease-staging.firebasestorage.app/social-videos/property-1/old-reel.mp4?alt=media&token=expired',
+    );
+
+    expect(result).toBe('https://signed.example/reel.mp4');
+    expect(getSignedUrl).toHaveBeenCalledWith(expect.objectContaining({
+      version: 'v4',
+      action: 'read',
+      expires: expect.any(Number),
+    }));
+  });
+
   it('rejects social-video references outside the expected bucket and namespace', async () => {
     await expect(service.getVideoDownloadUrl(
       'gcs://other-bucket/social-videos/property-1/reel.mp4',
