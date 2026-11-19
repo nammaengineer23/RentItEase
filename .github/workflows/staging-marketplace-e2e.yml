@@ -138,6 +138,12 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
+      - name: Focused media storage and admin URL unit tests
+        run: >-
+          npx jest --config ./jest.config.js --runInBand
+          src/modules/social-media/social-media.storage.service.spec.ts
+          src/modules/admin/admin.service.spec.ts
+
       - name: Verify private Firebase Storage signed-URL access using staging WIF
         run: npx ts-node scripts/firebase-storage-acceptance.ts
 
