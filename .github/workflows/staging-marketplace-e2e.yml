@@ -196,6 +196,9 @@ jobs:
       - name: Lease lifecycle regression
         run: npx jest --config test/jest-release-e2e.json --runInBand --verbose test/release/lease-lifecycle.e2e-spec.ts
 
+      - name: Private chat attachment authorization and signed URL regression
+        run: npx jest --config test/jest-release-e2e.json --runInBand --verbose test/release/chat.e2e-spec.ts
+
       - name: Stop temporary API
         if: always()
         shell: bash
