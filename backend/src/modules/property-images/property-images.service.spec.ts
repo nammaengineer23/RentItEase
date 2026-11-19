@@ -71,6 +71,26 @@ describe('PropertyImagesService video tours', () => {
     expect(storage.uploadImage).not.toHaveBeenCalled();
   });
 
+  it('rejects property videos longer than 60 seconds', async () => {
+    property.findUnique.mockResolvedValue({
+      id: 'property-1',
+      ownerId: 'owner-1',
+      videoUrl: null,
+      videoPublicId: null,
+    });
+    jest.spyOn(service as any, 'readVideoDurationSeconds').mockResolvedValue(60.1);
+
+    await expect(
+      service.uploadVideo(
+        'property-1',
+        videoFile(60),
+        { id: 'owner-1', role: 'OWNER' },
+      ),
+    ).rejects.toThrow('Property videos must be 60 seconds or shorter.');
+
+    expect(storage.uploadVideo).not.toHaveBeenCalled();
+  });
+
   it('stores one video and removes the replaced storage object', async () => {
     property.findUnique.mockResolvedValue({
       id: 'property-1',
