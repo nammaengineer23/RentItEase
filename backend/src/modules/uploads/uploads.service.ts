@@ -116,7 +116,7 @@ export class UploadsService {
     }
 
     const expectedPrefix = `chat/${conversationId}/`;
-    if (!filename.startsWith(expectedPrefix) || filename.includes('..') || filename.includes('\\\\')) {
+    if (!filename.startsWith(expectedPrefix) || filename.includes('..') || filename.includes('\\')) {
       throw new ForbiddenException('Invalid chat attachment.');
     }
 
