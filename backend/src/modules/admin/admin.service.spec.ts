@@ -27,15 +27,56 @@ describe('AdminService', () => {
     },
   };
 
+  const storage = { getPublicMediaDownloadUrl: jest.fn(async (key: string) => `https://signed.example/${key}`) };
+
   const context = { adminId: 'admin-1', ipAddress: '127.0.0.1', device: 'test-device', reason: 'security review' };
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
+  it('refreshes the primary image URL in the admin property list', async () => {
+    prisma.property.findMany = jest.fn().mockResolvedValue([{
+      id: 'property-1',
+      title: 'Test property',
+      city: 'Bengaluru',
+      locality: 'Indiranagar',
+      price: 25000,
+      isVerified: true,
+      isAvailable: true,
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+      owner: { id: 'owner-1', fullName: 'Owner', email: 'owner@example.com' },
+      images: [{ publicId: 'properties/photo.jpg', imageUrl: 'https://expired.example/photo.jpg' }],
+      _count: { favorites: 0, visits: 0, reviews: 0 },
+    }]);
+    const service = new AdminService(prisma, socialMediaService as any, audit as any, storage as any);
+
+    const result = await service.getProperties();
+
+    expect(result[0].primaryImage).toBe('https://signed.example/properties/photo.jpg');
+    expect(storage.getPublicMediaDownloadUrl).toHaveBeenCalledWith('properties/photo.jpg');
+  });
+
+  it('refreshes image and video URLs in admin property details', async () => {
+    prisma.property.findUnique.mockResolvedValue({
+      id: 'property-1',
+      videoPublicId: 'property-videos/tour.mp4',
+      videoUrl: 'https://expired.example/tour.mp4',
+      images: [{ id: 'image-1', publicId: 'properties/photo.jpg', imageUrl: 'https://expired.example/photo.jpg' }],
+    });
+    const service = new AdminService(prisma, socialMediaService as any, audit as any, storage as any);
+
+    const result = await service.getProperty('property-1');
+
+    expect(result.images[0].imageUrl).toBe('https://signed.example/properties/photo.jpg');
+    expect(result.videoUrl).toBe('https://signed.example/property-videos/tour.mp4');
+    expect(storage.getPublicMediaDownloadUrl).toHaveBeenCalledWith('properties/photo.jpg');
+    expect(storage.getPublicMediaDownloadUrl).toHaveBeenCalledWith('property-videos/tour.mp4');
+  });
+
   it('rejects self-deactivation', async () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'admin-1', role: UserRole.ADMIN, isActive: true });
-    const service = new AdminService(prisma, socialMediaService as any, audit as any);
+    const service = new AdminService(prisma, socialMediaService as any, audit as any, storage as any);
     await expect(service.deactivateUser('admin-1', 'admin-1', context)).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -44,13 +85,13 @@ describe('AdminService', () => {
       .mockResolvedValueOnce({ id: 'admin-1', role: UserRole.ADMIN, isActive: true })
       .mockResolvedValueOnce({ id: 'admin-2', role: UserRole.ADMIN, isActive: true });
     prisma.user.count.mockResolvedValue(1);
-    const service = new AdminService(prisma, socialMediaService as any, audit as any);
+    const service = new AdminService(prisma, socialMediaService as any, audit as any, storage as any);
     await expect(service.deactivateUser('admin-2', 'admin-1', context)).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects self role changes', async () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'admin-1', role: UserRole.ADMIN, isActive: true });
-    const service = new AdminService(prisma, socialMediaService as any, audit as any);
+    const service = new AdminService(prisma, socialMediaService as any, audit as any, storage as any);
     await expect(service.updateUserRole('admin-1', UserRole.USER, 'admin-1', context)).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -65,7 +106,7 @@ describe('AdminService', () => {
     prisma.booking.count.mockResolvedValue(0);
     prisma.lease.count.mockResolvedValue(0);
     prisma.membership.count.mockResolvedValue(0);
-    const service = new AdminService(prisma, socialMediaService as any, audit as any);
+    const service = new AdminService(prisma, socialMediaService as any, audit as any, storage as any);
     await expect(service.deleteUser('owner-1', 'admin-1', context)).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -74,14 +115,14 @@ describe('AdminService', () => {
       .mockResolvedValueOnce({ id: 'admin-1', role: UserRole.ADMIN, isActive: true })
       .mockResolvedValueOnce({ id: 'user-1', role: UserRole.USER, isActive: true, ownerRequestStatus: 'NONE' });
     prisma.user.update.mockResolvedValue({ id: 'user-1', role: UserRole.OWNER, isActive: true });
-    const service = new AdminService(prisma, socialMediaService as any, audit as any);
+    const service = new AdminService(prisma, socialMediaService as any, audit as any, storage as any);
     await service.updateUserRole('user-1', UserRole.OWNER, 'admin-1', context);
     expect(audit.recordTx).toHaveBeenCalledWith(expect.anything(), context, 'USER_ROLE_CHANGE', 'USER', 'user-1', expect.any(Object), expect.any(Object));
   });
 
   it('rejects a non-admin actor even when the target exists', async () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'user-1', role: UserRole.USER, isActive: true });
-    const service = new AdminService(prisma, socialMediaService as any, audit as any);
+    const service = new AdminService(prisma, socialMediaService as any, audit as any, storage as any);
     await expect(service.activateUser('target', 'user-1', context)).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
