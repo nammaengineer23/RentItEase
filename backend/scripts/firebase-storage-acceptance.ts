@@ -9,7 +9,8 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 async function expectAnonymousAccessDenied(objectKey: string, label: string) {
-  const unsignedUrl = `https://storage.googleapis.com/${EXPECTED_BUCKET}/${encodeURIComponent(objectKey)}`;
+  const encodedObjectPath = objectKey.split('/').map(encodeURIComponent).join('/');
+  const unsignedUrl = `https://storage.googleapis.com/${EXPECTED_BUCKET}/${encodedObjectPath}`;
   const response = await fetch(unsignedUrl);
   assert(
     response.status === 401 || response.status === 403,
