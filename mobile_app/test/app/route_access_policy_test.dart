@@ -64,6 +64,48 @@ void main() {
       );
     });
 
+    test('tenant can open the property type selector to submit a first listing', () {
+      expect(
+        routeAccessRedirect(
+          location: '/owner/add-property',
+          isWeb: false,
+          isLoggedIn: true,
+          isSessionRestored: true,
+          role: 'USER',
+        ),
+        isNull,
+      );
+    });
+
+    test('tenant can open the property creation forms but not owner management', () {
+      for (final location in [
+        '/owner/add-property-form',
+        '/owner/add-marketplace-listing',
+      ]) {
+        expect(
+          routeAccessRedirect(
+            location: location,
+            isWeb: false,
+            isLoggedIn: true,
+            isSessionRestored: true,
+            role: 'USER',
+          ),
+          isNull,
+          reason: '$location is required for first property submission',
+        );
+      }
+      expect(
+        routeAccessRedirect(
+          location: '/owner/dashboard',
+          isWeb: false,
+          isLoggedIn: true,
+          isSessionRestored: true,
+          role: 'USER',
+        ),
+        '/home',
+      );
+    });
+
     test('owner cannot open tenant-only visit history', () {
       expect(
         routeAccessRedirect(
