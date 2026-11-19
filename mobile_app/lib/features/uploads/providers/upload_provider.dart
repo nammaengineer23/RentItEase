@@ -1,7 +1,6 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../config/environment.dart';
 import '../data/upload_api.dart';
 import '../data/upload_repository.dart';
@@ -80,7 +79,7 @@ class UploadNotifier extends StateNotifier<UploadState> {
   // Upload Single Image
   // ===========================================
 
-  Future<void> uploadImage(File image) async {
+  Future<void> uploadImage(XFile image) async {
     state = state.copyWith(isUploading: true, progress: 0, error: null);
 
     try {
@@ -100,7 +99,7 @@ class UploadNotifier extends StateNotifier<UploadState> {
   // Upload Multiple Images
   // ===========================================
 
-  Future<void> uploadImages(List<File> images) async {
+  Future<void> uploadImages(List<XFile> images) async {
     state = state.copyWith(isUploading: true, progress: 0, error: null);
 
     try {
