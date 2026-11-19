@@ -13,6 +13,12 @@ const _publicPaths = <String>{
   '/forgot-password',
 };
 
+const _tenantPropertySubmissionPaths = <String>{
+  '/owner/add-property',
+  '/owner/add-property-form',
+  '/owner/add-marketplace-listing',
+};
+
 const _authenticationPaths = <String>{
   '/auth',
   '/sign-in',
@@ -66,7 +72,11 @@ String? routeAccessRedirect({
     return '/admin/dashboard';
   }
 
-  if (location.startsWith('/owner/') && normalizedRole != 'OWNER') {
+  final tenantPropertySubmission =
+      normalizedRole == 'USER' && _tenantPropertySubmissionPaths.contains(location);
+  if (location.startsWith('/owner/') &&
+      normalizedRole != 'OWNER' &&
+      !tenantPropertySubmission) {
     return '/home';
   }
 

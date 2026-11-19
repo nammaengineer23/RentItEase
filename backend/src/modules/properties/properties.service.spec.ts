@@ -77,6 +77,37 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
     }
   });
 
+  it('creates an unpublished first-property draft for a tenant account', async () => {
+    const previous = process.env.PROPERTY_MARKETPLACE_ENABLED;
+    delete process.env.PROPERTY_MARKETPLACE_ENABLED;
+    property.create.mockResolvedValue({
+      id: 'property-tenant-draft',
+      ownerId: 'tenant-1',
+      isAvailable: false,
+      isVerified: false,
+      lifecycleStatus: 'DRAFT',
+    });
+    try {
+      const result = await service.create(
+        { transactionType: PropertyTransactionType.RENT } as any,
+        { id: 'tenant-1', role: UserRole.USER },
+      );
+      expect(property.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            ownerId: 'tenant-1',
+            isAvailable: false,
+            isVerified: false,
+          }),
+        }),
+      );
+      expect(result.property.lifecycleStatus).toBe('DRAFT');
+    } finally {
+      if (previous === undefined) delete process.env.PROPERTY_MARKETPLACE_ENABLED;
+      else process.env.PROPERTY_MARKETPLACE_ENABLED = previous;
+    }
+  });
+
   it('omits private survey references from create responses', async () => {
     const previous = process.env.PROPERTY_MARKETPLACE_ENABLED;
     process.env.PROPERTY_MARKETPLACE_ENABLED = 'true';
