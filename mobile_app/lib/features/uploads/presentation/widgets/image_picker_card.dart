@@ -7,7 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/utils/image_utils.dart';
 
 class ImagePickerCard extends StatefulWidget {
-  final Function(List<File>) onImagesChanged;
+  final Function(List<XFile>) onImagesChanged;
 
   final int maxImages;
   final String title;
@@ -26,7 +26,7 @@ class ImagePickerCard extends StatefulWidget {
 class _ImagePickerCardState extends State<ImagePickerCard> {
   final ImagePicker _picker = ImagePicker();
 
-  final List<File> _images = [];
+  final List<XFile> _images = [];
 
   bool _loading = false;
 
@@ -51,7 +51,7 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
 
       for (final file in files) {
         try {
-          final image = await ImageUtils.prepareImage(File(file.path));
+          final image = await ImageUtils.prepareImage(file);
 
           _images.add(image);
         } catch (e) {
@@ -89,7 +89,7 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
     });
 
     try {
-      final image = await ImageUtils.prepareImage(File(file.path));
+      final image = await ImageUtils.prepareImage(file);
 
       _images.add(image);
 
@@ -147,7 +147,7 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
                 borderRadius: BorderRadius.circular(12),
                 child: kIsWeb
                     ? Image.network(_images[index].path, fit: BoxFit.cover)
-                    : Image.file(_images[index], fit: BoxFit.cover),
+                    : Image.file(File(_images[index].path), fit: BoxFit.cover),
               ),
             ),
             Positioned(
