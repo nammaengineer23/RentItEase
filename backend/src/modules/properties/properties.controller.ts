@@ -22,9 +22,9 @@ export class PropertiesController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.OWNER, UserRole.USER)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create Property' })
+  @ApiOperation({ summary: 'Create Property submission' })
   create(@Body() dto: CreatePropertyDto, @Request() req: any) { return this.propertiesService.create(dto, req.user); }
 
   @Post('ai-suggestion')
@@ -47,7 +47,7 @@ export class PropertiesController {
 
   @Post(':id/submit')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.OWNER, UserRole.USER)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Submit property for admin verification' })
   submit(@Param('id') id: string, @Request() req: any) {
