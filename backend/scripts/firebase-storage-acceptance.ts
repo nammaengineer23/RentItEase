@@ -36,7 +36,7 @@ async function main() {
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/XioAAAAASUVORK5CYII=',
     'base64',
   );
-  const pdf = Buffer.from('%PDF-1.4\\nRentItEase staging private attachment acceptance test\\n%%EOF');
+  const pdf = Buffer.from('%PDF-1.4\nRentItEase staging private attachment acceptance test\n%%EOF');
   const imageFile = {
     buffer: png,
     mimetype: 'image/png',
