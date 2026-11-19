@@ -10,6 +10,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
 import { SocialMediaService } from '../social-media/social-media.service';
 import { AdminAuditService, AdminAuditContext } from './admin-audit.service';
+import { StorageService } from '../../storage/storage.service';
 
 @Injectable()
 export class AdminService {
@@ -17,6 +18,7 @@ export class AdminService {
     private readonly prisma: PrismaService,
     private readonly socialMediaService: SocialMediaService,
     private readonly audit: AdminAuditService,
+    private readonly storageService: StorageService,
   ) {}
 
   // ==========================
@@ -311,7 +313,7 @@ visits: {
           where: { isPrimary: true },
           orderBy: { displayOrder: 'asc' },
           take: 1,
-          select: { imageUrl: true },
+          select: { publicId: true, imageUrl: true },
         },
         _count: {
           select: { favorites: true, visits: true, reviews: true },
@@ -320,7 +322,7 @@ visits: {
       orderBy: { createdAt: 'desc' },
     });
 
-    return serializePrisma(properties.map((property) => ({
+    return Promise.all(properties.map(async (property) => serializePrisma({
       id: property.id,
       title: property.title,
       city: property.city,
@@ -332,7 +334,9 @@ visits: {
       totalFavorites: property._count.favorites,
       totalVisits: property._count.visits,
       totalReviews: property._count.reviews,
-      primaryImage: property.images[0]?.imageUrl ?? null,
+      primaryImage: property.images[0]?.publicId?.startsWith('properties/')
+        ? await this.storageService.getPublicMediaDownloadUrl(property.images[0].publicId)
+        : property.images[0]?.imageUrl ?? null,
       createdAt: property.createdAt,
     })));
   }
@@ -429,7 +433,19 @@ async getProperty(id: string) {
     );
   }
 
-  return serializePrisma(property);
+  const serialized = serializePrisma(property) as Record<string, any>;
+  if (Array.isArray(serialized.images)) {
+    serialized.images = await Promise.all(serialized.images.map(async (image: any) => ({
+      ...image,
+      imageUrl: image.publicId?.startsWith('properties/')
+        ? await this.storageService.getPublicMediaDownloadUrl(image.publicId)
+        : image.imageUrl,
+    })));
+  }
+  if (serialized.videoPublicId?.startsWith('property-videos/')) {
+    serialized.videoUrl = await this.storageService.getPublicMediaDownloadUrl(serialized.videoPublicId);
+  }
+  return serialized;
 }
 
   // ==========================
