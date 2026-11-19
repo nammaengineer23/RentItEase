@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
-import { getApps, initializeApp, cert } from 'firebase-admin/app';
+import { applicationDefault, getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
@@ -16,11 +16,23 @@ export class SocialMediaStorageService {
   constructor(private readonly prisma: PrismaService) {}
 
   private ensureFirebase() {
-    if (!getApps().length) {
-      const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-      if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !privateKey) throw new Error('Firebase Admin environment variables are required for video storage.');
-      initializeApp({ credential: cert({ projectId: process.env.FIREBASE_PROJECT_ID, clientEmail: process.env.FIREBASE_CLIENT_EMAIL, privateKey }), storageBucket: process.env.FIREBASE_STORAGE_BUCKET });
-    }
+    if (getApps().length) return;
+
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+    // Cloud Run uses its attached runtime service account through ADC.
+    // Local development may continue to use an explicitly supplied key pair.
+    const credential = clientEmail && privateKey
+      ? cert({ projectId, clientEmail, privateKey })
+      : applicationDefault();
+
+    initializeApp({
+      credential,
+      projectId,
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    });
   }
 
   private isBlockedIp(ip: string) {
