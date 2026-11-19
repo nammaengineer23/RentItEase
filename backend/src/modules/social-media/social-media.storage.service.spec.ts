@@ -1,10 +1,12 @@
+import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 import { SocialMediaStorageService } from './social-media.storage.service';
 
 jest.mock('firebase-admin/app', () => ({
   getApps: jest.fn(() => [{}]),
   initializeApp: jest.fn(),
-  cert: jest.fn(),
+  applicationDefault: jest.fn(() => ({ type: 'application-default' })),
+  cert: jest.fn(() => ({ type: 'service-account' })),
 }));
 
 jest.mock('firebase-admin/storage', () => ({
@@ -27,6 +29,39 @@ describe('SocialMediaStorageService private GCS reels', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getStorage as jest.Mock).mockReturnValue({ bucket: () => bucket });
+  });
+
+  it('initializes Firebase with ADC when running without explicit service-account keys', async () => {
+    const previousProjectId = process.env.FIREBASE_PROJECT_ID;
+    const previousBucket = process.env.FIREBASE_STORAGE_BUCKET;
+    const previousClientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const previousPrivateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+    process.env.FIREBASE_PROJECT_ID = 'rentitease-staging';
+    process.env.FIREBASE_STORAGE_BUCKET = 'rentitease-staging.firebasestorage.app';
+    delete process.env.FIREBASE_CLIENT_EMAIL;
+    delete process.env.FIREBASE_PRIVATE_KEY;
+    (getApps as jest.Mock).mockReturnValueOnce([]);
+
+    try {
+      await service.uploadBuffer(Buffer.from('video'), 'property-1');
+
+      expect(applicationDefault).toHaveBeenCalledTimes(1);
+      expect(initializeApp).toHaveBeenCalledWith(expect.objectContaining({
+        projectId: 'rentitease-staging',
+        storageBucket: 'rentitease-staging.firebasestorage.app',
+        credential: { type: 'application-default' },
+      }));
+    } finally {
+      if (previousProjectId === undefined) delete process.env.FIREBASE_PROJECT_ID;
+      else process.env.FIREBASE_PROJECT_ID = previousProjectId;
+      if (previousBucket === undefined) delete process.env.FIREBASE_STORAGE_BUCKET;
+      else process.env.FIREBASE_STORAGE_BUCKET = previousBucket;
+      if (previousClientEmail === undefined) delete process.env.FIREBASE_CLIENT_EMAIL;
+      else process.env.FIREBASE_CLIENT_EMAIL = previousClientEmail;
+      if (previousPrivateKey === undefined) delete process.env.FIREBASE_PRIVATE_KEY;
+      else process.env.FIREBASE_PRIVATE_KEY = previousPrivateKey;
+    }
   });
 
   it('stores reels privately and returns a stable GCS object reference', async () => {
