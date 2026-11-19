@@ -110,6 +110,13 @@ describe('Release E2E • Chat', () => {
     const filename = uploaded?.filename as string;
     expect(filename).toMatch(new RegExp('^chat/' + conversationId + '/'));
 
+    // Reject backslash-based key manipulation before checking message linkage.
+    await request(apiUrl())
+      .get('/uploads/file')
+      .query({ conversationId, filename: filename + '\\probe' })
+      .set(auth(tenant.token))
+      .expect(403);
+
     // An uploaded object is not downloadable until a non-deleted message links it.
     await request(apiUrl())
       .get('/uploads/file')
