@@ -14,6 +14,7 @@ import { SocialMediaStorageService } from './social-media.storage.service';
 import { RemotionVideoService } from './video/remotion-video.service';
 import { VideoTemplateService, PropertyVideoData } from './video/video-template.service';
 import { SocialProviderAmbiguousError } from './publishing/social-provider.errors';
+import { StorageService } from '../../storage/storage.service';
 
 @Injectable()
 export class SocialMediaService {
@@ -23,6 +24,7 @@ export class SocialMediaService {
     private readonly publishing: PublishingService,
     private readonly storage: SocialMediaStorageService,
     private readonly template: VideoTemplateService,
+    private readonly propertyStorage: StorageService,
   ) {}
 
   async generate(dto: GenerateVideoDto) {
@@ -249,12 +251,12 @@ export class SocialMediaService {
     const resolvedData = await Promise.all(data.map(async (property) => ({
       ...property,
       videoUrl: property.videoPublicId?.startsWith('property-videos/')
-        ? await this.storage.getVideoDownloadUrl(property.videoPublicId)
+        ? await this.propertyStorage.getPublicMediaDownloadUrl(property.videoPublicId)
         : property.videoUrl,
       images: await Promise.all((property.images ?? []).map(async (image: any) => ({
         ...image,
         imageUrl: image.publicId?.startsWith('properties/')
-          ? await this.storage.getPublicMediaDownloadUrl(image.publicId)
+          ? await this.propertyStorage.getPublicMediaDownloadUrl(image.publicId)
           : image.imageUrl,
       }))),
       socialMarketingConsent: property.socialMarketingConsent
