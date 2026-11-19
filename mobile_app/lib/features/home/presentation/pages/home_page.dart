@@ -234,12 +234,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                         children: [
                           const Icon(Icons.add_home_work_outlined, size: 26),
                           const SizedBox(width: 10),
-                          Expanded(
+                          const Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('List your property on RentItEase', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                                const SizedBox(height: 2),
+                                Text('List your property on RentItEase', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                                SizedBox(height: 2),
                                 Text(
                                   'Choose a property type and submit it for admin review.',
                                 ),
