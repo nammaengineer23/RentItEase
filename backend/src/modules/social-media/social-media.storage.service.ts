@@ -150,9 +150,21 @@ export class SocialMediaStorageService {
       });
       return url;
     }
-    // Preserve already-public legacy URLs while old prepared reels are retired.
+    // Older rows may store Firebase/GCS download URLs instead of stable
+    // gcs:// references. Recover only objects in our social-video namespace
+    // and issue a fresh private V4 URL rather than returning an expired URL.
     const legacyPath = this.storageObjectPathFromUrl(videoRef, bucket.name);
-    if (legacyPath?.startsWith('social-videos/')) return videoRef;
+    if (legacyPath?.startsWith('social-videos/')) {
+      if (!/^social-videos\/[A-Za-z0-9_-]{1,128}\/[A-Za-z0-9._-]+$/.test(legacyPath) || legacyPath.includes('..')) {
+        throw new Error('Invalid legacy social video object reference.');
+      }
+      const [url] = await bucket.file(legacyPath).getSignedUrl({
+        version: 'v4',
+        action: 'read',
+        expires: Date.now() + expiresInMs,
+      });
+      return url;
+    }
     throw new Error('Unsupported prepared video reference.');
   }
 
