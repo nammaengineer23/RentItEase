@@ -6,7 +6,7 @@ on:
       ref:
         description: Branch or commit to test (must contain this workflow and E2E tests)
         required: false
-        default: main
+        default: staging/integration-private-media-storage
         type: string
 
 permissions:
@@ -61,7 +61,7 @@ jobs:
       - name: Checkout PR branch under test
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref || 'main' }}
+          ref: ${{ inputs.ref || 'staging/integration-private-media-storage' }}
 
       - name: Authenticate to staging Google Cloud with Workload Identity Federation
         uses: google-github-actions/auth@v2
@@ -137,6 +137,9 @@ jobs:
 
       - name: Generate Prisma Client
         run: npx prisma generate
+
+      - name: Verify private Firebase Storage signed-URL access using staging WIF
+        run: npx ts-node scripts/firebase-storage-acceptance.ts
 
       - name: Apply migrations to the allowlisted isolated Neon database
         run: |
