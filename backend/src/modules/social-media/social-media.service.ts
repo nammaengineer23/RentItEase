@@ -14,6 +14,7 @@ import { SocialMediaStorageService } from './social-media.storage.service';
 import { RemotionVideoService } from './video/remotion-video.service';
 import { VideoTemplateService, PropertyVideoData } from './video/video-template.service';
 import { SocialProviderAmbiguousError } from './publishing/social-provider.errors';
+import { StorageService } from '../../storage/storage.service';
 
 @Injectable()
 export class SocialMediaService {
@@ -23,6 +24,7 @@ export class SocialMediaService {
     private readonly publishing: PublishingService,
     private readonly storage: SocialMediaStorageService,
     private readonly template: VideoTemplateService,
+    private readonly propertyStorage: StorageService,
   ) {}
 
   async generate(dto: GenerateVideoDto) {
@@ -235,10 +237,10 @@ export class SocialMediaService {
       this.prisma.property.findMany({
         where: { socialMarketingConsent: { approved: true } },
         select: {
-          id: true, title: true, city: true, locality: true, createdAt: true, videoUrl: true,
+          id: true, title: true, city: true, locality: true, createdAt: true, videoUrl: true, videoPublicId: true,
           owner: { select: { id: true, fullName: true } },
           socialMarketingConsent: { select: { id: true, approved: true, consentVersion: true, consentedAt: true, preparedVideoUrl: true, preparedCaption: true, preparedTitle: true, preparedAt: true } },
-          images: { where: { isPrimary: true }, select: { id: true, imageUrl: true }, take: 1 },
+          images: { where: { isPrimary: true }, select: { id: true, publicId: true, imageUrl: true }, take: 1 },
         },
         orderBy: { createdAt: 'desc' },
         skip: (safePage - 1) * safeLimit,
@@ -248,6 +250,15 @@ export class SocialMediaService {
     ]);
     const resolvedData = await Promise.all(data.map(async (property) => ({
       ...property,
+      videoUrl: property.videoPublicId?.startsWith('property-videos/')
+        ? await this.propertyStorage.getPublicMediaDownloadUrl(property.videoPublicId)
+        : property.videoUrl,
+      images: await Promise.all((property.images ?? []).map(async (image: any) => ({
+        ...image,
+        imageUrl: image.publicId?.startsWith('properties/')
+          ? await this.propertyStorage.getPublicMediaDownloadUrl(image.publicId)
+          : image.imageUrl,
+      }))),
       socialMarketingConsent: property.socialMarketingConsent
         ? {
             ...property.socialMarketingConsent,

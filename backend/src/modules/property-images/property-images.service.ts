@@ -149,7 +149,12 @@ export class PropertyImagesService {
     }
 
     // Verify the actual media container rather than trusting the client MIME type.
-    await this.readVideoDurationSeconds(file);
+    const durationSeconds = await this.readVideoDurationSeconds(file);
+    if (durationSeconds > 60) {
+      throw new BadRequestException(
+        'Property videos must be 60 seconds or shorter.',
+      );
+    }
 
     const uploaded = await this.storageService.uploadVideo(
       file,

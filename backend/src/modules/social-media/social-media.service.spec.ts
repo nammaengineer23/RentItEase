@@ -34,6 +34,9 @@ describe('SocialMediaService social publishing security', () => {
     buildPlatformCaption: jest.fn(() => 'safe caption'),
     buildTitle: jest.fn(() => 'safe title'),
   };
+  const propertyStorage: any = {
+    getPublicMediaDownloadUrl: jest.fn(async (key: string) => 'https://property-signed.example/' + key),
+  };
 
   const service = new SocialMediaService(
     prisma,
@@ -41,14 +44,22 @@ describe('SocialMediaService social publishing security', () => {
     publishing,
     storage,
     template,
+    propertyStorage,
   );
 
   beforeEach(() => jest.clearAllMocks());
 
-  it('returns a fresh preview URL for a stored private reel in the admin property list', async () => {
+  it('refreshes property image, property video and prepared reel URLs in the admin property list', async () => {
     prisma.$transaction.mockResolvedValueOnce([[
       {
         id: 'property-1',
+        videoUrl: 'https://expired.example/property-video.mp4',
+        videoPublicId: 'property-videos/property-1.mp4',
+        images: [{
+          id: 'image-1',
+          publicId: 'properties/property-1.jpg',
+          imageUrl: 'https://expired.example/property-image.jpg',
+        }],
         socialMarketingConsent: {
           preparedVideoUrl: 'gcs://bucket/social-videos/property-1/reel.mp4',
         },
@@ -57,8 +68,14 @@ describe('SocialMediaService social publishing security', () => {
 
     const result = await service.listProperties();
 
+    expect(result.data[0].images[0].imageUrl)
+      .toBe('https://property-signed.example/properties/property-1.jpg');
+    expect(result.data[0].videoUrl)
+      .toBe('https://property-signed.example/property-videos/property-1.mp4');
     expect(result.data[0].socialMarketingConsent.preparedVideoUrl)
       .toBe('https://signed.example/gcs%3A%2F%2Fbucket%2Fsocial-videos%2Fproperty-1%2Freel.mp4');
+    expect(propertyStorage.getPublicMediaDownloadUrl).toHaveBeenCalledWith('properties/property-1.jpg');
+    expect(propertyStorage.getPublicMediaDownloadUrl).toHaveBeenCalledWith('property-videos/property-1.mp4');
     expect(storage.getVideoDownloadUrl).toHaveBeenCalledWith(
       'gcs://bucket/social-videos/property-1/reel.mp4',
     );

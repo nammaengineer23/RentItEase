@@ -8,7 +8,6 @@ import 'package:path_provider/path_provider.dart';
 class ImageUtils {
   ImageUtils._();
 
-  /// Maximum size = 5 MB
   static const int maxFileSize = 5 * 1024 * 1024;
 
   static const List<String> allowedMimeTypes = [
@@ -17,111 +16,121 @@ class ImageUtils {
     'image/webp',
   ];
 
-  // =============================================
-  // Validate Image Type
-  // =============================================
+  /// Detect the format from the actual bytes first. The path is only a
+  /// fallback for providers that return no signature bytes.
+  static String? detectMimeType(String path, List<int> bytes) {
+    return lookupMimeType(path, headerBytes: bytes.take(32).toList());
+  }
 
-  static bool isValidImage(File file) {
-    final mime = lookupMimeType(file.path);
-
+  static bool isValidImage(String path, {List<int>? headerBytes}) {
+    final mime = lookupMimeType(path, headerBytes: headerBytes);
     return allowedMimeTypes.contains(mime);
   }
 
-  // =============================================
-  // Validate File Size
-  // =============================================
-
   static Future<bool> isValidSize(File file) async {
-    final size = await file.length();
-
-    return size <= maxFileSize;
+    return await file.length() <= maxFileSize;
   }
 
-  // =============================================
-  // Compress Image
-  // =============================================
-
-  static Future<File> compressImage(File file) async {
-    // Browser-picked files are represented by blob URLs. Native file-system
-    // compression APIs cannot read/write those paths, so keep the validated
-    // browser file unchanged and upload its bytes directly.
+  static Future<XFile> compressImage(XFile file) async {
+    // XFile.readAsBytes works with browser blob URLs. Native compression
+    // requires a real filesystem path, so only use it off the Web.
     if (kIsWeb) return file;
 
     final tempDir = await getTemporaryDirectory();
-
     final targetPath =
-        '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
-
+        '${tempDir.path}/${DateTime.now().microsecondsSinceEpoch}.jpg';
     final compressed = await FlutterImageCompress.compressAndGetFile(
-      file.absolute.path,
+      file.path,
       targetPath,
       quality: 80,
       minWidth: 1920,
       minHeight: 1080,
     );
-
-    if (compressed == null) {
-      return file;
-    }
-
-    return File(compressed.path);
+    return compressed ?? file;
   }
 
-  // =============================================
-  // Validate + Compress
-  // =============================================
-
-  static Future<File> prepareImage(File file) async {
-    if (!isValidImage(file)) {
-      throw Exception('Only JPG, PNG and WEBP images are allowed.');
+  static Future<XFile> prepareImage(XFile file) async {
+    final sourceBytes = await file.readAsBytes();
+    if (sourceBytes.isEmpty) {
+      throw const FormatException('The selected photo is empty or unreadable.');
     }
 
-    if (!await isValidSize(file)) {
-      throw Exception('Image size should be less than 5 MB.');
+    final sourceName = file.name.isEmpty ? file.path : file.name;
+    final sourceMime = detectMimeType(sourceName, sourceBytes);
+    final sourceExtension = sourceName.split('.').last.toLowerCase();
+    final isHeic = sourceMime == 'image/heic' ||
+        sourceMime == 'image/heif' ||
+        sourceExtension == 'heic' ||
+        sourceExtension == 'heif';
+    final sourceIsSupported = allowedMimeTypes.contains(sourceMime);
+
+    if (!sourceIsSupported && !isHeic) {
+      throw const FormatException(
+        'Only genuine JPG, PNG and WEBP photos are supported. Please choose or capture another photo.',
+      );
     }
 
-    final compressed = await compressImage(file);
+    // Native camera providers may return HEIC/HEIF even when the UI asks for
+    // a regular photo. Re-encode on-device to JPEG before sending it to the
+    // API, which intentionally accepts only JPEG, PNG and WEBP.
+    if (kIsWeb && isHeic) {
+      throw const FormatException(
+        'This browser returned a HEIC/HEIF photo. Please capture or convert it to JPG, PNG or WEBP.',
+      );
+    }
+
+    if (sourceBytes.length > 25 * 1024 * 1024) {
+      throw const FormatException('The selected photo is too large to process.');
+    }
+
+    XFile prepared = file;
+    if (!kIsWeb) {
+      try {
+        prepared = await compressImage(file);
+      } catch (_) {
+        throw const FormatException(
+          'Could not process this photo. Please try capturing it again.',
+        );
+      }
+    }
+
+    final preparedBytes = await prepared.readAsBytes();
+    final preparedMime = detectMimeType(
+      prepared.name.isEmpty ? prepared.path : prepared.name,
+      preparedBytes,
+    );
+    if (!allowedMimeTypes.contains(preparedMime)) {
+      throw const FormatException(
+        'Photo processing did not produce a supported JPG, PNG or WEBP image. Please try again.',
+      );
+    }
+    if (preparedBytes.isEmpty || preparedBytes.length > maxFileSize) {
+      throw const FormatException(
+        'The processed photo must be less than 5 MB. Please choose a smaller image.',
+      );
+    }
 
     if (kDebugMode) {
-      final original = await file.length();
-
-      final reduced = await compressed.length();
-
-      debugPrint('Original: ${(original / 1024).toStringAsFixed(1)} KB');
-
-      debugPrint('Compressed: ${(reduced / 1024).toStringAsFixed(1)} KB');
+      debugPrint('Original: ${(sourceBytes.length / 1024).toStringAsFixed(1)} KB');
+      debugPrint('Prepared: ${(preparedBytes.length / 1024).toStringAsFixed(1)} KB');
+      debugPrint('Prepared format: $preparedMime');
     }
-
-    return compressed;
+    return prepared;
   }
 
-  // =============================================
-  // Validate Multiple Images
-  // =============================================
-
-  static Future<List<File>> prepareImages(List<File> files) async {
-    final List<File> output = [];
-
+  static Future<List<XFile>> prepareImages(List<XFile> files) async {
+    final output = <XFile>[];
     for (final file in files) {
       output.add(await prepareImage(file));
     }
-
     return output;
   }
 
-  // =============================================
-  // Human Readable Size
-  // =============================================
-
   static String readableSize(int bytes) {
-    if (bytes < 1024) {
-      return '$bytes B';
-    }
-
+    if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) {
       return '${(bytes / 1024).toStringAsFixed(1)} KB';
     }
-
     return '${(bytes / 1024 / 1024).toStringAsFixed(2)} MB';
   }
 }

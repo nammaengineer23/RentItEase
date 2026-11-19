@@ -8,9 +8,10 @@ import { AdminModerationService } from './admin-moderation.service';
 import { AdminSearchController } from './admin-search.controller';
 import { SocialMediaModule } from '../social-media/social-media.module';
 import { AdminAuditModule } from './admin-audit.module';
+import { StorageModule } from '../../storage/storage.module';
 
 @Module({
-  imports: [DatabaseModule, SocialMediaModule, AdminAuditModule],
+  imports: [DatabaseModule, SocialMediaModule, AdminAuditModule, StorageModule],
   controllers: [AdminController, AdminModerationController, AdminSearchController],
   providers: [AdminService, AdminModerationService],
 })

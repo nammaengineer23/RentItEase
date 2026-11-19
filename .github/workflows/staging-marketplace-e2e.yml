@@ -6,7 +6,7 @@ on:
       ref:
         description: Branch or commit to test (must contain this workflow and E2E tests)
         required: false
-        default: main
+        default: staging/integration-private-media-storage
         type: string
 
 permissions:
@@ -61,7 +61,7 @@ jobs:
       - name: Checkout PR branch under test
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref || 'main' }}
+          ref: ${{ inputs.ref || 'staging/integration-private-media-storage' }}
 
       - name: Authenticate to staging Google Cloud with Workload Identity Federation
         uses: google-github-actions/auth@v2
@@ -138,6 +138,16 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
+      - name: Focused media storage and admin URL unit tests
+        run: >-
+          npx jest --config ./jest.config.js --runInBand
+          src/modules/social-media/social-media.storage.service.spec.ts
+          src/modules/social-media/social-media.service.spec.ts
+          src/modules/admin/admin.service.spec.ts
+
+      - name: Verify private Firebase Storage signed-URL access using staging WIF
+        run: npx ts-node scripts/firebase-storage-acceptance.ts
+
       - name: Apply migrations to the allowlisted isolated Neon database
         run: |
           npx prisma migrate deploy
@@ -192,6 +202,9 @@ jobs:
 
       - name: Lease lifecycle regression
         run: npx jest --config test/jest-release-e2e.json --runInBand --verbose test/release/lease-lifecycle.e2e-spec.ts
+
+      - name: Private chat attachment authorization and signed URL regression
+        run: npx jest --config test/jest-release-e2e.json --runInBand --verbose test/release/chat.e2e-spec.ts
 
       - name: Stop temporary API
         if: always()
