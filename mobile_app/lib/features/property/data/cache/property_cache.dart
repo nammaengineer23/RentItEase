@@ -12,12 +12,26 @@ import '../../domain/entities/property_entity.dart';
 class PropertyCache {
   static const _propertiesKey = 'property_feed_cache_v1';
   static const _updatedAtKey = 'property_feed_cache_updated_at_v1';
+  // Property media URLs are short-lived signed URLs. Keep the offline feed
+  // cache shorter than the storage URL lifetime so a cold start never treats
+  // an expired signed URL as a usable image/video URL.
+  static const _maxCacheAge = Duration(hours: 20);
 
   Future<List<PropertyEntity>> readProperties() async {
     try {
       final preferences = await SharedPreferences.getInstance();
       final raw = preferences.getString(_propertiesKey);
       if (raw == null || raw.isEmpty) return const <PropertyEntity>[];
+
+      final updatedAt = DateTime.tryParse(
+        preferences.getString(_updatedAtKey) ?? '',
+      );
+      if (updatedAt == null ||
+          DateTime.now().toUtc().difference(updatedAt.toUtc()) > _maxCacheAge) {
+        await preferences.remove(_propertiesKey);
+        await preferences.remove(_updatedAtKey);
+        return const <PropertyEntity>[];
+      }
 
       final decoded = jsonDecode(raw);
       if (decoded is! List) return const <PropertyEntity>[];
