@@ -99,7 +99,7 @@ describe('Release E2E • Chat', () => {
       extractData(create.body)?.id ?? extractData(create.body)?.conversation?.id;
     if (!conversationId) throw new Error('Unable to obtain private-attachment conversation ID.');
 
-    const pdf = Buffer.from('%PDF-1.4\\nRentItEase private chat attachment E2E\\n%%EOF');
+    const pdf = Buffer.from(['%PDF-1.4', 'RentItEase private chat attachment E2E', '%%EOF'].join(String.fromCharCode(10)));
     const upload = await request(apiUrl())
       .post('/uploads/file')
       .query({ conversationId })
