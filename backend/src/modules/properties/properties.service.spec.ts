@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { MembershipStatus, PropertyTransactionType, UserRole } from '@prisma/client';
 
 import { PropertiesService } from './properties.service';
@@ -22,11 +22,16 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
   } as any;
 
   const storage = { getPublicMediaDownloadUrl: jest.fn() };
+  const pushNotifications = { sendToAdmins: jest.fn() };
   let service: PropertiesService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new PropertiesService(prisma, storage as any);
+    service = new PropertiesService(
+      prisma,
+      storage as any,
+      pushNotifications as any,
+    );
   });
 
   it('refreshes property image and video URLs from stable GCS keys', async () => {
@@ -186,6 +191,27 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
         }),
       }),
     );
+  });
+
+  it('does not expose unapproved marketplace listing details by direct ID', async () => {
+    const previous = process.env.PROPERTY_MARKETPLACE_ENABLED;
+    process.env.PROPERTY_MARKETPLACE_ENABLED = 'true';
+    property.findUnique.mockResolvedValue({
+      id: 'draft-listing',
+      transactionType: PropertyTransactionType.SALE,
+      isVerified: false,
+      isAvailable: false,
+      reviews: [],
+      socialMediaPosts: [],
+    });
+    try {
+      await expect(service.findOne('draft-listing')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    } finally {
+      if (previous === undefined) delete process.env.PROPERTY_MARKETPLACE_ENABLED;
+      else process.env.PROPERTY_MARKETPLACE_ENABLED = previous;
+    }
   });
 
   it('does not expose owner contact without an active membership', async () => {

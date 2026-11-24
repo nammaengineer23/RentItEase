@@ -78,6 +78,11 @@ class _HomePageState extends ConsumerState<HomePage> {
     } catch (_) {}
   }
 
+  void _handleAddPropertyCta() {
+    // Tenants may submit a property for review. Owner capability is granted
+    // only when an admin approves that submitted property.
+    context.push('/owner/add-property');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -240,15 +245,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                               children: [
                                 Text('List your property on RentItEase', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                                 SizedBox(height: 2),
-                                Text(
-                                  'Choose a property type and submit it for admin review.',
-                                ),
+                                Text('Choose a property type and submit it for admin review.'),
                               ],
                             ),
                           ),
                           const SizedBox(width: 8),
                           FilledButton.icon(
-                            onPressed: () => context.push('/owner/add-property'),
+                            onPressed: _handleAddPropertyCta,
                             icon: const Icon(Icons.add),
                             label: const Text('Add Property'),
                           ),

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma.service';
-import { MembershipStatus, Prisma, PropertyTransactionType, UserRole } from '@prisma/client';
+import { MembershipStatus, Prisma, PropertyLifecycleStatus, PropertyTransactionType, UserRole } from '@prisma/client';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -14,12 +14,14 @@ import { FilterPropertiesDto } from './dto/filter-property.dto';
 import { UpdatePropertyAmenitiesDto } from './dto/update-property-amenities.dto';
 import { NearbyPropertiesDto } from './dto/nearby-properties.dto';
 import { StorageService } from '../../storage/storage.service';
+import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 
 @Injectable()
 export class PropertiesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
+    private readonly pushNotifications: PushNotificationsService,
   ) {}
 
   private marketplaceEnabled(): boolean {
@@ -762,7 +764,12 @@ export class PropertiesService {
       },
     });
 
-    if (!property || (!this.marketplaceEnabled() && property.transactionType !== PropertyTransactionType.RENT)) {
+    if (
+      !property ||
+      (!this.marketplaceEnabled() && property.transactionType !== PropertyTransactionType.RENT) ||
+      (property.transactionType !== PropertyTransactionType.RENT &&
+        (!property.isVerified || !property.isAvailable))
+    ) {
       throw new NotFoundException('Property not found.');
     }
 
@@ -1036,7 +1043,11 @@ export class PropertiesService {
         // Every owner edit requires a fresh admin review before the listing
         // becomes public again. Admin edits preserve the approval state.
         ...(user.role !== UserRole.ADMIN
-          ? { isVerified: false, isAvailable: false }
+          ? {
+              isVerified: false,
+              isAvailable: false,
+              lifecycleStatus: PropertyLifecycleStatus.DRAFT,
+            }
           : {}),
 
         amenities:
@@ -1108,6 +1119,23 @@ export class PropertiesService {
         isAvailable: false,
       },
     });
+
+    try {
+      await this.pushNotifications.sendToAdmins(
+        `property-submission:${updatedProperty.id}:${updatedProperty.updatedAt.toISOString()}`,
+        'Property approval required',
+        `"${updatedProperty.title}" was submitted for verification (${updatedProperty.transactionType.replace(/_/g, ' ')}).`,
+        {
+          screen: 'admin_properties',
+          propertyId: updatedProperty.id,
+          ownerId: updatedProperty.ownerId,
+          event: 'PROPERTY_SUBMITTED',
+        },
+      );
+    } catch (error) {
+      // Submission is already saved; notification delivery must not block the owner workflow.
+      console.error('Unable to queue admin property-submission notification:', error);
+    }
 
     return {
       success: true,

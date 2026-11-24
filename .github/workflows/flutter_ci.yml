@@ -20,6 +20,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      # Pin a supported JDK. The hosted runner's default JDK 25 reports
+      # java.version=25.0.5, which the Kotlin compiler bundled with this
+      # Android build cannot parse.
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -45,5 +53,13 @@ jobs:
         run: |
           flutter build apk --flavor staging --debug --verbose \
             --dart-define=STAGING=true \
-            --dart-define=API_BASE_URL=https://rentitease-staging-api-production.up.railway.app/api/v1
+            --dart-define=API_BASE_URL=https://rentitease-staging-api-h2jjodsmtq-el.a.run.app/api/v1
           test -f build/app/outputs/flutter-apk/app-staging-debug.apk
+
+      # Compile the browser target too: the photo picker must remain byte-backed
+      # and the staging Firebase Web configuration must compile in CI.
+      - name: Build staging Flutter Web
+        run: |
+          flutter build web --release \
+            --dart-define=STAGING=true \
+            --dart-define=API_BASE_URL=https://rentitease-staging-api-h2jjodsmtq-el.a.run.app/api/v1
