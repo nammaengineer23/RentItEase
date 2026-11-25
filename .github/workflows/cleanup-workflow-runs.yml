@@ -35,7 +35,7 @@ jobs:
       MAX_DELETE_PER_RUN: '100'
 
     steps:
-      - name: Delete workflow runs older than the retention limit
+      - name: Validate and optionally delete old workflow runs
         shell: bash
         run: |
           set -euo pipefail
@@ -45,6 +45,10 @@ jobs:
             exit 1
           fi
 
+          per_page=100
+          page=$(( KEEP_LATEST / per_page + 1 ))
+          skip=$(( KEEP_LATEST % per_page ))
+
           total_runs=$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?per_page=1&page=1" --jq '.total_count')
           echo "Found ${total_runs} workflow runs. Retaining the newest ${KEEP_LATEST}."
 
@@ -53,12 +57,11 @@ jobs:
             exit 0
           fi
 
-          # GitHub returns workflow runs newest-first by default. Fetch only page 2:
-          # page 1 is the 100 newest runs, so page 2 contains the next 100 candidates.
-          # Avoid paginating thousands of historical runs on every cleanup execution.
+          # Fetch only the page containing the first run beyond the retention limit.
+          # The API is newest-first; skip the retained entries on that page.
           mapfile -t old_run_ids < <(
-            gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?per_page=100&page=2" \
-              --jq '.workflow_runs[].id'
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?per_page=${per_page}&page=${page}" \
+              --jq '.workflow_runs[].id' | tail -n +$((skip + 1))
           )
 
           old_run_count=${#old_run_ids[@]}
@@ -67,7 +70,14 @@ jobs:
             delete_count=$MAX_DELETE_PER_RUN
           fi
 
-          echo "Eligible old runs: ${old_run_count}. This run will delete at most ${delete_count}."
+          echo "Eligible old runs on this page: ${old_run_count}. Maximum deletions: ${delete_count}."
+
+          # Pushes to the maintenance branch validate the script without deleting
+          # historical runs. Actual cleanup runs only on schedule or manual dispatch.
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+            echo "Push validation only: no workflow runs will be deleted."
+            exit 0
+          fi
 
           deleted=0
           failures=0
@@ -80,26 +90,33 @@ jobs:
             fi
 
             success=false
-            for attempt in 1 2 3 4 5; do
+            for attempt in 1 2 3 4 5 6; do
               if gh api --method DELETE "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" >/dev/null; then
                 success=true
                 break
               fi
+
               echo "::warning::Delete attempt ${attempt} failed for workflow run ${run_id}."
-              sleep $((attempt * 2))
+              delay=$(( 2 ** attempt ))
+              if (( delay > 30 )); then
+                delay=30
+              fi
+              sleep "$delay"
             done
 
             if [[ "$success" == true ]]; then
               deleted=$((deleted + 1))
+              # Reduce request bursts against the GitHub Actions API.
+              sleep 1
             else
               failures=$((failures + 1))
-              echo "::warning::Failed to delete workflow run ${run_id} after 5 attempts."
+              echo "::warning::Failed to delete workflow run ${run_id} after 6 attempts."
             fi
           done
 
           remaining=$((old_run_count - deleted))
           echo "Deleted ${deleted} old workflow runs."
-          echo "Old runs remaining beyond retention: approximately ${remaining}."
+          echo "Old runs remaining on this page: approximately ${remaining}."
           echo "Deletion failures: ${failures}"
 
           if (( failures > 0 )); then
