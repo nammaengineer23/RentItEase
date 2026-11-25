@@ -45,14 +45,7 @@ jobs:
             exit 1
           fi
 
-          mapfile -t run_ids < <(
-            gh api --paginate "/repos/${GITHUB_REPOSITORY}/actions/runs?per_page=100" \
-              --jq '.workflow_runs[] | "\(.created_at)\t\(.id)"' \
-              | sort -r \
-              | cut -f2
-          )
-
-          total_runs=${#run_ids[@]}
+          total_runs=$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?per_page=1&page=1" --jq '.total_count')
           echo "Found ${total_runs} workflow runs. Retaining the newest ${KEEP_LATEST}."
 
           if (( total_runs <= KEEP_LATEST )); then
@@ -60,7 +53,14 @@ jobs:
             exit 0
           fi
 
-          old_run_ids=("${run_ids[@]:KEEP_LATEST}")
+          # GitHub returns workflow runs newest-first by default. Fetch only page 2:
+          # page 1 is the 100 newest runs, so page 2 contains the next 100 candidates.
+          # Avoid paginating thousands of historical runs on every cleanup execution.
+          mapfile -t old_run_ids < <(
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?per_page=100&page=2" \
+              --jq '.workflow_runs[].id'
+          )
+
           old_run_count=${#old_run_ids[@]}
           delete_count=$old_run_count
           if (( delete_count > MAX_DELETE_PER_RUN )); then
