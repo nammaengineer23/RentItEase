@@ -7,7 +7,6 @@ import {
   deleteUser,
   getUser,
   getUsers,
-  updateUserRole,
   type AdminUserDetails,
   type AdminUserListItem,
   type UserRole,
@@ -42,13 +41,11 @@ function UserDetailsPanel({
   user,
   busy,
   onClose,
-  onRoleChange,
   onToggleStatus,
 }: {
   user: AdminUserDetails;
   busy: boolean;
   onClose: () => void;
-  onRoleChange: (role: UserRole) => void;
   onToggleStatus: () => void;
 }) {
   return (
@@ -71,16 +68,7 @@ function UserDetailsPanel({
         <div className="user-detail-grid">
           <div>
             <span>Role</span>
-            <select
-              className="filter-select"
-              value={user.role}
-              disabled={busy}
-              onChange={(event) => onRoleChange(event.target.value as UserRole)}
-            >
-              <option value="USER">User</option>
-              <option value="OWNER">Owner</option>
-              <option value="ADMIN">Administrator</option>
-            </select>
+  <strong>{roleLabel(user.role)}</strong>
           </div>
 
           <div>
@@ -274,30 +262,6 @@ export function UsersPage() {
     }
   }
 
-  async function handleRoleChange(user: AdminUserListItem, role: UserRole) {
-    if (role === user.role) return;
-    const confirmed = window.confirm(
-      `Change ${user.fullName}'s role from ${roleLabel(user.role)} to ${roleLabel(role)}?`,
-    );
-    if (!confirmed) return;
-
-    setBusyUserId(user.id);
-    setError("");
-    try {
-      const updated = await updateUserRole(user.id, role);
-      setUsers((current) =>
-        current.map((item) => item.id === user.id ? { ...item, ...updated } : item),
-      );
-      if (selectedUser?.id === user.id) {
-        setSelectedUser((current) => current ? { ...current, ...updated } : current);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to update user role.");
-    } finally {
-      setBusyUserId(null);
-    }
-  }
-
   async function handleDelete(user: AdminUserListItem) {
     if (user.role === "ADMIN") {
       window.alert(
@@ -434,19 +398,7 @@ export function UsersPage() {
                       <td>{user.phone || "—"}</td>
 
                       <td>
-                        <select
-                          className="filter-select"
-                          value={user.role}
-                          disabled={busy}
-                          aria-label={`Role for ${user.fullName}`}
-                          onChange={(event) =>
-                            void handleRoleChange(user, event.target.value as UserRole)
-                          }
-                        >
-                          <option value="USER">User</option>
-                          <option value="OWNER">Owner</option>
-                          <option value="ADMIN">Administrator</option>
-                        </select>
+              <strong>{roleLabel(user.role)}</strong>
                       </td>
 
                       <td>
@@ -513,7 +465,6 @@ export function UsersPage() {
           user={selectedUser}
           busy={busyUserId === selectedUser.id}
           onClose={() => setSelectedUser(null)}
-          onRoleChange={(role) => void handleRoleChange(selectedUser, role)}
           onToggleStatus={() => void handleToggleStatus(selectedUser)}
         />
       )}

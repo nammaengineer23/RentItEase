@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { ImageFileValidator } from '../../common/validators/image-file.validator';
 
 import { PropertyImagesService } from './property-images.service';
 
@@ -349,5 +350,142 @@ describe('PropertyImagesService signed image retrieval', () => {
 
     expect(result.images[0].imageUrl).toBe('https://legacy.example/photo.jpg');
     expect(storage.getPublicMediaDownloadUrl).not.toHaveBeenCalled();
+  });
+});
+
+describe('PropertyImagesService tenant-owned draft media uploads', () => {
+  const property = {
+    findUnique: jest.fn(),
+    update: jest.fn(),
+  };
+
+  const propertyImage = {
+    count: jest.fn(),
+    updateMany: jest.fn(),
+    create: jest.fn(),
+  };
+
+  const tx = { propertyImage };
+
+  const prisma = {
+    property,
+    propertyImage,
+    $transaction: jest.fn(
+      async (callback: (client: typeof tx) => unknown) => callback(tx),
+    ),
+  } as any;
+
+  const storage = {
+    uploadImage: jest.fn(),
+    uploadVideo: jest.fn(),
+    deleteImage: jest.fn(),
+  } as any;
+
+  let service: PropertyImagesService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new PropertyImagesService(prisma, storage);
+
+    property.findUnique.mockResolvedValue({
+      id: 'draft-property-1',
+      ownerId: 'tenant-1',
+      videoUrl: null,
+      videoPublicId: null,
+    });
+
+    propertyImage.count
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
+
+    propertyImage.create.mockResolvedValue({
+      id: 'image-1',
+      propertyId: 'draft-property-1',
+    });
+
+    storage.uploadImage.mockResolvedValue({
+      imageUrl: 'https://media.example/photo.jpg',
+      publicId: 'properties/photo.jpg',
+    });
+
+    storage.uploadVideo.mockResolvedValue({
+      imageUrl: 'https://media.example/tour.mp4',
+      publicId: 'property-videos/tour.mp4',
+    });
+
+    property.update.mockResolvedValue({
+      id: 'draft-property-1',
+      videoUrl: 'https://media.example/tour.mp4',
+    });
+
+    jest.spyOn(ImageFileValidator.prototype, 'isValid')
+      .mockReturnValue(true);
+    jest.spyOn(ImageFileValidator.prototype, 'hasValidContent')
+      .mockResolvedValue(true);
+    jest.spyOn(service as any, 'readVideoDurationSeconds')
+      .mockResolvedValue(30);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('allows a USER who owns a draft property to upload photos', async () => {
+    const file = {
+      buffer: Buffer.from('test-image'),
+      mimetype: 'image/jpeg',
+      originalname: 'photo.jpg',
+      size: 100,
+    } as Express.Multer.File;
+
+    await expect(service.uploadImages(
+      'draft-property-1',
+      [file],
+      true,
+      'OTHER' as any,
+      { id: 'tenant-1', role: 'USER' },
+    )).resolves.toMatchObject({
+      success: true,
+      message: 'Images uploaded successfully.',
+    });
+
+    expect(storage.uploadImage).toHaveBeenCalledWith(file, 'properties');
+    expect(propertyImage.create).toHaveBeenCalled();
+  });
+
+  it('allows a USER who owns a draft property to upload an optional video', async () => {
+    const file = {
+      buffer: Buffer.alloc(64),
+      mimetype: 'video/mp4',
+      originalname: 'tour.mp4',
+      size: 64,
+    } as Express.Multer.File;
+
+    await expect(service.uploadVideo(
+      'draft-property-1',
+      file,
+      { id: 'tenant-1', role: 'USER' },
+    )).resolves.toMatchObject({
+      success: true,
+      data: {
+        id: 'draft-property-1',
+        videoUrl: 'https://media.example/tour.mp4',
+      },
+    });
+
+    expect(storage.uploadVideo).toHaveBeenCalledWith(file, 'property-videos');
+    expect(property.update).toHaveBeenCalled();
+  });
+
+  it('continues to reject photo uploads from a different user', async () => {
+    await expect(service.uploadImages(
+      'draft-property-1',
+      [{} as Express.Multer.File],
+      false,
+      'OTHER' as any,
+      { id: 'another-user', role: 'USER' },
+    )).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(storage.uploadImage).not.toHaveBeenCalled();
   });
 });

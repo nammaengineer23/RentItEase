@@ -12,12 +12,17 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
     create: jest.fn(),
     findMany: jest.fn(),
     findUnique: jest.fn(),
+    update: jest.fn(),
+  };
+  const propertyImage = {
+    count: jest.fn(),
   };
   const membership = {
     findFirst: jest.fn(),
   };
   const prisma = {
     property,
+    propertyImage,
     membership,
   } as any;
 
@@ -244,6 +249,24 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
         }),
       }),
     );
+  });
+
+  it('rejects property submission when no photo has been uploaded', async () => {
+    property.findUnique.mockResolvedValue({
+      id: 'property-1',
+      ownerId: 'owner-1',
+      lifecycleStatus: 'DRAFT',
+    });
+    propertyImage.count.mockResolvedValue(0);
+
+    await expect(
+      service.submit('property-1', { id: 'owner-1' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(propertyImage.count).toHaveBeenCalledWith({
+      where: { propertyId: 'property-1' },
+    });
+    expect(property.update).not.toHaveBeenCalled();
   });
 
   it('returns owner contact to an active member', async () => {

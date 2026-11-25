@@ -10,7 +10,6 @@ const navItems = [
   { label: "Users", path: "/users" },
   { label: "Properties", path: "/properties" },
   { label: "Document Review", path: "/property-document-review" },
-  { label: "Owner Requests", path: "/owner-requests" },
   { label: "Reviews", path: "/reviews" },
   { label: "Visits", path: "/visits" },
   { label: "Analytics", path: "/analytics" },

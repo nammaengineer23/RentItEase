@@ -54,16 +54,18 @@ class _PropertyMarketplacePageState
       _error = null;
     });
     try {
-      final response = await ref.read(dioProvider).get(
-        '/properties',
-        queryParameters: {
-          'transactionType': _category,
-          'isAvailable': true,
-          'page': 1,
-          'limit': 50,
-          if (_search.trim().isNotEmpty) 'search': _search.trim(),
-        },
-      );
+      final response = await ref
+          .read(dioProvider)
+          .get(
+            '/properties',
+            queryParameters: {
+              'transactionType': _category,
+              'isAvailable': true,
+              'page': 1,
+              'limit': 50,
+              if (_search.trim().isNotEmpty) 'search': _search.trim(),
+            },
+          );
       final payload = _unwrap(response.data);
       dynamic rows = payload;
       if (payload is Map) {
@@ -72,18 +74,24 @@ class _PropertyMarketplacePageState
       if (rows is! List) {
         throw const FormatException('Unexpected property-list response.');
       }
-      final parsed = rows.whereType<Map>().map(Map<String, dynamic>.from).toList();
+      final parsed = rows
+          .whereType<Map>()
+          .map(Map<String, dynamic>.from)
+          .toList();
       if (mounted) setState(() => _properties = parsed);
     } on DioException catch (error) {
       if (mounted) {
         final data = _unwrap(error.response?.data);
         final message = data is Map ? data['message'] : null;
-        setState(() => _error = message is String
-            ? message
-            : 'Could not load listings. Please try again.');
+        setState(
+          () => _error = message is String
+              ? message
+              : 'Could not load listings. Please try again.',
+        );
       }
     } catch (_) {
-      if (mounted) setState(() => _error = 'Could not read listings. Please refresh.');
+      if (mounted)
+        setState(() => _error = 'Could not read listings. Please refresh.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -95,8 +103,10 @@ class _PropertyMarketplacePageState
   String _location(Map<String, dynamic> item) {
     final locality = item['locality']?.toString();
     final city = item['city']?.toString();
-    return [if (locality != null && locality.isNotEmpty) locality,
-      if (city != null && city.isNotEmpty) city].join(', ');
+    return [
+      if (locality != null && locality.isNotEmpty) locality,
+      if (city != null && city.isNotEmpty) city,
+    ].join(', ');
   }
 
   String? _previewImage(Map<String, dynamic> item) {
@@ -131,15 +141,15 @@ class _PropertyMarketplacePageState
     if (!_marketplaceEnabled) {
       return Scaffold(
         appBar: AppBar(
-        title: const Text('Property Marketplace'),
-        actions: [
-          IconButton(
-            tooltip: 'My enquiries',
-            onPressed: () => context.push('/my-property-enquiries'),
-            icon: const Icon(Icons.mark_email_read_outlined),
-          ),
-        ],
-      ),
+          title: const Text('Property Marketplace'),
+          actions: [
+            IconButton(
+              tooltip: 'My enquiries',
+              onPressed: () => context.push('/my-property-enquiries'),
+              icon: const Icon(Icons.mark_email_read_outlined),
+            ),
+          ],
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -148,12 +158,16 @@ class _PropertyMarketplacePageState
               children: [
                 const Icon(Icons.storefront_outlined, size: 52),
                 const SizedBox(height: 16),
-                Text('Property sales and long-term leases are not enabled yet.',
-                    style: Theme.of(context).textTheme.titleMedium,
-                    textAlign: TextAlign.center),
+                Text(
+                  'Property sales and long-term leases are not enabled yet.',
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 8),
-                const Text('Existing rental listings and bookings are unchanged.',
-                    textAlign: TextAlign.center),
+                const Text(
+                  'Existing rental listings and bookings are unchanged.',
+                  textAlign: TextAlign.center,
+                ),
               ],
             ),
           ),
@@ -175,66 +189,80 @@ class _PropertyMarketplacePageState
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Column(
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: const [
-                    ('SALE', 'House Sale'),
-                    ('LEASE', 'House Lease'),
-                    ('SITE_RENT', 'Site Rent'),
-                    ('SITE_LEASE', 'Site Lease'),
-                    ('SITE_SALE', 'Site Sale'),
-                  ].map((entry) => ChoiceChip(
-                    label: Text(entry.$2),
-                    selected: _category == entry.$1,
-                    onSelected: (selected) {
-                      if (!selected) return;
-                      setState(() {
-                        _category = entry.$1;
-                        _properties = const [];
-                      });
-                      _load();
-                    },
-                  )).toList(),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _searchController,
-                  textInputAction: TextInputAction.search,
-                  onChanged: (value) => _search = value,
-                  onSubmitted: (_) => _load(),
-                  decoration: InputDecoration(
-                    hintText: 'Search by title or location',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: IconButton(
-                      tooltip: 'Search',
-                      onPressed: _load,
-                      icon: const Icon(Icons.arrow_forward),
-                    ),
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (_loading) const LinearProgressIndicator(),
-          if (_error != null)
+          children: [
             Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(children: [
-                Expanded(child: Text(_error!, style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                ))),
-                TextButton(onPressed: _load, child: const Text('Retry')),
-              ]),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Column(
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children:
+                        const [
+                              ('SALE', 'House Sale'),
+                              ('LEASE', 'House Lease'),
+                              ('SITE_RENT', 'Site Rent'),
+                              ('SITE_LEASE', 'Site Lease'),
+                              ('SITE_SALE', 'Site Sale'),
+                            ]
+                            .map(
+                              (entry) => ChoiceChip(
+                                label: Text(entry.$2),
+                                selected: _category == entry.$1,
+                                onSelected: (selected) {
+                                  if (!selected) return;
+                                  setState(() {
+                                    _category = entry.$1;
+                                    _properties = const [];
+                                  });
+                                  _load();
+                                },
+                              ),
+                            )
+                            .toList(),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _searchController,
+                    textInputAction: TextInputAction.search,
+                    onChanged: (value) => _search = value,
+                    onSubmitted: (_) => _load(),
+                    decoration: InputDecoration(
+                      hintText: 'Search by title or location',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: IconButton(
+                        tooltip: 'Search',
+                        onPressed: _load,
+                        icon: const Icon(Icons.arrow_forward),
+                      ),
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          _properties.isEmpty && !_loading
-                ? const Center(child: Text('No listings found for this category.'))
+            if (_loading) const LinearProgressIndicator(),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                    TextButton(onPressed: _load, child: const Text('Retry')),
+                  ],
+                ),
+              ),
+            _properties.isEmpty && !_loading
+                ? const Center(
+                    child: Text('No listings found for this category.'),
+                  )
                 : ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -266,9 +294,12 @@ class _PropertyMarketplacePageState
                                     webHtmlElementStrategy:
                                         WebHtmlElementStrategy.prefer,
                                     errorBuilder: (_, _, _) => Container(
-                                      color: Theme.of(context)
-                                          .colorScheme.surfaceContainerHighest,
-                                      child: const Icon(Icons.broken_image_outlined),
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerHighest,
+                                      child: const Icon(
+                                        Icons.broken_image_outlined,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -277,25 +308,48 @@ class _PropertyMarketplacePageState
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(_title(item),
-                                        style: Theme.of(context).textTheme.titleMedium),
+                                    Text(
+                                      _title(item),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium,
+                                    ),
                                     const SizedBox(height: 4),
-                                    Text(_location(item),
-                                        style: Theme.of(context).textTheme.bodySmall),
+                                    Text(
+                                      _location(item),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
                                     const SizedBox(height: 8),
-                                    Text(_price(item),
-                                        style: Theme.of(context).textTheme.titleLarge),
-                                    if (['LEASE', 'SITE_LEASE'].contains(_category) &&
+                                    Text(
+                                      _price(item),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleLarge,
+                                    ),
+                                    if ([
+                                          'LEASE',
+                                          'SITE_LEASE',
+                                        ].contains(_category) &&
                                         leaseMonths != null)
                                       Text('Lease term: $leaseMonths months'),
-                                    if (['SITE_RENT', 'SITE_LEASE', 'SITE_SALE']
-                                            .contains(_category) &&
+                                    if ([
+                                          'SITE_RENT',
+                                          'SITE_LEASE',
+                                          'SITE_SALE',
+                                        ].contains(_category) &&
                                         area != null)
-                                      Text('Site area: $area ${item['landAreaUnit'] ?? ''}'),
+                                      Text(
+                                        'Site area: $area ${item['landAreaUnit'] ?? ''}',
+                                      ),
                                     if (item['description'] != null) ...[
                                       const SizedBox(height: 8),
-                                      Text(item['description'].toString(),
-                                          maxLines: 3, overflow: TextOverflow.ellipsis),
+                                      Text(
+                                        item['description'].toString(),
+                                        maxLines: 3,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ],
                                     const SizedBox(height: 12),
                                     Align(
@@ -303,7 +357,9 @@ class _PropertyMarketplacePageState
                                       child: TextButton.icon(
                                         onPressed: propertyId.isEmpty
                                             ? null
-                                            : () => context.push('/marketplace/$propertyId'),
+                                            : () => context.push(
+                                                '/marketplace/$propertyId',
+                                              ),
                                         icon: const Icon(Icons.arrow_forward),
                                         label: const Text('View details'),
                                       ),
@@ -317,7 +373,7 @@ class _PropertyMarketplacePageState
                       );
                     },
                   ),
-        ],
+          ],
         ),
       ),
     );

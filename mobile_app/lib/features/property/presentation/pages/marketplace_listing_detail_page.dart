@@ -68,13 +68,17 @@ class _MarketplaceListingDetailPageState
       final payload = _unwrap(error.response?.data);
       final message = payload is Map ? payload['message'] : null;
       if (mounted) {
-        setState(() => _error = message is String
-            ? message
-            : 'Could not load this listing. It may no longer be available.');
+        setState(
+          () => _error = message is String
+              ? message
+              : 'Could not load this listing. It may no longer be available.',
+        );
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Could not read this listing. Please try again.');
+        setState(
+          () => _error = 'Could not read this listing. Please try again.',
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -102,10 +106,14 @@ class _MarketplaceListingDetailPageState
   List<String> _images(Map<String, dynamic> property) {
     final raw = property['images'];
     if (raw is! List) return const [];
-    return raw.whereType<Map>().map((item) {
-      final value = item['imageUrl'] ?? item['url'];
-      return value == null ? '' : AppImageUrl.resolve(value);
-    }).where((url) => url.trim().isNotEmpty).toList();
+    return raw
+        .whereType<Map>()
+        .map((item) {
+          final value = item['imageUrl'] ?? item['url'];
+          return value == null ? '' : AppImageUrl.resolve(value);
+        })
+        .where((url) => url.trim().isNotEmpty)
+        .toList();
   }
 
   Future<void> _sendEnquiry(Map<String, dynamic> property) async {
@@ -151,10 +159,12 @@ class _MarketplaceListingDetailPageState
     controller.dispose();
     if (message == null || !mounted) return;
     try {
-      await ref.read(dioProvider).post('/property-enquiries', data: {
-        'propertyId': widget.propertyId,
-        'message': message,
-      });
+      await ref
+          .read(dioProvider)
+          .post(
+            '/property-enquiries',
+            data: {'propertyId': widget.propertyId, 'message': message},
+          );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Enquiry sent to the listing owner.')),
@@ -165,9 +175,13 @@ class _MarketplaceListingDetailPageState
       final payload = _unwrap(error.response?.data);
       final responseMessage = payload is Map ? payload['message'] : null;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(responseMessage is String
-            ? responseMessage
-            : 'Unable to send enquiry. Please try again.')),
+        SnackBar(
+          content: Text(
+            responseMessage is String
+                ? responseMessage
+                : 'Unable to send enquiry. Please try again.',
+          ),
+        ),
       );
     }
   }
@@ -188,9 +202,9 @@ class _MarketplaceListingDetailPageState
           Expanded(
             child: Text(
               value.toString(),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -207,126 +221,159 @@ class _MarketplaceListingDetailPageState
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
-                        FilledButton(onPressed: _load, child: const Text('Retry')),
-                      ],
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_error!, textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    FilledButton(onPressed: _load, child: const Text('Retry')),
+                  ],
+                ),
+              ),
+            )
+          : property == null
+          ? const Center(child: Text('Listing not found.'))
+          : ListView(
+              padding: const EdgeInsets.only(bottom: 28),
+              children: [
+                if (images.isEmpty)
+                  Container(
+                    height: 230,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    child: const Icon(Icons.home_work_outlined, size: 64),
+                  )
+                else ...[
+                  SizedBox(
+                    height: 270,
+                    child: PageView.builder(
+                      itemCount: images.length,
+                      onPageChanged: (index) =>
+                          setState(() => _imageIndex = index),
+                      itemBuilder: (context, index) => Image.network(
+                        images[index],
+                        fit: BoxFit.cover,
+                        webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+                        errorBuilder: (exception, stackTrace, chunk) =>
+                            Container(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
+                              child: const Icon(
+                                Icons.broken_image_outlined,
+                                size: 48,
+                              ),
+                            ),
+                      ),
                     ),
                   ),
-                )
-              : property == null
-                  ? const Center(child: Text('Listing not found.'))
-                  : ListView(
-                      padding: const EdgeInsets.only(bottom: 28),
-                      children: [
-                        if (images.isEmpty)
-                          Container(
-                            height: 230,
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            child: const Icon(Icons.home_work_outlined, size: 64),
-                          )
-                        else ...[
-                          SizedBox(
-                            height: 270,
-                            child: PageView.builder(
-                              itemCount: images.length,
-                              onPageChanged: (index) =>
-                                  setState(() => _imageIndex = index),
-                              itemBuilder: (context, index) => Image.network(
-                                images[index],
-                                fit: BoxFit.cover,
-                                webHtmlElementStrategy:
-                                    WebHtmlElementStrategy.prefer,
-                                errorBuilder: (exception, stackTrace, chunk) => Container(
-                                  color: Theme.of(context)
-                                      .colorScheme.surfaceContainerHighest,
-                                  child: const Icon(Icons.broken_image_outlined,
-                                      size: 48),
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (images.length > 1)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Center(
-                                child: Text('${_imageIndex + 1} / ${images.length}'),
-                              ),
-                            ),
-                        ],
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(_text(property['title']),
-                                  style: Theme.of(context).textTheme.headlineSmall),
-                              const SizedBox(height: 6),
-                              Text([
-                                _text(property['locality'], ''),
-                                _text(property['city'], ''),
-                                _text(property['state'], ''),
-                              ].where((part) => part.isNotEmpty).join(', ')),
-                              const SizedBox(height: 12),
-                              Text(_price(property),
-                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                        color: Theme.of(context).colorScheme.primary,
-                                        fontWeight: FontWeight.bold,
-                                      )),
-                              const Divider(height: 28),
-                              Text('Property information',
-                                  style: Theme.of(context).textTheme.titleLarge),
-                              _detailRow('Category', _text(property['transactionType'])),
-                              _detailRow('Property type', _text(property['propertyType'])),
-                              _detailRow('Built-up area', property['area'] == null
-                                  ? null
-                                  : '${property['area']} sq.ft'),
-                              _detailRow('Site area', property['landArea'] == null
-                                  ? null
-                                  : '${property['landArea']} ${_text(property['landAreaUnit'], '')}'),
-                              _detailRow('Bedrooms', property['bedrooms']),
-                              _detailRow('Bathrooms', property['bathrooms']),
-                              _detailRow('Lease term', property['leaseTermMonths'] == null
-                                  ? null
-                                  : '${property['leaseTermMonths']} months'),
-                              _detailRow('Road access', property['roadAccess']),
-                              _detailRow('Furnishing', property['furnishing']),
-                              _detailRow('Parking', property['parking']),
-                              const Divider(height: 28),
-                              Text('Description',
-                                  style: Theme.of(context).textTheme.titleLarge),
-                              const SizedBox(height: 8),
-                              Text(_text(property['description'])),
-                              const SizedBox(height: 12),
-                              _detailRow('Address', property['address']),
-                              _detailRow('Pincode', property['pincode']),
-                              if (property['videoUrl'] != null &&
-                                  property['videoUrl'].toString().isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                Text('Video tour',
-                                    style: Theme.of(context).textTheme.titleMedium),
-                                SelectableText(property['videoUrl'].toString()),
-                              ],
-                              const SizedBox(height: 20),
-                              SizedBox(
-                                width: double.infinity,
-                                child: FilledButton.icon(
-                                  onPressed: () => _sendEnquiry(property),
-                                  icon: const Icon(Icons.mail_outline),
-                                  label: const Text('Enquire with owner'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                  if (images.length > 1)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Center(
+                        child: Text('${_imageIndex + 1} / ${images.length}'),
+                      ),
                     ),
+                ],
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _text(property['title']),
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        [
+                          _text(property['locality'], ''),
+                          _text(property['city'], ''),
+                          _text(property['state'], ''),
+                        ].where((part) => part.isNotEmpty).join(', '),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        _price(property),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const Divider(height: 28),
+                      Text(
+                        'Property information',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      _detailRow(
+                        'Category',
+                        _text(property['transactionType']),
+                      ),
+                      _detailRow(
+                        'Property type',
+                        _text(property['propertyType']),
+                      ),
+                      _detailRow(
+                        'Built-up area',
+                        property['area'] == null
+                            ? null
+                            : '${property['area']} sq.ft',
+                      ),
+                      _detailRow(
+                        'Site area',
+                        property['landArea'] == null
+                            ? null
+                            : '${property['landArea']} ${_text(property['landAreaUnit'], '')}',
+                      ),
+                      _detailRow('Bedrooms', property['bedrooms']),
+                      _detailRow('Bathrooms', property['bathrooms']),
+                      _detailRow(
+                        'Lease term',
+                        property['leaseTermMonths'] == null
+                            ? null
+                            : '${property['leaseTermMonths']} months',
+                      ),
+                      _detailRow('Road access', property['roadAccess']),
+                      _detailRow('Furnishing', property['furnishing']),
+                      _detailRow('Parking', property['parking']),
+                      const Divider(height: 28),
+                      Text(
+                        'Description',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(_text(property['description'])),
+                      const SizedBox(height: 12),
+                      _detailRow('Address', property['address']),
+                      _detailRow('Pincode', property['pincode']),
+                      if (property['videoUrl'] != null &&
+                          property['videoUrl'].toString().isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Video tour',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        SelectableText(property['videoUrl'].toString()),
+                      ],
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () => _sendEnquiry(property),
+                          icon: const Icon(Icons.mail_outline),
+                          label: const Text('Enquire with owner'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

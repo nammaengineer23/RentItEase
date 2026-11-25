@@ -1111,6 +1111,15 @@ export class PropertiesService {
       throw new ForbiddenException('Only draft properties can be submitted.');
     }
 
+    const imageCount = await this.prisma.propertyImage.count({
+      where: { propertyId: id },
+    });
+    if (imageCount < 1) {
+      throw new BadRequestException(
+        'Upload at least one property photo before submitting.',
+      );
+    }
+
     const updatedProperty = await this.prisma.property.update({
       where: { id },
       data: {

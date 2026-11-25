@@ -28,6 +28,20 @@ class PropertyImageRecord {
   }
 }
 
+/// Validates that a refreshed image list is safe to use as authoritative state.
+bool isPropertyImageRefreshConsistent({
+  required List<PropertyImageRecord> refreshedImages,
+  required Set<String> requiredImageIds,
+  required int minimumImageCount,
+  Set<String> excludedImageIds = const {},
+}) {
+  if (refreshedImages.length < minimumImageCount) return false;
+
+  final refreshedImageIds = refreshedImages.map((image) => image.id).toSet();
+  return refreshedImageIds.containsAll(requiredImageIds) &&
+      !refreshedImageIds.any(excludedImageIds.contains);
+}
+
 class PropertyImageApi {
   PropertyImageApi(this._dio);
 
@@ -48,9 +62,8 @@ class PropertyImageApi {
     return rawImages
         .whereType<Map>()
         .map(
-          (image) => PropertyImageRecord.fromJson(
-            Map<String, dynamic>.from(image),
-          ),
+          (image) =>
+              PropertyImageRecord.fromJson(Map<String, dynamic>.from(image)),
         )
         .toList();
   }
@@ -59,6 +72,7 @@ class PropertyImageApi {
     required String propertyId,
     required Map<String, List<XFile>> imagesBySection,
     bool assignFirstAsPrimary = true,
+    void Function(String section)? onSectionUploaded,
   }) async {
     var primaryAssigned = !assignFirstAsPrimary;
 
@@ -66,9 +80,7 @@ class PropertyImageApi {
       final images = entry.value;
       if (images.isEmpty) continue;
       if (images.length > 2) {
-        throw FormatException(
-          '${entry.key} supports a maximum of 2 photos.',
-        );
+        throw FormatException('${entry.key} supports a maximum of 2 photos.');
       }
 
       final files = <MultipartFile>[];
@@ -85,8 +97,8 @@ class PropertyImageApi {
           'image/png' => 'png',
           'image/webp' => 'webp',
           _ => throw const FormatException(
-              'Only JPG, PNG and WEBP images can be uploaded.',
-            ),
+            'Only JPG, PNG and WEBP images can be uploaded.',
+          ),
         };
         files.add(
           MultipartFile.fromBytes(
@@ -108,6 +120,7 @@ class PropertyImageApi {
       );
 
       primaryAssigned = true;
+      onSectionUploaded?.call(entry.key);
     }
   }
 

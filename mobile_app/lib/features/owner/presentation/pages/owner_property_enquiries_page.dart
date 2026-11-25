@@ -43,8 +43,9 @@ class _OwnerPropertyEnquiriesPageState
       _error = null;
     });
     try {
-      final response =
-          await ref.read(dioProvider).get('/property-enquiries/owner');
+      final response = await ref
+          .read(dioProvider)
+          .get('/property-enquiries/owner');
       final payload = _unwrap(response.data);
       dynamic rows = payload;
       if (payload is Map) {
@@ -53,16 +54,20 @@ class _OwnerPropertyEnquiriesPageState
       if (rows is! List) {
         throw const FormatException('Unexpected enquiry-list response.');
       }
-      final values =
-          rows.whereType<Map>().map(Map<String, dynamic>.from).toList();
+      final values = rows
+          .whereType<Map>()
+          .map(Map<String, dynamic>.from)
+          .toList();
       if (mounted) setState(() => _enquiries = values);
     } on DioException catch (error) {
       if (mounted) {
         final data = _unwrap(error.response?.data);
         final message = data is Map ? data['message'] : null;
-        setState(() => _error = message is String
-            ? message
-            : 'Could not load enquiries. Please try again.');
+        setState(
+          () => _error = message is String
+              ? message
+              : 'Could not load enquiries. Please try again.',
+        );
       }
     } catch (_) {
       if (mounted) {
@@ -75,14 +80,13 @@ class _OwnerPropertyEnquiriesPageState
 
   Future<void> _setStatus(String id, String status) async {
     try {
-      await ref.read(dioProvider).patch(
-        '/property-enquiries/$id/status',
-        data: {'status': status},
-      );
+      await ref
+          .read(dioProvider)
+          .patch('/property-enquiries/$id/status', data: {'status': status});
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Enquiry marked $status.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Enquiry marked $status.')));
       await _load();
     } on DioException catch (error) {
       if (!mounted) return;
@@ -90,9 +94,11 @@ class _OwnerPropertyEnquiriesPageState
       final message = data is Map ? data['message'] : null;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message is String
-              ? message
-              : 'Could not update this enquiry. Please retry.'),
+          content: Text(
+            message is String
+                ? message
+                : 'Could not update this enquiry. Please retry.',
+          ),
         ),
       );
     }
@@ -132,108 +138,96 @@ class _OwnerPropertyEnquiriesPageState
               ),
             )
           : _loading && _enquiries.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : _error != null && _enquiries.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(_error!, textAlign: TextAlign.center),
-                            const SizedBox(height: 12),
-                            FilledButton(
-                              onPressed: _load,
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  : _enquiries.isEmpty
-                      ? const Center(
-                          child: Text('No property enquiries yet.'),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _load,
-                          child: ListView.separated(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _enquiries.length,
-                            separatorBuilder: (_, index) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, index) {
-                              final item = _enquiries[index];
-                              final id = item['id']?.toString() ?? '';
-                              final status =
-                                  item['status']?.toString() ?? 'OPEN';
-                              final sender = item['sender'];
-                              final senderName = sender is Map
-                                  ? (sender['fullName']?.toString() ??
-                                      sender['name']?.toString() ??
-                                      sender['email']?.toString() ??
-                                      'Interested user')
-                                  : 'Interested user';
-                              final message =
-                                  item['message']?.toString() ?? '';
-                              return Card(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null && _enquiries.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_error!, textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    FilledButton(onPressed: _load, child: const Text('Retry')),
+                  ],
+                ),
+              ),
+            )
+          : _enquiries.isEmpty
+          ? const Center(child: Text('No property enquiries yet.'))
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: _enquiries.length,
+                separatorBuilder: (_, index) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final item = _enquiries[index];
+                  final id = item['id']?.toString() ?? '';
+                  final status = item['status']?.toString() ?? 'OPEN';
+                  final sender = item['sender'];
+                  final senderName = sender is Map
+                      ? (sender['fullName']?.toString() ??
+                            sender['name']?.toString() ??
+                            sender['email']?.toString() ??
+                            'Interested user')
+                      : 'Interested user';
+                  final message = item['message']?.toString() ?? '';
+                  return Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _listingTitle(item),
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 4),
+                          Text('From: $senderName'),
+                          const SizedBox(height: 8),
+                          Text(message),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Chip(label: Text(status)),
+                              const Spacer(),
+                              PopupMenuButton<String>(
+                                tooltip: 'Change enquiry status',
+                                onSelected: (value) => _setStatus(id, value),
+                                itemBuilder: (_) => const [
+                                  PopupMenuItem(
+                                    value: 'OPEN',
+                                    child: Text('Open'),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'CONTACTED',
+                                    child: Text('Contacted'),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'CLOSED',
+                                    child: Text('Close enquiry'),
+                                  ),
+                                ],
+                                child: const Padding(
+                                  padding: EdgeInsets.all(8),
+                                  child: Row(
                                     children: [
-                                      Text(
-                                        _listingTitle(item),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text('From: $senderName'),
-                                      const SizedBox(height: 8),
-                                      Text(message),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        children: [
-                                          Chip(label: Text(status)),
-                                          const Spacer(),
-                                          PopupMenuButton<String>(
-                                            tooltip: 'Change enquiry status',
-                                            onSelected: (value) =>
-                                                _setStatus(id, value),
-                                            itemBuilder: (_) => const [
-                                              PopupMenuItem(
-                                                value: 'OPEN',
-                                                child: Text('Open'),
-                                              ),
-                                              PopupMenuItem(
-                                                value: 'CONTACTED',
-                                                child: Text('Contacted'),
-                                              ),
-                                              PopupMenuItem(
-                                                value: 'CLOSED',
-                                                child: Text('Close enquiry'),
-                                              ),
-                                            ],
-                                            child: const Padding(
-                                              padding: EdgeInsets.all(8),
-                                              child: Row(
-                                                children: [
-                                                  Text('Update status'),
-                                                  Icon(Icons.arrow_drop_down),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                      Text('Update status'),
+                                      Icon(Icons.arrow_drop_down),
                                     ],
                                   ),
                                 ),
-                              );
-                            },
+                              ),
+                            ],
                           ),
-                        ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
     );
   }
 }

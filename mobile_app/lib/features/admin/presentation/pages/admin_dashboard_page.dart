@@ -281,49 +281,62 @@ Future<void> _showAdminSearch(BuildContext context, WidgetRef ref) async {
         content: SizedBox(
           width: 560,
           height: 440,
-          child: Column(children: [
-            TextField(
-              controller: controller,
-              autofocus: true,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Users, properties, visits, invoices…',
-                border: OutlineInputBorder(),
+          child: Column(
+            children: [
+              TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.search),
+                  hintText: 'Users, properties, visits, invoices…',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) async {
+                  if (value.trim().length < 2) {
+                    setState(() => results = []);
+                    return;
+                  }
+                  setState(() => loading = true);
+                  try {
+                    final found = await ref
+                        .read(adminProvider.notifier)
+                        .searchRecords(value.trim());
+                    if (context.mounted) setState(() => results = found);
+                  } finally {
+                    if (context.mounted) setState(() => loading = false);
+                  }
+                },
               ),
-              onChanged: (value) async {
-                if (value.trim().length < 2) {
-                  setState(() => results = []);
-                  return;
-                }
-                setState(() => loading = true);
-                try {
-                  final found = await ref.read(adminProvider.notifier).searchRecords(value.trim());
-                  if (context.mounted) setState(() => results = found);
-                } finally {
-                  if (context.mounted) setState(() => loading = false);
-                }
-              },
-            ),
-            if (loading) const LinearProgressIndicator(),
-            const SizedBox(height: 8),
-            Expanded(
-              child: results.isEmpty
-                  ? const Center(child: Text('Enter at least 2 characters to search.'))
-                  : ListView.builder(
-                      itemCount: results.length,
-                      itemBuilder: (_, index) {
-                        final item = results[index];
-                        return ListTile(
-                          leading: const Icon(Icons.manage_search),
-                          title: Text(_text(item, 'title')),
-                          subtitle: Text('${_text(item, 'type')} • ${_text(item, 'subtitle')}'),
-                        );
-                      },
-                    ),
-            ),
-          ]),
+              if (loading) const LinearProgressIndicator(),
+              const SizedBox(height: 8),
+              Expanded(
+                child: results.isEmpty
+                    ? const Center(
+                        child: Text('Enter at least 2 characters to search.'),
+                      )
+                    : ListView.builder(
+                        itemCount: results.length,
+                        itemBuilder: (_, index) {
+                          final item = results[index];
+                          return ListTile(
+                            leading: const Icon(Icons.manage_search),
+                            title: Text(_text(item, 'title')),
+                            subtitle: Text(
+                              '${_text(item, 'type')} • ${_text(item, 'subtitle')}',
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Close'))],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     ),
   );
@@ -374,7 +387,7 @@ class _UsersView extends ConsumerWidget {
       onRefresh: notifier.loadUsers,
       child: ListView.builder(
         padding: const EdgeInsets.all(12),
-        itemCount: visibleUsers.length + state.ownerRequests.length + 1,
+        itemCount: visibleUsers.length + 1,
         itemBuilder: (context, index) {
           if (index == 0) {
             return Padding(
@@ -466,42 +479,7 @@ class _UsersView extends ConsumerWidget {
             );
           }
           index--;
-          if (index < state.ownerRequests.length) {
-            final request = state.ownerRequests[index];
-            return Card(
-              child: ListTile(
-                leading: const CircleAvatar(
-                  child: Icon(Icons.storefront_outlined),
-                ),
-                title: Text(_text(request, 'fullName')),
-                subtitle: Text(
-                  'Owner approval request\n${_text(request, 'email')}',
-                ),
-                isThreeLine: true,
-                trailing: Wrap(
-                  children: [
-                    IconButton(
-                      tooltip: 'Reject owner request',
-                      onPressed: () => notifier.reviewOwnerRequest(
-                        _text(request, 'id'),
-                        false,
-                      ),
-                      icon: const Icon(Icons.close, color: Colors.red),
-                    ),
-                    IconButton(
-                      tooltip: 'Approve owner request',
-                      onPressed: () => notifier.reviewOwnerRequest(
-                        _text(request, 'id'),
-                        true,
-                      ),
-                      icon: const Icon(Icons.check, color: Colors.green),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-          final userIndex = index - state.ownerRequests.length;
+          final userIndex = index;
           final user = visibleUsers[userIndex];
           final active = user['isActive'] == true;
           final role = _text(user, 'role');
@@ -680,7 +658,10 @@ class _PropertiesView extends ConsumerWidget {
                             fit: BoxFit.cover,
                             errorBuilder: (_, _, _) => const ColoredBox(
                               color: Color(0xFFF0F0F0),
-                              child: Icon(Icons.broken_image_outlined, size: 56),
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                size: 56,
+                              ),
                             ),
                           ),
                   ),
@@ -691,9 +672,8 @@ class _PropertiesView extends ConsumerWidget {
                       children: [
                         Text(
                           _text(property, 'title'),
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 6),
                         Text(
@@ -702,9 +682,8 @@ class _PropertiesView extends ConsumerWidget {
                         const SizedBox(height: 8),
                         Text(
                           '₹${_number(property, 'price')} / month',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Text('Owner: ${_text(owner, 'fullName')}'),
@@ -715,7 +694,9 @@ class _PropertiesView extends ConsumerWidget {
                           children: [
                             Chip(
                               avatar: Icon(
-                                verified ? Icons.verified : Icons.pending_outlined,
+                                verified
+                                    ? Icons.verified
+                                    : Icons.pending_outlined,
                                 size: 18,
                               ),
                               label: Text(
@@ -724,7 +705,9 @@ class _PropertiesView extends ConsumerWidget {
                             ),
                             Chip(
                               avatar: Icon(
-                                visible ? Icons.visibility : Icons.visibility_off,
+                                visible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
                                 size: 18,
                               ),
                               label: Text(visible ? 'Visible' : 'Hidden'),
@@ -764,10 +747,14 @@ class _PropertiesView extends ConsumerWidget {
                                   _text(property, 'id'),
                                   !visible,
                                 ),
-                                visible ? 'Property hidden' : 'Property visible',
+                                visible
+                                    ? 'Property hidden'
+                                    : 'Property visible',
                               ),
                               icon: Icon(
-                                visible ? Icons.visibility_off : Icons.visibility,
+                                visible
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
                               ),
                               label: Text(visible ? 'Hide' : 'Unhide'),
                             ),
@@ -780,7 +767,9 @@ class _PropertiesView extends ConsumerWidget {
                                 ),
                                 'Property marked premium for 30 days',
                               ),
-                              icon: const Icon(Icons.workspace_premium_outlined),
+                              icon: const Icon(
+                                Icons.workspace_premium_outlined,
+                              ),
                               label: const Text('Premium'),
                             ),
                             OutlinedButton.icon(
@@ -789,7 +778,8 @@ class _PropertiesView extends ConsumerWidget {
                                   context,
                                   'Delete property?',
                                   'This permanently removes the property.',
-                                )) return;
+                                ))
+                                  return;
                                 if (!context.mounted) return;
                                 await _runAction(
                                   context,
@@ -857,7 +847,8 @@ class _PremiumView extends ConsumerWidget {
       final user = _section(membership, 'user');
       final plan = _section(membership, 'plan');
       final status = _text(membership, 'status').toUpperCase();
-      final matchesQuery = query.isEmpty ||
+      final matchesQuery =
+          query.isEmpty ||
           _text(user, 'fullName').toLowerCase().contains(query) ||
           _text(user, 'email').toLowerCase().contains(query) ||
           _text(plan, 'name').toLowerCase().contains(query) ||
@@ -879,7 +870,8 @@ class _PremiumView extends ConsumerWidget {
                 children: [
                   TextField(
                     onChanged: (value) =>
-                        ref.read(_adminPremiumQueryProvider.notifier).state = value,
+                        ref.read(_adminPremiumQueryProvider.notifier).state =
+                            value,
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.search),
                       hintText: 'Search member, email, plan or status',
@@ -903,9 +895,13 @@ class _PremiumView extends ConsumerWidget {
                             child: ChoiceChip(
                               label: Text(filter.$2),
                               selected: statusFilter == filter.$1,
-                              onSelected: (_) => ref
-                                  .read(_adminPremiumStatusProvider.notifier)
-                                  .state = filter.$1,
+                              onSelected: (_) =>
+                                  ref
+                                      .read(
+                                        _adminPremiumStatusProvider.notifier,
+                                      )
+                                      .state = filter
+                                      .$1,
                             ),
                           ),
                       ],
@@ -945,7 +941,11 @@ class _PremiumView extends ConsumerWidget {
                     'expire' => 'Mark membership as expired?',
                     _ => 'Cancel membership?',
                   };
-                  if (!await _confirm(context, label, 'Member: ${_text(user, 'fullName')}')) {
+                  if (!await _confirm(
+                    context,
+                    label,
+                    'Member: ${_text(user, 'fullName')}',
+                  )) {
                     return;
                   }
                   if (!context.mounted) return;
@@ -964,10 +964,7 @@ class _PremiumView extends ConsumerWidget {
                       child: Text('Activate'),
                     ),
                   if (status == 'ACTIVE' || status == 'EXPIRED')
-                    const PopupMenuItem(
-                      value: 'renew',
-                      child: Text('Renew'),
-                    ),
+                    const PopupMenuItem(value: 'renew', child: Text('Renew')),
                   if (status == 'ACTIVE')
                     const PopupMenuItem(
                       value: 'expire',
@@ -1033,32 +1030,51 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
   Future<void> _loadSettings() async {
     try {
       final value = await ref.read(adminProvider.notifier).getSocialSettings();
-      if (mounted) setState(() { _settings = value; _settingsLoading = false; });
+      if (mounted)
+        setState(() {
+          _settings = value;
+          _settingsLoading = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _settingsLoading = false);
     }
   }
 
-  bool _enabled(String platform) => _settings['${platform.toLowerCase()}Enabled'] == true;
+  bool _enabled(String platform) =>
+      _settings['${platform.toLowerCase()}Enabled'] == true;
 
   Future<void> _generate(BuildContext context, String propertyId) async {
     try {
       final notifier = ref.read(adminProvider.notifier);
-      final generated = await notifier.generateSocialMedia(propertyId, const []);
+      final generated = await notifier.generateSocialMedia(
+        propertyId,
+        const [],
+      );
       if (!mounted) return;
       _captions[propertyId]?.dispose();
       _titles[propertyId]?.dispose();
       setState(() {
         _drafts[propertyId] = generated;
-        _captions[propertyId] = TextEditingController(text: generated['caption']?.toString() ?? '');
-        _titles[propertyId] = TextEditingController(text: generated['videoTitle']?.toString() ?? generated['title']?.toString() ?? '');
+        _captions[propertyId] = TextEditingController(
+          text: generated['caption']?.toString() ?? '',
+        );
+        _titles[propertyId] = TextEditingController(
+          text:
+              generated['videoTitle']?.toString() ??
+              generated['title']?.toString() ??
+              '',
+        );
         _selectedPlatforms[propertyId] = {
           for (final p in const ['FACEBOOK', 'INSTAGRAM', 'YOUTUBE'])
             if (_enabled(p)) p,
         };
       });
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft reel generated. Review it before publishing.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Draft reel generated. Review it before publishing.'),
+          ),
+        );
       }
     } catch (error) {
       if (context.mounted) _showError(context, error);
@@ -1070,32 +1086,55 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
     _titles[propertyId]?.dispose();
     setState(() {
       _drafts[propertyId] = draft;
-      _captions[propertyId] = TextEditingController(text: draft['caption']?.toString() ?? '');
-      _titles[propertyId] = TextEditingController(text: draft['videoTitle']?.toString() ?? draft['title']?.toString() ?? '');
-      _selectedPlatforms.putIfAbsent(propertyId, () => {
-        for (final p in const ['FACEBOOK', 'INSTAGRAM', 'YOUTUBE']) if (_enabled(p)) p,
-      });
+      _captions[propertyId] = TextEditingController(
+        text: draft['caption']?.toString() ?? '',
+      );
+      _titles[propertyId] = TextEditingController(
+        text:
+            draft['videoTitle']?.toString() ?? draft['title']?.toString() ?? '',
+      );
+      _selectedPlatforms.putIfAbsent(
+        propertyId,
+        () => {
+          for (final p in const ['FACEBOOK', 'INSTAGRAM', 'YOUTUBE'])
+            if (_enabled(p)) p,
+        },
+      );
     });
   }
 
-  Future<void> _usePropertyVideo(BuildContext context, String propertyId) async {
+  Future<void> _usePropertyVideo(
+    BuildContext context,
+    String propertyId,
+  ) async {
     try {
-      final draft = await ref.read(adminProvider.notifier).usePropertyVideoForSocial(
-        propertyId,
-        caption: _captions[propertyId]?.text.trim(),
-        title: _titles[propertyId]?.text.trim(),
-      );
+      final draft = await ref
+          .read(adminProvider.notifier)
+          .usePropertyVideoForSocial(
+            propertyId,
+            caption: _captions[propertyId]?.text.trim(),
+            title: _titles[propertyId]?.text.trim(),
+          );
       if (!mounted) return;
       _applySocialDraft(propertyId, draft);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Branded reel generated from property video. Review it before publishing.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Branded reel generated from property video. Review it before publishing.',
+            ),
+          ),
+        );
       }
     } catch (error) {
       if (context.mounted) _showError(context, error);
     }
   }
 
-  Future<void> _uploadPreparedReel(BuildContext context, String propertyId) async {
+  Future<void> _uploadPreparedReel(
+    BuildContext context,
+    String propertyId,
+  ) async {
     try {
       final file = await fp.FilePicker.pickFile(
         type: fp.FileType.custom,
@@ -1104,22 +1143,30 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
       if (file == null) return;
       final filePath = file.path;
       if (filePath == null || filePath.isEmpty) {
-        throw StateError('This device did not provide a local path for the selected reel.');
+        throw StateError(
+          'This device did not provide a local path for the selected reel.',
+        );
       }
       final fileSize = await File(filePath).length();
       if (fileSize > 100 * 1024 * 1024) {
         throw StateError('Reel must be 100 MB or smaller.');
       }
-      final draft = await ref.read(adminProvider.notifier).uploadPreparedSocialReel(
-        propertyId,
-        filePath,
-        caption: _captions[propertyId]?.text.trim(),
-        title: _titles[propertyId]?.text.trim(),
-      );
+      final draft = await ref
+          .read(adminProvider.notifier)
+          .uploadPreparedSocialReel(
+            propertyId,
+            filePath,
+            caption: _captions[propertyId]?.text.trim(),
+            title: _titles[propertyId]?.text.trim(),
+          );
       if (!mounted) return;
       _applySocialDraft(propertyId, draft);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reel uploaded. Review it before publishing.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Reel uploaded. Review it before publishing.'),
+          ),
+        );
       }
     } catch (error) {
       if (context.mounted) _showError(context, error);
@@ -1143,7 +1190,9 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
     final selected = _selectedPlatforms[propertyId] ?? {};
     if (selected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select at least one configured platform.')),
+        const SnackBar(
+          content: Text('Select at least one configured platform.'),
+        ),
       );
       return;
     }
@@ -1158,12 +1207,14 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
     final results = <String, String>{};
     for (final platform in selected) {
       try {
-        await ref.read(adminProvider.notifier).publishSocialMedia(
-          propertyId,
-          platform,
-          caption: caption,
-          title: title,
-        );
+        await ref
+            .read(adminProvider.notifier)
+            .publishSocialMedia(
+              propertyId,
+              platform,
+              caption: caption,
+              title: title,
+            );
         results[platform] = 'Published';
       } catch (error) {
         results[platform] = error
@@ -1174,19 +1225,23 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
     }
 
     if (!context.mounted) return;
-    final succeeded = results.entries.where((entry) => entry.value == 'Published').length;
+    final succeeded = results.entries
+        .where((entry) => entry.value == 'Published')
+        .length;
     final failed = results.length - succeeded;
     await showDialog<void>(
       context: context,
       useRootNavigator: false,
       builder: (resultContext) => AlertDialog(
-        icon: Icon(failed == 0 ? Icons.check_circle_outline : Icons.info_outline),
+        icon: Icon(
+          failed == 0 ? Icons.check_circle_outline : Icons.info_outline,
+        ),
         title: Text(
           failed == 0
               ? 'Publishing complete'
               : succeeded == 0
-                  ? 'Publishing failed'
-                  : 'Publishing partially complete',
+              ? 'Publishing failed'
+              : 'Publishing partially complete',
         ),
         content: SizedBox(
           width: 520,
@@ -1213,42 +1268,82 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
     );
   }
 
-  Future<void> _scheduleSelected(BuildContext context, String propertyId) async {
+  Future<void> _scheduleSelected(
+    BuildContext context,
+    String propertyId,
+  ) async {
     final selected = _selectedPlatforms[propertyId] ?? {};
     if (selected.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select at least one configured platform.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Select at least one configured platform.'),
+        ),
+      );
       return;
     }
     final now = DateTime.now();
-    final date = await showDatePicker(context: context, firstDate: now, lastDate: now.add(const Duration(days: 365)), initialDate: now);
+    final date = await showDatePicker(
+      context: context,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+      initialDate: now,
+    );
     if (date == null || !context.mounted) return;
-    final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))));
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))),
+    );
     if (time == null || !context.mounted) return;
-    final scheduledAt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    final scheduledAt = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
     if (!scheduledAt.isAfter(now)) {
       _showError(context, StateError('Choose a future date and time.'));
       return;
     }
     final baseCaption = _captions[propertyId]?.text.trim() ?? '';
     final location = _locations[propertyId]?.text.trim() ?? '';
-    final caption = location.isEmpty || baseCaption.contains(location) ? baseCaption : '$baseCaption\n📍 $location'.trim();
+    final caption = location.isEmpty || baseCaption.contains(location)
+        ? baseCaption
+        : '$baseCaption\n📍 $location'.trim();
     final title = _titles[propertyId]?.text.trim();
     try {
       for (final platform in selected) {
-        await ref.read(adminProvider.notifier).scheduleSocialMedia(
-          propertyId, platform, scheduledAt, caption: caption, title: title,
-        );
+        await ref
+            .read(adminProvider.notifier)
+            .scheduleSocialMedia(
+              propertyId,
+              platform,
+              scheduledAt,
+              caption: caption,
+              title: title,
+            );
       }
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Scheduled for ${selected.length} platform(s).')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Scheduled for ${selected.length} platform(s).'),
+          ),
+        );
       }
     } catch (error) {
       if (context.mounted) _showError(context, error);
     }
   }
 
-  Future<void> _showPublicationHistory(BuildContext context, String propertyId) async {
-    final posts = ref.read(adminProvider).socialPosts.where((post) => _text(post, 'propertyId') == propertyId).toList();
+  Future<void> _showPublicationHistory(
+    BuildContext context,
+    String propertyId,
+  ) async {
+    final posts = ref
+        .read(adminProvider)
+        .socialPosts
+        .where((post) => _text(post, 'propertyId') == propertyId)
+        .toList();
     await showDialog<void>(
       context: context,
       builder: (historyContext) => AlertDialog(
@@ -1263,52 +1358,98 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
                   itemBuilder: (_, index) {
                     final post = posts[index];
                     final status = _text(post, 'status').toUpperCase();
-                    return Card(child: ListTile(
-                      title: Text('${_text(post,'platform')} • $status'),
-                      subtitle: Text('Created: ${_text(post,'createdAt')}\n${_text(post,'error')}'),
-                      isThreeLine: true,
-                      onTap: () async {
-                        final events = await ref.read(adminProvider.notifier).getSocialPostHistory(_text(post,'id'));
-                        if (!historyContext.mounted) return;
-                        await showDialog<void>(
-                          context: historyContext,
-                          builder: (_) => AlertDialog(
-                            title: const Text('Audit history'),
-                            content: SizedBox(
-                              width: 520,
-                              child: events.isEmpty
-                                  ? const Text('No audit events.')
-                                  : ListView(shrinkWrap: true, children: events.map((event) => ListTile(
-                                      title: Text(_text(event,'eventType')),
-                                      subtitle: Text(_text(event,'createdAt')),
-                                    )).toList()),
+                    return Card(
+                      child: ListTile(
+                        title: Text('${_text(post, 'platform')} • $status'),
+                        subtitle: Text(
+                          'Created: ${_text(post, 'createdAt')}\n${_text(post, 'error')}',
+                        ),
+                        isThreeLine: true,
+                        onTap: () async {
+                          final events = await ref
+                              .read(adminProvider.notifier)
+                              .getSocialPostHistory(_text(post, 'id'));
+                          if (!historyContext.mounted) return;
+                          await showDialog<void>(
+                            context: historyContext,
+                            builder: (_) => AlertDialog(
+                              title: const Text('Audit history'),
+                              content: SizedBox(
+                                width: 520,
+                                child: events.isEmpty
+                                    ? const Text('No audit events.')
+                                    : ListView(
+                                        shrinkWrap: true,
+                                        children: events
+                                            .map(
+                                              (event) => ListTile(
+                                                title: Text(
+                                                  _text(event, 'eventType'),
+                                                ),
+                                                subtitle: Text(
+                                                  _text(event, 'createdAt'),
+                                                ),
+                                              ),
+                                            )
+                                            .toList(),
+                                      ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(historyContext),
+                                  child: const Text('Close'),
+                                ),
+                              ],
                             ),
-                            actions: [TextButton(onPressed: () => Navigator.pop(historyContext), child: const Text('Close'))],
-                          ),
-                        );
-                      },
-                      trailing: status == 'FAILED'
-                          ? IconButton(
-                              tooltip: 'Retry',
-                              icon: const Icon(Icons.refresh),
-                              onPressed: () => _runAction(historyContext, () => ref.read(adminProvider.notifier).retrySocialPost(_text(post,'id')), 'Retry submitted'),
-                            )
-                          : const SizedBox.shrink(),
-                    ));
+                          );
+                        },
+                        trailing: status == 'FAILED'
+                            ? IconButton(
+                                tooltip: 'Retry',
+                                icon: const Icon(Icons.refresh),
+                                onPressed: () => _runAction(
+                                  historyContext,
+                                  () => ref
+                                      .read(adminProvider.notifier)
+                                      .retrySocialPost(_text(post, 'id')),
+                                  'Retry submitted',
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    );
                   },
                 ),
         ),
         actions: [
           TextButton(
             onPressed: () async {
-              final cancellable = posts.where((p) => const {'PENDING','READY','FAILED'}.contains(_text(p,'status').toUpperCase())).toList();
+              final cancellable = posts
+                  .where(
+                    (p) => const {
+                      'PENDING',
+                      'READY',
+                      'FAILED',
+                    }.contains(_text(p, 'status').toUpperCase()),
+                  )
+                  .toList();
               if (cancellable.isNotEmpty) {
-                await _runAction(historyContext, () => ref.read(adminProvider.notifier).cancelSocialPost(_text(cancellable.first,'id')), 'Post cancelled');
+                await _runAction(
+                  historyContext,
+                  () => ref
+                      .read(adminProvider.notifier)
+                      .cancelSocialPost(_text(cancellable.first, 'id')),
+                  'Post cancelled',
+                );
               }
             },
             child: const Text('Cancel pending/failed'),
           ),
-          TextButton(onPressed: () => Navigator.pop(historyContext), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(historyContext),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -1316,17 +1457,28 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
 
   Widget _platform(String propertyId, String platform, String label) {
     final enabled = _enabled(platform);
-    final selected = _selectedPlatforms[propertyId]?.contains(platform) ?? false;
+    final selected =
+        _selectedPlatforms[propertyId]?.contains(platform) ?? false;
     return CheckboxListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
       value: enabled && selected,
-      onChanged: enabled ? (value) => setState(() {
-        final set = _selectedPlatforms.putIfAbsent(propertyId, () => <String>{});
-        if (value == true) set.add(platform); else set.remove(platform);
-      }) : null,
+      onChanged: enabled
+          ? (value) => setState(() {
+              final set = _selectedPlatforms.putIfAbsent(
+                propertyId,
+                () => <String>{},
+              );
+              if (value == true)
+                set.add(platform);
+              else
+                set.remove(platform);
+            })
+          : null,
       title: Text(label),
-      subtitle: Text(enabled ? 'Configured and ready' : 'Integration not configured'),
+      subtitle: Text(
+        enabled ? 'Configured and ready' : 'Integration not configured',
+      ),
     );
   }
 
@@ -1334,57 +1486,110 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
   Widget build(BuildContext context) {
     final state = ref.watch(adminProvider);
     final notifier = ref.read(adminProvider.notifier);
-    final consentedProperties = state.socialProperties.where((property) =>
-      _section(property, 'socialMarketingConsent')['approved'] == true).toList();
+    final consentedProperties = state.socialProperties
+        .where(
+          (property) =>
+              _section(property, 'socialMarketingConsent')['approved'] == true,
+        )
+        .toList();
 
     return _AdminRefreshView(
       error: state.error,
       empty: consentedProperties.isEmpty,
-      onRefresh: () async { await notifier.loadSocialMedia(); await _loadSettings(); },
+      onRefresh: () async {
+        await notifier.loadSocialMedia();
+        await _loadSettings();
+      },
       child: consentedProperties.isEmpty
-        ? ListView(children: const [SizedBox(height:160), Center(child:Icon(Icons.campaign_outlined,size:56)), SizedBox(height:12), Center(child:Text('No social-media consented properties yet.'))])
-        : ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: consentedProperties.length,
-            itemBuilder: (context,index) {
-              final property=consentedProperties[index];
-              final consent=_section(property,'socialMarketingConsent');
-              final owner=_section(property,'owner');
-              final id=_text(property,'id');
-              final preparedVideoUrl = consent['preparedVideoUrl']?.toString() ?? '';
-              final draft = _drafts[id] ?? (preparedVideoUrl.isNotEmpty ? <String, dynamic>{
-                'videoUrl': preparedVideoUrl,
-                'caption': consent['preparedCaption']?.toString() ?? '',
-                'videoTitle': consent['preparedTitle']?.toString() ?? _text(property, 'title'),
-              } : null);
-              return Card(child:ListTile(
-                title:Text(_text(property,'title'),style:const TextStyle(fontWeight:FontWeight.bold)),
-                subtitle:Text('Consent active • Owner: ${_text(owner,'fullName')}\nConsent version: ${_text(consent,'consentVersion')}'),
-                isThreeLine:true,
-                trailing:const Icon(Icons.chevron_right),
-                onTap:()=>_showSocialPropertyDialog(context, property, id, draft),
-              ));
-            },
-          ),
+          ? ListView(
+              children: const [
+                SizedBox(height: 160),
+                Center(child: Icon(Icons.campaign_outlined, size: 56)),
+                SizedBox(height: 12),
+                Center(
+                  child: Text('No social-media consented properties yet.'),
+                ),
+              ],
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: consentedProperties.length,
+              itemBuilder: (context, index) {
+                final property = consentedProperties[index];
+                final consent = _section(property, 'socialMarketingConsent');
+                final owner = _section(property, 'owner');
+                final id = _text(property, 'id');
+                final preparedVideoUrl =
+                    consent['preparedVideoUrl']?.toString() ?? '';
+                final draft =
+                    _drafts[id] ??
+                    (preparedVideoUrl.isNotEmpty
+                        ? <String, dynamic>{
+                            'videoUrl': preparedVideoUrl,
+                            'caption':
+                                consent['preparedCaption']?.toString() ?? '',
+                            'videoTitle':
+                                consent['preparedTitle']?.toString() ??
+                                _text(property, 'title'),
+                          }
+                        : null);
+                return Card(
+                  child: ListTile(
+                    title: Text(
+                      _text(property, 'title'),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      'Consent active • Owner: ${_text(owner, 'fullName')}\nConsent version: ${_text(consent, 'consentVersion')}',
+                    ),
+                    isThreeLine: true,
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        _showSocialPropertyDialog(context, property, id, draft),
+                  ),
+                );
+              },
+            ),
     );
   }
+
   Future<void> _showSocialPropertyDialog(
     BuildContext context,
     Map<String, dynamic> property,
     String id,
     Map<String, dynamic>? initialDraft,
   ) async {
-    _locations.putIfAbsent(id, () => TextEditingController(
-      text: [_text(property, 'city'), _text(property, 'state')]
-          .where((value) => value.isNotEmpty)
-          .join(', '),
-    ));
+    _locations.putIfAbsent(
+      id,
+      () => TextEditingController(
+        text: [
+          _text(property, 'city'),
+          _text(property, 'state'),
+        ].where((value) => value.isNotEmpty).join(', '),
+      ),
+    );
     if (initialDraft != null) {
-      _captions.putIfAbsent(id, () => TextEditingController(text: initialDraft['caption']?.toString() ?? ''));
-      _titles.putIfAbsent(id, () => TextEditingController(text: initialDraft['videoTitle']?.toString() ?? _text(property, 'title')));
-      _selectedPlatforms.putIfAbsent(id, () => {
-        for (final p in const ['FACEBOOK', 'INSTAGRAM', 'YOUTUBE']) if (_enabled(p)) p,
-      });
+      _captions.putIfAbsent(
+        id,
+        () => TextEditingController(
+          text: initialDraft['caption']?.toString() ?? '',
+        ),
+      );
+      _titles.putIfAbsent(
+        id,
+        () => TextEditingController(
+          text:
+              initialDraft['videoTitle']?.toString() ??
+              _text(property, 'title'),
+        ),
+      );
+      _selectedPlatforms.putIfAbsent(
+        id,
+        () => {
+          for (final p in const ['FACEBOOK', 'INSTAGRAM', 'YOUTUBE'])
+            if (_enabled(p)) p,
+        },
+      );
     }
     await showDialog<void>(
       context: context,
@@ -1397,91 +1602,136 @@ class _SocialMediaViewState extends ConsumerState<_SocialMediaView> {
             content: SizedBox(
               width: 520,
               child: SingleChildScrollView(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  TextField(controller: _locations[id], decoration: const InputDecoration(labelText: 'Location', border: OutlineInputBorder())),
-                  const SizedBox(height: 12),
-                  Text('Choose reel source', style: Theme.of(dialogContext).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      FilledButton.icon(
-                        onPressed: _text(property, 'videoUrl').isEmpty ? null : () async {
-                          await _usePropertyVideo(dialogContext, id);
-                          if (dialogContext.mounted) setDialogState(() {});
-                        },
-                        icon: const Icon(Icons.videocam_outlined),
-                        label: const Text('Create reel from property video'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _locations[id],
+                      decoration: const InputDecoration(
+                        labelText: 'Location',
+                        border: OutlineInputBorder(),
                       ),
-                      OutlinedButton.icon(
-                        onPressed: () async {
-                          await _uploadPreparedReel(dialogContext, id);
-                          if (dialogContext.mounted) setDialogState(() {});
-                        },
-                        icon: const Icon(Icons.upload_file_outlined),
-                        label: const Text('Upload reel'),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: () async {
-                          await _generate(dialogContext, id);
-                          if (dialogContext.mounted) setDialogState(() {});
-                        },
-                        icon: const Icon(Icons.auto_awesome),
-                        label: const Text('Generate Auto Reel'),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Choose reel source',
+                      style: Theme.of(dialogContext).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilledButton.icon(
+                          onPressed: _text(property, 'videoUrl').isEmpty
+                              ? null
+                              : () async {
+                                  await _usePropertyVideo(dialogContext, id);
+                                  if (dialogContext.mounted)
+                                    setDialogState(() {});
+                                },
+                          icon: const Icon(Icons.videocam_outlined),
+                          label: const Text('Create reel from property video'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            await _uploadPreparedReel(dialogContext, id);
+                            if (dialogContext.mounted) setDialogState(() {});
+                          },
+                          icon: const Icon(Icons.upload_file_outlined),
+                          label: const Text('Upload reel'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            await _generate(dialogContext, id);
+                            if (dialogContext.mounted) setDialogState(() {});
+                          },
+                          icon: const Icon(Icons.auto_awesome),
+                          label: const Text('Generate Auto Reel'),
+                        ),
+                      ],
+                    ),
+                    if (_text(property, 'videoUrl').isEmpty) ...[
+                      const SizedBox(height: 6),
+                      const Text(
+                        'No property video tour is available. Upload a reel or generate one from photos.',
                       ),
                     ],
-                  ),
-                  if (_text(property, 'videoUrl').isEmpty) ...[
-                    const SizedBox(height: 6),
-                    const Text('No property video tour is available. Upload a reel or generate one from photos.'),
-                  ],
-                  if (draft != null) ...[
-                    const SizedBox(height: 16),
-                    if (videoUrl.isNotEmpty) ...[
-                      Text('Review generated reel', style: Theme.of(dialogContext).textTheme.titleMedium),
-                      const SizedBox(height: 8),
-                      _InlineNetworkVideo(url: videoUrl, aspectRatio: 9 / 16),
+                    if (draft != null) ...[
+                      const SizedBox(height: 16),
+                      if (videoUrl.isNotEmpty) ...[
+                        Text(
+                          'Review generated reel',
+                          style: Theme.of(dialogContext).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        _InlineNetworkVideo(url: videoUrl, aspectRatio: 9 / 16),
+                        const SizedBox(height: 12),
+                      ],
+                      TextField(
+                        controller: _titles[id],
+                        decoration: const InputDecoration(
+                          labelText: 'Video title',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
                       const SizedBox(height: 12),
+                      TextField(
+                        controller: _captions[id],
+                        minLines: 5,
+                        maxLines: 10,
+                        decoration: const InputDecoration(
+                          labelText: 'Caption / description',
+                          alignLabelWithHint: true,
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Publish to',
+                        style: Theme.of(dialogContext).textTheme.titleMedium,
+                      ),
+                      if (_settingsLoading) const LinearProgressIndicator(),
+                      _platform(id, 'FACEBOOK', 'Facebook'),
+                      _platform(id, 'INSTAGRAM', 'Instagram'),
+                      _platform(id, 'YOUTUBE', 'YouTube'),
+                      const SizedBox(height: 8),
+                      FilledButton.icon(
+                        onPressed: () => _publishSelected(dialogContext, id),
+                        icon: const Icon(Icons.publish_outlined),
+                        label: const Text(
+                          'Approve & publish selected platforms',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: () => _scheduleSelected(dialogContext, id),
+                        icon: const Icon(Icons.schedule_outlined),
+                        label: const Text('Schedule selected platforms'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: () =>
+                            _showPublicationHistory(dialogContext, id),
+                        icon: const Icon(Icons.history),
+                        label: const Text('Publication history'),
+                      ),
                     ],
-                    TextField(controller: _titles[id], decoration: const InputDecoration(labelText: 'Video title', border: OutlineInputBorder())),
-                    const SizedBox(height: 12),
-                    TextField(controller: _captions[id], minLines: 5, maxLines: 10, decoration: const InputDecoration(labelText: 'Caption / description', alignLabelWithHint: true, border: OutlineInputBorder())),
-                    const SizedBox(height: 12),
-                    Text('Publish to', style: Theme.of(dialogContext).textTheme.titleMedium),
-                    if (_settingsLoading) const LinearProgressIndicator(),
-                    _platform(id, 'FACEBOOK', 'Facebook'),
-                    _platform(id, 'INSTAGRAM', 'Instagram'),
-                    _platform(id, 'YOUTUBE', 'YouTube'),
-                    const SizedBox(height: 8),
-                    FilledButton.icon(
-                      onPressed: () => _publishSelected(dialogContext, id),
-                      icon: const Icon(Icons.publish_outlined),
-                      label: const Text('Approve & publish selected platforms'),
-                    ),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: () => _scheduleSelected(dialogContext, id),
-                      icon: const Icon(Icons.schedule_outlined),
-                      label: const Text('Schedule selected platforms'),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: () => _showPublicationHistory(dialogContext, id),
-                      icon: const Icon(Icons.history),
-                      label: const Text('Publication history'),
-                    ),
                   ],
-                ]),
+                ),
               ),
             ),
-            actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Close'))],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Close'),
+              ),
+            ],
           );
         },
       ),
     );
   }
-
 }
 
 class _BillingView extends ConsumerWidget {
@@ -1498,103 +1748,207 @@ class _BillingView extends ConsumerWidget {
       onRefresh: notifier.loadBilling,
       child: DefaultTabController(
         length: 5,
-        child: Column(children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Wrap(spacing: 8, runSpacing: 8, children: [
-              _AdminStatCard(label: 'Revenue', value: '₹${overview['revenue'] ?? 0}', icon: Icons.currency_rupee),
-              _AdminStatCard(label: 'Memberships', value: '${overview['memberships'] ?? 0}', icon: Icons.workspace_premium_outlined),
-              _AdminStatCard(label: 'Payments', value: '${overview['payments'] ?? 0}', icon: Icons.payments_outlined),
-              _AdminStatCard(label: 'Invoices', value: '${overview['invoices'] ?? 0}', icon: Icons.receipt_long_outlined),
-            ]),
-          ),
-          const TabBar(isScrollable: true, tabs: [
-            Tab(text: 'Plans'), Tab(text: 'Memberships'), Tab(text: 'Premium listings'),
-            Tab(text: 'Payments'), Tab(text: 'Invoices'),
-          ]),
-          Expanded(child: TabBarView(children: [
-            _billingList(state.billingPlans, (item) => ListTile(
-              title: Text(_text(item, 'name')),
-              subtitle: Text('${_text(item, 'code')} • ₹${item['price'] ?? 0} • ${_number(item, 'durationDays')} days'),
-              trailing: Chip(label: Text(item['isActive'] == true ? 'Active' : 'Inactive')),
-            )),
-            _billingList(state.memberships, (item) {
-              final user = _section(item, 'user');
-              final plan = _section(item, 'plan');
-              return ListTile(
-                title: Text(_text(user, 'fullName')),
-                subtitle: Text('${_text(plan, 'name')} • ${_text(item, 'status')}\n${_text(user, 'email')}'),
-                isThreeLine: true,
-                trailing: PopupMenuButton<String>(
-                  onSelected: (action) async {
-                    if (action == 'extend') {
-                      await _runAction(context, () => notifier.extendMembership(_text(item, 'id'), 30), 'Membership extended 30 days');
-                    } else if (action == 'restore') {
-                      await _runAction(context, () => notifier.restoreMembership(_text(item, 'id')), 'Membership restored');
-                    } else {
-                      await _runAction(context, () => notifier.updateMembershipStatus(_text(item, 'id'), action), 'Membership updated');
-                    }
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value:'activate', child:Text('Activate')),
-                    PopupMenuItem(value:'renew', child:Text('Renew')),
-                    PopupMenuItem(value:'extend', child:Text('Extend 30 days')),
-                    PopupMenuItem(value:'restore', child:Text('Restore')),
-                    PopupMenuItem(value:'expire', child:Text('Expire')),
-                    PopupMenuItem(value:'cancel', child:Text('Cancel')),
-                  ],
-                ),
-              );
-            }),
-            _billingList(state.premiumListings, (item) {
-              final property = _section(item, 'property');
-              return ListTile(
-                title: Text(_text(property, 'title')),
-                subtitle: Text('${_text(item, 'status')} • ₹${item['amount'] ?? 0}'),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (action) => _runAction(context, () => notifier.updatePremiumListingStatus(_text(item,'id'), action), 'Premium listing updated'),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value:'activate',child:Text('Activate')),
-                    PopupMenuItem(value:'expire',child:Text('Expire')),
-                    PopupMenuItem(value:'cancel',child:Text('Cancel')),
-                  ],
-                ),
-              );
-            }),
-            _billingList(state.payments, (item) => ListTile(
-              title: Text('₹${item['amount'] ?? 0} ${_text(item,'currency')}'),
-              subtitle: Text('${_text(item,'status')} • ${_text(item,'razorpayPaymentId')}'),
-              trailing: Text(_text(item, 'createdAt')),
-            )),
-            _billingList(state.invoices, (item) {
-              final user = _section(item, 'user');
-              return ListTile(
-                title: Text(_text(item, 'invoiceNumber')),
-                subtitle: Text('${_text(user,'fullName')} • ₹${item['totalAmount'] ?? 0} • ${_text(item,'status')}'),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (action) => _runAction(context, () => notifier.updateInvoiceStatus(_text(item,'id'), action), 'Invoice updated'),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value:'paid',child:Text('Mark paid')),
-                    PopupMenuItem(value:'cancel',child:Text('Cancel')),
-                  ],
-                ),
-              );
-            }),
-          ])),
-        ]),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _AdminStatCard(
+                    label: 'Revenue',
+                    value: '₹${overview['revenue'] ?? 0}',
+                    icon: Icons.currency_rupee,
+                  ),
+                  _AdminStatCard(
+                    label: 'Memberships',
+                    value: '${overview['memberships'] ?? 0}',
+                    icon: Icons.workspace_premium_outlined,
+                  ),
+                  _AdminStatCard(
+                    label: 'Payments',
+                    value: '${overview['payments'] ?? 0}',
+                    icon: Icons.payments_outlined,
+                  ),
+                  _AdminStatCard(
+                    label: 'Invoices',
+                    value: '${overview['invoices'] ?? 0}',
+                    icon: Icons.receipt_long_outlined,
+                  ),
+                ],
+              ),
+            ),
+            const TabBar(
+              isScrollable: true,
+              tabs: [
+                Tab(text: 'Plans'),
+                Tab(text: 'Memberships'),
+                Tab(text: 'Premium listings'),
+                Tab(text: 'Payments'),
+                Tab(text: 'Invoices'),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _billingList(
+                    state.billingPlans,
+                    (item) => ListTile(
+                      title: Text(_text(item, 'name')),
+                      subtitle: Text(
+                        '${_text(item, 'code')} • ₹${item['price'] ?? 0} • ${_number(item, 'durationDays')} days',
+                      ),
+                      trailing: Chip(
+                        label: Text(
+                          item['isActive'] == true ? 'Active' : 'Inactive',
+                        ),
+                      ),
+                    ),
+                  ),
+                  _billingList(state.memberships, (item) {
+                    final user = _section(item, 'user');
+                    final plan = _section(item, 'plan');
+                    return ListTile(
+                      title: Text(_text(user, 'fullName')),
+                      subtitle: Text(
+                        '${_text(plan, 'name')} • ${_text(item, 'status')}\n${_text(user, 'email')}',
+                      ),
+                      isThreeLine: true,
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (action) async {
+                          if (action == 'extend') {
+                            await _runAction(
+                              context,
+                              () => notifier.extendMembership(
+                                _text(item, 'id'),
+                                30,
+                              ),
+                              'Membership extended 30 days',
+                            );
+                          } else if (action == 'restore') {
+                            await _runAction(
+                              context,
+                              () =>
+                                  notifier.restoreMembership(_text(item, 'id')),
+                              'Membership restored',
+                            );
+                          } else {
+                            await _runAction(
+                              context,
+                              () => notifier.updateMembershipStatus(
+                                _text(item, 'id'),
+                                action,
+                              ),
+                              'Membership updated',
+                            );
+                          }
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: 'activate',
+                            child: Text('Activate'),
+                          ),
+                          PopupMenuItem(value: 'renew', child: Text('Renew')),
+                          PopupMenuItem(
+                            value: 'extend',
+                            child: Text('Extend 30 days'),
+                          ),
+                          PopupMenuItem(
+                            value: 'restore',
+                            child: Text('Restore'),
+                          ),
+                          PopupMenuItem(value: 'expire', child: Text('Expire')),
+                          PopupMenuItem(value: 'cancel', child: Text('Cancel')),
+                        ],
+                      ),
+                    );
+                  }),
+                  _billingList(state.premiumListings, (item) {
+                    final property = _section(item, 'property');
+                    return ListTile(
+                      title: Text(_text(property, 'title')),
+                      subtitle: Text(
+                        '${_text(item, 'status')} • ₹${item['amount'] ?? 0}',
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (action) => _runAction(
+                          context,
+                          () => notifier.updatePremiumListingStatus(
+                            _text(item, 'id'),
+                            action,
+                          ),
+                          'Premium listing updated',
+                        ),
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: 'activate',
+                            child: Text('Activate'),
+                          ),
+                          PopupMenuItem(value: 'expire', child: Text('Expire')),
+                          PopupMenuItem(value: 'cancel', child: Text('Cancel')),
+                        ],
+                      ),
+                    );
+                  }),
+                  _billingList(
+                    state.payments,
+                    (item) => ListTile(
+                      title: Text(
+                        '₹${item['amount'] ?? 0} ${_text(item, 'currency')}',
+                      ),
+                      subtitle: Text(
+                        '${_text(item, 'status')} • ${_text(item, 'razorpayPaymentId')}',
+                      ),
+                      trailing: Text(_text(item, 'createdAt')),
+                    ),
+                  ),
+                  _billingList(state.invoices, (item) {
+                    final user = _section(item, 'user');
+                    return ListTile(
+                      title: Text(_text(item, 'invoiceNumber')),
+                      subtitle: Text(
+                        '${_text(user, 'fullName')} • ₹${item['totalAmount'] ?? 0} • ${_text(item, 'status')}',
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (action) => _runAction(
+                          context,
+                          () => notifier.updateInvoiceStatus(
+                            _text(item, 'id'),
+                            action,
+                          ),
+                          'Invoice updated',
+                        ),
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: 'paid',
+                            child: Text('Mark paid'),
+                          ),
+                          PopupMenuItem(value: 'cancel', child: Text('Cancel')),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _billingList(List<Map<String,dynamic>> items, Widget Function(Map<String,dynamic>) builder) =>
-      items.isEmpty
-          ? const Center(child: Text('No records found.'))
-          : ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: items.length,
-              separatorBuilder: (_, _) => const Divider(height:1),
-              itemBuilder: (_,i) => Card(child: builder(items[i])),
-            );
+  Widget _billingList(
+    List<Map<String, dynamic>> items,
+    Widget Function(Map<String, dynamic>) builder,
+  ) => items.isEmpty
+      ? const Center(child: Text('No records found.'))
+      : ListView.separated(
+          padding: const EdgeInsets.all(12),
+          itemCount: items.length,
+          separatorBuilder: (_, _) => const Divider(height: 1),
+          itemBuilder: (_, i) => Card(child: builder(items[i])),
+        );
 }
 
 class _ActivityView extends ConsumerWidget {
@@ -1891,7 +2245,10 @@ class _InlineNetworkVideoState extends State<_InlineNetworkVideo> {
           trailing: IconButton(
             tooltip: 'Open video',
             icon: const Icon(Icons.open_in_new),
-            onPressed: () => launchUrl(Uri.parse(widget.url), mode: LaunchMode.externalApplication),
+            onPressed: () => launchUrl(
+              Uri.parse(widget.url),
+              mode: LaunchMode.externalApplication,
+            ),
           ),
         ),
       );
@@ -1922,10 +2279,14 @@ class _InlineNetworkVideoState extends State<_InlineNetworkVideo> {
             iconSize: 36,
             onPressed: () {
               setState(() {
-                _controller.value.isPlaying ? _controller.pause() : _controller.play();
+                _controller.value.isPlaying
+                    ? _controller.pause()
+                    : _controller.play();
               });
             },
-            icon: Icon(_controller.value.isPlaying ? Icons.pause : Icons.play_arrow),
+            icon: Icon(
+              _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+            ),
           ),
         ],
       ),
@@ -2032,16 +2393,20 @@ Future<void> _showPropertyDetails(
     final images = property['images'] is List
         ? List<Map<String, dynamic>>.from(
             (property['images'] as List).whereType<Map>().map(
-                  (item) => Map<String, dynamic>.from(item),
-                ),
+              (item) => Map<String, dynamic>.from(item),
+            ),
           )
         : <Map<String, dynamic>>[];
     final amenities = property['amenities'] is List
         ? (property['amenities'] as List)
-            .map((item) => item is Map ? _section(Map<String, dynamic>.from(item), 'amenity') : const <String, dynamic>{})
-            .map((item) => _text(item, 'name'))
-            .where((name) => name.isNotEmpty)
-            .join(', ')
+              .map(
+                (item) => item is Map
+                    ? _section(Map<String, dynamic>.from(item), 'amenity')
+                    : const <String, dynamic>{},
+              )
+              .map((item) => _text(item, 'name'))
+              .where((name) => name.isNotEmpty)
+              .join(', ')
         : '';
     await showModalBottomSheet<void>(
       context: context,
@@ -2053,8 +2418,10 @@ Future<void> _showPropertyDetails(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             children: [
-              Text('Property approval review',
-                  style: Theme.of(sheetContext).textTheme.headlineSmall),
+              Text(
+                'Property approval review',
+                style: Theme.of(sheetContext).textTheme.headlineSmall,
+              ),
               const SizedBox(height: 12),
               if (images.isNotEmpty) ...[
                 SizedBox(
@@ -2069,8 +2436,10 @@ Future<void> _showPropertyDetails(
                         _text(images[index], 'imageUrl'),
                         width: 300,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) =>
-                            const SizedBox(width: 300, child: Icon(Icons.broken_image_outlined)),
+                        errorBuilder: (_, _, _) => const SizedBox(
+                          width: 300,
+                          child: Icon(Icons.broken_image_outlined),
+                        ),
                       ),
                     ),
                   ),
@@ -2078,9 +2447,15 @@ Future<void> _showPropertyDetails(
                 const SizedBox(height: 16),
               ],
               if (_text(property, 'videoUrl').isNotEmpty) ...[
-                Text('Property video tour', style: Theme.of(sheetContext).textTheme.titleMedium),
+                Text(
+                  'Property video tour',
+                  style: Theme.of(sheetContext).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 8),
-                _InlineNetworkVideo(url: _text(property, 'videoUrl'), aspectRatio: 16 / 9),
+                _InlineNetworkVideo(
+                  url: _text(property, 'videoUrl'),
+                  aspectRatio: 16 / 9,
+                ),
                 const SizedBox(height: 16),
               ],
               ...{
@@ -2106,12 +2481,16 @@ Future<void> _showPropertyDetails(
                 'Owner': _text(owner, 'fullName'),
                 'Owner email': _text(owner, 'email'),
                 'Owner phone': _text(owner, 'phone'),
-                'Approval': property['isVerified'] == true ? 'Approved' : 'Pending approval',
-              }.entries.map((entry) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(entry.key),
-                    subtitle: Text(entry.value.isEmpty ? '—' : entry.value),
-                  )),
+                'Approval': property['isVerified'] == true
+                    ? 'Approved'
+                    : 'Pending approval',
+              }.entries.map(
+                (entry) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(entry.key),
+                  subtitle: Text(entry.value.isEmpty ? '—' : entry.value),
+                ),
+              ),
             ],
           ),
         ),

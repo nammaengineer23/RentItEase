@@ -17,22 +17,74 @@ class PropertyPhotoSection {
 }
 
 const propertyPhotoSections = <PropertyPhotoSection>[
-  PropertyPhotoSection(value: 'EXTERIOR', label: 'Exterior', icon: Icons.home_outlined),
-  PropertyPhotoSection(value: 'LIVING_ROOM', label: 'Living Room', icon: Icons.weekend_outlined),
-  PropertyPhotoSection(value: 'HALL', label: 'Hall', icon: Icons.meeting_room_outlined),
-  PropertyPhotoSection(value: 'KITCHEN', label: 'Kitchen', icon: Icons.kitchen_outlined),
-  PropertyPhotoSection(value: 'BEDROOM', label: 'Bedroom', icon: Icons.bed_outlined),
-  PropertyPhotoSection(value: 'BATHROOM', label: 'Bathroom', icon: Icons.bathtub_outlined),
-  PropertyPhotoSection(value: 'BALCONY', label: 'Balcony', icon: Icons.balcony_outlined),
-  PropertyPhotoSection(value: 'DINING', label: 'Dining', icon: Icons.dining_outlined),
-  PropertyPhotoSection(value: 'PARKING', label: 'Parking', icon: Icons.local_parking_outlined),
-  PropertyPhotoSection(value: 'OTHER', label: 'Other', icon: Icons.photo_outlined),
+  PropertyPhotoSection(
+    value: 'EXTERIOR',
+    label: 'Exterior',
+    icon: Icons.home_outlined,
+  ),
+  PropertyPhotoSection(
+    value: 'LIVING_ROOM',
+    label: 'Living Room',
+    icon: Icons.weekend_outlined,
+  ),
+  PropertyPhotoSection(
+    value: 'HALL',
+    label: 'Hall',
+    icon: Icons.meeting_room_outlined,
+  ),
+  PropertyPhotoSection(
+    value: 'KITCHEN',
+    label: 'Kitchen',
+    icon: Icons.kitchen_outlined,
+  ),
+  PropertyPhotoSection(
+    value: 'BEDROOM',
+    label: 'Bedroom',
+    icon: Icons.bed_outlined,
+  ),
+  PropertyPhotoSection(
+    value: 'BATHROOM',
+    label: 'Bathroom',
+    icon: Icons.bathtub_outlined,
+  ),
+  PropertyPhotoSection(
+    value: 'BALCONY',
+    label: 'Balcony',
+    icon: Icons.balcony_outlined,
+  ),
+  PropertyPhotoSection(
+    value: 'DINING',
+    label: 'Dining',
+    icon: Icons.dining_outlined,
+  ),
+  PropertyPhotoSection(
+    value: 'PARKING',
+    label: 'Parking',
+    icon: Icons.local_parking_outlined,
+  ),
+  PropertyPhotoSection(
+    value: 'OTHER',
+    label: 'Other',
+    icon: Icons.photo_outlined,
+  ),
 ];
 
 const sitePhotoSections = <PropertyPhotoSection>[
-  PropertyPhotoSection(value: 'EXTERIOR', label: 'Plot / Site View', icon: Icons.landscape_outlined),
-  PropertyPhotoSection(value: 'PARKING', label: 'Road Access', icon: Icons.add_road_outlined),
-  PropertyPhotoSection(value: 'OTHER', label: 'Boundary & Surroundings', icon: Icons.fence_outlined),
+  PropertyPhotoSection(
+    value: 'EXTERIOR',
+    label: 'Plot / Site View',
+    icon: Icons.landscape_outlined,
+  ),
+  PropertyPhotoSection(
+    value: 'PARKING',
+    label: 'Road Access',
+    icon: Icons.add_road_outlined,
+  ),
+  PropertyPhotoSection(
+    value: 'OTHER',
+    label: 'Boundary & Surroundings',
+    icon: Icons.fence_outlined,
+  ),
 ];
 
 class SectionedPropertyImagePicker extends StatefulWidget {
@@ -65,14 +117,14 @@ class _SectionedPropertyImagePickerState
   @override
   void initState() {
     super.initState();
-    _newImagesBySection.addAll(widget.selectedImages.map(
-      (section, images) => MapEntry(section, List<XFile>.from(images)),
-    ));
-    _existingBySection = widget.initialImages.map(
-      (section, images) => MapEntry(
-        section,
-        List<PropertyImageRecord>.from(images),
+    _newImagesBySection.addAll(
+      widget.selectedImages.map(
+        (section, images) => MapEntry(section, List<XFile>.from(images)),
       ),
+    );
+    _existingBySection = widget.initialImages.map(
+      (section, images) =>
+          MapEntry(section, List<PropertyImageRecord>.from(images)),
     );
   }
 
@@ -184,9 +236,22 @@ class _SectionedPropertyImagePickerState
     if (!identical(oldWidget.initialImages, widget.initialImages)) {
       _existingBySection
         ..clear()
-        ..addAll(widget.initialImages.map(
-          (section, images) => MapEntry(section, List<PropertyImageRecord>.from(images)),
-        ));
+        ..addAll(
+          widget.initialImages.map(
+            (section, images) =>
+                MapEntry(section, List<PropertyImageRecord>.from(images)),
+          ),
+        );
+    }
+
+    if (!identical(oldWidget.selectedImages, widget.selectedImages)) {
+      _newImagesBySection
+        ..clear()
+        ..addAll(
+          widget.selectedImages.map(
+            (section, images) => MapEntry(section, List<XFile>.from(images)),
+          ),
+        );
     }
   }
 
@@ -200,7 +265,9 @@ class _SectionedPropertyImagePickerState
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 8),
-        ...(widget.isLand ? sitePhotoSections : propertyPhotoSections).map((section) {
+        ...(widget.isLand ? sitePhotoSections : propertyPhotoSections).map((
+          section,
+        ) {
           final existing = _existingBySection[section.value] ?? const [];
           final added = _newImagesBySection[section.value] ?? const [];
           final remaining = existing.length >= 2 ? 0 : 2 - existing.length;

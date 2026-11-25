@@ -48,10 +48,13 @@ class _HomePageState extends ConsumerState<HomePage> {
         permission = await Geolocator.requestPermission();
       }
       if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) return;
+          permission == LocationPermission.deniedForever)
+        return;
 
       final position = await Geolocator.getCurrentPosition();
-      final nearby = await ref.read(propertyProvider.notifier).getNearbyProperties(
+      final nearby = await ref
+          .read(propertyProvider.notifier)
+          .getNearbyProperties(
             latitude: position.latitude,
             longitude: position.longitude,
             radius: 25,
@@ -65,8 +68,8 @@ class _HomePageState extends ConsumerState<HomePage> {
         city = placemarks.isEmpty
             ? ''
             : (placemarks.first.locality ??
-                placemarks.first.subAdministrativeArea ??
-                '');
+                  placemarks.first.subAdministrativeArea ??
+                  '');
       } catch (_) {}
       if (mounted) {
         setState(() {
@@ -98,8 +101,14 @@ class _HomePageState extends ConsumerState<HomePage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('RentItEase', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
-            Text(context.tr('findPerfectHome'), style: const TextStyle(fontSize: 14)),
+            const Text(
+              'RentItEase',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+            ),
+            Text(
+              context.tr('findPerfectHome'),
+              style: const TextStyle(fontSize: 14),
+            ),
           ],
         ),
         actions: [
@@ -120,7 +129,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                   top: 8,
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
                     child: Text(
                       notificationState.unreadCount.toString(),
                       style: const TextStyle(color: Colors.white, fontSize: 10),
@@ -150,7 +162,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               Text(error.toString(), textAlign: TextAlign.center),
               const SizedBox(height: 12),
               ElevatedButton(
-                onPressed: () => ref.read(propertyProvider.notifier).loadProperties(),
+                onPressed: () =>
+                    ref.read(propertyProvider.notifier).loadProperties(),
                 child: Text(context.tr('retry')),
               ),
             ],
@@ -162,19 +175,27 @@ class _HomePageState extends ConsumerState<HomePage> {
               .where((property) => property.isAvailable && property.isVerified)
               .toList();
           final nearbyIds = nearby.map((property) => property.id).toSet();
-          final cityProperties = available
-              .where((property) =>
-                  !nearbyIds.contains(property.id) &&
-                  _nearbyCity.isNotEmpty &&
-                  property.city.trim().toLowerCase() == _nearbyCity.toLowerCase())
-              .toList()
-            ..sort(_compareByDistance);
+          final cityProperties =
+              available
+                  .where(
+                    (property) =>
+                        !nearbyIds.contains(property.id) &&
+                        _nearbyCity.isNotEmpty &&
+                        property.city.trim().toLowerCase() ==
+                            _nearbyCity.toLowerCase(),
+                  )
+                  .toList()
+                ..sort(_compareByDistance);
           final cityIds = cityProperties.map((property) => property.id).toSet();
-          final remaining = available
-              .where((property) =>
-                  !nearbyIds.contains(property.id) && !cityIds.contains(property.id))
-              .toList()
-            ..sort(_compareByDistance);
+          final remaining =
+              available
+                  .where(
+                    (property) =>
+                        !nearbyIds.contains(property.id) &&
+                        !cityIds.contains(property.id),
+                  )
+                  .toList()
+                ..sort(_compareByDistance);
           final rankedFeed = _nearbyProperties == null
               ? available
               : [...nearby, ...cityProperties, ...remaining];
@@ -182,11 +203,19 @@ class _HomePageState extends ConsumerState<HomePage> {
           final visibleFeed = normalizedQuery.isEmpty
               ? rankedFeed
               : rankedFeed.where((property) {
-                  return property.title.toLowerCase().contains(normalizedQuery) ||
+                  return property.title.toLowerCase().contains(
+                        normalizedQuery,
+                      ) ||
                       property.city.toLowerCase().contains(normalizedQuery) ||
-                      property.locality.toLowerCase().contains(normalizedQuery) ||
-                      property.propertyType.toLowerCase().contains(normalizedQuery) ||
-                      property.ownerName.toLowerCase().contains(normalizedQuery);
+                      property.locality.toLowerCase().contains(
+                        normalizedQuery,
+                      ) ||
+                      property.propertyType.toLowerCase().contains(
+                        normalizedQuery,
+                      ) ||
+                      property.ownerName.toLowerCase().contains(
+                        normalizedQuery,
+                      );
                 }).toList();
 
           return Column(
@@ -234,7 +263,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                   padding: const EdgeInsets.fromLTRB(12, 2, 12, 2),
                   child: Card(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       child: Row(
                         children: [
                           const Icon(Icons.add_home_work_outlined, size: 26),
@@ -243,9 +275,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('List your property on RentItEase', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                                Text(
+                                  'List your property on RentItEase',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
+                                ),
                                 SizedBox(height: 2),
-                                Text('Choose a property type and submit it for admin review.'),
+                                Text(
+                                  'Choose a property type and submit it for admin review.',
+                                ),
                               ],
                             ),
                           ),
@@ -277,15 +317,16 @@ class _HomePageState extends ConsumerState<HomePage> {
                               onBookVisit: property.ownerId == currentUserId
                                   ? null
                                   : () => context.push(
-                                        '/book-visit/${property.id}',
-                                        extra: {
-                                          'propertyTitle': property.title,
-                                          'propertyImage': property.imageUrls.isNotEmpty
-                                              ? property.imageUrls.first
-                                              : '',
-                                          'ownerName': property.ownerName,
-                                        },
-                                      ),
+                                      '/book-visit/${property.id}',
+                                      extra: {
+                                        'propertyTitle': property.title,
+                                        'propertyImage':
+                                            property.imageUrls.isNotEmpty
+                                            ? property.imageUrls.first
+                                            : '',
+                                        'ownerName': property.ownerName,
+                                      },
+                                    ),
                               onContactOwner: property.ownerId == currentUserId
                                   ? null
                                   : () => _openPropertyChat(property),
@@ -304,11 +345,15 @@ class _HomePageState extends ConsumerState<HomePage> {
   int _compareByDistance(PropertyEntity first, PropertyEntity second) {
     final position = _currentPosition;
     if (position == null) return 0;
-    return _distanceFrom(position, first).compareTo(_distanceFrom(position, second));
+    return _distanceFrom(
+      position,
+      first,
+    ).compareTo(_distanceFrom(position, second));
   }
 
   double _distanceFrom(Position position, PropertyEntity property) {
-    if (property.latitude == 0 && property.longitude == 0) return double.infinity;
+    if (property.latitude == 0 && property.longitude == 0)
+      return double.infinity;
     return Geolocator.distanceBetween(
       position.latitude,
       position.longitude,
@@ -330,7 +375,8 @@ class _HomePageState extends ConsumerState<HomePage> {
           'propertyId': property.id,
           'userName': property.ownerName,
           'propertyTitle': property.title,
-          if (property.imageUrls.isNotEmpty) 'propertyImage': property.imageUrls.first,
+          if (property.imageUrls.isNotEmpty)
+            'propertyImage': property.imageUrls.first,
         },
       ).toString(),
     );

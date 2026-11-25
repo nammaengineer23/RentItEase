@@ -48,7 +48,13 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
   late final TextEditingController totalFloorsController;
   late final TextEditingController areaController;
   late String areaUnit;
-  static const areaUnits = <String, String>{'sq_ft': 'Sq. ft.', 'sq_yards': 'Sq. yards', 'sq_meters': 'Sq. metres', 'acres': 'Acres', 'cents': 'Cents'};
+  static const areaUnits = <String, String>{
+    'sq_ft': 'Sq. ft.',
+    'sq_yards': 'Sq. yards',
+    'sq_meters': 'Sq. metres',
+    'acres': 'Acres',
+    'cents': 'Cents',
+  };
 
   late String propertyType;
   late String furnishing;
@@ -59,6 +65,7 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
 
   bool loading = false;
   bool imagesLoading = true;
+  bool imagesLoadFailed = false;
   bool videoLoading = false;
   double videoCompressionProgress = 0;
   bool detailsLoading = true;
@@ -98,11 +105,17 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     bathroomsController = TextEditingController(
       text: property.bathrooms.toString(),
     );
-    balconiesController = TextEditingController(text: property.balconies.toString());
+    balconiesController = TextEditingController(
+      text: property.balconies.toString(),
+    );
     floorController = TextEditingController(text: property.floor.toString());
-    totalFloorsController = TextEditingController(text: property.totalFloors.toString());
+    totalFloorsController = TextEditingController(
+      text: property.totalFloors.toString(),
+    );
     areaController = TextEditingController(text: property.area.toString());
-    areaUnit = areaUnits.containsKey(property.landAreaUnit) ? property.landAreaUnit! : 'sq_ft';
+    areaUnit = areaUnits.containsKey(property.landAreaUnit)
+        ? property.landAreaUnit!
+        : 'sq_ft';
 
     propertyType = _displayPropertyType(property.propertyType);
     furnishing = _displayFurnishing(property.furnishing);
@@ -155,7 +168,9 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
         floorController.text = property.floor.toString();
         totalFloorsController.text = property.totalFloors.toString();
         areaController.text = property.area.toString();
-        areaUnit = areaUnits.containsKey(property.landAreaUnit) ? property.landAreaUnit! : 'sq_ft';
+        areaUnit = areaUnits.containsKey(property.landAreaUnit)
+            ? property.landAreaUnit!
+            : 'sq_ft';
         propertyType = _displayPropertyType(property.propertyType);
         furnishing = _displayFurnishing(property.furnishing);
         parking = property.parking;
@@ -220,25 +235,51 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
       final response = await ref.read(dioProvider).get('/amenities');
       dynamic value = response.data;
       while (value is Map && value.containsKey('data')) value = value['data'];
-      if (value is Map && value['amenities'] is List) value = value['amenities'];
-      if (value is! List) throw const FormatException('Unexpected amenities response.');
-      final items = value.whereType<Map>().map(Map<String, dynamic>.from).where((a) => a['id'] != null).toList();
-      final selectedNames = widget.property.amenities.map((name) => name.trim().toLowerCase()).toSet();
+      if (value is Map && value['amenities'] is List)
+        value = value['amenities'];
+      if (value is! List)
+        throw const FormatException('Unexpected amenities response.');
+      final items = value
+          .whereType<Map>()
+          .map(Map<String, dynamic>.from)
+          .where((a) => a['id'] != null)
+          .toList();
+      final selectedNames = widget.property.amenities
+          .map((name) => name.trim().toLowerCase())
+          .toSet();
       if (!mounted) return;
       setState(() {
         amenities = items;
         selectedAmenityIds
           ..clear()
-          ..addAll(items.where((a) => selectedNames.contains(a['name']?.toString().trim().toLowerCase())).map((a) => a['id'].toString()));
+          ..addAll(
+            items
+                .where(
+                  (a) => selectedNames.contains(
+                    a['name']?.toString().trim().toLowerCase(),
+                  ),
+                )
+                .map((a) => a['id'].toString()),
+          );
         amenitiesLoading = false;
         amenitiesError = null;
       });
     } catch (_) {
-      if (mounted) setState(() { amenitiesLoading = false; amenitiesError = 'Amenities could not be loaded.'; });
+      if (mounted)
+        setState(() {
+          amenitiesLoading = false;
+          amenitiesError = 'Amenities could not be loaded.';
+        });
     }
   }
 
   Future<void> _loadImages() async {
+    if (mounted) {
+      setState(() {
+        imagesLoading = true;
+        imagesLoadFailed = false;
+      });
+    }
     try {
       final images = await PropertyImageApi(
         ref.read(dioProvider),
@@ -251,11 +292,15 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
         setState(() {
           existingImagesBySection = grouped;
           imagesLoading = false;
+          imagesLoadFailed = false;
         });
       }
     } catch (error) {
       if (mounted) {
-        setState(() => imagesLoading = false);
+        setState(() {
+          imagesLoading = false;
+          imagesLoadFailed = true;
+        });
         _showError('${context.tr('loadPhotosFailed')}: $error');
       }
     }
@@ -264,11 +309,14 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
   void _applyLocation(LocationModel location) {
     setState(() {
       selectedLocation = location;
-      if (location.address.isNotEmpty) addressController.text = location.address;
-      if (location.locality.isNotEmpty) localityController.text = location.locality;
+      if (location.address.isNotEmpty)
+        addressController.text = location.address;
+      if (location.locality.isNotEmpty)
+        localityController.text = location.locality;
       if (location.city.isNotEmpty) cityController.text = location.city;
       if (location.state.isNotEmpty) stateController.text = location.state;
-      if (location.country.isNotEmpty) countryController.text = location.country;
+      if (location.country.isNotEmpty)
+        countryController.text = location.country;
       if (location.postalCode.isNotEmpty) {
         pincodeController.text = location.postalCode;
       }
@@ -315,7 +363,9 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     });
     final subscription = VideoCompress.compressProgress$.subscribe((progress) {
       if (mounted) {
-        setState(() => videoCompressionProgress = progress.clamp(0, 100).toDouble());
+        setState(
+          () => videoCompressionProgress = progress.clamp(0, 100).toDouble(),
+        );
       }
     });
     try {
@@ -345,15 +395,26 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
       final before = (originalBytes / (1024 * 1024)).toStringAsFixed(1);
       final after = (compressedBytes / (1024 * 1024)).toStringAsFixed(1);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Property video uploaded successfully ($before MB → $after MB).')),
+        SnackBar(
+          content: Text(
+            'Property video uploaded successfully ($before MB → $after MB).',
+          ),
+        ),
       );
     } on FormatException catch (error) {
       if (mounted) _showError(error.message);
     } catch (error) {
-      if (mounted) _showError('Video upload failed: ${error.toString().replaceFirst('Exception: ', '')}');
+      if (mounted)
+        _showError(
+          'Video upload failed: ${error.toString().replaceFirst('Exception: ', '')}',
+        );
     } finally {
       subscription.unsubscribe();
-      if (mounted) setState(() { videoLoading = false; videoCompressionProgress = 0; });
+      if (mounted)
+        setState(() {
+          videoLoading = false;
+          videoCompressionProgress = 0;
+        });
     }
   }
 
@@ -365,9 +426,9 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
       ).deleteVideo(widget.property.id);
       if (!mounted) return;
       setState(() => videoUrl = '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Property video deleted.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Property video deleted.')));
     } catch (_) {
       if (mounted) _showError('Could not delete the property video.');
     } finally {
@@ -377,10 +438,23 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
 
   Future<void> _deleteExistingImage(PropertyImageRecord image) async {
     try {
-      await PropertyImageApi(ref.read(dioProvider)).deleteImage(
-        propertyId: widget.property.id,
-        imageId: image.id,
-      );
+      await PropertyImageApi(
+        ref.read(dioProvider),
+      ).deleteImage(propertyId: widget.property.id, imageId: image.id);
+
+      if (!mounted) return;
+      setState(() {
+        final updatedImages = <String, List<PropertyImageRecord>>{};
+        for (final entry in existingImagesBySection.entries) {
+          final remaining = entry.value
+              .where((existingImage) => existingImage.id != image.id)
+              .toList();
+          if (remaining.isNotEmpty) {
+            updatedImages[entry.key] = remaining;
+          }
+        }
+        existingImagesBySection = updatedImages;
+      });
     } catch (error) {
       if (mounted) _showError('${context.tr('deletePhotoFailed')}: $error');
       rethrow;
@@ -388,6 +462,26 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
   }
 
   Future<void> _updateProperty() async {
+    if (imagesLoading || imagesLoadFailed) {
+      _showError(
+        'Property photos could not be verified. Retry loading photos before saving.',
+      );
+      return;
+    }
+
+    final existingPhotoCount = existingImagesBySection.values.fold<int>(
+      0,
+      (total, images) => total + images.length,
+    );
+    final newPhotoCount = newImagesBySection.values.fold<int>(
+      0,
+      (total, images) => total + images.length,
+    );
+    if (existingPhotoCount + newPhotoCount < 1) {
+      _showError('Upload at least one property photo before submitting.');
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     final rent = double.tryParse(rentController.text.trim());
@@ -458,31 +552,33 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
     );
 
     try {
-      await ref.read(ownerProvider.notifier).updateProperty(
-        updated,
-        area: area,
-        areaUnit: areaUnit,
-        bathrooms: bathrooms,
-        bedrooms: bedrooms,
-        balconies: balconies,
-        floor: floor,
-        totalFloors: totalFloors,
-        country: countryController.text.trim(),
-        furnishing: furnishing,
-        landmark: landmarkController.text.trim().isEmpty
-            ? null
-            : landmarkController.text.trim(),
-        latitude: selectedLocation?.latitude,
-        longitude: selectedLocation?.longitude,
-        parking: parking,
-        petFriendly: petFriendly,
-        pincode: pincodeController.text.trim(),
-        securityDeposit: securityDeposit,
-        stateName: stateController.text.trim(),
-        dailyRentEnabled: dailyRentEnabled,
-        dailyRent: dailyRent,
-        amenityIds: selectedAmenityIds.toList(),
-      );
+      await ref
+          .read(ownerProvider.notifier)
+          .updateProperty(
+            updated,
+            area: area,
+            areaUnit: areaUnit,
+            bathrooms: bathrooms,
+            bedrooms: bedrooms,
+            balconies: balconies,
+            floor: floor,
+            totalFloors: totalFloors,
+            country: countryController.text.trim(),
+            furnishing: furnishing,
+            landmark: landmarkController.text.trim().isEmpty
+                ? null
+                : landmarkController.text.trim(),
+            latitude: selectedLocation?.latitude,
+            longitude: selectedLocation?.longitude,
+            parking: parking,
+            petFriendly: petFriendly,
+            pincode: pincodeController.text.trim(),
+            securityDeposit: securityDeposit,
+            stateName: stateController.text.trim(),
+            dailyRentEnabled: dailyRentEnabled,
+            dailyRent: dailyRent,
+            amenityIds: selectedAmenityIds.toList(),
+          );
 
       if (newImagesBySection.isNotEmpty) {
         await PropertyImageApi(ref.read(dioProvider)).uploadSectionImages(
@@ -491,6 +587,8 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
           assignFirstAsPrimary: false,
         );
       }
+
+      await ref.read(dioProvider).post('/properties/${source.id}/submit');
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -588,338 +686,433 @@ class _EditPropertyPageState extends ConsumerState<EditPropertyPage> {
       body: detailsLoading
           ? const Center(child: CircularProgressIndicator())
           : Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _field(titleController, context.tr('propertyTitle')),
-            gap,
-            _field(
-              descriptionController,
-              context.tr('description'),
-              maxLines: 4,
-            ),
-            gap,
-            _field(
-              rentController,
-              context.tr('monthlyRent'),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              validator: _number,
-            ),
-            gap,
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(context.tr('dailyRentAvailable')),
-              subtitle: Text(context.tr('perDayRentDescription')),
-              value: dailyRentEnabled,
-              onChanged: loading
-                  ? null
-                  : (value) => setState(() => dailyRentEnabled = value),
-            ),
-            if (dailyRentEnabled) ...[
-              _field(
-                dailyRentController,
-                context.tr('dailyRent'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                validator: _number,
-              ),
-              gap,
-            ],
-            _field(
-              securityDepositController,
-              context.tr('securityDeposit'),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              validator: _number,
-            ),
-            gap,
-            DropdownButtonFormField<String>(
-              initialValue: propertyType,
-              decoration: InputDecoration(
-                labelText: context.tr('propertyType'),
-                border: const OutlineInputBorder(),
-              ),
-              items: const {
-                'Apartment': 'apartment',
-                'House': 'house',
-                'Villa': 'villa',
-                'Studio': 'studio',
-                'Room': 'room',
-                'PG': 'pg',
-              }.entries.map((entry) {
-                return DropdownMenuItem(
-                  value: entry.key,
-                  child: Text(context.tr(entry.value)),
-                );
-              }).toList(),
-              onChanged: loading
-                  ? null
-                  : (value) => setState(() => propertyType = value!),
-            ),
-            gap,
-            DropdownButtonFormField<String>(
-              initialValue: furnishing,
-              decoration: InputDecoration(
-                labelText: context.tr('furnishing'),
-                border: const OutlineInputBorder(),
-              ),
-              items: const {
-                'Unfurnished': 'unfurnished',
-                'Semi Furnished': 'semiFurnished',
-                'Fully Furnished': 'fullyFurnished',
-              }.entries.map((entry) {
-                return DropdownMenuItem(
-                  value: entry.key,
-                  child: Text(context.tr(entry.value)),
-                );
-              }).toList(),
-              onChanged: loading
-                  ? null
-                  : (value) => setState(() => furnishing = value!),
-            ),
-            gap,
-            Row(
-              children: [
-                Expanded(
-                  child: _field(
-                    bedroomsController,
-                    context.tr('bedrooms'),
-                    keyboardType: TextInputType.number,
-                    validator: _integer,
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _field(titleController, context.tr('propertyTitle')),
+                  gap,
+                  _field(
+                    descriptionController,
+                    context.tr('description'),
+                    maxLines: 4,
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _field(
-                    bathroomsController,
-                    context.tr('bathrooms'),
-                    keyboardType: TextInputType.number,
-                    validator: _integer,
+                  gap,
+                  _field(
+                    rentController,
+                    context.tr('monthlyRent'),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    validator: _number,
                   ),
-                ),
-              ],
-            ),
-            gap,
-            Row(children: [
-              Expanded(child: _field(balconiesController, 'Balconies', keyboardType: TextInputType.number, validator: _integer)),
-              const SizedBox(width: 12),
-              Expanded(child: _field(floorController, 'Floor', keyboardType: TextInputType.number, validator: _integer)),
-              const SizedBox(width: 12),
-              Expanded(child: _field(totalFloorsController, 'Total floors', keyboardType: TextInputType.number, validator: _integer)),
-            ]),
-            gap,
-            _field(
-              areaController,
-              context.tr('areaSqFt'),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              validator: _number,
-            ),
-            DropdownButtonFormField<String>(
-              initialValue: areaUnit,
-              decoration: const InputDecoration(labelText: 'Area unit', border: OutlineInputBorder()),
-              items: areaUnits.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
-              onChanged: loading ? null : (value) { if (value != null) setState(() => areaUnit = value); },
-            ),
-            const SizedBox(height: 24),
-            Text('Amenities', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            if (amenitiesLoading)
-              const Center(child: CircularProgressIndicator())
-            else if (amenitiesError != null)
-              Row(children: [Expanded(child: Text(amenitiesError!)), TextButton(onPressed: _loadAmenities, child: const Text('Retry'))])
-            else
-              ...amenities.where((amenity) {
-                final normalized = amenity['name']?.toString().trim().toLowerCase() ?? '';
-                return normalized != 'parking' &&
-                    normalized != 'covered parking' &&
-                    normalized != 'pet friendly';
-              }).map((amenity) {
-                final id = amenity['id'].toString();
-                final name = amenity['name']?.toString().trim() ?? 'Amenity';
-                final normalized = name.toLowerCase();
-                final selected = normalized == 'parking' || normalized == 'covered parking'
-                    ? parking
-                    : normalized == 'pet friendly'
-                        ? petFriendly
-                        : selectedAmenityIds.contains(id);
-                return SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  title: Text(name),
-                  value: selected,
-                  onChanged: loading ? null : (value) => setState(() {
-                    if (normalized == 'parking' || normalized == 'covered parking') parking = value;
-                    else if (normalized == 'pet friendly') petFriendly = value;
-                    else if (value) selectedAmenityIds.add(id);
-                    else selectedAmenityIds.remove(id);
-                  }),
-                );
-              }),
-            const SizedBox(height: 24),
-            Text(
-              context.tr('propertyLocation'),
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: loading ? null : _useCurrentLocation,
-                    icon: const Icon(Icons.my_location),
-                    label: Text(context.tr('useCurrent')),
+                  gap,
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(context.tr('dailyRentAvailable')),
+                    subtitle: Text(context.tr('perDayRentDescription')),
+                    value: dailyRentEnabled,
+                    onChanged: loading
+                        ? null
+                        : (value) => setState(() => dailyRentEnabled = value),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: loading ? null : _pickLocation,
-                    icon: const Icon(Icons.map_outlined),
-                    label: Text(context.tr('chooseOnMap')),
-                  ),
-                ),
-              ],
-            ),
-            if (selectedLocation != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  '${context.tr('coordinates')}: '
-                  '${selectedLocation!.latitude.toStringAsFixed(6)}, '
-                  '${selectedLocation!.longitude.toStringAsFixed(6)}',
-                ),
-              ),
-            gap,
-            _field(addressController, context.tr('address')),
-            gap,
-            _field(localityController, context.tr('locality')),
-            gap,
-            _field(
-              landmarkController,
-              context.tr('landmark'),
-              validator: (_) => null,
-            ),
-            gap,
-            _field(cityController, context.tr('city')),
-            gap,
-            _field(stateController, context.tr('state')),
-            gap,
-            _field(countryController, context.tr('country')),
-            gap,
-            _field(
-              pincodeController,
-              context.tr('pincode'),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 8),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(context.tr('parking')),
-              value: parking,
-              onChanged: loading ? null : (value) => setState(() => parking = value),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(context.tr('petFriendly')),
-              value: petFriendly,
-              onChanged: loading
-                  ? null
-                  : (value) => setState(() => petFriendly = value),
-            ),
-            if (!widget.property.isVerified)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  'This property is pending admin approval. Owner edits require approval before the listing becomes public again.',
-                ),
-              ),
-            const SizedBox(height: 24),
-            Text(
-              'Video tour',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 6),
-            const Text('One MP4, MOV or M4V video • up to 60 seconds • 100 MB'),
-            const SizedBox(height: 10),
-            Card(
-              child: ListTile(
-                leading: videoLoading
-                    ? const SizedBox.square(
-                        dimension: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(
-                        videoUrl.isEmpty
-                            ? Icons.video_call_outlined
-                            : Icons.check_circle_outline,
+                  if (dailyRentEnabled) ...[
+                    _field(
+                      dailyRentController,
+                      context.tr('dailyRent'),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
                       ),
-                title: Text(
-                  videoUrl.isEmpty
-                      ? 'No video tour uploaded'
-                      : 'Video tour ready',
-                ),
-                subtitle: Text(
-                  videoUrl.isEmpty
-                      ? 'Add a short walkthrough for tenants.'
-                      : 'Upload another video to replace the current one.',
-                ),
-                trailing: videoUrl.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: 'Delete video',
-                        onPressed: videoLoading ? null : _deleteVideo,
-                        icon: const Icon(Icons.delete_outline),
-                      ),
-                onTap: videoLoading ? null : _pickAndUploadVideo,
-              ),
-            ),
-            OutlinedButton.icon(
-              onPressed: videoLoading ? null : _pickAndUploadVideo,
-              icon: const Icon(Icons.upload_file),
-              label: Text(
-                videoUrl.isEmpty ? 'Upload video tour' : 'Replace video tour',
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              context.tr('propertyPhotos'),
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            if (imagesLoading)
-              const Center(child: CircularProgressIndicator())
-            else
-              SectionedPropertyImagePicker(
-                initialImages: existingImagesBySection,
-                onDeleteExisting: _deleteExistingImage,
-                onImagesChanged: (images) {
-                  newImagesBySection = images;
-                },
-              ),
-            const SizedBox(height: 32),
-            SizedBox(
-              height: 52,
-              child: FilledButton.icon(
-                onPressed: loading ? null : _updateProperty,
-                icon: loading
-                    ? const SizedBox.square(
-                        dimension: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                      validator: _number,
+                    ),
+                    gap,
+                  ],
+                  _field(
+                    securityDepositController,
+                    context.tr('securityDeposit'),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    validator: _number,
+                  ),
+                  gap,
+                  DropdownButtonFormField<String>(
+                    initialValue: propertyType,
+                    decoration: InputDecoration(
+                      labelText: context.tr('propertyType'),
+                      border: const OutlineInputBorder(),
+                    ),
+                    items:
+                        const {
+                          'Apartment': 'apartment',
+                          'House': 'house',
+                          'Villa': 'villa',
+                          'Studio': 'studio',
+                          'Room': 'room',
+                          'PG': 'pg',
+                        }.entries.map((entry) {
+                          return DropdownMenuItem(
+                            value: entry.key,
+                            child: Text(context.tr(entry.value)),
+                          );
+                        }).toList(),
+                    onChanged: loading
+                        ? null
+                        : (value) => setState(() => propertyType = value!),
+                  ),
+                  gap,
+                  DropdownButtonFormField<String>(
+                    initialValue: furnishing,
+                    decoration: InputDecoration(
+                      labelText: context.tr('furnishing'),
+                      border: const OutlineInputBorder(),
+                    ),
+                    items:
+                        const {
+                          'Unfurnished': 'unfurnished',
+                          'Semi Furnished': 'semiFurnished',
+                          'Fully Furnished': 'fullyFurnished',
+                        }.entries.map((entry) {
+                          return DropdownMenuItem(
+                            value: entry.key,
+                            child: Text(context.tr(entry.value)),
+                          );
+                        }).toList(),
+                    onChanged: loading
+                        ? null
+                        : (value) => setState(() => furnishing = value!),
+                  ),
+                  gap,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _field(
+                          bedroomsController,
+                          context.tr('bedrooms'),
+                          keyboardType: TextInputType.number,
+                          validator: _integer,
                         ),
-                      )
-                    : const Icon(Icons.save),
-                label: Text(
-                  loading
-                      ? context.tr('updating')
-                      : context.tr('updateProperty'),
-                ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _field(
+                          bathroomsController,
+                          context.tr('bathrooms'),
+                          keyboardType: TextInputType.number,
+                          validator: _integer,
+                        ),
+                      ),
+                    ],
+                  ),
+                  gap,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _field(
+                          balconiesController,
+                          'Balconies',
+                          keyboardType: TextInputType.number,
+                          validator: _integer,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _field(
+                          floorController,
+                          'Floor',
+                          keyboardType: TextInputType.number,
+                          validator: _integer,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _field(
+                          totalFloorsController,
+                          'Total floors',
+                          keyboardType: TextInputType.number,
+                          validator: _integer,
+                        ),
+                      ),
+                    ],
+                  ),
+                  gap,
+                  _field(
+                    areaController,
+                    context.tr('areaSqFt'),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    validator: _number,
+                  ),
+                  DropdownButtonFormField<String>(
+                    initialValue: areaUnit,
+                    decoration: const InputDecoration(
+                      labelText: 'Area unit',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: areaUnits.entries
+                        .map(
+                          (entry) => DropdownMenuItem(
+                            value: entry.key,
+                            child: Text(entry.value),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: loading
+                        ? null
+                        : (value) {
+                            if (value != null) setState(() => areaUnit = value);
+                          },
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Amenities',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  if (amenitiesLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else if (amenitiesError != null)
+                    Row(
+                      children: [
+                        Expanded(child: Text(amenitiesError!)),
+                        TextButton(
+                          onPressed: _loadAmenities,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    )
+                  else
+                    ...amenities
+                        .where((amenity) {
+                          final normalized =
+                              amenity['name']
+                                  ?.toString()
+                                  .trim()
+                                  .toLowerCase() ??
+                              '';
+                          return normalized != 'parking' &&
+                              normalized != 'covered parking' &&
+                              normalized != 'pet friendly';
+                        })
+                        .map((amenity) {
+                          final id = amenity['id'].toString();
+                          final name =
+                              amenity['name']?.toString().trim() ?? 'Amenity';
+                          final normalized = name.toLowerCase();
+                          final selected =
+                              normalized == 'parking' ||
+                                  normalized == 'covered parking'
+                              ? parking
+                              : normalized == 'pet friendly'
+                              ? petFriendly
+                              : selectedAmenityIds.contains(id);
+                          return SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                            title: Text(name),
+                            value: selected,
+                            onChanged: loading
+                                ? null
+                                : (value) => setState(() {
+                                    if (normalized == 'parking' ||
+                                        normalized == 'covered parking')
+                                      parking = value;
+                                    else if (normalized == 'pet friendly')
+                                      petFriendly = value;
+                                    else if (value)
+                                      selectedAmenityIds.add(id);
+                                    else
+                                      selectedAmenityIds.remove(id);
+                                  }),
+                          );
+                        }),
+                  const SizedBox(height: 24),
+                  Text(
+                    context.tr('propertyLocation'),
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: loading ? null : _useCurrentLocation,
+                          icon: const Icon(Icons.my_location),
+                          label: Text(context.tr('useCurrent')),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: loading ? null : _pickLocation,
+                          icon: const Icon(Icons.map_outlined),
+                          label: Text(context.tr('chooseOnMap')),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (selectedLocation != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        '${context.tr('coordinates')}: '
+                        '${selectedLocation!.latitude.toStringAsFixed(6)}, '
+                        '${selectedLocation!.longitude.toStringAsFixed(6)}',
+                      ),
+                    ),
+                  gap,
+                  _field(addressController, context.tr('address')),
+                  gap,
+                  _field(localityController, context.tr('locality')),
+                  gap,
+                  _field(
+                    landmarkController,
+                    context.tr('landmark'),
+                    validator: (_) => null,
+                  ),
+                  gap,
+                  _field(cityController, context.tr('city')),
+                  gap,
+                  _field(stateController, context.tr('state')),
+                  gap,
+                  _field(countryController, context.tr('country')),
+                  gap,
+                  _field(
+                    pincodeController,
+                    context.tr('pincode'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(context.tr('parking')),
+                    value: parking,
+                    onChanged: loading
+                        ? null
+                        : (value) => setState(() => parking = value),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(context.tr('petFriendly')),
+                    value: petFriendly,
+                    onChanged: loading
+                        ? null
+                        : (value) => setState(() => petFriendly = value),
+                  ),
+                  if (!widget.property.isVerified)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Text(
+                        'This property is pending admin approval. Owner edits require approval before the listing becomes public again.',
+                      ),
+                    ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Video tour',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'One MP4, MOV or M4V video • up to 60 seconds • 100 MB',
+                  ),
+                  const SizedBox(height: 10),
+                  Card(
+                    child: ListTile(
+                      leading: videoLoading
+                          ? const SizedBox.square(
+                              dimension: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Icon(
+                              videoUrl.isEmpty
+                                  ? Icons.video_call_outlined
+                                  : Icons.check_circle_outline,
+                            ),
+                      title: Text(
+                        videoUrl.isEmpty
+                            ? 'No video tour uploaded'
+                            : 'Video tour ready',
+                      ),
+                      subtitle: Text(
+                        videoUrl.isEmpty
+                            ? 'Add a short walkthrough for tenants.'
+                            : 'Upload another video to replace the current one.',
+                      ),
+                      trailing: videoUrl.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: 'Delete video',
+                              onPressed: videoLoading ? null : _deleteVideo,
+                              icon: const Icon(Icons.delete_outline),
+                            ),
+                      onTap: videoLoading ? null : _pickAndUploadVideo,
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: videoLoading ? null : _pickAndUploadVideo,
+                    icon: const Icon(Icons.upload_file),
+                    label: Text(
+                      videoUrl.isEmpty
+                          ? 'Upload video tour'
+                          : 'Replace video tour',
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    context.tr('propertyPhotos'),
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  if (imagesLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else if (imagesLoadFailed)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Could not load existing property photos. Retry before saving.',
+                        ),
+                        TextButton(
+                          onPressed: _loadImages,
+                          child: const Text('Retry loading photos'),
+                        ),
+                      ],
+                    )
+                  else
+                    SectionedPropertyImagePicker(
+                      initialImages: existingImagesBySection,
+                      onDeleteExisting: _deleteExistingImage,
+                      onImagesChanged: (images) {
+                        newImagesBySection = images;
+                      },
+                    ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    height: 52,
+                    child: FilledButton.icon(
+                      onPressed: (loading || imagesLoading || imagesLoadFailed)
+                          ? null
+                          : _updateProperty,
+                      icon: loading
+                          ? const SizedBox.square(
+                              dimension: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.save),
+                      label: Text(
+                        loading
+                            ? context.tr('updating')
+                            : context.tr('updateProperty'),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }

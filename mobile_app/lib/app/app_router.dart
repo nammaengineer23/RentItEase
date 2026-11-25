@@ -548,7 +548,8 @@ class AppRouter {
             builder: (context, state) => AddMarketplaceListingPage(
               propertyId: state.uri.queryParameters['propertyId'],
               initialCategory: state.uri.queryParameters['category'] ?? 'SALE',
-              initialPropertyType: state.uri.queryParameters['propertyType'] ?? 'HOUSE',
+              initialPropertyType:
+                  state.uri.queryParameters['propertyType'] ?? 'HOUSE',
             ),
           ),
 
@@ -562,8 +563,10 @@ class AppRouter {
             path: '/owner/add-property-form',
             name: 'owner-add-property-form',
             builder: (context, state) => AddPropertyPage(
-              propertyType: state.uri.queryParameters['propertyType'] ?? 'HOUSE',
-              transactionType: state.uri.queryParameters['transactionType'] ?? 'RENT',
+              propertyType:
+                  state.uri.queryParameters['propertyType'] ?? 'HOUSE',
+              transactionType:
+                  state.uri.queryParameters['transactionType'] ?? 'RENT',
             ),
           ),
 
@@ -711,7 +714,6 @@ class _RouteErrorPage extends StatelessWidget {
   }
 }
 
-
 class _OwnerPropertyRouteLoader extends ConsumerWidget {
   const _OwnerPropertyRouteLoader({
     required this.propertyId,
@@ -728,9 +730,10 @@ class _OwnerPropertyRouteLoader extends ConsumerWidget {
     }
 
     return FutureBuilder<OwnerPropertyModel>(
-      future: ref.read(ownerRepositoryProvider).getProperty(propertyId).then(
-            (property) => property as OwnerPropertyModel,
-          ),
+      future: ref
+          .read(ownerRepositoryProvider)
+          .getProperty(propertyId)
+          .then((property) => property as OwnerPropertyModel),
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Scaffold(

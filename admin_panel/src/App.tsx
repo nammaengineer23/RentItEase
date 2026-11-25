@@ -12,7 +12,6 @@ import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { BillingPage } from "./pages/BillingPage";
 import { PremiumManagementPage } from "./pages/PremiumManagementPage";
 import { SocialMediaPage } from "./pages/SocialMediaPage";
-import { OwnerRequestsPage } from "./pages/OwnerRequestsPage";
 import { PropertyDocumentReviewPage } from "./pages/PropertyDocumentReviewPage";
 
 export default function App() {
@@ -26,7 +25,6 @@ export default function App() {
             <Route path="/users" element={<UsersPage />} />
             <Route path="/properties" element={<PropertiesPage />} />
             <Route path="/property-document-review" element={<PropertyDocumentReviewPage />} />
-            <Route path="/owner-requests" element={<OwnerRequestsPage />} />
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/visits" element={<VisitsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
