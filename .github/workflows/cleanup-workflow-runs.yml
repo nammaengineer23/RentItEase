@@ -10,6 +10,11 @@ on:
         required: false
         default: '100'
         type: string
+  push:
+    branches:
+      - fix/cleanup-workflow-runs
+    paths:
+      - .github/workflows/cleanup-workflow-runs.yml
 
 permissions:
   actions: write
@@ -27,6 +32,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       KEEP_LATEST: ${{ inputs.keep_latest || '100' }}
+      MAX_DELETE_PER_RUN: '100'
 
     steps:
       - name: Delete workflow runs older than the retention limit
@@ -40,7 +46,10 @@ jobs:
           fi
 
           mapfile -t run_ids < <(
-            gh api --paginate               "/repos/${GITHUB_REPOSITORY}/actions/runs?per_page=100"               --jq '.workflow_runs[] | "(.created_at)	(.id)"'               | sort -r               | cut -f2
+            gh api --paginate "/repos/${GITHUB_REPOSITORY}/actions/runs?per_page=100" \
+              --jq '.workflow_runs[] | "\(.created_at)\t\(.id)"' \
+              | sort -r \
+              | cut -f2
           )
 
           total_runs=${#run_ids[@]}
@@ -51,19 +60,46 @@ jobs:
             exit 0
           fi
 
+          old_run_ids=("${run_ids[@]:KEEP_LATEST}")
+          old_run_count=${#old_run_ids[@]}
+          delete_count=$old_run_count
+          if (( delete_count > MAX_DELETE_PER_RUN )); then
+            delete_count=$MAX_DELETE_PER_RUN
+          fi
+
+          echo "Eligible old runs: ${old_run_count}. This run will delete at most ${delete_count}."
+
           deleted=0
           failures=0
 
-          for run_id in "${run_ids[@]:KEEP_LATEST}"; do
-            if gh api --method DELETE --retry 5 --retry-all-errors --retry-delay 2               "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" >/dev/null; then
+          for run_id in "${old_run_ids[@]:0:delete_count}"; do
+            if ! [[ "$run_id" =~ ^[0-9]+$ ]]; then
+              failures=$((failures + 1))
+              echo "::warning::Skipping invalid workflow run ID: ${run_id}"
+              continue
+            fi
+
+            success=false
+            for attempt in 1 2 3 4 5; do
+              if gh api --method DELETE "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" >/dev/null; then
+                success=true
+                break
+              fi
+              echo "::warning::Delete attempt ${attempt} failed for workflow run ${run_id}."
+              sleep $((attempt * 2))
+            done
+
+            if [[ "$success" == true ]]; then
               deleted=$((deleted + 1))
             else
               failures=$((failures + 1))
-              echo "::warning::Failed to delete workflow run ${run_id} after retries."
+              echo "::warning::Failed to delete workflow run ${run_id} after 5 attempts."
             fi
           done
 
+          remaining=$((old_run_count - deleted))
           echo "Deleted ${deleted} old workflow runs."
+          echo "Old runs remaining beyond retention: approximately ${remaining}."
           echo "Deletion failures: ${failures}"
 
           if (( failures > 0 )); then
