@@ -113,6 +113,15 @@ describe('Staging E2E • Property marketplace', () => {
 
     if (!expectMarketplaceEnabled) return property.id as string;
 
+    // Approval is intentionally restricted to submitted properties. Exercise the
+    // same DRAFT -> SUBMITTED -> APPROVED lifecycle used by the owner UI.
+    const submitted = await request(apiUrl())
+      .post(`/properties/${property.id}/submit`)
+      .set(auth(ownerToken));
+    statusOk(submitted);
+    const submittedProperty = extractData(submitted.body)?.property ?? extractData(submitted.body);
+    expect(submittedProperty?.lifecycleStatus).toBe('SUBMITTED');
+
     const approval = await request(apiUrl()).patch(`/admin/properties/${property.id}/approve`).set(auth(adminToken));
     statusOk(approval);
     createdListings.push({ id: property.id, type, title });
