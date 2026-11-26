@@ -31,6 +31,13 @@ export class StorageService {
     return this.firebaseService.deleteImage(publicId);
   }
 
+  getPublicMediaDownloadUrl(
+    publicId: string,
+    expiresInMs = 60 * 60 * 1000,
+  ): Promise<string> {
+    return this.firebaseService.getPublicMediaDownloadUrl(publicId, expiresInMs);
+  }
+
   getPrivateDownloadUrl(
     publicId: string,
     expiresInMs = 15 * 60 * 1000,

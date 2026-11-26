@@ -5,6 +5,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { PrismaService } from '../../database/prisma.service';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
+import { SocialMediaStorageService } from './social-media.storage.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Admin Social Media')
@@ -13,14 +14,25 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class SocialMediaActivityController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: SocialMediaStorageService,
+  ) {}
+
+  private async serializePost(post: any) {
+    const serialized = serializePrisma(post) as Record<string, any>;
+    if (serialized.videoUrl) {
+      serialized.videoUrl = await this.storage.getVideoDownloadUrl(serialized.videoUrl);
+    }
+    return serialized;
+  }
 
   @Get()
   async list(@Query('status') status?: SocialPostStatus, @Query('platform') platform?: SocialPlatform) {
     const where: { status?: SocialPostStatus; platform?: SocialPlatform } = {};
     if (status && Object.values(SocialPostStatus).includes(status)) where.status = status;
     if (platform && Object.values(SocialPlatform).includes(platform)) where.platform = platform;
-    return serializePrisma(await this.prisma.socialMediaPost.findMany({
+    const posts = await this.prisma.socialMediaPost.findMany({
       where,
       include: {
         property: { select: { id: true, title: true, city: true, locality: true, owner: { select: { id: true, fullName: true } } } },
@@ -29,7 +41,8 @@ export class SocialMediaActivityController {
       },
       orderBy: { createdAt: 'desc' },
       take: 100,
-    }));
+    });
+    return Promise.all(posts.map((post) => this.serializePost(post)));
   }
 
   @Post(':postId/cancel')
@@ -53,7 +66,7 @@ export class SocialMediaActivityController {
     await this.prisma.socialMediaAuditEvent.create({
       data: { propertyId: post.propertyId, postId, actorId: req.user.id, eventType: 'POST_CANCELLED', details: { previousStatus: post.status } },
     });
-    return serializePrisma(updated);
+    return this.serializePost(updated);
   }
 
   @Get(':postId/history')

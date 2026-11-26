@@ -21,11 +21,46 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
     membership,
   } as any;
 
+  const storage = { getPublicMediaDownloadUrl: jest.fn() };
   let service: PropertiesService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new PropertiesService(prisma, {} as any);
+    service = new PropertiesService(prisma, storage as any);
+  });
+
+  it('refreshes property image and video URLs from stable GCS keys', async () => {
+    storage.getPublicMediaDownloadUrl
+      .mockResolvedValueOnce('https://signed.example/image.jpg')
+      .mockResolvedValueOnce('https://signed.example/video.mp4');
+
+    const result = await (service as any).serializePublicProperty({
+      id: 'property-1',
+      videoUrl: 'https://expired.example/video.mp4',
+      videoPublicId: 'property-videos/video.mp4',
+      images: [{
+        id: 'image-1',
+        publicId: 'properties/image.jpg',
+        imageUrl: 'https://expired.example/image.jpg',
+      }],
+    });
+
+    expect(result.images[0].imageUrl).toBe('https://signed.example/image.jpg');
+    expect(result.videoUrl).toBe('https://signed.example/video.mp4');
+    expect(storage.getPublicMediaDownloadUrl).toHaveBeenNthCalledWith(1, 'properties/image.jpg');
+    expect(storage.getPublicMediaDownloadUrl).toHaveBeenNthCalledWith(2, 'property-videos/video.mp4');
+  });
+
+  it('preserves legacy property media URLs when stable GCS keys are absent', async () => {
+    const result = await (service as any).serializePublicProperty({
+      videoUrl: 'https://legacy.example/video.mp4',
+      videoPublicId: null,
+      images: [{ publicId: null, imageUrl: 'https://legacy.example/image.jpg' }],
+    });
+
+    expect(result.videoUrl).toBe('https://legacy.example/video.mp4');
+    expect(result.images[0].imageUrl).toBe('https://legacy.example/image.jpg');
+    expect(storage.getPublicMediaDownloadUrl).not.toHaveBeenCalled();
   });
 
   it('rejects non-rental listing creation while the marketplace flag is off', async () => {
