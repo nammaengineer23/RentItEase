@@ -167,14 +167,17 @@ export class PropertyImagesController {
   // ==========================================
 
   @Get(':propertyId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Get property images',
+    summary: 'Get property images (owner or admin only)',
   })
   getImages(
     @Param('propertyId')
     propertyId: string,
+    @Request() req: any,
   ) {
-    return this.propertyImagesService.getImages(propertyId);
+    return this.propertyImagesService.getImages(propertyId, req.user);
   }
 
   // ==========================================

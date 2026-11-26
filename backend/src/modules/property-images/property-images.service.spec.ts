@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 
 import { PropertyImagesService } from './property-images.service';
 
@@ -294,7 +295,10 @@ describe('PropertyImagesService signed image retrieval', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     service = new PropertyImagesService(prisma, storage);
-    prisma.property.findUnique.mockResolvedValue({ id: 'property-1' });
+    prisma.property.findUnique.mockResolvedValue({
+      id: 'property-1',
+      ownerId: 'owner-1',
+    });
   });
 
   it('returns fresh signed URLs for current GCS image keys without changing image metadata', async () => {
@@ -307,7 +311,7 @@ describe('PropertyImagesService signed image retrieval', () => {
     }]);
     storage.getPublicMediaDownloadUrl.mockResolvedValue('https://signed.example/photo.jpg');
 
-    const result = await service.getImages('property-1');
+    const result = await service.getImages('property-1', { id: 'owner-1', role: UserRole.OWNER });
 
     expect(result.images[0]).toMatchObject({
       id: 'image-1',
@@ -318,6 +322,34 @@ describe('PropertyImagesService signed image retrieval', () => {
     expect(storage.getPublicMediaDownloadUrl).toHaveBeenCalledWith('properties/photo.jpg');
   });
 
+  it('rejects another user before querying images or generating signed URLs', async () => {
+    await expect(
+      service.getImages('property-1', { id: 'tenant-1', role: UserRole.USER }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(prisma.propertyImage.findMany).not.toHaveBeenCalled();
+    expect(storage.getPublicMediaDownloadUrl).not.toHaveBeenCalled();
+  });
+
+  it('rejects a demoted owner from retrieving their former property images', async () => {
+    await expect(
+      service.getImages('property-1', { id: 'owner-1', role: UserRole.USER }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(prisma.propertyImage.findMany).not.toHaveBeenCalled();
+    expect(storage.getPublicMediaDownloadUrl).not.toHaveBeenCalled();
+  });
+
+  it('allows an admin to retrieve property images', async () => {
+    prisma.propertyImage.findMany.mockResolvedValue([]);
+
+    await expect(
+      service.getImages('property-1', { id: 'admin-1', role: UserRole.ADMIN }),
+    ).resolves.toMatchObject({ success: true, images: [] });
+
+    expect(prisma.propertyImage.findMany).toHaveBeenCalled();
+  });
+
   it('preserves legacy image URLs when no GCS object key is recorded', async () => {
     prisma.propertyImage.findMany.mockResolvedValue([{
       id: 'legacy-image',
@@ -325,7 +357,7 @@ describe('PropertyImagesService signed image retrieval', () => {
       imageUrl: 'https://legacy.example/photo.jpg',
     }]);
 
-    const result = await service.getImages('property-1');
+    const result = await service.getImages('property-1', { id: 'owner-1', role: UserRole.OWNER });
 
     expect(result.images[0].imageUrl).toBe('https://legacy.example/photo.jpg');
     expect(storage.getPublicMediaDownloadUrl).not.toHaveBeenCalled();

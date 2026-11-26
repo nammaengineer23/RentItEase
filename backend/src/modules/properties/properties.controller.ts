@@ -5,6 +5,7 @@ import { Throttle } from '@nestjs/throttler';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { FilterPropertiesDto } from './dto/filter-property.dto';
 import { NearbyPropertiesDto } from './dto/nearby-properties.dto';
@@ -88,8 +89,11 @@ export class PropertiesController {
   getOwnerContact(@Param('id') id: string, @Request() req: any) { return this.propertiesService.getOwnerContact(id, req.user); }
 
   @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Get Property By ID' })
-  findOne(@Param('id') id: string) { return this.propertiesService.findOne(id); }
+  findOne(@Param('id') id: string, @Request() req: any) {
+    return this.propertiesService.findOne(id, req.user);
+  }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)

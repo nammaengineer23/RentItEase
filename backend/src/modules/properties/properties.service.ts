@@ -706,7 +706,7 @@ export class PropertiesService {
   // Get Property By Id
   // ===========================
 
-  async findOne(id: string) {
+  async findOne(id: string, user?: { id: string; role: UserRole }) {
     const property = await this.prisma.property.findUnique({
       where: {
         id,
@@ -762,7 +762,26 @@ export class PropertiesService {
       },
     });
 
-    if (!property || (!this.marketplaceEnabled() && property.transactionType !== PropertyTransactionType.RENT)) {
+    if (!property) {
+      throw new NotFoundException('Property not found.');
+    }
+
+    const isOwnerOrAdmin =
+      !!user &&
+      (user.role === UserRole.ADMIN ||
+        (user.role === UserRole.OWNER && property.ownerId === user.id));
+
+    if (
+      !this.marketplaceEnabled() &&
+      property.transactionType !== PropertyTransactionType.RENT &&
+      !isOwnerOrAdmin
+    ) {
+      throw new NotFoundException('Property not found.');
+    }
+
+    const isPublicListing = property.isVerified === true && property.isAvailable === true;
+
+    if (!isPublicListing && !isOwnerOrAdmin) {
       throw new NotFoundException('Property not found.');
     }
 

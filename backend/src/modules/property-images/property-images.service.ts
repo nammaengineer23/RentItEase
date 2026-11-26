@@ -41,7 +41,10 @@ export class PropertyImagesService {
   ) {
     const property = await this.prisma.property.findUnique({ where: { id: propertyId } });
     if (!property) throw new NotFoundException('Property not found.');
-    if (property.ownerId !== user.id && user.role !== UserRole.ADMIN) {
+    if (
+      user.role !== UserRole.ADMIN &&
+      !(user.role === UserRole.OWNER && property.ownerId === user.id)
+    ) {
       throw new ForbiddenException('You are not allowed to upload images.');
     }
     if (!files?.length) throw new BadRequestException('No images uploaded.');
@@ -230,18 +233,27 @@ export class PropertyImagesService {
   // Get Images
   // =====================================
 
-  async getImages(propertyId: string) {
+  async getImages(propertyId: string, user: { id: string; role: UserRole }) {
     const property = await this.prisma.property.findUnique({
       where: {
         id: propertyId,
       },
       select: {
         id: true,
+        ownerId: true,
       },
     });
 
     if (!property) {
       throw new NotFoundException('Property not found.');
+    }
+
+    const isOwnerOrAdmin =
+      user.role === UserRole.ADMIN ||
+      (user.role === UserRole.OWNER && property.ownerId === user.id);
+
+    if (!isOwnerOrAdmin) {
+      throw new ForbiddenException('You are not allowed to view these images.');
     }
 
     const images = await this.prisma.propertyImage.findMany({

@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { MembershipStatus, PropertyTransactionType, UserRole } from '@prisma/client';
 
 import { PropertiesService } from './properties.service';
@@ -27,6 +27,111 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     service = new PropertiesService(prisma, storage as any);
+  });
+
+  function detailProperty(overrides: Record<string, any> = {}) {
+    return {
+      id: 'property-1',
+      ownerId: 'owner-1',
+      transactionType: PropertyTransactionType.RENT,
+      isVerified: true,
+      isAvailable: true,
+      owner: { id: 'owner-1', fullName: 'Owner' },
+      amenities: [],
+      images: [],
+      reviews: [],
+      _count: { favorites: 0 },
+      socialMediaPosts: [],
+      viewCount: 3,
+      ...overrides,
+    };
+  }
+
+  it('allows anonymous access to verified and available public listings', async () => {
+    property.findUnique.mockResolvedValue(detailProperty());
+
+    await expect(service.findOne('property-1')).resolves.toMatchObject({
+      success: true,
+      property: { id: 'property-1' },
+    });
+  });
+
+  it('hides private listings from anonymous users and other users', async () => {
+    property.findUnique.mockResolvedValue(
+      detailProperty({ isVerified: false, isAvailable: false }),
+    );
+
+    await expect(service.findOne('property-1')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      service.findOne('property-1', { id: 'tenant-1', role: UserRole.USER }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(storage.getPublicMediaDownloadUrl).not.toHaveBeenCalled();
+  });
+
+  it('allows an owner to view their own pending non-rental listing when marketplace is disabled', async () => {
+    const previous = process.env.PROPERTY_MARKETPLACE_ENABLED;
+    delete process.env.PROPERTY_MARKETPLACE_ENABLED;
+    property.findUnique.mockResolvedValue(
+      detailProperty({
+        transactionType: PropertyTransactionType.SITE_SALE,
+        isVerified: false,
+        isAvailable: false,
+      }),
+    );
+
+    try {
+      await expect(
+        service.findOne('property-1', { id: 'owner-1', role: UserRole.OWNER }),
+      ).resolves.toMatchObject({ success: true, property: { id: 'property-1' } });
+    } finally {
+      if (previous === undefined) delete process.env.PROPERTY_MARKETPLACE_ENABLED;
+      else process.env.PROPERTY_MARKETPLACE_ENABLED = previous;
+    }
+  });
+
+  it('rejects a demoted owner from viewing their former private non-rental listing', async () => {
+    const previous = process.env.PROPERTY_MARKETPLACE_ENABLED;
+    delete process.env.PROPERTY_MARKETPLACE_ENABLED;
+    property.findUnique.mockResolvedValue(
+      detailProperty({
+        transactionType: PropertyTransactionType.SITE_SALE,
+        isVerified: false,
+        isAvailable: false,
+      }),
+    );
+
+    try {
+      await expect(
+        service.findOne('property-1', { id: 'owner-1', role: UserRole.USER }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      expect(storage.getPublicMediaDownloadUrl).not.toHaveBeenCalled();
+    } finally {
+      if (previous === undefined) delete process.env.PROPERTY_MARKETPLACE_ENABLED;
+      else process.env.PROPERTY_MARKETPLACE_ENABLED = previous;
+    }
+  });
+
+  it('allows admins to view private non-rental listings when marketplace is disabled', async () => {
+    const previous = process.env.PROPERTY_MARKETPLACE_ENABLED;
+    delete process.env.PROPERTY_MARKETPLACE_ENABLED;
+    property.findUnique.mockResolvedValue(
+      detailProperty({
+        transactionType: PropertyTransactionType.SITE_SALE,
+        isVerified: false,
+        isAvailable: false,
+      }),
+    );
+
+    try {
+      await expect(
+        service.findOne('property-1', { id: 'admin-1', role: UserRole.ADMIN }),
+      ).resolves.toMatchObject({ success: true, property: { id: 'property-1' } });
+    } finally {
+      if (previous === undefined) delete process.env.PROPERTY_MARKETPLACE_ENABLED;
+      else process.env.PROPERTY_MARKETPLACE_ENABLED = previous;
+    }
   });
 
   it('refreshes property image and video URLs from stable GCS keys', async () => {
