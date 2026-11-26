@@ -62,12 +62,12 @@
     "nodemailer": "^10.0.11",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "prisma": "^6.19.3",
     "razorpay": "^2.9.8",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "sharp": "^0.35.5",
-    "uuid": "^14.0.1",
-    "prisma": "^6.19.3"
+    "uuid": "^14.0.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.24",
@@ -102,6 +102,8 @@
       "js-yaml": "^5.4.2"
     },
     "multer": "^2.5.0",
-    "path-to-regexp": "^8.4.0"
+    "path-to-regexp": "^8.4.0",
+    "effect": "^3.22.1",
+    "fast-xml-parser": "^5.12.1"
   }
 }
