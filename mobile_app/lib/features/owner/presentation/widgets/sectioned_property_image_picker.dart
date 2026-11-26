@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/api/property_image_api.dart';
@@ -182,7 +183,15 @@ class _SectionedPropertyImagePickerState
   @override
   void didUpdateWidget(covariant SectionedPropertyImagePicker oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.initialImages, widget.initialImages)) {
+    if (!mapEquals(oldWidget.selectedImages, widget.selectedImages)) {
+      _newImagesBySection
+        ..clear()
+        ..addAll(widget.selectedImages.map(
+          (section, images) => MapEntry(section, List<File>.from(images)),
+        ));
+    }
+
+    if (!mapEquals(oldWidget.initialImages, widget.initialImages)) {
       _existingBySection
         ..clear()
         ..addAll(widget.initialImages.map(
@@ -204,7 +213,7 @@ class _SectionedPropertyImagePickerState
         ...(widget.isLand ? sitePhotoSections : propertyPhotoSections).map((section) {
           final existing = _existingBySection[section.value] ?? const [];
           final added = _newImagesBySection[section.value] ?? const [];
-          final remaining = existing.length >= 2 ? 0 : 2 - existing.length;
+          final remaining = (2 - existing.length - added.length).clamp(0, 2);
 
           return Card(
             clipBehavior: Clip.antiAlias,
@@ -223,7 +232,8 @@ class _SectionedPropertyImagePickerState
                 if (remaining > 0)
                   ImagePickerCard(
                     title: '${section.label} Photos',
-                    maxImages: remaining,
+                    maxImages: 2 - existing.length,
+                    initialImages: added,
                     onImagesChanged: (images) =>
                         _updateSection(section.value, images),
                   )

@@ -48,7 +48,10 @@ class _AddMarketplaceListingPageState
   bool _videoCompressing = false;
   double _videoCompressionProgress = 0;
   Map<String, List<File>> _selectedImagesBySection = const {};
+  Map<String, List<PropertyImageRecord>> _existingImagesBySection = const {};
   File? _selectedVideo;
+  String _existingVideoUrl = '';
+  bool _imagesLoading = false;
   bool _loadingExisting = false;
   String? _loadError;
 
@@ -132,6 +135,7 @@ class _AddMarketplaceListingPageState
     _propertyType = widget.initialPropertyType;
     if (widget.propertyId != null) {
       _loadExisting();
+      _loadExistingMedia();
     }
   }
 
@@ -166,10 +170,87 @@ class _AddMarketplaceListingPageState
       _bathrooms.text = value['bathrooms']?.toString() ?? '0';
       _negotiable = value['priceNegotiable'] == true;
       _roadAccess = value['roadAccess'] == true;
+      _existingVideoUrl = value['videoUrl']?.toString() ?? '';
     } catch (_) {
       if (mounted) setState(() => _loadError = 'Could not load this listing for editing.');
     } finally {
       if (mounted) setState(() => _loadingExisting = false);
+    }
+  }
+
+  Future<void> _loadExistingMedia() async {
+    final propertyId = widget.propertyId;
+    if (propertyId == null) return;
+
+    if (mounted) setState(() => _imagesLoading = true);
+    try {
+      final images = await PropertyImageApi(
+        ref.read(dioProvider),
+      ).getImages(propertyId);
+
+      final grouped = <String, List<PropertyImageRecord>>{};
+      for (final image in images) {
+        grouped.putIfAbsent(image.section, () => []).add(image);
+      }
+
+      if (mounted) {
+        setState(() => _existingImagesBySection = grouped);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not load existing property photos.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _imagesLoading = false);
+    }
+  }
+
+  Future<void> _deleteExistingImage(PropertyImageRecord image) async {
+    final propertyId = widget.propertyId;
+    if (propertyId == null) return;
+
+    try {
+      await PropertyImageApi(ref.read(dioProvider)).deleteImage(
+        propertyId: propertyId,
+        imageId: image.id,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        final updated = <String, List<PropertyImageRecord>>{};
+        for (final entry in _existingImagesBySection.entries) {
+          final remaining = entry.value
+              .where((item) => item.id != image.id)
+              .toList();
+          if (remaining.isNotEmpty) updated[entry.key] = remaining;
+        }
+        _existingImagesBySection = updated;
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not delete photo: $error')),
+        );
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _deleteExistingVideo() async {
+    final propertyId = widget.propertyId;
+    if (propertyId == null || _existingVideoUrl.isEmpty) return;
+
+    try {
+      await PropertyVideoApi(ref.read(dioProvider)).deleteVideo(propertyId);
+      if (mounted) setState(() => _existingVideoUrl = '');
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not delete the existing video.')),
+        );
+      }
     }
   }
 
@@ -446,15 +527,36 @@ class _AddMarketplaceListingPageState
                       ? 'Add clear photos of the plot, frontage, road access and surroundings.'
                       : 'Add clear photos of the exterior and available rooms.'),
                   const SizedBox(height: 8),
-                  SectionedPropertyImagePicker(
-                    isLand: _propertyType == 'LAND',
-                    selectedImages: _selectedImagesBySection,
-                    onImagesChanged: (images) => _selectedImagesBySection = images,
-                  ),
+                  if (_imagesLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else
+                    SectionedPropertyImagePicker(
+                      isLand: _propertyType == 'LAND',
+                      initialImages: _existingImagesBySection,
+                      onDeleteExisting: _deleteExistingImage,
+                      selectedImages: _selectedImagesBySection,
+                      onImagesChanged: (images) =>
+                          _selectedImagesBySection = images,
+                    ),
                   const SizedBox(height: 24),
                   Text('Video tour (optional)', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 6),
                   const Text('One MP4, MOV or M4V video • up to 60 seconds • compressed to 720p before upload.'),
+                  if (_existingVideoUrl.isNotEmpty)
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.video_file_outlined),
+                        title: const Text('Existing video tour'),
+                        subtitle: const Text('A video is already saved for this listing.'),
+                        trailing: IconButton(
+                          tooltip: 'Delete existing video',
+                          onPressed: _saving || _videoCompressing
+                              ? null
+                              : _deleteExistingVideo,
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                      ),
+                    ),
                   if (_videoCompressing) ...[
                     const SizedBox(height: 8),
                     Text('Compressing video… ${_videoCompressionProgress.toStringAsFixed(0)}%'),

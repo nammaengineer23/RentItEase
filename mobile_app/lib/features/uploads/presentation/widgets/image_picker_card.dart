@@ -11,12 +11,14 @@ class ImagePickerCard extends StatefulWidget {
 
   final int maxImages;
   final String title;
+  final List<File> initialImages;
 
   const ImagePickerCard({
     super.key,
     required this.onImagesChanged,
     this.maxImages = 10,
     this.title = 'Property Images',
+    this.initialImages = const [],
   });
 
   @override
@@ -27,6 +29,22 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
   final ImagePicker _picker = ImagePicker();
 
   final List<File> _images = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _images.addAll(widget.initialImages);
+  }
+
+  @override
+  void didUpdateWidget(covariant ImagePickerCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!listEquals(oldWidget.initialImages, widget.initialImages)) {
+      _images
+        ..clear()
+        ..addAll(widget.initialImages);
+    }
+  }
 
   bool _loading = false;
 
