@@ -60,6 +60,8 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   bool _amenitiesLoading = true;
   String? _amenitiesError;
   LocationModel? selectedLocation;
+  bool _locationLoading = false;
+  String? _locationError;
   final latitudeController = TextEditingController();
   final longitudeController = TextEditingController();
   Map<String, List<File>> selectedImagesBySection = const {};
@@ -103,8 +105,28 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
   });
 
   Future<void> _loadCurrentLocation() async {
-    final maps = ref.read(mapsProvider); await maps.fetchCurrentLocation();
-    if (mounted && maps.selectedLocation != null) _applyLocation(maps.selectedLocation!);
+    if (_locationLoading) return;
+    setState(() { _locationLoading = true; _locationError = null; });
+    try {
+      final maps = ref.read(mapsProvider);
+      await maps.fetchCurrentLocation();
+      if (!mounted) return;
+      if (maps.selectedLocation != null) {
+        _applyLocation(maps.selectedLocation!);
+      } else {
+        setState(() {
+          _locationError = maps.errorMessage ??
+              'Could not detect your location. Allow location access and try again, or choose it on the map.';
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _locationError =
+            'Could not detect your location. Check browser location permission and try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _locationLoading = false);
+    }
   }
   Future<void> _pickLocation() async {
     final value = await Navigator.of(context).push<LocationModel>(MaterialPageRoute(builder: (_) => const MapPickerPage()));
@@ -344,7 +366,12 @@ class _AddPropertyPageState extends ConsumerState<AddPropertyPage> {
     SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(context.tr('parking')), value: parking, onChanged: loading ? null : (v)=>setState(()=>parking=v)),
     SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(context.tr('petFriendly')), value: petFriendly, onChanged: loading ? null : (v)=>setState(()=>petFriendly=v)),
     const SizedBox(height:16),
-    Text(context.tr('propertyLocation'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), OutlinedButton.icon(onPressed:loading?null:_pickLocation,icon:const Icon(Icons.location_on_outlined),label:Text(selectedLocation==null?context.tr('gettingCurrentLocation'):context.tr('changeLocationMap'))), if(selectedLocation!=null) Padding(padding:const EdgeInsets.only(top:8,bottom:16),child:Row(children:[Expanded(child:TextFormField(controller:latitudeController,keyboardType:const TextInputType.numberWithOptions(decimal:true,signed:true),decoration:const InputDecoration(labelText:'Latitude',prefixIcon:Icon(Icons.my_location)))),const SizedBox(width:12),Expanded(child:TextFormField(controller:longitudeController,keyboardType:const TextInputType.numberWithOptions(decimal:true,signed:true),decoration:const InputDecoration(labelText:'Longitude',prefixIcon:Icon(Icons.location_on_outlined))))])),
+    Text(context.tr('propertyLocation'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8),
+    OutlinedButton.icon(onPressed:loading?null:_pickLocation,icon:const Icon(Icons.location_on_outlined),label:Text(selectedLocation==null?'Choose location on map':context.tr('changeLocationMap'))),
+    if (_locationLoading) const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Row(children: [SizedBox(width:16,height:16,child:CircularProgressIndicator(strokeWidth:2)), SizedBox(width:10), Text('Detecting your location…')])),
+    if (_locationError != null) Padding(padding: const EdgeInsets.only(top:8), child: Column(crossAxisAlignment:CrossAxisAlignment.start, children: [Text(_locationError!, style: TextStyle(color:Theme.of(context).colorScheme.error)), TextButton.icon(onPressed:loading||_locationLoading?null:_loadCurrentLocation, icon:const Icon(Icons.refresh), label:const Text('Retry location detection'))])),
+    if (selectedLocation == null && !_locationLoading && _locationError == null) TextButton.icon(onPressed:loading?null:_loadCurrentLocation, icon:const Icon(Icons.my_location), label:const Text('Use my current location')),
+    if(selectedLocation!=null) Padding(padding:const EdgeInsets.only(top:8,bottom:16),child:Row(children:[Expanded(child:TextFormField(controller:latitudeController,keyboardType:const TextInputType.numberWithOptions(decimal:true,signed:true),decoration:const InputDecoration(labelText:'Latitude',prefixIcon:Icon(Icons.my_location)))),const SizedBox(width:12),Expanded(child:TextFormField(controller:longitudeController,keyboardType:const TextInputType.numberWithOptions(decimal:true,signed:true),decoration:const InputDecoration(labelText:'Longitude',prefixIcon:Icon(Icons.location_on_outlined))))])),
     _text(addressController,context.tr('address')), _text(localityController,context.tr('locality')), _text(landmarkController,context.tr('landmark'),validator:(_)=>null), _text(cityController,context.tr('city')), _text(stateController,context.tr('state')), _text(countryController,context.tr('country')), _text(pincodeController,context.tr('pincode'),keyboard:TextInputType.number),
     const SizedBox(height:16), const Text('Video tour (optional)',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const Text('One MP4, MOV or M4V video • up to 60 seconds • compressed to 720p before upload'), if(videoCompressing) Padding(padding:const EdgeInsets.symmetric(vertical:8),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Compressing video… ${videoCompressionProgress.toStringAsFixed(0)}%'),const SizedBox(height:6),LinearProgressIndicator(value:videoCompressionProgress>0?videoCompressionProgress/100:null)])), Wrap(spacing:10,runSpacing:8,children:[FilledButton.icon(onPressed:loading||videoCompressing?null:_recordVideo,icon:const Icon(Icons.videocam_outlined),label:Text(selectedVideo==null?'Record video tour':'Retake video')),OutlinedButton.icon(onPressed:loading||videoCompressing?null:_pickVideo,icon:const Icon(Icons.video_library_outlined),label:Text(selectedVideo==null?'Choose existing video':'Choose another video',overflow:TextOverflow.ellipsis))]), if(selectedVideo!=null) Card(child:ListTile(leading:const Icon(Icons.video_file_outlined),title:Text(selectedVideo!.path.split(Platform.pathSeparator).last,overflow:TextOverflow.ellipsis),subtitle:const Text('Ready to upload when property is created'),trailing:IconButton(onPressed:loading?null:()=>setState(()=>selectedVideo=null),icon:const Icon(Icons.close),tooltip:'Remove selected video'))),
     const SizedBox(height:16), Text(context.tr('propertyPhotos'),style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)), const SizedBox(height:8), SectionedPropertyImagePicker(selectedImages:selectedImagesBySection,onImagesChanged:(v)=>selectedImagesBySection=v),
