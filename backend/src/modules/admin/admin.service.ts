@@ -220,7 +220,8 @@ visits: {
   async updateUserRole(id: string, role: UserRole, actorId: string, context: AdminAuditContext) {
     await this.assertAdminActor(actorId);
     if (!Object.values(UserRole).includes(role)) throw new BadRequestException('Invalid user role.');
-    if (id === actorId) throw new BadRequestException('Admins cannot change their own role.');
+    if (role === UserRole.OWNER) throw new BadRequestException('Owner access is granted only after an admin approves a submitted property.');
+    if (id === actorId); throw new BadRequestException('Admins cannot change their own role.');
 
     const result = await this.prisma.$transaction(
       async (tx) => {
@@ -238,11 +239,7 @@ visits: {
           where: { id },
           data: {
             role,
-            ...(role === UserRole.OWNER
-              ? { ownerRequestStatus: 'APPROVED', ownerReviewedAt: new Date() }
-              : role === UserRole.USER
-                ? { ownerReviewedAt: null }
-                : {}),
+            ...(role === UserRole.USER ? { ownerReviewedAt: null } : {}),
           },
           select: { id: true, fullName: true, email: true, phone: true, role: true, isActive: true, createdAt: true, updatedAt: true },
         });
@@ -305,6 +302,7 @@ visits: {
         price: true,
         isVerified: true,
         isAvailable: true,
+        lifecycleStatus: true,
         createdAt: true,
         owner: { select: { id: true, fullName: true, email: true } },
         images: {
@@ -329,6 +327,7 @@ visits: {
       owner: property.owner,
       isVerified: property.isVerified,
       isAvailable: property.isAvailable,
+      lifecycleStatus: property.lifecycleStatus,
       totalFavorites: property._count.favorites,
       totalVisits: property._count.visits,
       totalReviews: property._count.reviews,
@@ -494,66 +493,46 @@ async getProperty(id: string) {
 
   async approveProperty(id: string, actorId: string, context: AdminAuditContext) {
     await this.assertAdminActor(actorId);
-    const property = await this.prisma.property.findUnique({ where: { id } });
-    if (!property) throw new NotFoundException('Property not found.');
-    if (property.isVerified) throw new BadRequestException('Property is already approved.');
-
-    const approved = await this.prisma.$transaction(
-      async (tx) => {
-        const updated = await tx.property.update({
-          where: { id },
-          data: {
-            isVerified: true,
-            isAvailable: true,
-            lifecycleStatus: PropertyLifecycleStatus.PUBLISHED,
-          },
-        });
-        const ownerBefore = await tx.user.findUnique({
-          where: { id: property.ownerId },
-          select: { id: true, role: true, ownerRequestStatus: true },
-        });
+    const approved = await this.prisma.$transaction(async (tx) => {
+      const property = await tx.property.findUnique({ where: { id } });
+      if (!property) throw new NotFoundException('Property not found.');
+      if (property.isVerified) throw new BadRequestException('Property is already approved.');
+      if (property.lifecycleStatus !== PropertyLifecycleStatus.SUBMITTED) {
+        throw new BadRequestException('Only a submitted property can be approved.');
+      }
+      const ownerBefore = await tx.user.findUnique({
+        where: { id: property.ownerId },
+        select: { id: true, role: true, ownerRequestStatus: true, isActive: true, deletedAt: true },
+      });
+      if (!ownerBefore || !ownerBefore.isActive || ownerBefore.deletedAt) {
+        throw new BadRequestException('The property owner account is not active.');
+      }
+      const updated = await tx.property.update({
+        where: { id },
+        data: { isVerified: true, isAvailable: true, lifecycleStatus: PropertyLifecycleStatus.PUBLISHED },
+      });
+      if (ownerBefore.role !== UserRole.ADMIN) {
         const ownerAfter = await tx.user.update({
           where: { id: property.ownerId },
-          data: {
-            role: UserRole.OWNER,
-            ownerRequestStatus: 'APPROVED',
-            ownerReviewedAt: new Date(),
-          },
+          data: { role: UserRole.OWNER, ownerRequestStatus: 'APPROVED', ownerReviewedAt: new Date() },
           select: { id: true, role: true, ownerRequestStatus: true },
         });
-        await this.audit.recordTx(
-          tx,
-          context,
-          'PROPERTY_APPROVE',
-          'PROPERTY',
-          id,
-          { isVerified: property.isVerified, isAvailable: property.isAvailable },
-          { isVerified: updated.isVerified, isAvailable: updated.isAvailable },
-        );
-        await this.audit.recordTx(
-          tx,
-          context,
-          'USER_ROLE_PROMOTION',
-          'USER',
-          property.ownerId,
-          ownerBefore,
-          ownerAfter,
-        );
-        return updated;
-      },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-    );
-
-    // Prepare marketing content only after the approval transaction commits.
-    // Generation must never block or roll back property approval; the admin can
-    // regenerate from Social Media if preparation fails.
+        if (ownerBefore.role !== ownerAfter.role || ownerBefore.ownerRequestStatus !== ownerAfter.ownerRequestStatus) {
+          await this.audit.recordTx(tx, context, 'USER_ROLE_PROMOTION', 'USER', property.ownerId, ownerBefore, ownerAfter);
+        }
+      }
+      await this.audit.recordTx(
+        tx, context, 'PROPERTY_APPROVE', 'PROPERTY', id,
+        { isVerified: property.isVerified, isAvailable: property.isAvailable, lifecycleStatus: property.lifecycleStatus },
+        { isVerified: updated.isVerified, isAvailable: updated.isAvailable, lifecycleStatus: updated.lifecycleStatus },
+      );
+      return updated;
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     void this.socialMediaService.onPropertyApproved(id).catch((error) => {
       console.error('Automatic reel preparation failed after property approval', {
-        propertyId: id,
-        error: error instanceof Error ? error.message : String(error),
+        propertyId: id, error: error instanceof Error ? error.message : String(error),
       });
     });
-
     return serializePrisma(approved);
   }
 
