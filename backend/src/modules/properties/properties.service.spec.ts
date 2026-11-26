@@ -19,14 +19,16 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
   const prisma = {
     property,
     membership,
+    $transaction: jest.fn(async (callback: any) => callback(prisma)),
   } as any;
 
   const storage = { getPublicMediaDownloadUrl: jest.fn() };
+  const pushNotifications = { sendToAdmins: jest.fn().mockResolvedValue({ queuedForAdmins: 1 }) };
   let service: PropertiesService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new PropertiesService(prisma, storage as any);
+    service = new PropertiesService(prisma, storage as any, pushNotifications as any);
   });
 
   function detailProperty(overrides: Record<string, any> = {}) {
@@ -46,6 +48,13 @@ describe('PropertiesService public discovery and owner-contact privacy', () => {
       ...overrides,
     };
   }
+
+  it('submits a draft and queues admin notifications in the same transaction', async () => {
+    property.findUnique.mockResolvedValue({ id: 'property-1', ownerId: 'tenant-1', lifecycleStatus: 'DRAFT' });
+    property.update.mockResolvedValue({ id: 'property-1', ownerId: 'tenant-1', title: 'Flat', transactionType: 'RENT', updatedAt: new Date('2026-11-26T10:00:00Z'), lifecycleStatus: 'SUBMITTED' });
+    await expect(service.submit('property-1', { id: 'tenant-1' })).resolves.toMatchObject({ success: true });
+    expect(pushNotifications.sendToAdmins).toHaveBeenCalledWith(expect.stringContaining('property-submission:property-1:'), 'Property approval required', expect.any(String), expect.objectContaining({ event: 'PROPERTY_SUBMITTED' }), expect.anything());
+  });
 
   it('allows anonymous access to verified and available public listings', async () => {
     property.findUnique.mockResolvedValue(detailProperty());
