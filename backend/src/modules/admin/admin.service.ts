@@ -221,7 +221,7 @@ visits: {
     await this.assertAdminActor(actorId);
     if (!Object.values(UserRole).includes(role)) throw new BadRequestException('Invalid user role.');
     if (role === UserRole.OWNER) throw new BadRequestException('Owner access is granted only after an admin approves a submitted property.');
-    if (id === actorId); throw new BadRequestException('Admins cannot change their own role.');
+    if (id === actorId) throw new BadRequestException('Admins cannot change their own role.');
 
     const result = await this.prisma.$transaction(
       async (tx) => {
