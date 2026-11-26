@@ -1,6 +1,18 @@
 import { PushNotificationsService } from './push-notifications.service';
 
 describe('PushNotificationsService outbox enqueueing', () => {
+  it('creates in-app and outbox notifications for every active admin', async () => {
+    const tx = {
+      user: { findMany: jest.fn().mockResolvedValue([{ id: 'admin-1' }, { id: 'admin-2' }]) },
+      notification: { create: jest.fn().mockImplementation(async ({ data }) => ({ id: `notification-${data.userId}` })) },
+      notificationOutbox: { create: jest.fn().mockResolvedValue({ id: 'outbox-1' }) },
+    };
+    const service = new PushNotificationsService({} as any);
+    await expect(service.sendToAdmins('event-1', 'Approval required', 'New property', { event: 'PROPERTY_SUBMITTED' }, tx as any)).resolves.toEqual({ queuedForAdmins: 2 });
+    expect(tx.notification.create).toHaveBeenCalledTimes(2);
+    expect(tx.notificationOutbox.create).toHaveBeenCalledTimes(2);
+    expect(tx.notificationOutbox.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ idempotencyKey: 'admin-approval:event-1:admin-1' }) }));
+  });
   it('enqueues a push event when no in-app notification exists', async () => {
     const prisma = {
       notification: { findFirst: jest.fn().mockResolvedValue(null) },
