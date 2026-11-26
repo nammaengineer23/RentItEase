@@ -6,6 +6,11 @@ import 'dart:js_interop';
 
 import '../models/location_model.dart';
 
+const String _mapsApiKey = String.fromEnvironment('MAPS_API_KEY');
+
+@JS('rentiteaseLoadGoogleMaps')
+external JSPromise<JSAny?> _loadGoogleMaps(JSString apiKey);
+
 @JS('google.maps.Geocoder')
 extension type _GoogleGeocoder._(JSObject _) implements JSObject {
   external factory _GoogleGeocoder();
@@ -15,7 +20,13 @@ extension type _GoogleGeocoder._(JSObject _) implements JSObject {
 Future<LocationModel?> reverseGeocodeWithGoogleMapsJs(
   double latitude,
   double longitude,
-) {
+) async {
+  if (_mapsApiKey.isEmpty) {
+    throw StateError('Google Maps browser API key is not configured.');
+  }
+  await _loadGoogleMaps(_mapsApiKey.toJS)
+      .toDart
+      .timeout(const Duration(seconds: 20));
   final completer = Completer<LocationModel?>();
   final request = <String, dynamic>{
     'location': <String, double>{'lat': latitude, 'lng': longitude},
