@@ -18,12 +18,15 @@ const _appCheckWebSiteKey = String.fromEnvironment(
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  final useStagingWebFirebase = Environment.isStaging && kIsWeb;
   final useNativeStagingFirebase =
       Environment.isStaging &&
       !kIsWeb &&
       defaultTargetPlatform == TargetPlatform.android;
 
-  if (useNativeStagingFirebase) {
+  if (useStagingWebFirebase) {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.stagingWeb);
+  } else if (useNativeStagingFirebase) {
     // Android Gradle selects android/app/src/staging/google-services.json.
     await Firebase.initializeApp();
   } else {
