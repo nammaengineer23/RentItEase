@@ -20,6 +20,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      # Pin a supported JDK: ubuntu-latest now defaults to JDK 25, which
+      # the Kotlin compiler used by this project cannot parse.
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -35,9 +42,10 @@ jobs:
 
       # Compile the staging flavor in PR CI so Android Gradle, Firebase
       # google-services.json selection, and staging package identity are checked.
+      # Verbose output captures the underlying Gradle exception in CI logs.
       - name: Build staging Android debug APK
         run: |
-          flutter build apk --flavor staging --debug \
+          flutter build apk --verbose --flavor staging --debug \
             --dart-define=STAGING=true \
             --dart-define=API_BASE_URL=https://rentitease-staging-api-production.up.railway.app/api/v1
           test -f build/app/outputs/flutter-apk/app-staging-debug.apk
