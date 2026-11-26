@@ -56,14 +56,13 @@ export class UsersService {
     if (user.ownerRequestStatus !== OwnerRequestStatus.PENDING) {
       throw new BadRequestException('No pending owner request found.');
     }
+    if (approve) throw new BadRequestException('Owner access is granted only after an admin approves a submitted property.');
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        role: approve ? UserRole.OWNER : user.role,
-        ownerRequestStatus: approve
-          ? OwnerRequestStatus.APPROVED
-          : OwnerRequestStatus.REJECTED,
+        role: user.role,
+        ownerRequestStatus: OwnerRequestStatus.REJECTED,
         ownerReviewedAt: new Date(),
       },
       select: { id: true, role: true, ownerRequestStatus: true, ownerReviewedAt: true },
@@ -71,7 +70,7 @@ export class UsersService {
 
     await this.audit.record(
       context,
-      approve ? 'OWNER_REQUEST_APPROVE' : 'OWNER_REQUEST_REJECT',
+      'OWNER_REQUEST_REJECT',
       'USER',
       userId,
       user,
