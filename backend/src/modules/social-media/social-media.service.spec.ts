@@ -16,7 +16,8 @@ describe('SocialMediaService social publishing security', () => {
     socialMediaAuditEvent: { create: jest.fn() },
     socialMediaSetting: { findUnique: jest.fn(), upsert: jest.fn() },
     socialAnalyticsSnapshot: { findMany: jest.fn(), create: jest.fn() },
-    property: { findFirst: jest.fn(), findUnique: jest.fn() },
+    property: { findFirst: jest.fn(), findUnique: jest.fn(), findMany: jest.fn(), count: jest.fn() },
+    $transaction: jest.fn(),
   };
 
   const storage: any = {
@@ -24,6 +25,7 @@ describe('SocialMediaService social publishing security', () => {
     downloadVideo: jest.fn(),
     importRemoteVideo: jest.fn(),
     deleteStoredVideo: jest.fn(),
+    getVideoDownloadUrl: jest.fn(async (ref: string) => 'https://signed.example/' + encodeURIComponent(ref)),
   };
 
   const publishing: any = { publish: jest.fn() };
@@ -42,6 +44,72 @@ describe('SocialMediaService social publishing security', () => {
   );
 
   beforeEach(() => jest.clearAllMocks());
+
+  it('returns a fresh preview URL for a stored private reel in the admin property list', async () => {
+    prisma.$transaction.mockResolvedValueOnce([[
+      {
+        id: 'property-1',
+        socialMarketingConsent: {
+          preparedVideoUrl: 'gcs://bucket/social-videos/property-1/reel.mp4',
+        },
+      },
+    ], 1]);
+
+    const result = await service.listProperties();
+
+    expect(result.data[0].socialMarketingConsent.preparedVideoUrl)
+      .toBe('https://signed.example/gcs%3A%2F%2Fbucket%2Fsocial-videos%2Fproperty-1%2Freel.mp4');
+    expect(storage.getVideoDownloadUrl).toHaveBeenCalledWith(
+      'gcs://bucket/social-videos/property-1/reel.mp4',
+    );
+  });
+
+  it('gives Meta a fresh signed URL while keeping the stable GCS reference in the post record', async () => {
+    const stableRef = 'gcs://bucket/social-videos/property-1/reel.mp4';
+    prisma.socialMediaPost.updateMany
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 1 });
+    prisma.socialMediaPost.findUnique
+      .mockResolvedValueOnce({
+        id: 'post-1', propertyId: 'property-1', platform: 'INSTAGRAM',
+        status: 'PENDING', attemptCount: 0, maxAttempts: 3,
+      })
+      .mockResolvedValueOnce({ id: 'post-1', videoUrl: stableRef, status: 'PUBLISHED' });
+    prisma.socialMarketingConsent.findUnique.mockResolvedValue({
+      approved: true,
+      preparedVideoUrl: stableRef,
+      preparedCaption: 'caption',
+      preparedTitle: 'title',
+    });
+    storage.getVideoDownloadUrl.mockResolvedValue('https://signed.example/reel.mp4');
+    publishing.publish.mockResolvedValue({ externalId: 'meta-123' });
+    prisma.socialMediaAuditEvent.create.mockResolvedValue({});
+
+    await (service as any).publishPost('post-1', 'admin-1');
+
+    expect(publishing.publish).toHaveBeenCalledWith('INSTAGRAM', expect.objectContaining({
+      videoUrl: 'https://signed.example/reel.mp4',
+    }));
+    expect(prisma.socialMediaPost.updateMany).toHaveBeenNthCalledWith(2,
+      expect.objectContaining({
+        data: expect.objectContaining({ videoUrl: stableRef, status: 'PUBLISHED' }),
+      }),
+    );
+  });
+
+  it('returns a signed preview URL from the owner consent endpoint', async () => {
+    prisma.property.findFirst.mockResolvedValue({ id: 'property-1' });
+    prisma.socialMarketingConsent.findUnique.mockResolvedValue({
+      id: 'consent-1',
+      approved: true,
+      preparedVideoUrl: 'gcs://bucket/social-videos/property-1/reel.mp4',
+    });
+    storage.getVideoDownloadUrl.mockResolvedValue('https://signed.example/reel.mp4');
+
+    const result = await service.getOwnerConsent('property-1', 'owner-1');
+
+    expect(result.preparedVideoUrl).toBe('https://signed.example/reel.mp4');
+  });
 
   it('blocks publishing when owner consent is absent', async () => {
     prisma.socialMarketingConsent.findUnique.mockResolvedValue(null);
