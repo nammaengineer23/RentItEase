@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma.service';
-import { MembershipStatus, Prisma, PropertyTransactionType, UserRole } from '@prisma/client';
+import { MembershipStatus, Prisma, PropertyLifecycleStatus, PropertyTransactionType, UserRole } from '@prisma/client';
 import { serializePrisma } from '../../common/utils/prisma-response.util';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -14,12 +14,14 @@ import { FilterPropertiesDto } from './dto/filter-property.dto';
 import { UpdatePropertyAmenitiesDto } from './dto/update-property-amenities.dto';
 import { NearbyPropertiesDto } from './dto/nearby-properties.dto';
 import { StorageService } from '../../storage/storage.service';
+import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 
 @Injectable()
 export class PropertiesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
+    private readonly pushNotifications: PushNotificationsService,
   ) {}
 
   private marketplaceEnabled(): boolean {
@@ -1055,7 +1057,7 @@ export class PropertiesService {
         // Every owner edit requires a fresh admin review before the listing
         // becomes public again. Admin edits preserve the approval state.
         ...(user.role !== UserRole.ADMIN
-          ? { isVerified: false, isAvailable: false }
+          ? { isVerified: false, isAvailable: false, lifecycleStatus: PropertyLifecycleStatus.DRAFT }
           : {}),
 
         amenities:
@@ -1110,29 +1112,26 @@ export class PropertiesService {
   // ===========================
 
   async submit(id: string, user: any) {
-    const property = await this.prisma.property.findUnique({ where: { id } });
-    if (!property) throw new NotFoundException('Property not found.');
-    if (property.ownerId !== user.id) {
-      throw new ForbiddenException('You are not allowed to submit this property.');
-    }
-    if (property.lifecycleStatus !== 'DRAFT') {
-      throw new ForbiddenException('Only draft properties can be submitted.');
-    }
-
-    const updatedProperty = await this.prisma.property.update({
-      where: { id },
-      data: {
-        lifecycleStatus: 'SUBMITTED',
-        isVerified: false,
-        isAvailable: false,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const property = await tx.property.findUnique({ where: { id } });
+      if (!property) throw new NotFoundException('Property not found.');
+      if (property.ownerId !== user.id) throw new ForbiddenException('You are not allowed to submit this property.');
+      if (property.lifecycleStatus !== PropertyLifecycleStatus.DRAFT) {
+        throw new ForbiddenException('Only draft properties can be submitted.');
+      }
+      const updatedProperty = await tx.property.update({
+        where: { id },
+        data: { lifecycleStatus: PropertyLifecycleStatus.SUBMITTED, isVerified: false, isAvailable: false },
+      });
+      await this.pushNotifications.sendToAdmins(
+        `property-submission:${updatedProperty.id}:${updatedProperty.updatedAt.toISOString()}`,
+        'Property approval required',
+        `"${updatedProperty.title}" was submitted for verification (${updatedProperty.transactionType.replace(/_/g, ' ')}).`,
+        { screen: 'admin_properties', propertyId: updatedProperty.id, ownerId: updatedProperty.ownerId, event: 'PROPERTY_SUBMITTED' },
+        tx,
+      );
+      return { success: true, message: 'Property submitted successfully.', property: serializePrisma(updatedProperty) };
     });
-
-    return {
-      success: true,
-      message: 'Property submitted successfully.',
-      property: serializePrisma(updatedProperty),
-    };
   }
 
   // ===========================
