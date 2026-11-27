@@ -50,7 +50,11 @@ export class AuthService {
 
   async verifySignupEmailOtp(dto: VerifyEmailOtpDto) {
     const email = dto.email.trim().toLowerCase();
-    await this.consumeEmailOtpChallenge(email, this.signupEmailPurpose, dto.otp);
+    await this.consumeEmailOtpChallenge(
+      email,
+      this.signupEmailPurpose,
+      dto.otp,
+    );
 
     const verificationToken = await this.jwtService.signAsync(
       { type: this.signupEmailPurpose, email },
@@ -62,10 +66,10 @@ export class AuthService {
 
   async registerVerified(dto: VerifiedRegisterDto) {
     const email = dto.email.trim().toLowerCase();
-    const proof = await this.jwtService.verifyAsync<{ type: string; email: string }>(
-      dto.emailVerificationToken,
-      { secret: process.env.JWT_ACCESS_SECRET },
-    );
+    const proof = await this.jwtService.verifyAsync<{
+      type: string;
+      email: string;
+    }>(dto.emailVerificationToken, { secret: process.env.JWT_ACCESS_SECRET });
 
     if (proof.type !== this.signupEmailPurpose || proof.email !== email) {
       throw new UnauthorizedException('Invalid email verification proof.');
@@ -74,14 +78,25 @@ export class AuthService {
     const phone = dto.phone?.trim() || null;
     if (phone != null) {
       if (!dto.phoneIdToken) {
-        throw new UnauthorizedException('Verify the mobile number before registering it.');
+        throw new UnauthorizedException(
+          'Verify the mobile number before registering it.',
+        );
       }
-      const decodedPhone = await this.firebaseService.verifyToken(dto.phoneIdToken);
+      const decodedPhone = await this.firebaseService.verifyToken(
+        dto.phoneIdToken,
+      );
       const verifiedPhone = decodedPhone.phone_number;
-      if (!verifiedPhone || this.normalizePhone(verifiedPhone) !== this.normalizePhone(phone)) {
-        throw new UnauthorizedException('Verified phone number does not match registration phone.');
+      if (
+        !verifiedPhone ||
+        this.normalizePhone(verifiedPhone) !== this.normalizePhone(phone)
+      ) {
+        throw new UnauthorizedException(
+          'Verified phone number does not match registration phone.',
+        );
       }
-      const phoneOwner = await this.prisma.user.findUnique({ where: { phone } });
+      const phoneOwner = await this.prisma.user.findUnique({
+        where: { phone },
+      });
       if (phoneOwner) {
         throw new ConflictException(
           'This mobile number is already registered. Please sign in or use a different number.',
@@ -101,7 +116,8 @@ export class AuthService {
     const email = dto.email.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({ where: { email } });
 
-    if (user?.isActive) await this.createEmailOtpChallenge(email, this.loginEmailPurpose);
+    if (user?.isActive)
+      await this.createEmailOtpChallenge(email, this.loginEmailPurpose);
 
     return {
       success: true,
@@ -114,7 +130,8 @@ export class AuthService {
     await this.consumeEmailOtpChallenge(email, this.loginEmailPurpose, dto.otp);
 
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user || !user.isActive) throw new UnauthorizedException('Invalid or inactive account.');
+    if (!user || !user.isActive)
+      throw new UnauthorizedException('Invalid or inactive account.');
 
     return this.createSession(user);
   }
@@ -124,7 +141,9 @@ export class AuthService {
     const phone = decoded.phone_number;
 
     if (!phone) {
-      throw new UnauthorizedException('Verified phone number not found in Firebase token.');
+      throw new UnauthorizedException(
+        'Verified phone number not found in Firebase token.',
+      );
     }
 
     const normalized = this.normalizePhone(phone);
@@ -132,11 +151,14 @@ export class AuthService {
     const user = await this.prisma.user.findFirst({
       where: {
         isActive: true,
-        phone: { in: [normalized, digits, digits.substring(digits.length - 10)] },
+        phone: {
+          in: [normalized, digits, digits.substring(digits.length - 10)],
+        },
       },
     });
 
-    if (!user) throw new UnauthorizedException('No account exists for this phone.');
+    if (!user)
+      throw new UnauthorizedException('No account exists for this phone.');
     return this.createSession(user);
   }
 
@@ -144,21 +166,36 @@ export class AuthService {
     const otp = this.otpService.generateOtp();
     const otpHash = await this.otpService.hashOtp(otp);
 
-    await this.prisma.authOtpChallenge.deleteMany({ where: { target, purpose } });
+    await this.prisma.authOtpChallenge.deleteMany({
+      where: { target, purpose },
+    });
     await this.prisma.authOtpChallenge.create({
-      data: { target, purpose, otpHash, expiresAt: this.otpService.getExpiryDate() },
+      data: {
+        target,
+        purpose,
+        otpHash,
+        expiresAt: this.otpService.getExpiryDate(),
+      },
     });
 
     await this.mailService.sendAuthenticationOtp(target, otp);
   }
 
-  private async consumeEmailOtpChallenge(target: string, purpose: string, otp: string) {
+  private async consumeEmailOtpChallenge(
+    target: string,
+    purpose: string,
+    otp: string,
+  ) {
     const challenge = await this.prisma.authOtpChallenge.findFirst({
       where: { target, purpose },
       orderBy: { createdAt: 'desc' },
     });
 
-    if (!challenge || challenge.expiresAt < new Date() || challenge.attempts >= 5) {
+    if (
+      !challenge ||
+      challenge.expiresAt < new Date() ||
+      challenge.attempts >= 5
+    ) {
       throw new UnauthorizedException('Invalid or expired verification code.');
     }
 
@@ -181,6 +218,23 @@ export class AuthService {
     return phone.startsWith('+') ? phone : `+${digits}`;
   }
 
+  private async resolveProfilePhotoUrl(
+    userId: string,
+    photoUrl: string | null,
+  ): Promise<string | null> {
+    if (!photoUrl) return null;
+
+    if (photoUrl.startsWith('profile-images/')) {
+      if (!photoUrl.startsWith(`profile-images/${userId}/`)) {
+        return null;
+      }
+      return this.firebaseService.getProfileImageDownloadUrl(userId, photoUrl);
+    }
+
+    // Preserve existing external Google profile image URLs.
+    return photoUrl;
+  }
+
   private async createSession(user: {
     id: string;
     fullName: string;
@@ -201,14 +255,16 @@ export class AuthService {
         email: user.email,
         phone: user.phone,
         role: user.role,
-        photoUrl: user.photoUrl,
+        photoUrl: await this.resolveProfilePhotoUrl(user.id, user.photoUrl),
       },
       ...tokens,
     };
   }
 
   async register(dto: RegisterDto) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
     if (existing) throw new ConflictException('Email already exists.');
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -253,7 +309,8 @@ export class AuthService {
     });
 
     if (!user) throw new UnauthorizedException('Invalid email or password.');
-    if (!user.isActive) throw new UnauthorizedException('Your account has been deactivated.');
+    if (!user.isActive)
+      throw new UnauthorizedException('Your account has been deactivated.');
 
     const matched = await bcrypt.compare(dto.password, user.passwordHash);
     if (!matched) throw new UnauthorizedException('Invalid email or password.');
@@ -280,8 +337,7 @@ export class AuthService {
     const uid = decoded.sub;
     const email = decoded.email?.trim().toLowerCase();
     const firebaseClaims = decoded.firebase as
-      | { sign_in_provider?: string }
-      | undefined;
+      { sign_in_provider?: string } | undefined;
 
     // This endpoint is the Google sign-in exchange. Do not allow phone or
     // another Firebase provider to claim a RentItEase account through it.
@@ -290,7 +346,9 @@ export class AuthService {
     }
 
     if (!uid || !email || decoded.email_verified !== true) {
-      throw new UnauthorizedException('A verified Google identity is required.');
+      throw new UnauthorizedException(
+        'A verified Google identity is required.',
+      );
     }
 
     // The immutable Firebase UID is the primary identity key. Email is used
@@ -402,7 +460,7 @@ export class AuthService {
         email: user.email,
         phone: user.phone,
         role: user.role,
-        photoUrl: user.photoUrl,
+        photoUrl: await this.resolveProfilePhotoUrl(user.id, user.photoUrl),
       },
       ...tokens,
     };
@@ -427,7 +485,8 @@ export class AuthService {
       }
     }
 
-    if (!matchedToken) throw new UnauthorizedException('Invalid refresh token.');
+    if (!matchedToken)
+      throw new UnauthorizedException('Invalid refresh token.');
 
     if (matchedToken.expiresAt < new Date()) {
       await this.prisma.refreshToken.delete({ where: { id: matchedToken.id } });
@@ -439,7 +498,11 @@ export class AuthService {
     const tokens = await this.generateTokens(payload.sub, payload.email);
     await this.saveRefreshToken(payload.sub, tokens.refreshToken);
 
-    return { success: true, message: 'Token refreshed successfully.', ...tokens };
+    return {
+      success: true,
+      message: 'Token refreshed successfully.',
+      ...tokens,
+    };
   }
 
   async logout(userId: string) {
@@ -465,7 +528,8 @@ export class AuthService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2011' &&
         Array.isArray(error.meta?.constraint) &&
-        (error.meta.constraint.includes('jti') || error.meta.constraint.includes('familyId'));
+        (error.meta.constraint.includes('jti') ||
+          error.meta.constraint.includes('familyId'));
 
       if (!isLegacyRefreshTokenConstraint) throw error;
 
@@ -511,7 +575,9 @@ export class AuthService {
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
 
     if (!user) {
       return {
@@ -520,7 +586,9 @@ export class AuthService {
       };
     }
 
-    await this.prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
+    await this.prisma.passwordResetToken.deleteMany({
+      where: { userId: user.id },
+    });
 
     const token = crypto.randomBytes(32).toString('hex');
 
@@ -537,7 +605,11 @@ export class AuthService {
     const separator = resetBaseUrl.includes('?') ? '&' : '?';
     const resetLink = `${resetBaseUrl}${separator}token=${encodeURIComponent(token)}`;
 
-    await this.mailService.sendPasswordResetEmail(user.email, user.fullName, resetLink);
+    await this.mailService.sendPasswordResetEmail(
+      user.email,
+      user.fullName,
+      resetLink,
+    );
 
     return {
       success: true,
@@ -562,13 +634,15 @@ export class AuthService {
       data: { passwordHash: hashedPassword },
     });
 
-    await this.prisma.passwordResetToken.delete({ where: { id: resetToken.id } });
+    await this.prisma.passwordResetToken.delete({
+      where: { id: resetToken.id },
+    });
 
     return { success: true, message: 'Password reset successfully.' };
   }
 
   async me(userId: string) {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -579,6 +653,44 @@ export class AuthService {
         role: true,
       },
     });
+
+    if (!user) return null;
+
+    return {
+      ...user,
+      photoUrl: await this.resolveProfilePhotoUrl(userId, user.photoUrl),
+    };
+  }
+
+  async updateProfilePhoto(userId: string, objectKey: string) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!existingUser) throw new NotFoundException('User not found.');
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { photoUrl: objectKey },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        photoUrl: true,
+        role: true,
+      },
+    });
+  }
+
+  async isProfilePhotoStored(userId: string, objectKey: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { photoUrl: true },
+    });
+
+    return user?.photoUrl === objectKey;
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
@@ -606,7 +718,6 @@ export class AuthService {
       data: {
         ...(dto.fullName != null && { fullName: dto.fullName.trim() }),
         ...(dto.phone != null && { phone: dto.phone }),
-        ...(dto.photoUrl != null && { photoUrl: dto.photoUrl }),
       },
       select: {
         id: true,

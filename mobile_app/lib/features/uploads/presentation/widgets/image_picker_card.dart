@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,11 +5,11 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/utils/image_utils.dart';
 
 class ImagePickerCard extends StatefulWidget {
-  final Function(List<File>) onImagesChanged;
+  final Function(List<XFile>) onImagesChanged;
 
   final int maxImages;
   final String title;
-  final List<File> initialImages;
+  final List<XFile> initialImages;
 
   const ImagePickerCard({
     super.key,
@@ -28,7 +26,8 @@ class ImagePickerCard extends StatefulWidget {
 class _ImagePickerCardState extends State<ImagePickerCard> {
   final ImagePicker _picker = ImagePicker();
 
-  final List<File> _images = [];
+  final List<XFile> _images = [];
+  final Map<XFile, Future<Uint8List>> _imageBytes = {};
 
   @override
   void initState() {
@@ -43,6 +42,7 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
       _images
         ..clear()
         ..addAll(widget.initialImages);
+      _imageBytes.clear();
     }
   }
 
@@ -56,7 +56,7 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
     try {
       final files = await _picker.pickMultiImage(imageQuality: 90);
 
-      if (files.isEmpty) return;
+      if (!mounted || files.isEmpty) return;
 
       if (_images.length + files.length > widget.maxImages) {
         _showMessage('Maximum ${widget.maxImages} images allowed.');
@@ -68,20 +68,27 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
       });
 
       for (final file in files) {
-        try {
-          final image = await ImageUtils.prepareImage(File(file.path));
+        if (!mounted) return;
 
+        try {
+          final image = await ImageUtils.prepareImage(file);
+          if (!mounted) return;
           _images.add(image);
         } catch (e) {
+          if (!mounted) return;
           _showMessage(e.toString());
         }
       }
 
-      widget.onImagesChanged(_images);
+      if (mounted) {
+        widget.onImagesChanged(_images);
+      }
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -95,30 +102,34 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
       return;
     }
 
-    final file = await _picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 90,
-    );
-
-    if (file == null) return;
-
-    setState(() {
-      _loading = true;
-    });
-
     try {
-      final image = await ImageUtils.prepareImage(File(file.path));
+      final file = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 90,
+      );
+
+      if (!mounted || file == null) return;
+
+      setState(() {
+        _loading = true;
+      });
+
+      final image = await ImageUtils.prepareImage(file);
+      if (!mounted) return;
 
       _images.add(image);
-
       widget.onImagesChanged(_images);
     } catch (e) {
-      _showMessage(e.toString());
+      if (mounted) {
+        _showMessage(e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
-
-    setState(() {
-      _loading = false;
-    });
   }
 
   // ==========================================
@@ -126,8 +137,10 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
   // ==========================================
 
   void _remove(int index) {
+    final removed = _images[index];
     setState(() {
       _images.removeAt(index);
+      _imageBytes.remove(removed);
     });
 
     widget.onImagesChanged(_images);
@@ -163,9 +176,23 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
             Positioned.fill(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: kIsWeb
-                    ? Image.network(_images[index].path, fit: BoxFit.cover)
-                    : Image.file(_images[index], fit: BoxFit.cover),
+                child: FutureBuilder<Uint8List>(
+                  future: _imageBytes.putIfAbsent(
+                    _images[index],
+                    () => _images[index].readAsBytes(),
+                  ),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return const Center(
+                        child: Icon(Icons.broken_image, color: Colors.grey),
+                      );
+                    }
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    return Image.memory(snapshot.data!, fit: BoxFit.cover);
+                  },
+                ),
               ),
             ),
             Positioned(
@@ -227,10 +254,7 @@ class _ImagePickerCardState extends State<ImagePickerCard> {
           children: [
             Text(
               widget.title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 6),

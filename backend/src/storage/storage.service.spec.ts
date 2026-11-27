@@ -12,6 +12,8 @@ describe('StorageService', () => {
     deleteImage: jest.fn(),
     getPrivateDownloadUrl: jest.fn(),
     getPublicMediaDownloadUrl: jest.fn(),
+    uploadProfileImage: jest.fn(),
+    getProfileImageDownloadUrl: jest.fn(),
   } as unknown as FirebaseService;
 
   beforeEach(() => {
@@ -23,7 +25,10 @@ describe('StorageService', () => {
 
     await service.uploadImage(file, 'properties');
 
-    expect(firebaseService.uploadImage).toHaveBeenCalledWith(file, 'properties');
+    expect(firebaseService.uploadImage).toHaveBeenCalledWith(
+      file,
+      'properties',
+    );
   });
 
   it('uses Firebase for deletion', async () => {
@@ -44,6 +49,25 @@ describe('StorageService', () => {
     expect(firebaseService.getPublicMediaDownloadUrl).toHaveBeenCalledWith(
       'properties/photo.jpg',
       60 * 60 * 1000,
+    );
+  });
+
+  it('uses dedicated Firebase methods for profile image uploads and signed URLs', async () => {
+    const service = new StorageService(firebaseService);
+    const userId = 'user_123';
+    const objectKey = 'profile-images/user_123/photo.png';
+
+    await service.uploadProfileImage(userId, file);
+    await service.getProfileImageDownloadUrl(userId, objectKey);
+
+    expect(firebaseService.uploadProfileImage).toHaveBeenCalledWith(
+      userId,
+      file,
+    );
+    expect(firebaseService.getProfileImageDownloadUrl).toHaveBeenCalledWith(
+      userId,
+      objectKey,
+      15 * 60 * 1000,
     );
   });
 

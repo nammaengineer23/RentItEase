@@ -1,3 +1,5 @@
+import 'package:image_picker/image_picker.dart';
+
 import '../domain/entities/profile_entity.dart';
 import '../domain/repositories/profile_repository.dart';
 
@@ -19,20 +21,18 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<ProfileEntity> updateProfile({
     required String fullName,
     required String phone,
-    String? photoUrl,
   }) async {
     final ProfileModel model = await _api.updateProfile(
       fullName: fullName,
       phone: phone,
-      photoUrl: photoUrl,
     );
 
     return model.toEntity();
   }
 
   @override
-  Future<String> uploadProfileImage(String imagePath) {
-    return _api.uploadProfileImage(imagePath);
+  Future<String> uploadProfileImage(XFile image) {
+    return _api.uploadProfileImage(image);
   }
 
   @override

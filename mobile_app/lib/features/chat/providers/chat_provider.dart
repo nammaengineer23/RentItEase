@@ -185,7 +185,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
       final url = image
           ? await _repository.uploadChatImage(file)
           : await _repository.uploadChatFile(file);
-      return _send(url, messageType, alreadySending: true);
+      return await _send(url, messageType, alreadySending: true);
     } catch (error) {
       state = state.copyWith(isSending: false, error: _message(error));
       return false;

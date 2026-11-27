@@ -1,18 +1,26 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   Patch,
   Post,
   Request,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { extname } from 'path';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
+import { StorageService } from '../../storage/storage.service';
+import { ImageFileValidator } from '../../common/validators/image-file.validator';
 import { LoginDto } from './dto/login.dto';
 import { FirebaseLoginDto } from './dto/firebase-login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -28,7 +36,10 @@ import { PhoneOtpLoginDto } from './dto/phone-otp-login.dto';
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly storageService: StorageService,
+  ) {}
 
   @Post('register/email-otp/request')
   @ApiOperation({ summary: 'Send signup email verification OTP' })
@@ -83,7 +94,8 @@ export class AuthController {
 
   @Post('firebase-login')
   @ApiOperation({
-    summary: 'Exchange a verified Firebase Google ID token for a RentItEase session',
+    summary:
+      'Exchange a verified Firebase Google ID token for a RentItEase session',
     description:
       'Firebase verifies the Google identity. RentItEase resolves the Firebase UID to a PostgreSQL user and returns the existing RentItEase access and refresh tokens.',
   })
@@ -144,6 +156,107 @@ export class AuthController {
   })
   getCurrentUser(@Request() req: any) {
     return this.authService.me(req.user.id);
+  }
+
+  @Post('me/photo')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload or replace the authenticated user profile photo',
+  })
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_request, file, callback) => {
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        const extension = extname(file.originalname).toLowerCase();
+        const allowed =
+          allowedExtensions.includes(extension) &&
+          allowedMimeTypes.includes(file.mimetype);
+
+        callback(
+          allowed
+            ? null
+            : new BadRequestException(
+                'Only JPG, JPEG, PNG and WEBP images are allowed.',
+              ),
+          allowed,
+        );
+      },
+    }),
+  )
+  async uploadCurrentUserPhoto(
+    @Request() req: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const validator = new ImageFileValidator();
+    if (!validator.isValid(file) || !(await validator.hasValidContent(file))) {
+      throw new BadRequestException(validator.buildErrorMessage());
+    }
+
+    // The owner ID comes only from the verified JWT, never from client input.
+    const uploaded = await this.storageService.uploadProfileImage(
+      req.user.id,
+      file,
+    );
+
+    let user;
+
+    try {
+      user = await this.authService.updateProfilePhoto(
+        req.user.id,
+        uploaded.publicId,
+      );
+    } catch (error) {
+      // A failed database acknowledgement does not prove the write failed.
+      // Read the current value before deleting the uploaded object.
+      let shouldCleanup = false;
+
+      try {
+        const isStored = await this.authService.isProfilePhotoStored(
+          req.user.id,
+          uploaded.publicId,
+        );
+        shouldCleanup = !isStored;
+      } catch (verificationError) {
+        // Preserve the object if the read-back is inconclusive.
+        console.error(
+          'Could not verify profile image persistence; preserving uploaded object:',
+          verificationError,
+        );
+      }
+
+      if (shouldCleanup) {
+        try {
+          await this.storageService.deleteProfileImage(
+            req.user.id,
+            uploaded.publicId,
+          );
+        } catch (cleanupError) {
+          console.error(
+            'Failed to clean up an unpersisted profile image:',
+            cleanupError,
+          );
+        }
+      }
+
+      throw error;
+    }
+
+    const photoUrl = await this.storageService.getProfileImageDownloadUrl(
+      req.user.id,
+      uploaded.publicId,
+    );
+
+    return {
+      ...user,
+      photoUrl,
+      imageUrl: photoUrl,
+    };
   }
 
   @Patch('me')

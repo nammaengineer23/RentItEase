@@ -1,8 +1,18 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 
-import { applicationDefault, cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
+import {
+  applicationDefault,
+  cert,
+  getApp,
+  getApps,
+  initializeApp,
+} from 'firebase-admin/app';
 
 import { getStorage } from 'firebase-admin/storage';
 
@@ -14,7 +24,9 @@ export class FirebaseService {
   constructor(private readonly configService: ConfigService) {
     if (!getApps().length) {
       const projectId = this.configService.get<string>('FIREBASE_PROJECT_ID');
-      const clientEmail = this.configService.get<string>('FIREBASE_CLIENT_EMAIL');
+      const clientEmail = this.configService.get<string>(
+        'FIREBASE_CLIENT_EMAIL',
+      );
       const privateKey = this.configService
         .get<string>('FIREBASE_PRIVATE_KEY')
         ?.replace(/\\n/g, '\n');
@@ -29,7 +41,9 @@ export class FirebaseService {
       initializeApp({
         credential,
         projectId,
-        storageBucket: this.configService.get<string>('FIREBASE_STORAGE_BUCKET'),
+        storageBucket: this.configService.get<string>(
+          'FIREBASE_STORAGE_BUCKET',
+        ),
       });
 
       console.log('✅ Firebase Admin initialized');
@@ -44,14 +58,21 @@ export class FirebaseService {
     return getStorage(getApp());
   }
 
-  private buildStorageObjectName(file: Express.Multer.File, folder: string): string {
+  private buildStorageObjectName(
+    file: Express.Multer.File,
+    folder: string,
+  ): string {
     const allowedFolders = new Set(['properties', 'property-videos']);
     if (!allowedFolders.has(folder)) {
       throw new BadRequestException('Unsupported public storage folder.');
     }
     const extensionByMime: Record<string, string> = {
-      'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp',
-      'video/mp4': '.mp4', 'video/quicktime': '.mov', 'video/x-m4v': '.m4v',
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+      'video/mp4': '.mp4',
+      'video/quicktime': '.mov',
+      'video/x-m4v': '.m4v',
     };
     const extension = extensionByMime[file.mimetype] ?? '.bin';
     return `${folder}/${randomUUID()}${extension}`;
@@ -87,6 +108,90 @@ export class FirebaseService {
     };
   }
 
+  /**
+   * Uploads a profile image into the authenticated user's private namespace.
+   * This is deliberately separate from property and chat media storage.
+   */
+  async uploadProfileImage(
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<{ publicId: string }> {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(userId)) {
+      throw new BadRequestException('Invalid profile image owner.');
+    }
+
+    const extensionByMime: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+    };
+
+    const extension = extensionByMime[file?.mimetype];
+    if (!extension || !file?.buffer?.length) {
+      throw new BadRequestException('Unsupported profile image file.');
+    }
+
+    const objectKey = `profile-images/${userId}/${randomUUID()}${extension}`;
+    const firebaseFile = this.getStorage().bucket().file(objectKey);
+
+    await this.withRetry(
+      () =>
+        this.withTimeout(
+          firebaseFile.save(file.buffer, {
+            metadata: {
+              contentType: file.mimetype,
+              cacheControl: 'private, no-store, max-age=0',
+            },
+          }),
+          15_000,
+        ),
+      3,
+      'Firebase profile image upload',
+    );
+
+    return { publicId: objectKey };
+  }
+
+  /**
+   * Signs a profile image only when its object key belongs to the supplied user.
+   */
+  async getProfileImageDownloadUrl(
+    userId: string,
+    objectKey: string,
+    expiresInMs = 15 * 60 * 1000,
+  ): Promise<string> {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(userId)) {
+      throw new BadRequestException('Invalid profile image owner.');
+    }
+
+    const escapedUserId = userId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const expectedKey = new RegExp(
+      `^profile-images/${escapedUserId}/[A-Za-z0-9._-]{1,255}$`,
+    );
+
+    if (
+      typeof objectKey !== 'string' ||
+      !expectedKey.test(objectKey) ||
+      objectKey.includes('..')
+    ) {
+      throw new BadRequestException(
+        'Invalid profile image storage object key.',
+      );
+    }
+
+    const bucket = this.getStorage().bucket();
+    const [url] = await this.withTimeout(
+      bucket.file(objectKey).getSignedUrl({
+        version: 'v4',
+        action: 'read',
+        expires: Date.now() + expiresInMs,
+      }),
+      15_000,
+    );
+
+    return url;
+  }
+
   async uploadPrivateFile(
     file: Express.Multer.File,
     folder: string,
@@ -118,10 +223,16 @@ export class FirebaseService {
 
   private safePrivateExtension(mimeType: string): string {
     const extensions: Record<string, string> = {
-      'application/pdf': '.pdf', 'application/msword': '.doc',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
-      'text/plain': '.txt', 'audio/mp4': '.m4a', 'audio/aac': '.aac',
-      'audio/mpeg': '.mp3', 'audio/wav': '.wav', 'audio/ogg': '.ogg',
+      'application/pdf': '.pdf',
+      'application/msword': '.doc',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        '.docx',
+      'text/plain': '.txt',
+      'audio/mp4': '.m4a',
+      'audio/aac': '.aac',
+      'audio/mpeg': '.mp3',
+      'audio/wav': '.wav',
+      'audio/ogg': '.ogg',
     };
     return extensions[mimeType] ?? '.bin';
   }
@@ -130,7 +241,10 @@ export class FirebaseService {
     publicId: string,
     expiresInMs = 60 * 60 * 1000,
   ): Promise<string> {
-    if (!/^(properties|property-videos)\/[A-Za-z0-9._-]{1,255}$/.test(publicId) || publicId.includes('..')) {
+    if (
+      !/^(properties|property-videos)\/[A-Za-z0-9._-]{1,255}$/.test(publicId) ||
+      publicId.includes('..')
+    ) {
       throw new BadRequestException('Invalid public media storage object key.');
     }
     const bucket = this.getStorage().bucket();
@@ -149,7 +263,10 @@ export class FirebaseService {
     publicId: string,
     expiresInMs = 15 * 60 * 1000,
   ): Promise<string> {
-    if (!/^chat\/[A-Za-z0-9_-]{1,128}\/[^/\\?#]+$/.test(publicId) || publicId.includes('..')) {
+    if (
+      !/^chat\/[A-Za-z0-9_-]{1,128}\/[^/\\?#]+$/.test(publicId) ||
+      publicId.includes('..')
+    ) {
       throw new BadRequestException('Invalid private storage object key.');
     }
     const bucket = this.getStorage().bucket();
@@ -164,21 +281,53 @@ export class FirebaseService {
   }
 
   async deleteImage(publicId: string) {
-    if (!/^(properties|property-videos)\/[^/\\?#]+$/.test(publicId) || publicId.includes('..')) {
-      throw new BadRequestException('Unsupported storage object key; legacy provider objects require a controlled migration.');
+    if (
+      !/^(properties|property-videos)\/[^/\\?#]+$/.test(publicId) ||
+      publicId.includes('..')
+    ) {
+      throw new BadRequestException(
+        'Unsupported storage object key; legacy provider objects require a controlled migration.',
+      );
     }
     const bucket = this.getStorage().bucket();
 
     const file = bucket.file(publicId);
 
     await this.withRetry(
-      () =>
-        this.withTimeout(
-          file.delete({ ignoreNotFound: true }),
-          15_000,
-        ),
+      () => this.withTimeout(file.delete({ ignoreNotFound: true }), 15_000),
       3,
       'Firebase Storage delete',
+    );
+
+    return true;
+  }
+
+  async deleteProfileImage(userId: string, objectKey: string) {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(userId)) {
+      throw new BadRequestException('Invalid profile image owner ID.');
+    }
+
+    const escapedUserId = userId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const expectedKey = new RegExp(
+      `^profile-images/${escapedUserId}/[A-Za-z0-9._-]{1,255}$`,
+    );
+
+    if (
+      typeof objectKey !== 'string' ||
+      !expectedKey.test(objectKey) ||
+      objectKey.includes('..')
+    ) {
+      throw new BadRequestException(
+        'Invalid profile image storage object key.',
+      );
+    }
+
+    const file = this.getStorage().bucket().file(objectKey);
+
+    await this.withRetry(
+      () => this.withTimeout(file.delete({ ignoreNotFound: true }), 15_000),
+      3,
+      'Firebase profile image cleanup',
     );
 
     return true;
@@ -201,7 +350,9 @@ export class FirebaseService {
         15_000,
       );
     } catch {
-      throw new UnauthorizedException('Invalid, expired, revoked, or disabled Firebase session.');
+      throw new UnauthorizedException(
+        'Invalid, expired, revoked, or disabled Firebase session.',
+      );
     }
   }
 

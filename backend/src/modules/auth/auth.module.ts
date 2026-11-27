@@ -9,7 +9,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { MailModule } from '../../mail/mail.module';
 import { OtpModule } from '../../common/otp/otp.module';
-
+import { StorageModule } from '../../storage/storage.module';
 
 @Module({
   imports: [
@@ -17,6 +17,7 @@ import { OtpModule } from '../../common/otp/otp.module';
     FirebaseModule,
     MailModule,
     OtpModule,
+    StorageModule,
     PassportModule.register({
       defaultStrategy: 'jwt',
     }),
@@ -29,10 +30,8 @@ import { OtpModule } from '../../common/otp/otp.module';
         secret: configService.get<string>('JWT_ACCESS_SECRET'),
 
         signOptions: {
-          expiresIn:
-            (configService.get(
-              'JWT_ACCESS_EXPIRES_IN',
-            ) ?? '15m') as JwtSignOptions['expiresIn'],
+          expiresIn: (configService.get('JWT_ACCESS_EXPIRES_IN') ??
+            '15m') as JwtSignOptions['expiresIn'],
         },
       }),
     }),
@@ -40,15 +39,8 @@ import { OtpModule } from '../../common/otp/otp.module';
 
   controllers: [AuthController],
 
-  providers: [
-    AuthService,
-    JwtStrategy,
-  ],
+  providers: [AuthService, JwtStrategy],
 
-  exports: [
-    AuthService,
-    JwtModule,
-    PassportModule,
-  ],
+  exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}

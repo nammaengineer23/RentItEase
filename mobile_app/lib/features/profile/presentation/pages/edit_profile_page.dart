@@ -1,10 +1,11 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/utils/app_error_message.dart';
+import '../../../../core/utils/image_utils.dart';
 import '../../providers/profile_provider.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
@@ -22,7 +23,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   late TextEditingController emailController;
 
   bool isSaving = false;
-  File? selectedProfileImage;
+  XFile? selectedProfileImage;
+  Uint8List? selectedProfileImageBytes;
   final ImagePicker imagePicker = ImagePicker();
 
   Future<void> pickProfileImage() async {
@@ -57,9 +59,23 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
     if (image == null || !mounted) return;
 
-    setState(() {
-      selectedProfileImage = File(image.path);
-    });
+    try {
+      final preparedImage = await ImageUtils.prepareImage(image);
+      final imageBytes = await preparedImage.readAsBytes();
+
+      if (!mounted) return;
+
+      setState(() {
+        selectedProfileImage = preparedImage;
+        selectedProfileImageBytes = imageBytes;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(userFriendlyError(error))));
+    }
   }
 
   @override
@@ -112,17 +128,14 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       if (selectedProfileImage != null) {
         await ref
             .read(profileProvider.notifier)
-            .uploadImage(selectedProfileImage!.path);
+            .uploadImage(selectedProfileImage!);
       }
-
-      final photoUrl = ref.read(profileProvider).valueOrNull?.profileImage;
 
       await ref
           .read(profileProvider.notifier)
           .updateProfile(
             fullName: nameController.text.trim(),
             phone: phoneController.text.trim(),
-            photoUrl: photoUrl,
           );
 
       await ref.read(profileProvider.notifier).loadProfile();
@@ -175,12 +188,13 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   CircleAvatar(
                     radius: 55,
                     backgroundImage: selectedProfileImage != null
-                        ? FileImage(selectedProfileImage!)
+                        ? MemoryImage(selectedProfileImageBytes!)
                         : profile?.profileImage != null &&
-                                profile!.profileImage!.isNotEmpty
-                            ? NetworkImage(profile.profileImage!)
-                            : null,
-                    child: selectedProfileImage == null &&
+                              profile!.profileImage!.isNotEmpty
+                        ? NetworkImage(profile.profileImage!)
+                        : null,
+                    child:
+                        selectedProfileImage == null &&
                             (profile?.profileImage == null ||
                                 profile!.profileImage!.isEmpty)
                         ? const Icon(Icons.person, size: 55)

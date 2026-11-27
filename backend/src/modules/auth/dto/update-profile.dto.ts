@@ -4,7 +4,6 @@ import {
   IsOptional,
   IsPhoneNumber,
   IsString,
-  IsUrl,
   MaxLength,
 } from 'class-validator';
 
@@ -26,12 +25,4 @@ export class UpdateProfileDto {
   @IsString()
   @IsPhoneNumber('IN')
   phone?: string;
-
-  @ApiPropertyOptional({
-    example: 'https://res.cloudinary.com/RentItEase/image/upload/profile.jpg',
-    nullable: true,
-  })
-  @IsOptional()
-  @IsUrl({ require_protocol: true })
-  photoUrl?: string;
 }
