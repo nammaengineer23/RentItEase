@@ -8,11 +8,15 @@ describe('AuthService Firebase Google identity', () => {
       findMany: jest.fn(),
       updateMany: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
     refreshToken: { create: jest.fn() },
   };
   const jwtService: any = { signAsync: jest.fn() };
-  const firebaseService: any = { verifyToken: jest.fn() };
+  const firebaseService: any = {
+    verifyToken: jest.fn(),
+    getProfileImageDownloadUrl: jest.fn(),
+  };
   const mailService: any = {};
   const otpService: any = {};
   let service: AuthService;
@@ -92,11 +96,14 @@ describe('AuthService Firebase Google identity', () => {
 
   it('rejects ambiguous legacy email matches rather than guessing an account', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
-    prisma.user.findMany.mockResolvedValue([account(), account({ id: 'user-2' })]);
+    prisma.user.findMany.mockResolvedValue([
+      account(),
+      account({ id: 'user-2' }),
+    ]);
 
-    await expect(service.firebaseLogin('firebase-id-token')).rejects.toBeInstanceOf(
-      ConflictException,
-    );
+    await expect(
+      service.firebaseLogin('firebase-id-token'),
+    ).rejects.toBeInstanceOf(ConflictException);
     expect(prisma.user.updateMany).not.toHaveBeenCalled();
   });
 
@@ -106,9 +113,9 @@ describe('AuthService Firebase Google identity', () => {
       account({ firebaseUid: 'another-firebase-uid' }),
     ]);
 
-    await expect(service.firebaseLogin('firebase-id-token')).rejects.toBeInstanceOf(
-      ConflictException,
-    );
+    await expect(
+      service.firebaseLogin('firebase-id-token'),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('rejects unverified Google email before attempting account lookup', async () => {
@@ -117,9 +124,9 @@ describe('AuthService Firebase Google identity', () => {
       email_verified: false,
     });
 
-    await expect(service.firebaseLogin('firebase-id-token')).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(
+      service.firebaseLogin('firebase-id-token'),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
     expect(prisma.user.findMany).not.toHaveBeenCalled();
   });
@@ -130,18 +137,18 @@ describe('AuthService Firebase Google identity', () => {
       firebase: { sign_in_provider: 'phone' },
     });
 
-    await expect(service.firebaseLogin('firebase-id-token')).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(
+      service.firebaseLogin('firebase-id-token'),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('does not create an account unless the caller explicitly requests account creation', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
     prisma.user.findMany.mockResolvedValue([]);
 
-    await expect(service.firebaseLogin('firebase-id-token')).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(
+      service.firebaseLogin('firebase-id-token'),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(prisma.user.create).not.toHaveBeenCalled();
   });
 
@@ -172,20 +179,110 @@ describe('AuthService Firebase Google identity', () => {
   ])('rejects %s RentItEase accounts', async (_label, overrides) => {
     prisma.user.findUnique.mockResolvedValue(account(overrides));
 
-    await expect(service.firebaseLogin('firebase-id-token')).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(
+      service.firebaseLogin('firebase-id-token'),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(prisma.refreshToken.create).not.toHaveBeenCalled();
   });
 
   it('rejects a Firebase token rejected by Firebase Admin (including revoked sessions)', async () => {
     firebaseService.verifyToken.mockRejectedValue(
-      new UnauthorizedException('Invalid, expired, revoked, or disabled Firebase session.'),
+      new UnauthorizedException(
+        'Invalid, expired, revoked, or disabled Firebase session.',
+      ),
     );
 
     await expect(service.firebaseLogin('revoked-token')).rejects.toBeInstanceOf(
       UnauthorizedException,
     );
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('resolves an owned profile image storage key to a signed URL', async () => {
+    const objectKey = 'profile-images/user-1/photo.png';
+    prisma.user.findUnique.mockResolvedValue(account({ photoUrl: objectKey }));
+    firebaseService.getProfileImageDownloadUrl.mockResolvedValue(
+      'https://signed.example.com/photo.png',
+    );
+
+    const result = await service.me('user-1');
+
+    expect(firebaseService.getProfileImageDownloadUrl).toHaveBeenCalledWith(
+      'user-1',
+      objectKey,
+    );
+    expect(result.photoUrl).toBe('https://signed.example.com/photo.png');
+  });
+
+  it('does not sign another user profile image storage key', async () => {
+    prisma.user.findUnique.mockResolvedValue(
+      account({ photoUrl: 'profile-images/user-2/photo.png' }),
+    );
+
+    const result = await service.me('user-1');
+
+    expect(result.photoUrl).toBeNull();
+    expect(firebaseService.getProfileImageDownloadUrl).not.toHaveBeenCalled();
+  });
+
+  it('preserves an existing external Google profile image URL', async () => {
+    const googlePhotoUrl = 'https://example.com/google-photo.png';
+    prisma.user.findUnique.mockResolvedValue(
+      account({ photoUrl: googlePhotoUrl }),
+    );
+
+    const result = await service.me('user-1');
+
+    expect(result.photoUrl).toBe(googlePhotoUrl);
+    expect(firebaseService.getProfileImageDownloadUrl).not.toHaveBeenCalled();
+  });
+
+  it('persists the server-generated profile image object key', async () => {
+    const objectKey = 'profile-images/user-1/generated-file.png';
+    prisma.user.findUnique.mockResolvedValue({ id: 'user-1' });
+    prisma.user.update.mockResolvedValue(account({ photoUrl: objectKey }));
+
+    const result = await service.updateProfilePhoto('user-1', objectKey);
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: { photoUrl: objectKey },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        photoUrl: true,
+        role: true,
+      },
+    });
+    expect(result.photoUrl).toBe(objectKey);
+  });
+
+  it('rejects profile photo updates for a missing user', async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.updateProfilePhoto(
+        'missing-user',
+        'profile-images/missing-user/photo.png',
+      ),
+    ).rejects.toMatchObject({ status: 404 });
+
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('does not allow updateProfile to persist a supplied photoUrl', async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: 'user-1' });
+    prisma.user.update.mockResolvedValue(account());
+
+    await service.updateProfile('user-1', {
+      fullName: 'Updated Person',
+      photoUrl: 'https://attacker.example.com/photo.png',
+    } as any);
+
+    expect(prisma.user.update.mock.calls[0][0].data).toEqual({
+      fullName: 'Updated Person',
+    });
   });
 });

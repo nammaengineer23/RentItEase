@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/network/dio_provider.dart';
 import '../../authentication/providers/authentication_provider.dart';
@@ -16,34 +17,27 @@ import '../domain/repositories/profile_repository.dart';
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   final dio = ref.watch(dioProvider);
 
-  return ProfileRepositoryImpl(
-    ProfileApi(dio),
-  );
+  return ProfileRepositoryImpl(ProfileApi(dio));
 });
 
 // ============================================================
 // PROFILE PROVIDER
 // ============================================================
 
-final profileProvider = StateNotifierProvider.autoDispose<
-    ProfileNotifier,
-    AsyncValue<ProfileEntity?>
->((ref) {
-  return ProfileNotifier(
-    ref,
-    ref.read(profileRepositoryProvider),
-  );
-});
+final profileProvider =
+    StateNotifierProvider.autoDispose<
+      ProfileNotifier,
+      AsyncValue<ProfileEntity?>
+    >((ref) {
+      return ProfileNotifier(ref, ref.read(profileRepositoryProvider));
+    });
 
 // ============================================================
 // PROFILE NOTIFIER
 // ============================================================
 
 class ProfileNotifier extends StateNotifier<AsyncValue<ProfileEntity?>> {
-  ProfileNotifier(
-    this._ref,
-    this._repository,
-  ) : super(const AsyncLoading()) {
+  ProfileNotifier(this._ref, this._repository) : super(const AsyncLoading()) {
     loadProfile();
   }
 
@@ -73,18 +67,21 @@ class ProfileNotifier extends StateNotifier<AsyncValue<ProfileEntity?>> {
   Future<void> updateProfile({
     required String fullName,
     required String phone,
-    String? photoUrl,
   }) async {
+    final current = state.value;
+
     try {
       final updated = await _repository.updateProfile(
         fullName: fullName,
         phone: phone,
-        photoUrl: photoUrl,
       );
 
       state = AsyncData(updated);
-    } catch (e, stackTrace) {
-      state = AsyncError(e, stackTrace);
+    } catch (e) {
+      if (current != null) {
+        state = AsyncData(current);
+      }
+      rethrow;
     }
   }
 
@@ -92,38 +89,25 @@ class ProfileNotifier extends StateNotifier<AsyncValue<ProfileEntity?>> {
   // UPLOAD PROFILE IMAGE
   // ============================================================
 
-  Future<void> uploadImage(String imagePath) async {
+  Future<void> uploadImage(XFile image) async {
     final current = state.value;
 
     if (current == null) {
-      return;
+      throw Exception('Profile is not loaded. Please try again.');
     }
 
     try {
-      final imageUrl = await _repository.uploadProfileImage(imagePath);
+      final imageUrl = await _repository.uploadProfileImage(image);
 
       if (imageUrl.isEmpty) {
-        throw Exception(
-          'Profile image upload did not return an image URL.',
-        );
+        throw Exception('Profile image upload did not return an image URL.');
       }
 
-      final updated = current.copyWith(
-        profileImage: imageUrl,
-      );
+      final updated = current.copyWith(profileImage: imageUrl);
 
       state = AsyncData(updated);
-
-      // Persist the uploaded image URL to the backend.
-      final persisted = await _repository.updateProfile(
-        fullName: updated.fullName,
-        phone: updated.phone,
-        photoUrl: imageUrl,
-      );
-
-      state = AsyncData(persisted);
-    } catch (e, stackTrace) {
-      state = AsyncError(e, stackTrace);
+    } catch (e) {
+      state = AsyncData(current);
       rethrow;
     }
   }

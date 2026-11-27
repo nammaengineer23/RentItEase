@@ -1,4 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
 
 import 'models/profile_model.dart';
 
@@ -34,7 +37,6 @@ class ProfileApi {
   Future<ProfileModel> updateProfile({
     required String fullName,
     required String phone,
-    String? photoUrl,
   }) async {
     try {
       final data = <String, dynamic>{
@@ -42,14 +44,7 @@ class ProfileApi {
         if (phone.trim().isNotEmpty) 'phone': phone.trim(),
       };
 
-      if (photoUrl != null && photoUrl.trim().isNotEmpty) {
-        data['photoUrl'] = photoUrl.trim();
-      }
-
-      final response = await _dio.patch<dynamic>(
-        '/auth/me',
-        data: data,
-      );
+      final response = await _dio.patch<dynamic>('/auth/me', data: data);
 
       final json = _extractMap(response.data);
 
@@ -63,52 +58,63 @@ class ProfileApi {
 
   // ============================================================
   // UPLOAD PROFILE IMAGE
-  // POST /uploads/image
+  // POST /auth/me/photo
   // ============================================================
 
-  Future<String> uploadProfileImage(String filePath) async {
+  Future<String> uploadProfileImage(XFile image) async {
     try {
+      final bytes = await image.readAsBytes();
+
+      if (bytes.isEmpty || bytes.length > 5 * 1024 * 1024) {
+        throw const FormatException(
+          'Image size should be greater than 0 and less than 5 MB.',
+        );
+      }
+
+      final mimeType = lookupMimeType(
+        image.name.isEmpty ? image.path : image.name,
+        headerBytes: bytes.take(32).toList(),
+      );
+
+      if (!const ['image/jpeg', 'image/png', 'image/webp'].contains(mimeType)) {
+        throw const FormatException(
+          'Only genuine JPG, PNG and WEBP images can be uploaded.',
+        );
+      }
+
+      final extension = switch (mimeType) {
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+        _ => throw const FormatException('Unsupported image format.'),
+      };
+
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(filePath),
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: 'profile-image.$extension',
+          contentType: MediaType.parse(mimeType!),
+        ),
       });
 
       final response = await _dio.post<dynamic>(
-        '/uploads/image',
+        '/auth/me/photo',
         data: formData,
+        options: Options(contentType: 'multipart/form-data'),
       );
 
-      final data = response.data;
+      final json = _extractMap(response.data);
+      final imageUrl = json['photoUrl'] ?? json['imageUrl'];
 
-      if (data is Map<String, dynamic>) {
-        final directUrl = data['url'];
-        if (directUrl is String && directUrl.isNotEmpty) {
-          return directUrl;
-        }
-
-        final imageUrl = data['imageUrl'];
-        if (imageUrl is String && imageUrl.isNotEmpty) {
-          return imageUrl;
-        }
-
-        final nested = data['data'];
-        if (nested is Map<String, dynamic>) {
-          final nestedUrl = nested['url'];
-          if (nestedUrl is String && nestedUrl.isNotEmpty) {
-            return nestedUrl;
-          }
-
-          final nestedImageUrl = nested['imageUrl'];
-          if (nestedImageUrl is String && nestedImageUrl.isNotEmpty) {
-            return nestedImageUrl;
-          }
-        }
+      if (imageUrl is String && imageUrl.trim().isNotEmpty) {
+        return imageUrl.trim();
       }
 
-      throw Exception('Image upload succeeded but no image URL was returned.');
-    } on DioException catch (e) {
       throw Exception(
-        e.response?.data?.toString() ?? 'Image upload failed.',
+        'Profile image upload succeeded but no image URL was returned.',
       );
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Image upload failed.');
     }
   }
 

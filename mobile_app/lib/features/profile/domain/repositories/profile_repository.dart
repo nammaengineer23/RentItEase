@@ -1,3 +1,5 @@
+import 'package:image_picker/image_picker.dart';
+
 import '../entities/profile_entity.dart';
 
 abstract class ProfileRepository {
@@ -14,14 +16,13 @@ abstract class ProfileRepository {
   Future<ProfileEntity> updateProfile({
     required String fullName,
     required String phone,
-    String? photoUrl,
   });
 
   // ============================================================
   // PROFILE IMAGE
   // ============================================================
 
-  Future<String> uploadProfileImage(String imagePath);
+  Future<String> uploadProfileImage(XFile image);
 
   // ============================================================
   // LOGOUT

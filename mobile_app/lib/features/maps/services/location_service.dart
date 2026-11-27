@@ -261,7 +261,7 @@ class LocationService {
         if (results is! List || results.isEmpty) return null;
         final location =
             ((results.first as Map)['geometry'] as Map)['location'] as Map;
-        return reverseGeocode(
+        return await reverseGeocode(
           (location['lat'] as num).toDouble(),
           (location['lng'] as num).toDouble(),
         );
@@ -274,7 +274,7 @@ class LocationService {
       final locations = await geo.locationFromAddress(address);
       if (locations.isEmpty) return null;
       final location = locations.first;
-      return reverseGeocode(location.latitude, location.longitude);
+      return await reverseGeocode(location.latitude, location.longitude);
     } catch (_) {
       return null;
     }
